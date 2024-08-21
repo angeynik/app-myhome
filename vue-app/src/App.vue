@@ -8,46 +8,46 @@
 </template>
 
 <script>
-import SetParams from './components/SetParams.vue';
-// import WSServer from './websocket.js';
-
-import io from 'socket.io-client';
-const socket = io('ws://129.47.1.60:1011');
-//const socket = io('ws://localhost:1011');
-//const socket = io('http://129.47.1.60:1011');
-//const socket = io('http://localhost:1011');
-// const socket = io(); // По умолчанию используется localhost:3000
-
-socket.on('connect', () => {
-  console.log('Соединение установлено');
-});
-socket.on("disconnect", () => {
-  console.log("Соединение разорвано");
-});
-socket.send('first mess');
 
 export default {
-  name: 'App',
-  components: {
-    SetParams
-  },
-//   mounted: function () {
-//       WSServer();
-//       WSServer.on ('connection', ws => {
-//    ws.on ('message', message => {
-//        console.log (`Message:  ${message}`); 
-//    // Устанавливаем соединение
-//    const data = JSON.parse(message);
-//         if (data.type === 'requestUuid') {
-//         const uuid = '2343545cgreq234';
-//         ws.send(JSON.stringify({ uuid }));
-//         console.log(`Отправлен UUID: ${uuid}`);
-//         }
-//    });
-//    ws.send ('first mess'); 
-// });
-//     },
-}
+     data() {
+       return {
+         socket: null,
+         receivedMessage: ''
+       };
+     },
+     created() {
+       this.connectWebSocket();
+     },
+     methods: {
+       connectWebSocket() {
+        // this.socket = new WebSocket('ws://localhost:1880/ws');
+	this.socket = new WebSocket('ws://localhost:8081/ws');
+         this.socket.onopen = () => {
+           console.log('WebSocket connection established');
+         };
+
+         this.socket.onmessage = (event) => {
+           this.receivedMessage = event.data;
+         };
+
+         this.socket.onclose = () => {
+           console.log('WebSocket connection closed');
+         };
+
+         this.socket.onerror = (error) => {
+           console.error('WebSocket error:', error);
+         };
+       },
+       sendMessage() {
+         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+           this.socket.send('Hello from Vue!');
+         }
+       }
+     }
+   };
+
+
 </script>
 
 <style>
