@@ -9,29 +9,44 @@
 
 <script>
 import SetParams from './components/SetParams.vue';
-import WSServer from './websocket.js';
+// import WSServer from './websocket.js';
+
+import io from 'socket.io-client';
+const socket = io('ws://129.47.1.60:1011');
+//const socket = io('ws://localhost:1011');
+//const socket = io('http://129.47.1.60:1011');
+//const socket = io('http://localhost:1011');
+// const socket = io(); // По умолчанию используется localhost:3000
+
+socket.on('connect', () => {
+  console.log('Соединение установлено');
+});
+socket.on("disconnect", () => {
+  console.log("Соединение разорвано");
+});
+socket.send('first mess');
 
 export default {
   name: 'App',
   components: {
     SetParams
   },
-  mounted: function () {
-      WSServer();
-      WSServer.on ('connection', ws => {
-   ws.on ('message', message => {
-       console.log (`Message:  ${message}`); 
-   // Устанавливаем соединение
-   const data = JSON.parse(message);
-        if (data.type === 'requestUuid') {
-        const uuid = '2343545cgreq234';
-        ws.send(JSON.stringify({ uuid }));
-        console.log(`Отправлен UUID: ${uuid}`);
-        }
-   });
-   ws.send ('first mess'); 
-});
-    },
+//   mounted: function () {
+//       WSServer();
+//       WSServer.on ('connection', ws => {
+//    ws.on ('message', message => {
+//        console.log (`Message:  ${message}`); 
+//    // Устанавливаем соединение
+//    const data = JSON.parse(message);
+//         if (data.type === 'requestUuid') {
+//         const uuid = '2343545cgreq234';
+//         ws.send(JSON.stringify({ uuid }));
+//         console.log(`Отправлен UUID: ${uuid}`);
+//         }
+//    });
+//    ws.send ('first mess'); 
+// });
+//     },
 }
 </script>
 
