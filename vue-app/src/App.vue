@@ -8,39 +8,30 @@
 </template>
 
 <script>
-// import { createServer } from 'http';
-// import { WebSocket } from 'ws';
-
 import SetParams from './components/SetParams.vue';
-// onst wss = new WebSocketServer({ port: 9200 });
+import WSServer from './websocket.js';
 
 export default {
   name: 'App',
   components: {
     SetParams
   },
-  // data: function () {
-  //   return {
-  //     connection: null
-  //   }
-  // },
-  // created: function () {
-  //   console.log("Started Connection to WebSocket Node_RED");
-  //   this.connection = new WebSocket("ws://129.47.1.60:1880/dashboard");
-
-  //   this.connection.onopen = function (event) {
-  //     console.log("Connection established", event);
-  //   }
-
-  //   this.connection.onmessage = function (event) {
-  //     console.log("Received: %s", event.data);
-  //   }
-  // },
-  // methods: {  
-  //   sendMessage: function (message) {
-  //     this.connection.send("Hello, Node-RED !", message);
-  //   }
-  // },
+  mounted: function () {
+      WSServer();
+      WSServer.on ('connection', ws => {
+   ws.on ('message', message => {
+       console.log (`Message:  ${message}`); 
+   // Устанавливаем соединение
+   const data = JSON.parse(message);
+        if (data.type === 'requestUuid') {
+        const uuid = '2343545cgreq234';
+        ws.send(JSON.stringify({ uuid }));
+        console.log(`Отправлен UUID: ${uuid}`);
+        }
+   });
+   ws.send ('first mess'); 
+});
+    },
 }
 </script>
 
