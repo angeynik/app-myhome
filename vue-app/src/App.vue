@@ -4,50 +4,56 @@
 <hr />
 <SetParams />
 <!-- <button v-on:click="sendMessage ('Тестируем соединение')"> Send Message </button> -->
+<div>
+    <button @click="connectToWebSocket">Подключиться к WebSocket</button>
+    <p v-if="connected">Соединение установлено!</p>
+    <p v-if="messageFromServer">Получено сообщение от сервера: {{ messageFromServer }}</p>
+  </div>
 <hr />
 </template>
 
 <script>
-
+// require('dotenv').config({ path: './conf.env' });
 export default {
-     data() {
-       return {
-         socket: null,
-         receivedMessage: ''
-       };
-     },
-     created() {
-       this.connectWebSocket();
-     },
-     methods: {
-       connectWebSocket() {
-        // this.socket = new WebSocket('ws://localhost:1880/ws');
-	this.socket = new WebSocket('ws://localhost:8081/ws');
-         this.socket.onopen = () => {
-           console.log('WebSocket connection established');
-         };
+  data() {
+    return {
+      socket: null,
+      connected: false,
+      messageFromServer: null,
+    };
+  },
+  created() {
+    console.log(process.env.MY_SECRET_KEY); // Выведет значение из conf.env
+  },
+  methods: {
+    connectToWebSocket() {
+      this.socket = new WebSocket('ws://localhost:9202'); // Замени на адрес своего сервера
 
-         this.socket.onmessage = (event) => {
-           this.receivedMessage = event.data;
-         };
+      this.socket.addEventListener('open', (event) => {
+        console.log('Соединение установлено');
+        this.connected = true;
+        this.messageFromServer = event.data;
+        this.socket.send('Привет, сервер! Это клиент.', this.messageFromServer);
+      });
 
-         this.socket.onclose = () => {
-           console.log('WebSocket connection closed');
-         };
+      this.socket.addEventListener('message', (event) => {
+        //const message = JSON.parse(event.data);
+        console.log(`Получено сообщение от сервера: ${event}`);
+        this.messageFromServer = event;
+      });
 
-         this.socket.onerror = (error) => {
-           console.error('WebSocket error:', error);
-         };
-       },
-       sendMessage() {
-         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-           this.socket.send('Hello from Vue!');
-         }
-       }
-     }
-   };
+      this.socket.addEventListener('close', (event) => {
+        this.messageFromServer = event.data;
+        console.log('Соединение закрыто', this.messageFromServer);
+        this.connected = false;
+      });
 
-
+      this.socket.addEventListener('error', (event) => {
+        console.error('Произошла ошибка', event);
+      });
+    },
+  },
+};
 </script>
 
 <style>
