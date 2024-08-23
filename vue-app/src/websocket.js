@@ -1,5 +1,20 @@
-const WebSocket = require('ws');
+const btn = document.getElementById('btn');
 
-// const WSServer = new WebSocket.Server ({port:1011});
+const socket = new WebSocket('ws://localhost:9202');
 
-module.exports = WSServer;
+socket.onopen = () => {
+    console.log('Соединение установлено');
+};
+
+socket.onmessage = (event) => {
+    console.log(`Получено сообщение: ${event.data}`);
+};
+
+socket.onclose = (event) => {
+    console.log(`Соединение закрыто: ${event.code}`);
+};
+
+socket.onerror = (error) => {
+    console.log(`Произошла ошибка: ${error.message}`);
+};
+
