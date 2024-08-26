@@ -9,6 +9,7 @@
     <p v-if="connected">Соединение установлено!</p>
     <p v-if="messageFromServer">Получено сообщение от сервера: {{ messageFromServer }}</p>
 </div>
+
 <hr />
 </template>
 
@@ -46,7 +47,7 @@ export default {
     connectWebSocket() {
     const host = process.env.VUE_APP_HOST || 'localhost';
     const port = process.env.VUE_APP_PORT || '9202';
-      this.socket = new WebSocket(`ws://${host}:${port}`);
+    this.socket = new WebSocket(`ws://${host}:${port}`);
 
       this.socket.onopen = () => {
         console.log(`WebSocket соединение установлено на ${host}:${port}`);
@@ -58,20 +59,30 @@ export default {
           const jsomMess = await this.blobToJson(event.data); // Преобразуем Blob в JSON из полученного сообщения
           console.log('Получено сообщение:', jsomMess);
           this.messageFromServer = jsomMess;
-
-          if (jsomMess.type === 'get') {
-            console.log(`Получен запрос на значение параметра: ${jsomMess.name}`);
-            //const currentValue = GetValue(jsomMess.name);
-            //this.sendMessage(GetValue(jsomMess.name));
-            this.sendMessage('ответ от GetValue');
-          } else if (jsomMess.type === 'set') {
-            console.log(`Получен запрос на изменение параметра: ${jsomMess.name}`);
-            //const newValue = SetValue(jsomMess.name, jsomMess.value);
-            //this.sendMessage(newValue);
-            this.sendMessage('ответ от GetValue');
+          const checkMess = this.CheckName(jsomMess.name);
+          console.log('Проверка имени: ', checkMess);
+          this.isSending = true;
+          if (checkMess) {
+            this.sendMessage(jsomMess.value);
+          } else {
+            this.sendMessage('Такого параметра нет');
           }
-          //this.isSending = false;
-          this.sendMessage(this.setTemp.temp1);
+
+          // if (jsomMess.type === 'get') { // Отрабатываем запрос на получение параметра
+          //   console.log(`Получен запрос на значение параметра: ${jsomMess.name}`);
+          //   //const currentValue = GetValue(jsomMess.name);
+          //   //this.sendMessage(GetValue(jsomMess.name));
+          //   this.sendMessage('ответ от GetValue');
+          // } else if (jsomMess.type === 'set') { // Отрабатываем запрос на изменение параметра
+          //   console.log(`Получен запрос на изменение параметра: ${jsomMess.name}`);
+          //   //const newValue = SetValue(jsomMess.name, jsomMess.value);
+          //   //this.sendMessage(newValue);
+          //   this.sendMessage('ответ от GetValue');
+          // }
+          // //this.isSending = false;
+          // this.sendMessage(this.setTemp.temp1);
+
+
         } catch (error) {
           console.error(error);
         }
@@ -92,7 +103,7 @@ export default {
     },
   sendMessage(message) {
     if (this.socket && this.socket.readyState === WebSocket.OPEN && !this.isSending) {
-      this.isSending = true;
+      this.isSending = false;
       this.socket.send(message);
       console.log('Сообщение отправлено:', message);
     } else {
@@ -129,7 +140,11 @@ SetValue(n, v) {
   var s_value = {type: 'confirm', name: n, value: true};
   return s_value;
 },
-
+CheckName(n) {
+  console.log(`Функция CheckName приступила к обработке запроса на проверку наличия параметра с именем ${n}`);
+  const c_name = false;
+  return c_name;
+},
 
 
   },
