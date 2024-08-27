@@ -1,39 +1,11 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-
-createApp(App).mount('#app')
+import { createApp } from 'vue';
+import App from './App.vue';
 
 const app = createApp(App);
 
-import pino from 'pino';
-const logDirectory = './pino_logs';
-
-// Создайте транспорт для каждого уровня логирования
-const transports = {
-  debug: pino.transport({
-    target: 'pino/file',
-    options: { destination: `${logDirectory}/debug.log` },
-  }),
-  info: pino.transport({
-    target: 'pino/file',
-    options: { destination: `${logDirectory}/info.log` },
-  }),
-  warn: pino.transport({
-    target: 'pino/file',
-    options: { destination: `${logDirectory}/warn.log` },
-  }),
-  error: pino.transport({
-    target: 'pino/file',
-    options: { destination: `${logDirectory}/error.log` },
-  }),
-};
-
-// Создайте логгер с указанными транспортами
-const logger = pino({ level: 'debug' }, transports);
-
-app.config.globalProperties.$logger = logger;
 
 app.mount('#app');
+
 
 import config from './myhome_config.js'; // Импортируйте конфигурацию
 app.config.globalProperties.sPointRoom_all= config.sPointRoom_all;
