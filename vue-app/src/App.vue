@@ -1,8 +1,12 @@
 <template>
   <img alt="Vue logo" src="./assets/logo.png">
+  <div id="app_setparams"> <SetParams /> </div>
+  <!-- <div style="width: 110%; height: 200px">
+    <SetParams />
+  </div> -->
   <h1>"Это основная страница приложения пользовательского приложения управления Умным домом !!! "</h1>
 <hr />
-<SetParams />
+
 <!-- <button v-on:click="sendMessage ('Тестируем соединение')"> Send Message </button> -->
 <div>
     <button @click="connectWebSocket">Подключиться к WebSocket</button>
@@ -19,9 +23,13 @@
 </template>
 
 <script>
-
+import SetParams from './components/SetParams.vue';
 
 export default {
+  name: 'app',
+  components: {
+    SetParams
+  },
   data() {
     return {
       socket: null,
