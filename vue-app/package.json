@@ -9,8 +9,16 @@
   },
   "dependencies": {
     "core-js": "^3.8.3",
+    "crypto-browserify": "^3.12.0",
+    "dotenv": "^16.4.5",
+    "os-browserify": "^0.3.0",
+    "path": "^0.12.7",
+    "path-browserify": "^1.0.1",
+    "pino": "^9.3.2",
+    "pino-pretty": "^11.2.2",
     "socket.io-client": "^4.7.5",
     "vue": "^3.2.13",
+    "vuejs3-logger": "^1.0.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {

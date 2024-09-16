@@ -1,0 +1,201 @@
+ .app {
+     width: 100%;
+     height: 100%;
+     font-family: 'Avenir', Helvetica, Arial, sans-serif;
+     -webkit-font-smoothing: antialiased;
+     -moz-osx-font-smoothing: grayscale;
+     text-align: center;
+     color: #2c3e50;
+     margin: 0px;
+ }
+ :where(html) {
+    --color-bg: hsl(152 10% 100%);
+    --color-bg-accent: hsl(152 10% 90%);
+    --color-text: hsl(152 78% 0%);
+    --color-primary: hsl(152 78% 52%);
+  }
+  
+  [data-theme="dark"] {
+    --color-bg: hsl(217 10% 8%);
+    --color-bg-accent: hsl(217 10% 16%);
+    --color-text: hsl(60 89% 95%);
+    --color-primary: hsl(60 89% 50%);
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    :where(html:not([data-theme])) {
+      --color-bg: hsl(217 10% 8%);
+      --color-bg-accent: hsl(217 10% 16%);
+      --color-text: hsl(60 89% 95%);
+      --color-primary: hsl(60 89% 50%);
+    }
+  }
+  
+  * {
+    box-sizing: border-box;
+  }
+  
+  #theme-toggle {
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+  }
+  
+  html,
+  body {
+    height: 100%;
+  }
+  
+  body {
+    display: grid;
+    place-items: center;
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    font-family: system-ui;
+  }
+  
+  .indicater {
+    --color: currentcolor;
+    --color-bar: var(--color-bg-accent);
+    --color-charge: var(--color-primary);
+    --size: clamp(3rem, 20vw, 6rem);
+  
+    display: grid;
+    grid-template-areas: "canvas";
+    gap: 1rem;
+    place-items: center;
+  }
+  
+  .charger > * {
+    grid-area: canvas;
+  }
+  
+  .progress {
+    --size-offset: 2;
+    --stroke-width: 8;
+  
+    width: calc(var(--size) * var(--size-offset));
+    height: calc(var(--size) * var(--size-offset));
+    overflow: visible;
+  }
+  
+  .progress circle {
+    stroke-width: var(--stroke-width);
+  }
+  
+  .progress .ring {
+    stroke: var(--color-bar);
+  }
+  
+  .progress .current {
+    stroke: var(--color-charge);
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    stroke-linecap: round;
+    rotate: -90deg;
+    transform-origin: center;
+    animation: charge 60s ease-in-out infinite;
+  }
+  
+  .battery-charging {
+    overflow: visible;
+    stroke: var(--color);
+    width: var(--size);
+    height: var(--size);
+    transform-origin: center;
+  }
+  
+  .battery-charging .zap {
+    transform-origin: center;
+    stroke-dasharray: 42 21;
+    animation: zap 1.2s infinite;
+  }
+  
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      scale: 0.6;
+    }
+    to {
+      opacity: 1;
+      scale: 1;
+    }
+  }
+  
+  @keyframes charge {
+    2% {
+      stroke-dashoffset: 60;
+      animation-timing-function: linear;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+  
+  @keyframes zap {
+    10% {
+      translate: 0 1px;
+    }
+    25% {
+      stroke: var(--color-charge);
+    }
+    40% {
+      stroke: var(--color);
+    }
+    80%,
+    100% {
+      stroke-dashoffset: -42;
+    }
+  }
+  
+  @media (prefers-reduced-motion) {
+    .battery-charging .zap {
+      animation-duration: 2s;
+    }
+  
+    @keyframes zap {
+      50% {
+        stroke: var(--color-charge);
+      }
+    }
+  }
+  
+  /* Fade in elements on page load */
+  @media (prefers-reduced-motion: no-preference) {
+    .progress,
+    .battery-charging {
+      --init-duration: 800ms;
+      --init-delay: 200ms;
+  
+      opacity: 0;
+      animation: fade-in var(--init-duration) var(--init-delay)
+        cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  
+    .battery-charging {
+      --init-delay: 300ms;
+    }
+  
+    .progress .current {
+      animation-delay: var(--init-delay);
+    }
+  }
+  
+
+
+
+  .ring {
+    stroke: #e0e0e0;
+    stroke-width: 10;
+}
+.current {
+    stroke: #76c7c0;
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.5s ease;
+}
+.value {
+    font-size: 24px;
+    text-anchor: middle;
+    dominant-baseline: middle;
+}
