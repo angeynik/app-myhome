@@ -6,10 +6,10 @@
 
       <div class="body_l1"> 
             <div class="mainHeader">
-              <MainHeader />
+              <MainHeader :location="location_title"/>
             </div>
             <div id="app_mainBody" class="mainBody">
-              <MainBody :title="title_location" />
+              <MainBody :id_title="id_title" />
             </div>
       </div>
 
@@ -31,7 +31,8 @@ export default {
     return {
   // Компонент BodyValueBlock
       // Передаваемые переменные
-      title_location: ' Сообщение передано из App', // Наименование параметра например Гостиная, 1 этаж
+      location_title: ' 1 ЭТАЖ ', // Наименование локации (группы помещений) например 1 этаж, Хозяйственные постройки
+      id_title: 1, // Храним название ID ПОСЛЕДНЕЙ промсотренной локации например Гостиная, 1 этаж
       title_type: '', // Тип параметра например Температура
       value_current: 0, // Текущее значение параметра например 20
       value_set: 0, // Ожидаемое значение параметра например 22
@@ -219,10 +220,10 @@ switch (n.type) {
   // console.log(`Функция CheckType приступила к обработке запроса на проверку наличия параметра с именем ${n}`);
   const c_name = false;
   return c_name;
-},
+  },
 
 
-async sendLogToServer (type, message) {
+  async sendLogToServer (type, message) {
   try {
     let payload;
     if (message) {
@@ -287,42 +288,42 @@ async sendLogToServer (type, message) {
       }
     },
 
-findSensorName(message) {
-  // Получаем конфигурацию из localStorage
-  let config = JSON.parse(localStorage.getItem('commonConfig'));
-  // console.log('config:', config);
+  findSensorName(message) {
+    // Получаем конфигурацию из localStorage
+    let config = JSON.parse(localStorage.getItem('commonConfig'));
+    // console.log('config:', config);
 
-  // Находим ключ комнаты в сообщении
-  const roomKey = Object.keys(message).find(key => key.startsWith('room'));
-  // console.log('roomKey:', roomKey); // Логирование roomKey
+    // Находим ключ комнаты в сообщении
+    const roomKey = Object.keys(message).find(key => key.startsWith('room'));
+    // console.log('roomKey:', roomKey); // Логирование roomKey
 
-  if (roomKey) {
-    // console.log('Комната найдена в конфигурации:', roomKey);
-    const sensorKey = Object.keys(message[roomKey].sensors)[0];
-    const sensorValue = message[roomKey].sensors[sensorKey];
-    // console.log('sensorKey:', sensorKey); // Логирование sensorKey
-    // console.log('sensorValue:', sensorValue); // Логирование sensorValue
+    if (roomKey) {
+      // console.log('Комната найдена в конфигурации:', roomKey);
+      const sensorKey = Object.keys(message[roomKey].sensors)[0];
+      const sensorValue = message[roomKey].sensors[sensorKey];
+      // console.log('sensorKey:', sensorKey); // Логирование sensorKey
+      // console.log('sensorValue:', sensorValue); // Логирование sensorValue
 
-    // Проверяем, существует ли сенсор в конфигурации
-    if (config[roomKey] && config[roomKey].sensors && Object.prototype.hasOwnProperty.call(config[roomKey].sensors, sensorKey)) {
-      // Обновляем значение сенсора в конфигурации
-      config[roomKey].sensors[sensorKey] = sensorValue;
-      // console.log('Значение сенсора обновлено:', config[roomKey].sensors[sensorKey]);
+      // Проверяем, существует ли сенсор в конфигурации
+      if (config[roomKey] && config[roomKey].sensors && Object.prototype.hasOwnProperty.call(config[roomKey].sensors, sensorKey)) {
+        // Обновляем значение сенсора в конфигурации
+        config[roomKey].sensors[sensorKey] = sensorValue;
+        // console.log('Значение сенсора обновлено:', config[roomKey].sensors[sensorKey]);
 
-      // Сохраняем обновленную конфигурацию в localStorage
-      localStorage.setItem('commonConfig', JSON.stringify(config));
-      const chechValue = JSON.parse(localStorage.getItem('commonConfig'))[roomKey].sensors[sensorKey];
-      // console.log(`Конфигурация "commonConfig" сохранена в localStorage, commonConfig.${roomKey}.sensors.${sensorKey} = ${chechValue}`);
-      this.sendLogToServer ('info', `Конфигурация "commonConfig" сохранена в localStorage,  commonConfig.${roomKey}.sensors.${sensorKey} = ${chechValue}`);
+        // Сохраняем обновленную конфигурацию в localStorage
+        localStorage.setItem('commonConfig', JSON.stringify(config));
+        const chechValue = JSON.parse(localStorage.getItem('commonConfig'))[roomKey].sensors[sensorKey];
+        // console.log(`Конфигурация "commonConfig" сохранена в localStorage, commonConfig.${roomKey}.sensors.${sensorKey} = ${chechValue}`);
+        this.sendLogToServer ('info', `Конфигурация "commonConfig" сохранена в localStorage,  commonConfig.${roomKey}.sensors.${sensorKey} = ${chechValue}`);
+      } else {
+        // console.error('Датчик не найден в конфигурации');
+        this.sendLogToServer ('error', 'Ошибка поиска ДАТЧИКА в файле конфигурации - датчик соответствующий идентификатору из сообщения Сервера не найден');
+      }
     } else {
-      // console.error('Датчик не найден в конфигурации');
-      this.sendLogToServer ('error', 'Ошибка поиска ДАТЧИКА в файле конфигурации - датчик соответствующий идентификатору из сообщения Сервера не найден');
+      // console.error('Комната не найдена в конфигурации');
+      this.sendLogToServer ('error', 'Ошибка поиска КОМНАТЫ в файле конфигурации - комната соответствующая идентификатору из сообщения Сервера не найдена');
     }
-  } else {
-    // console.error('Комната не найдена в конфигурации');
-    this.sendLogToServer ('error', 'Ошибка поиска КОМНАТЫ в файле конфигурации - комната соответствующая идентификатору из сообщения Сервера не найдена');
-  }
-},
+  },
 
 
 

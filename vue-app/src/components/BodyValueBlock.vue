@@ -1,5 +1,6 @@
 <template>
     <div>
+        <h1> BodyValueBlock</h1>
         <h1> {{ title }}</h1>
     </div>
 

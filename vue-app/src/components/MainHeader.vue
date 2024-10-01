@@ -1,12 +1,17 @@
 <template>
       <div> 
-        <h3> H E D E R </h3>
+        <h3> {{ location }}</h3>
     </div>
 </template>
 
 <script>
 export default {
-
+  props: {
+    location: {
+      type: String,
+      required: true
+    }
+  }
 }
 </script>
 
