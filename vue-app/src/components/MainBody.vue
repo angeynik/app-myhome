@@ -2,10 +2,12 @@
       <div> 
         <h3> {{ id_title }}</h3>
         <!-- <h1> B O D Y </h1>  -->
-            <div id="app_valueblock"> <BodyValueBlock :title="id_title"  /> </div>
-            <div> {{ room_title }}</div>
-            <div> {{ point_title }}</div>
-            <div> {{ point_value }}</div>
+            <div id="app_valueblock"> <BodyValueBlock :title="point_value"  /> </div>
+            <div> room_title - {{ room_title }}</div>
+            <div> point_title - {{ point_title }}</div>
+            <div> point_value - {{ point_value }}</div>
+            <div> Setpoint - {{ setpoint }}</div>
+            <div> Time period updated - {{ time_periodUpdated }}</div>
     </div>
 </template>
 
@@ -44,13 +46,17 @@ export default {
     id_title: Number
     },
     created() {
-      this.getConfigValues(1, 2);
+      this.getConfigValues(3, 2);
     },
     methods: {
  
       getConfigValues(id, id_point) {
     // Получаем объект Config из localStorage
     const config = JSON.parse(localStorage.getItem('commonConfig'));
+    if (!config) {
+      console.error('Не удалось получить конфигурацию из localStorage');
+      return;
+    } else {
     console.log('Забрали конфигурацию системы из - commonСonfig');
 
     // Ищем объект с соответствующим id
@@ -67,12 +73,15 @@ export default {
                 this.point_title = sensorKeys[id_point - 1];
                 console.log('Определили наименование датчика = ', this.point_title);
                 this.point_value = room.sensors[this.point_title];
-                console.log('Определили значение датчика = ', this.point_value);
+                console.log('Время последнего обновления датчика = ', room.time[this.point_title], ' . и текущее время - ', new Date().toLocaleTimeString());
+                this.time_periodUpdated = room.time[this.point_title]-new Date().toLocaleTimeString();
+                console.log('Определили значение датчика = ', this.point_value , 'и время обновления = ', this.time_periodUpdated);
             }
             break;
         }
     }
 
+    }
     // Возвращаем найденные значения
     return;
     },
