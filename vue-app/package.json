@@ -18,6 +18,7 @@
     "pino-pretty": "^11.2.2",
     "socket.io-client": "^4.7.5",
     "vue": "^3.2.13",
+    "vue-touch": "^2.0.0-beta.4",
     "vuejs3-logger": "^1.0.0",
     "ws": "^8.18.0"
   },

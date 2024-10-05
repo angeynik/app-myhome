@@ -77,6 +77,7 @@ export default {
   },
   created() {
         this.sendLogToServer('info', 'Client: Инициализация подключения логирования'); // отправка логов на сервер для сохранения в файл
+        localStorage.setItem('flag_commonConfigUpdated', 'false');
   },
   mounted() {
     this.connectWebSocket();
@@ -190,11 +191,11 @@ switch (n.type) {
       case 'config':
         if (n.manageConfig) {
           localStorage.setItem('manageConfig', JSON.stringify(n.manageConfig));
-          console.log('Конфигурация "manageConfig" сохранена в localStorage');
+          // console.log('Конфигурация "manageConfig" сохранена в localStorage');
           this.sendLogToServer('info', 'Конфигурация "manageConfig" сохранена в localStorage');
         } else if (n.commonConfig) {
           localStorage.setItem('commonConfig', JSON.stringify(n.commonConfig));
-          console.log('Конфигурация "commonConfig" сохранена в localStorage');
+          // console.log('Конфигурация "commonConfig" сохранена в localStorage');
           this.sendLogToServer('info', 'Конфигурация "commonConfig" сохранена в localStorage');
         }
         break;
@@ -300,6 +301,7 @@ switch (n.type) {
 
     if (roomKey) {
       // console.log('Комната найдена в конфигурации:', roomKey);
+
       const sensorKey = Object.keys(message[roomKey].sensors)[0];
       const sensorValue = message[roomKey].sensors[sensorKey];
       
@@ -315,8 +317,9 @@ switch (n.type) {
 
         // Сохраняем обновленную конфигурацию в localStorage
         localStorage.setItem('commonConfig', JSON.stringify(config));
+        localStorage.setItem('flag_commonConfigUpdated', 'true');
         const chechValue = JSON.parse(localStorage.getItem('commonConfig'))[roomKey].sensors[sensorKey];
-        console.log(`Конфигурация "commonConfig" сохранена в localStorage, commonConfig.${roomKey}.sensors.${sensorKey} = ${chechValue},  commonConfig.${roomKey}.time.${sensorKey} = ${timeUpdated}`);
+        console.log(`Конфигурация "commonConfig" сохранена в localStorage, commonConfig.${roomKey}.sensors.${sensorKey} = ${chechValue},  commonConfig.${roomKey}.time.${sensorKey} = ${timeUpdated}  localStorage.getItem('flag_commonConfigUpdated') = ${localStorage.getItem('flag_commonConfigUpdated')}`);
         this.sendLogToServer ('info', `Конфигурация "commonConfig" сохранена в localStorage,  commonConfig.${roomKey}.sensors.${sensorKey} = ${chechValue}`);
       } else {
         // console.error('Датчик не найден в конфигурации');

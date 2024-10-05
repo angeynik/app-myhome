@@ -1,33 +1,41 @@
 <template>
-      <div> 
+  <div class="container">
         <h3> {{ id_title }}</h3>
         <!-- <h1> B O D Y </h1>  -->
-            <div id="app_valueblock"> <BodyValueBlock :title="point_value"  /> </div>
+            <div id="app_valueblock"> <BodyValueBlock :title="point_value" :state="stateInfo"  /> </div>
             <div> room_title - {{ room_title }}</div>
             <div> point_title - {{ point_title }}</div>
             <div> point_value - {{ point_value }}</div>
             <div> Setpoint - {{ setpoint }}</div>
             <div> Time period updated - {{ time_periodUpdated }}</div>
-    </div>
+    
+    <div> <BodySetpontBlock /> </div>
+  </div>
 </template>
 
 <script>
 import BodyValueBlock from './BodyValueBlock.vue';
+import BodySetpontBlock from './BodySetpontBlock.vue';
 export default {
   name: 'MainBody',
   components: {
     BodyValueBlock,
+    BodySetpontBlock
   },
   data() {
     return {
       id: this.id_title,
-      id_point: 0,
+      id_point: 1,
       room_title: '',
       point_title: '',
       point_value: 0,
       setpoint: 0,
       time_periodUpdated: 0,
-      state_info: 0,
+      stateInfo: 0, // переменная отвечающая за визуализацию состояния связи с устройством в зависимости от времени последнего обновления 0 - нет связи, 1 - есть связь 2 - есть связь, установлена не давно
+    
+      // Дополнительные (служебные) параметры
+      setUpdateTime: 1000, // время перезапуска обновления данных в секундах
+      flagReloadPage: false, // флаг перезагрузки страницы
       };
     },
     computed: {
@@ -45,27 +53,44 @@ export default {
     props: {
     id_title: Number
     },
-    created() {
-      this.getConfigValues(3, 2);
+    watch: {
+      // Отслеживание изменений данных
+      id() {this.getConfigValues(this.id, this.id_point);},
+    },
+    mounted() {
+      this.getConfigValues(this.id, this.id_point);
+    },
+    beforeUnmount() {
     },
     methods: {
- 
+      reloadPage() {
+        // Перезагрузка страницы
+        if (this.flagReloadPage === true) {
+        console.log('reloadPage    Обновление страницы разрешено flagReloadPage -', this.flagReloadPage);
+        console.log('reloadPage    Запрос на обновление сформирован LocalStorage - flag_commonConfigUpdated: ', localStorage.getItem('flag_commonConfigUpdated'));
+        window.location.reload();
+        this.flagReloadPage = false;
+        } else {
+          return;
+        } 
+        return;
+      },
       getConfigValues(id, id_point) {
     // Получаем объект Config из localStorage
     const config = JSON.parse(localStorage.getItem('commonConfig'));
     if (!config) {
-      console.error('Не удалось получить конфигурацию из localStorage');
+      console.error('Не удалось получить конфигурацию commonСonfig из localStorage');
       return;
     } else {
-    console.log('Забрали конфигурацию системы из - commonСonfig');
+    console.log('Конфигурация "commonConfig" получена из localStorage успешно');
 
     // Ищем объект с соответствующим id
     for (const key in config) {
         if (config[key].id === id) {
-          console.log('Найдена комната с запрашиваемым ID:', key);
+          // console.log('Найдена комната с запрашиваемым ID:', key);
             const room = config[key];
             this.room_title = room.title;
-            console.log('Определили наименование комнаты = ', this.room_title);
+            // console.log('Определили наименование комнаты = ', this.room_title);
 
             // Определяем point_title на основе id_point
             const sensorKeys = Object.keys(room.sensors);
@@ -74,8 +99,10 @@ export default {
                 console.log('Определили наименование датчика = ', this.point_title);
                 this.point_value = room.sensors[this.point_title];
                 console.log('Время последнего обновления датчика = ', room.time[this.point_title], ' . и текущее время - ', new Date().toLocaleTimeString());
-                this.time_periodUpdated = room.time[this.point_title]-new Date().toLocaleTimeString();
-                console.log('Определили значение датчика = ', this.point_value , 'и время обновления = ', this.time_periodUpdated);
+               
+                this.time_periodUpdated = this.getPeriodMinutes(room.time[this.point_title]);// Определяем время последненго обновления
+                this.getStateInfo(this.time_periodUpdated); // Задаем параметр визуализации состояния связи с устройством - stateInfo
+                // console.log('Определили значение датчика = ', this.point_value , 'и время обновления = ', this.time_periodUpdated);
             }
             break;
         }
@@ -83,12 +110,46 @@ export default {
 
     }
     // Возвращаем найденные значения
+    // this.reloadPage();
     return;
+    },
+    getPeriodMinutes(lastTime) {
+      const lastDate = new Date(lastTime);
+      const currentDate = new Date();
+      const timeDifferenceMinutes = Math.floor((currentDate - lastDate) / 60000); // разница в минутах
+
+      const timeDifference = currentDate - lastDate;
+      const seconds = Math.floor(timeDifference / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      console.log(`Прошло времени: ${hours} часов, ${minutes % 60} минут, ${seconds % 60} секунд`);
+
+      if (seconds > 20) {
+        this.flagReloadPage = true;
+        console.log(' flagReloadPage = true  Обновление страницы разрешено');
+      } else {
+        this.flagReloadPage = false;
+      }
+      // return {
+      //   hours: hours,
+      //   minutes: minutes % 60,
+      //   seconds: seconds % 60
+      // };
+      return timeDifferenceMinutes;
+    },
+    getStateInfo(time_period) {
+      if (time_period && time_period < 5) {
+        this.stateInfo = 2; // Недавно было выполнено обновление данных по этому датчику
+      } else if (time_period && time_period < 60) {
+        this.stateInfo = 1; // Данные о состоянии датчика получены в предалах 1 часа
+      } else {
+        this.stateInfo = 0; // Данные с датчика не обновляличь более 1 часа
+      }
     },
 
 
 
-    }
+  }
 }
 </script>
 
