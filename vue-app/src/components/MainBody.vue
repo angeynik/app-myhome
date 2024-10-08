@@ -14,9 +14,7 @@
               :point_value="point_value" 
               :state="stateInfo" 
               :control_stateSelected="controlState" 
-              :id_roomSelected="id" 
-              :id_pointSelected="id_point" 
-              @updateState="handleUpdateState"
+              @updateState="updateState"
               /> 
             </div>
 
@@ -94,14 +92,14 @@ export default {
         } 
         return;
       },
-      getConfigValues(id, id_point) {
+    getConfigValues(id, idPoint) {
     // Получаем объект Config из localStorage
     const config = JSON.parse(localStorage.getItem('commonConfig'));
     if (!config) {
       console.error('Не удалось получить конфигурацию commonСonfig из localStorage');
       return;
     } else {
-    console.log('Конфигурация "commonConfig" получена из localStorage успешно');
+    // console.log('Конфигурация "commonConfig" получена из localStorage успешно');
 
     // Ищем объект с соответствующим id
     for (const key in config) {
@@ -113,6 +111,9 @@ export default {
 
             // Определяем point_title на основе id_point
             const sensorKeys = Object.keys(room.sensors);
+            const id_point = this.checkIdPoint(idPoint, sensorKeys.length);
+            console.log('Выполнена проверка на соответсвие значения id_point диапазону из конфигурационного файла - ', id_point);
+
             if (id_point > 0 && id_point <= sensorKeys.length) {
                 this.point_title = sensorKeys[id_point - 1];
                 // console.log('Определили наименование датчика = ', this.point_title);
@@ -125,12 +126,22 @@ export default {
             }
             break;
         }
+        // this.reloadPage();
     }
 
     }
     // Возвращаем найденные значения
     // this.reloadPage();
     return;
+    },
+    checkIdPoint(idPoint, idPoint_length) {
+      if (idPoint > idPoint_length) {
+        return 1;
+      } if (idPoint < 1) {
+        return idPoint_length;
+      } else {
+        return idPoint;
+      }
     },
     getPeriodMinutes(lastTime) {
       const lastDate = new Date(lastTime);
@@ -166,7 +177,14 @@ export default {
       }
     },
 
-
+    updateState(newState) {
+      // const value = newState['incrementPoint'];
+      // console.log('Обновляем индекс датчика в компоненте MainBody. updateState: ', newState['incrementPoint']);
+      if (newState.incrementPoint !== undefined) this.id_point = this.id_point + newState['incrementPoint'];
+      if (newState.icrementRoom !== undefined) this.id = this.id + newState['icrementRoom'];
+      if (newState.controlState !== undefined) this.control_state = newState.control_state;
+      this.getConfigValues(this.id, this.id_point);
+    },
 
   }
 }

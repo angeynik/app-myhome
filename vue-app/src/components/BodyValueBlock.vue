@@ -11,8 +11,15 @@
         <span class="value">{{ point_value }} </span> <p class="valueSign">C</p>
       </div> -->
 
-    <div class="control" :class="borderColor" v-touch:swipe.left="swipeRight" v-touch:swipe.right="swipeRight">
-      <span class="value">{{ point_value }} </span> <p class="valueSign">C</p>
+    <div class="control" 
+    :class="borderColor"  
+    @dblclick="handleDbClick"
+    @touchstart="handleTouchStart"
+    @touchend="handleTouchEnd" 
+    @touchmove="handleTouchMove"
+    @updateState="updateState"
+    >
+      <span class="value">{{ value }} </span> <p class="valueSign">C</p>
     </div>
 
 
@@ -27,20 +34,29 @@ export default {
             //Переменные работы с контролом
             isHolding: false,
             holdTimer: null,
-
-            temperatures: [20, 21, 22, 23, 24],
-            rooms: ['Living Room', 'Bedroom', 'Kitchen'],
-            currentTempIndex: 0,
-            currentRoomIndex: 0,
+            isMobile: false,
+            buttonText: 'Состояние: Выключено',
+            startX: 0,
+            isTouching: false,
+            isSwipingX: false,
+            isSwipingY: false,
+            // icrementRoom: 0,
+            // incrementPoint: 0,
 
             //Переменные получаемые откопонента MainBody
-            id_room: this.id_roomSelected, // ID текущей комнаты
-            id_item: this.id_pointSelected, // ID текущего датчика
-            controlState: this.control_stateSelected, // Состояние управления для текущего параметра
+            // id_room: this.id_roomSelected || 0, // ID текущей комнаты
+            // id_item: this.id_pointSelected || 0, // ID текущего датчика
+            controlState: this.control_stateSelected || false, // Состояние управления для текущего параметра
+            value: this.point_value || 21, // Значение датчика
             // state: 0, // переменная отвечающая за визуализацию состояния связи с устройством в зависимости от времени последнего обновления 0 - нет связи, 1 - есть связь 2 - есть связь, установлена не давно
         }
     },
-    props: {   // Переменные полученные в компонент
+    created() {
+        this.detectDevice(); // Проверка на мобильное устройство
+        this.debouncedCalculateItem = this.debounce(this.calculateItem, 1000);
+        this.debouncedCalculateRoom = this.debounce(this.calculateRoom, 1000);
+    },
+  props: {   // Переменные полученные в компонент
     state: Number,
     id_pointSelected: Number,
     id_roomSelected: Number,
@@ -60,57 +76,97 @@ export default {
     },
   },
   methods: {
-    // swipeLeft() {
-    //   this.$emit('updateState', { id_item: this.id_item - 1 });
-    //   console.log('Swiped left, new item ID:', this.id_item - 1);
-    // },
-    swipeRight() {
-        console.log('Swiped right, new item ID:');
-      this.$emit('updateState', { id_item: this.id_item + 1 });
-      this.$emit('updateState', { point_value: this.point_value + 1 });
-      console.log('Swiped right, new item ID:', this.id_item + 1);
+    detectDevice() {
+      // Проверка на мобильное устройство
+      this.isMobile = /Mobi|Android/i.test(navigator.userAgent);
+      console.log('Используем мобильное устройство: ', this.isMobile);
     },
-    // swipeUp() {
-    //   this.$emit('updateState', { id_room: this.id_room + 1 });
-    //   console.log('Swiped up, new room ID:', this.id_room + 1);
-    // },
-    // swipeDown() {
-    //   this.$emit('updateState', { id_room: this.id_room - 1 });
-    //   console.log('Swiped down, new room ID:', this.id_room - 1);
-    // },
-    // startHold() {
-    //   this.holdTimer = setTimeout(() => {
-    //     this.isHolding = !this.control_state;
-    //     this.$emit('updateState', { control_state: this.isHolding });
-    //     alert(Control state changed to: ${this.isHolding ? 'Enabled' : 'Disabled'});
-    //     console.log('Control state changed:', this.isHolding);
-    //   }, 2000);
-    // },
-    // endHold() {
-    //   clearTimeout(this.holdTimer);
-    //   this.isHolding = false;
-    // },
+    debounce(func, wait) {
+      let timeout;
+      return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+      };
+    },
+    // Работа с мышью
+    handleDbClick() {
+      this.changeControlState();
+    },
+
+    // Работа с тачем
+    handleTouchStart(event) {
+      this.startX = event.touches[0].clientX;
+      this.startY = event.touches[0].clientY;
+      this.isTouching = true;
+    },
+    handleTouchEnd() {
+      const currentTime = new Date().getTime();
+      const tapLength = currentTime - this.lastTouchTime;
+      // Проверяем, было ли предыдущее касание в пределах 400 мс
+      if (tapLength < 400 && tapLength > 0) {
+        this.changeControlState();
+      }
+      this.lastTouchTime = currentTime;
+    },
+    handleTouchMove(event) {
+      const touch = event.touches[0];
+      const deltaX = touch.clientX - this.startX;
+      const deltaY = touch.clientY - this.startY;
+      console.log('ДельтаX:', deltaX, 'ДельтаY:', deltaY, 'isSwipingX:', this.isSwipingX, 'isSwipingY:', this.isSwipingY);
+
+      if (Math.abs(deltaX) > Math.abs(deltaY) && this.isTouching) {
+        this.isSwipingX = true;
+      } else if (Math.abs(deltaY) > Math.abs(deltaX) && this.isTouching) {
+        this.isSwipingY = true;
+      }
+      if (!this.isSwipingX && deltaX < 50 && deltaX > -50) {
+        // console.log('Недостаточное смещение контролла');
+      } else {
+        this.debouncedCalculateItem(deltaX);
+        // console.log('Выполнено обновление индекса датчика');
+      }
+      if (!this.isSwipingY && deltaY < 50 && deltaY > -50) {
+        // console.log('Недостаточное смещение контролла');
+      } else {
+        this.debouncedCalculateRoom(deltaY);
+        // console.log('Выполнено обновление индекса комнаты');
+      }
+
+    },
+
+    // Выполнение операций с переменными
+    changeControlState() {
+      this.controlState = !this.controlState;
+      this.value += 0.75; // Обновляем значение value
+      this.$emit('updateState', { controlState: this.controlState, value: this.value });
+      this.buttonText = this.controlState ? 'Состояние: Включено' : 'Состояние: Выключено';
+      console.log('Текущее состояние controlState:', this.controlState);
+    },
+    calculateItem(value) {
+      this.isTouching = false;
+      if (value > 20) {
+        this.$emit('updateState', { incrementPoint: 1 });
+        console.log('Увеличили incrementPoint:', this.incrementPoint);
+      } else if (value < -20) {
+        this.$emit('updateState', { incrementPoint: -1 });
+        console.log('Уменьшили incrementPoint:', this.incrementPoint);
+      }
+    },
+
+    calculateRoom(value) {
+      if (value > 20) {
+        this.$emit('updateState', { icrementRoom: 1 });
+        console.log('Увеличили icrementRoom:', this.icrementRoom);
+      } else if (value < -20) {
+        this.$emit('updateState', { icrementRoom: -1 });
+        console.log('Уменьшили icrementRoom:', this.icrementRoom);
+      }
+    },
 
 
+  },
 
-    // toggleTempControl() {
-    //   // Логика включения/выключения функции TempControl
-    // },
-    // nextItem() {
-    //   this.currentTempIndex = (this.currentTempIndex + 1) % this.temperatures.length;
-    // },
-    // prevItem() {
-    //   this.currentTempIndex = (this.currentTempIndex - 1 + this.temperatures.length) % this.temperatures.length;
-    // },
-    // nextRoom() {
-    //   this.currentRoomIndex = (this.currentRoomIndex + 1) % this.rooms.length;
-    //   // Логика обновления температуры для новой комнаты
-    // },
-    // prevRoom() {
-    //   this.currentRoomIndex = (this.currentRoomIndex - 1 + this.rooms.length) % this.rooms.length;
-    //   // Логика обновления температуры для новой комнаты
-    // },
-},
 
 }
 </script>
