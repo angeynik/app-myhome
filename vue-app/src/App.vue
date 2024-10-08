@@ -1,31 +1,29 @@
 <template>
   <div class="app">
-      <div class="body_l0">
-        <MainManu />
-      </div>
-
-      <div class="body_l1"> 
             <div class="mainHeader">
               <MainHeader :location="location_title"/>
             </div>
             <div id="app_mainBody" class="mainBody">
-              <MainBody :id_title="id_title" />
+              <MainBody :id_item="id_title" />
             </div>
-      </div>
-
+            <!-- <div class="mainFooter"> 
+              <MainFooter />
+            </div> -->
   </div>
 </template>
 
 <script>
-import MainManu from './components/MainManu.vue';
+// import MainManu from './components/MainManu.vue';
 import MainBody from './components/MainBody.vue';
 import MainHeader from './components/MainHeader.vue';
+// import MainFooter from './components/MainFooter.vue';
 export default {
   name: 'App',
   components: {
-    MainManu,
+    // MainManu,
     MainBody,
-    MainHeader
+    MainHeader,
+    // MainFooter
   },
   data() {
     return {

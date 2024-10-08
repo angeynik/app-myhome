@@ -1,15 +1,33 @@
 <template>
   <div class="container">
-        <h3> {{ id_title }}</h3>
+      <!-- <div style="padding-top: 8vh;"></div> -->
+      <div class="roomTitle">
+        <h1> {{ room_title }}</h1>
+      </div>
+      <div class="pointTitle">
+        <h3> {{ point_title }}</h3>
+      </div>
+        <!-- <h3> {{ id_item }}</h3> -->
         <!-- <h1> B O D Y </h1>  -->
-            <div id="app_valueblock"> <BodyValueBlock :title="point_value" :state="stateInfo"  /> </div>
-            <div> room_title - {{ room_title }}</div>
-            <div> point_title - {{ point_title }}</div>
+            <div id="app_valueblock">
+              <BodyValueBlock 
+              :point_value="point_value" 
+              :state="stateInfo" 
+              :control_stateSelected="controlState" 
+              :id_roomSelected="id" 
+              :id_pointSelected="id_point" 
+              @updateState="handleUpdateState"
+              /> 
+            </div>
+
+            <!-- <div> room_title - {{ room_title }}</div>
+            <div> point_title - {{ point_title }}</div> -->
             <div> point_value - {{ point_value }}</div>
-            <div> Setpoint - {{ setpoint }}</div>
-            <div> Time period updated - {{ time_periodUpdated }}</div>
-    
+            <!-- <div> Setpoint - {{ setpoint }}</div> -->
+   
     <div> <BodySetpontBlock /> </div>
+    <div class="time_periodUpdated"> Время с последнего обновления, минут - {{ time_periodUpdated }}</div>
+
   </div>
 </template>
 
@@ -24,12 +42,13 @@ export default {
   },
   data() {
     return {
-      id: this.id_title,
-      id_point: 1,
-      room_title: '',
-      point_title: '',
-      point_value: 0,
-      setpoint: 0,
+      id: this.id_item, // ID текущей комнаты
+      id_point: 1, // ID текущего датчика
+      room_title: '', //Наименование текущей комнаты
+      point_title: '', //Наименование текущего датчика
+      point_value: 0, //Значение текущего датчика
+      setpoint: 0, // Значение уставки
+      controlState: false, // Состояние управления для текущего параметра
       time_periodUpdated: 0,
       stateInfo: 0, // переменная отвечающая за визуализацию состояния связи с устройством в зависимости от времени последнего обновления 0 - нет связи, 1 - есть связь 2 - есть связь, установлена не давно
     
@@ -51,7 +70,7 @@ export default {
       },
     },
     props: {
-    id_title: Number
+    id_item: Number,
     },
     watch: {
       // Отслеживание изменений данных
@@ -90,15 +109,15 @@ export default {
           // console.log('Найдена комната с запрашиваемым ID:', key);
             const room = config[key];
             this.room_title = room.title;
-            // console.log('Определили наименование комнаты = ', this.room_title);
+            console.log('Определили наименование комнаты = ', this.room_title);
 
             // Определяем point_title на основе id_point
             const sensorKeys = Object.keys(room.sensors);
             if (id_point > 0 && id_point <= sensorKeys.length) {
                 this.point_title = sensorKeys[id_point - 1];
-                console.log('Определили наименование датчика = ', this.point_title);
-                this.point_value = room.sensors[this.point_title];
-                console.log('Время последнего обновления датчика = ', room.time[this.point_title], ' . и текущее время - ', new Date().toLocaleTimeString());
+                // console.log('Определили наименование датчика = ', this.point_title);
+                this.point_value = room.sensors[this.point_title] || 43.2; //Если датчик не найден, то возвращаем значение по умолчанию
+                // console.log('Время последнего обновления датчика = ', room.time[this.point_title], ' . и текущее время - ', new Date().toLocaleTimeString());
                
                 this.time_periodUpdated = this.getPeriodMinutes(room.time[this.point_title]);// Определяем время последненго обновления
                 this.getStateInfo(this.time_periodUpdated); // Задаем параметр визуализации состояния связи с устройством - stateInfo
@@ -153,6 +172,16 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
+  .roomTitle {
+    text-align: center;
+    height: 6vh;
+    margin-top: 4vh;
+  }
+  .pointTitle {
+    text-align: center;
+    height: 2vh;
+    margin-bottom: 6vh;
+  }
 
 </style>

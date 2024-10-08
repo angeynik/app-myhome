@@ -1,6 +1,6 @@
 import { createApp } from 'vue';
 import App from './App.vue';
-import VueTouch from 'vue-touch';
+import VueTouch from 'vue2-touch-events';
 
 const app = createApp(App);
 

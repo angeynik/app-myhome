@@ -15,9 +15,5 @@ export default {
 </script>
 
 <style>
-.swipe {
-  width: 300px;
-  height: 200px;
-  background-color: saddlebrown;
-}
+
 </style>
