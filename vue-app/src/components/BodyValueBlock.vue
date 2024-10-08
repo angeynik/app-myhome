@@ -19,7 +19,7 @@
     @touchmove="handleTouchMove"
     @updateState="updateState"
     >
-      <span class="value">{{ value }} </span> <p class="valueSign">C</p>
+      <span class="value">{{ point_value }} </span> <p class="valueSign">C</p>
     </div>
 
 
@@ -40,14 +40,8 @@ export default {
             isTouching: false,
             isSwipingX: false,
             isSwipingY: false,
-            // icrementRoom: 0,
-            // incrementPoint: 0,
-
-            //Переменные получаемые откопонента MainBody
-            // id_room: this.id_roomSelected || 0, // ID текущей комнаты
-            // id_item: this.id_pointSelected || 0, // ID текущего датчика
             controlState: this.control_stateSelected || false, // Состояние управления для текущего параметра
-            value: this.point_value || 21, // Значение датчика
+
             // state: 0, // переменная отвечающая за визуализацию состояния связи с устройством в зависимости от времени последнего обновления 0 - нет связи, 1 - есть связь 2 - есть связь, установлена не давно
         }
     },
@@ -58,10 +52,8 @@ export default {
     },
   props: {   // Переменные полученные в компонент
     state: Number,
-    id_pointSelected: Number,
-    id_roomSelected: Number,
     control_stateSelecte: Boolean,
-    point_value: Number,
+    point_value: Number
   },
   computed: {
     // title() {

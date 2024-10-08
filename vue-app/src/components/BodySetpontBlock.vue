@@ -1,6 +1,18 @@
 <template>
-  <div class="swipe" v-touch:swipe="onSwipe">
-    Проведите по этому блоку
+  <div class="setpointSwipe" v-touch:swipe="onSwipe">
+    <div>
+      <h2> {{ lowLimit }} </h2>
+    </div>
+    <div
+    @touchstart="handleTouchStart"
+    @touchend="handleTouchEnd" 
+    @touchmove="handleTouchMove"
+    >
+      <h1> {{ setPoint }} </h1>
+    </div>
+    <div>
+      <h2> {{ highLimit }} </h2>
+    </div>
   </div>
 </template>
 
@@ -10,7 +22,12 @@ export default {
     onSwipe(event) {
       console.log('Свайп!', event);
     }
-}
+},
+props: {
+    setPoint: Number,
+    lowLimit: Number,
+    highLimit: Number
+    },
 }
 </script>
 

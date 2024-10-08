@@ -23,7 +23,11 @@
             <div> point_value - {{ point_value }}</div>
             <!-- <div> Setpoint - {{ setpoint }}</div> -->
    
-    <div> <BodySetpontBlock /> </div>
+    <div> <BodySetpontBlock 
+      :setPoint="setpoint" 
+      :highLimit="highLimit" 
+      :lowLimit="lowLimit"
+      /> </div>
     <div class="time_periodUpdated"> Время с последнего обновления, минут - {{ time_periodUpdated }}</div>
 
   </div>
@@ -45,10 +49,15 @@ export default {
       room_title: '', //Наименование текущей комнаты
       point_title: '', //Наименование текущего датчика
       point_value: 0, //Значение текущего датчика
-      setpoint: 0, // Значение уставки
-      controlState: false, // Состояние управления для текущего параметра
+
+      lowLimit: 8, //Нижняя граница уставки
+      highLimit: 32, //Верхняя граница уставки
+      setpoint: 23, // Значение уставки
+
+      controlState: false, // Параметр позволяет пользователю Включать / Отключать контроль параметра
       time_periodUpdated: 0,
-      stateInfo: 0, // переменная отвечающая за визуализацию состояния связи с устройством в зависимости от времени последнего обновления 0 - нет связи, 1 - есть связь 2 - есть связь, установлена не давно
+      stateInfo: 0, // переменная отвечающая за визуализацию состояния связи с устройством в зависимости от времени последнего обновления
+      //0 - не активно 9 - нет связи, 1 - есть связь 2 - есть связь, обнавлена не давно
     
       // Дополнительные (служебные) параметры
       setUpdateTime: 1000, // время перезапуска обновления данных в секундах
@@ -117,7 +126,7 @@ export default {
             if (id_point > 0 && id_point <= sensorKeys.length) {
                 this.point_title = sensorKeys[id_point - 1];
                 // console.log('Определили наименование датчика = ', this.point_title);
-                this.point_value = room.sensors[this.point_title] || 43.2; //Если датчик не найден, то возвращаем значение по умолчанию
+                this.point_value = room.sensors[this.point_title] || 99 ; //Если датчик не найден, то возвращаем значение по умолчанию
                 // console.log('Время последнего обновления датчика = ', room.time[this.point_title], ' . и текущее время - ', new Date().toLocaleTimeString());
                
                 this.time_periodUpdated = this.getPeriodMinutes(room.time[this.point_title]);// Определяем время последненго обновления
