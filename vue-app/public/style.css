@@ -12,6 +12,11 @@
   --sensorControl: #E0DFE7;
   --sensorControl_selected: #a6a2be;
   --sensorControl_disabled: #606060;
+
+  --sensor-green: #cfeecf;
+  --sensor-yellow: #ffe5cc;
+  --sensor-red: #fdbbb2;
+  --sensor-gray: #b7b7b7;
 }
 .html {
   font-size: 18px; /* Теперь 1rem = 18px */
@@ -166,4 +171,38 @@ body {
   fill: var(--violet);
   stroke: var(--background_color);
   stroke-width: 1vh;
+}
+
+/* SVG Котроллы */
+.control {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+.sensorControl {
+  width: 72vw;
+  height: 72vw;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.sensorControl:hover {
+  stroke: var(--green);
+  stroke-width: 1vh;
+}
+.value {
+  position: absolute; 
+  top: 50%; 
+  left: 50%; 
+  transform: translate(-50%, -50%);
+  font-size: 30vw;
+  font-weight: 600;
+  letter-spacing: 2vw;
+  text-transform: uppercase;
+  color: var(--header_color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }

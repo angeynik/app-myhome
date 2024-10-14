@@ -1,15 +1,5 @@
-<template>
+<!-- <template>
     <div class="container">
-      <!-- <div class="control"
-        :class="borderColor"
-        @click="toggleTempControl"
-        @swipeleft="swipeRight"
-        @swiperight="swipeRight"
-        @swipeup="nextRoom"
-        @swipedown="prevRoom"
-      >
-        <span class="value">{{ point_value }} </span> <p class="valueSign">C</p>
-      </div> -->
 
     <div class="control" 
     :class="borderColor"  
@@ -22,9 +12,47 @@
       <span class="value">{{ point_value }} </span> <p class="valueSign">C</p>
     </div>
 
+    </div>
+  </template> -->
 
+  <template>
+    <div class="container">
+      <svg style="position: absolute; width: 0; height: 0;">
+        <defs>
+          <linearGradient id="gradientStroke" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#1C1F27; stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#656F8A; stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <symbol id="sensorback" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg" >
+          <circle cx="320" cy="320" r="254" fill="var(--background_color)" />
+        </symbol>
+        <symbol id="sensorfront" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg" >
+          <circle cx="240" cy="240" r="180"/>
+        </symbol>
+
+      </svg>
+      <div class="control" 
+    @dblclick="handleDbClick"
+    @touchstart="handleTouchStart"
+    @touchend="handleTouchEnd" 
+    @touchmove="handleTouchMove"
+    @updateState="updateState"
+    >
+    <svg class="sensorControl">
+        <use href="#sensorback" :stroke="borderColor" stroke-width="30"></use>
+      </svg>
+      <svg class="sensorControl">
+        <use href="#sensorback" stroke="url(#gradientStroke)" stroke-width="18"></use>
+      </svg>
+      <svg class="sensorControl">
+        <use href="#sensorfront" :fill="borderColor" stroke="white" stroke-width="2"></use>
+      </svg>
+      <span class="value">{{ point_value }} </span> <p class="valueSign">C</p>
+    </div>
     </div>
   </template>
+
 
 <script>
 // import VueTouch from 'v-touch';
@@ -59,13 +87,21 @@ export default {
     // title() {
     //   return this.temperatures[this.currentTempIndex];
     // },
+    // borderColor() {
+    //   return {
+    //     'border-red': this.state === 0,
+    //     'border-yellow': this.state === 1,
+    //     'border-green': this.state === 2,
+    //   };
+    // },
     borderColor() {
-      return {
-        'border-red': this.state === 0,
-        'border-yellow': this.state === 1,
-        'border-green': this.state === 2,
-      };
+      if (this.state === 1) return 'var(--sensor-green)';
+      if (this.state === 2) return 'var(--sensor-yellow)';
+      if (this.state === 3) return 'var(--sensor-red)';
+      if (this.state === 4) return 'var(--sensor-gray)';
+      return 'var(--sensor-green)'; // Значение по умолчанию
     },
+
   },
   methods: {
     detectDevice() {
@@ -174,7 +210,7 @@ export default {
   /* background-color: aliceblue; */
   padding: 1%;
 }
-.control {
+.DDcontrol {
     position: relative; 
     width: 80vw; /* 80% ширины экрана */
     height: 80vw; /* 80% высоты экрана */
@@ -186,20 +222,7 @@ export default {
     justify-content: center; 
     align-items: center; 
 }
-.value {
-    position: absolute; 
-    top: 50%; 
-    left: 50%; 
-    transform: translate(-50%, -50%);
-    font-size: 30vw;
-    font-weight: 600;
-    letter-spacing: 2vw;
-    text-transform: uppercase;
-    color: var(--borderColor);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
+
 .valueSign {
     position: absolute; 
     top: 40%; 

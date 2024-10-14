@@ -23,7 +23,7 @@
             <div> point_value - {{ point_value }}</div>
             <!-- <div> Setpoint - {{ setpoint }}</div> -->
    
-    <div> <BodySetpontBlock 
+    <div id="app_setpointblock"> <BodySetpontBlock 
       :setPoint="setpoint" 
       :highLimit="highLimit" 
       :lowLimit="lowLimit"
@@ -56,7 +56,7 @@ export default {
 
       controlState: false, // Параметр позволяет пользователю Включать / Отключать контроль параметра
       time_periodUpdated: 0,
-      stateInfo: 0, // переменная отвечающая за визуализацию состояния связи с устройством в зависимости от времени последнего обновления
+      stateInfo: 2, // переменная отвечающая за визуализацию состояния связи с устройством в зависимости от времени последнего обновления
       //0 - не активно 9 - нет связи, 1 - есть связь 2 - есть связь, обнавлена не давно
     
       // Дополнительные (служебные) параметры
