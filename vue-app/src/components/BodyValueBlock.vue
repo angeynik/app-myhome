@@ -1,19 +1,4 @@
-<!-- <template>
-    <div class="container">
 
-    <div class="control" 
-    :class="borderColor"  
-    @dblclick="handleDbClick"
-    @touchstart="handleTouchStart"
-    @touchend="handleTouchEnd" 
-    @touchmove="handleTouchMove"
-    @updateState="updateState"
-    >
-      <span class="value">{{ point_value }} </span> <p class="valueSign">C</p>
-    </div>
-
-    </div>
-  </template> -->
 
   <template>
     <div class="container">
@@ -35,7 +20,7 @@
       <div class="control" 
     @dblclick="handleDbClick"
     @touchstart="handleTouchStart"
-    @touchend="handleTouchEnd" 
+    @touchend="handleTouchEnd(this.secectedComponent)" 
     @touchmove="handleTouchMove"
     @updateState="updateState"
     >
@@ -48,7 +33,8 @@
       <svg class="sensorControl">
         <use href="#sensorfront" :fill="borderColor" stroke="white" stroke-width="2"></use>
       </svg>
-      <span class="value">{{ point_value }} </span> <p class="valueSign">C</p>
+      <span class="value">{{ point_value }} </span> 
+      <!-- <span class="value">C</span> -->
     </div>
     </div>
   </template>
@@ -69,7 +55,8 @@ export default {
             isSwipingX: false,
             isSwipingY: false,
             controlState: this.control_stateSelected || false, // Состояние управления для текущего параметра
-
+            incrementPoint: 0,
+            icrementRoom: 0,
             // state: 0, // переменная отвечающая за визуализацию состояния связи с устройством в зависимости от времени последнего обновления 0 - нет связи, 1 - есть связь 2 - есть связь, установлена не давно
         }
     },
@@ -81,7 +68,8 @@ export default {
   props: {   // Переменные полученные в компонент
     state: Number,
     control_stateSelecte: Boolean,
-    point_value: Number
+    point_value: Number,
+    secectedComponent: String,
   },
   computed: {
     // title() {
@@ -128,7 +116,9 @@ export default {
       this.startY = event.touches[0].clientY;
       this.isTouching = true;
     },
-    handleTouchEnd() {
+    handleTouchEnd(component) {
+      if (component === 'valueBlock') {
+      console.log('Разрешаем изменять значение для Компонента valueBlock');
       const currentTime = new Date().getTime();
       const tapLength = currentTime - this.lastTouchTime;
       // Проверяем, было ли предыдущее касание в пределах 400 мс
@@ -136,12 +126,16 @@ export default {
         this.changeControlState();
       }
       this.lastTouchTime = currentTime;
+      return;
+    } else {
+      return;
+    }
     },
     handleTouchMove(event) {
       const touch = event.touches[0];
       const deltaX = touch.clientX - this.startX;
       const deltaY = touch.clientY - this.startY;
-      console.log('ДельтаX:', deltaX, 'ДельтаY:', deltaY, 'isSwipingX:', this.isSwipingX, 'isSwipingY:', this.isSwipingY);
+      // console.log('ДельтаX:', deltaX, 'ДельтаY:', deltaY, 'isSwipingX:', this.isSwipingX, 'isSwipingY:', this.isSwipingY);
 
       if (Math.abs(deltaX) > Math.abs(deltaY) && this.isTouching) {
         this.isSwipingX = true;
@@ -149,10 +143,10 @@ export default {
         this.isSwipingY = true;
       }
       if (!this.isSwipingX && deltaX < 50 && deltaX > -50) {
-        // console.log('Недостаточное смещение контролла');
+        console.log('Недостаточное смещение контролла');
       } else {
         this.debouncedCalculateItem(deltaX);
-        // console.log('Выполнено обновление индекса датчика');
+        console.log('Выполнено обновление индекса датчика');
       }
       if (!this.isSwipingY && deltaY < 50 && deltaY > -50) {
         // console.log('Недостаточное смещение контролла');
@@ -173,82 +167,35 @@ export default {
     },
     calculateItem(value) {
       this.isTouching = false;
-      if (value > 20) {
-        this.$emit('updateState', { incrementPoint: 1 });
+      if (value > 15) {
+        this.incrementPoint = 1;
+        this.$emit('updateState', { incrementPoint: this.incrementPoint });
         console.log('Увеличили incrementPoint:', this.incrementPoint);
       } else if (value < -20) {
-        this.$emit('updateState', { incrementPoint: -1 });
+        this.incrementPoint = -1;
+        this.$emit('updateState', { incrementPoint: this.incrementPoint });
         console.log('Уменьшили incrementPoint:', this.incrementPoint);
       }
     },
 
     calculateRoom(value) {
-      if (value > 20) {
-        this.$emit('updateState', { icrementRoom: 1 });
+      if (value > 15) {
+        this.icrementRoom = 1;
+        this.$emit('updateState', { icrementRoom: this.icrementRoom });
         console.log('Увеличили icrementRoom:', this.icrementRoom);
-      } else if (value < -20) {
-        this.$emit('updateState', { icrementRoom: -1 });
+      } else if (value < -15) {
+        this.icrementRoom = -1;
+        this.$emit('updateState', { icrementRoom: this.icrementRoom });
         console.log('Уменьшили icrementRoom:', this.icrementRoom);
       }
     },
-
-
   },
-
-
 }
 </script>
 
 <style scoped>
-.container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  min-width: 100%;
-  min-height: 100%;
-  /* background-color: aliceblue; */
-  padding: 1%;
-}
-.DDcontrol {
-    position: relative; 
-    width: 80vw; /* 80% ширины экрана */
-    height: 80vw; /* 80% высоты экрана */
-    background-color: var(--sensorControl);
-    color: var(--dark_font);
-    border: var(--borderColor);
-    border-radius: 50%; /* Создание круга */
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-}
-
-.valueSign {
-    position: absolute; 
-    top: 40%; 
-    left: 80%; 
-    transform: translate(-50%, -50%);
-    font-size: 14vw;
-    font-weight: 600;
-    color: var(--borderColor);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
 .temp-value {
   position: absolute;
   font-size: 4em;
-}
-
-.border-red {
-  border: 3vw solid rgb(226, 30, 30);
-}
-
-.border-yellow {
-  border: 3vw solid rgb(239, 143, 9);
-}
-
-.border-green {
-  border: 2vw solid rgb(27, 176, 27);
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  
+
   <div class="setpointSwipe" v-touch:swipe="onSwipe">
     <svg display="none">
       <symbol id="iconTelegram" viewBox="0 0 24 24">
@@ -38,13 +38,11 @@
     <svg class="icon">
       <use href="#setpointSelector"></use>
     </svg>
-    <div style="background-image: url(../public/img/bodySetpoint_selector.svg);">
-
-    </div>
     <div>
       <h2> {{ highLimit }} </h2>
     </div>
   </div>
+
 </template>
 
 <script>
@@ -52,12 +50,27 @@ export default {
     methods: {
     onSwipe(event) {
       console.log('Свайп!', event);
-    }
+    },
+    handleTouchStart(event) {
+      this.startX = event.touches[0].clientX;
+      this.startY = event.touches[0].clientY;
+      this.isTouching = true;
+    },
+    handleTouchEnd() {
+      const currentTime = new Date().getTime();
+      const tapLength = currentTime - this.lastTouchTime;
+      // Проверяем, было ли предыдущее касание в пределах 400 мс
+      if (tapLength < 400 && tapLength > 0) {
+        this.changeControlState();
+      }
+      this.lastTouchTime = currentTime;
+    },
 },
 props: {
     setPoint: Number,
     lowLimit: Number,
-    highLimit: Number
+    highLimit: Number,
+    secectedComponent: String,
     },
 }
 </script>

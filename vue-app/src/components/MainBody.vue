@@ -1,35 +1,40 @@
 <template>
-  <div class="container">
+  <div class="container" @touchstart="event => defineTouchComponent(event, 'start')">
       <!-- <div style="padding-top: 8vh;"></div> -->
+    <div>
       <div class="roomTitle">
         <h1> {{ room_title }}</h1>
       </div>
       <div class="pointTitle">
         <h3> {{ point_title }}</h3>
       </div>
+    </div>
         <!-- <h3> {{ id_item }}</h3> -->
         <!-- <h1> B O D Y </h1>  -->
-            <div id="app_valueblock">
+            <div id="app_valueblock" ref="valueBlock" >
               <BodyValueBlock 
               :point_value="point_value" 
               :state="stateInfo" 
               :control_stateSelected="controlState" 
+              :secectedComponent="selectedComponent"
               @updateState="updateState"
               /> 
             </div>
 
             <!-- <div> room_title - {{ room_title }}</div>
-            <div> point_title - {{ point_title }}</div> -->
+            <div> point_title - {{ point_title }}</div>
             <div> point_value - {{ point_value }}</div>
-            <!-- <div> Setpoint - {{ setpoint }}</div> -->
-   
-    <div id="app_setpointblock"> <BodySetpontBlock 
-      :setPoint="setpoint" 
-      :highLimit="highLimit" 
-      :lowLimit="lowLimit"
-      /> </div>
-    <div class="time_periodUpdated"> Время с последнего обновления, минут - {{ time_periodUpdated }}</div>
-
+            <div> Setpoint - {{ setpoint }}</div> -->
+    <div style="align-self: flex-end;">
+      <div id="app_setpointblock" ref="setpointBlock"> 
+        <BodySetpontBlock 
+        :setPoint="setpoint" 
+        :highLimit="highLimit" 
+        :lowLimit="lowLimit"
+        :secectedComponent="selectedComponent"
+        /> </div>
+      <div class="time_periodUpdated"> Время с последнего обновления, минут - {{ time_periodUpdated }}</div>
+    </div>
   </div>
 </template>
 
@@ -44,7 +49,7 @@ export default {
   },
   data() {
     return {
-      id: this.id_item, // ID текущей комнаты
+      id: 1, // ID текущей комнаты
       id_point: 1, // ID текущего датчика
       room_title: '', //Наименование текущей комнаты
       point_title: '', //Наименование текущего датчика
@@ -62,6 +67,8 @@ export default {
       // Дополнительные (служебные) параметры
       setUpdateTime: 1000, // время перезапуска обновления данных в секундах
       flagReloadPage: false, // флаг перезагрузки страницы
+      secectedComponent: null, // выбранный Пользователем компонент (тачем)
+      
       };
     },
     computed: {
@@ -81,9 +88,10 @@ export default {
     },
     watch: {
       // Отслеживание изменений данных
-      id() {this.getConfigValues(this.id, this.id_point);},
+      // id() {this.getConfigValues(this.id, this.id_point);},
     },
     mounted() {
+      this.id = this.id_item;
       this.getConfigValues(this.id, this.id_point);
     },
     beforeUnmount() {
@@ -92,8 +100,8 @@ export default {
       reloadPage() {
         // Перезагрузка страницы
         if (this.flagReloadPage === true) {
-        console.log('reloadPage    Обновление страницы разрешено flagReloadPage -', this.flagReloadPage);
-        console.log('reloadPage    Запрос на обновление сформирован LocalStorage - flag_commonConfigUpdated: ', localStorage.getItem('flag_commonConfigUpdated'));
+        // console.log('reloadPage    Обновление страницы разрешено flagReloadPage -', this.flagReloadPage);
+        // console.log('reloadPage    Запрос на обновление сформирован LocalStorage - flag_commonConfigUpdated: ', localStorage.getItem('flag_commonConfigUpdated'));
         window.location.reload();
         this.flagReloadPage = false;
         } else {
@@ -114,24 +122,31 @@ export default {
     for (const key in config) {
         if (config[key].id === id) {
           // console.log('Найдена комната с запрашиваемым ID:', key);
+            const roomKeys = Object.keys(config);
+            // console.log('roomKey = ', roomKey);
+            const check_id_room = this.checkId(id, roomKeys.length);
+            this.id = check_id_room;
+
             const room = config[key];
             this.room_title = room.title;
-            console.log('Определили наименование комнаты = ', this.room_title);
+            // console.log('Определили наименование комнаты = ', this.room_title);
 
             // Определяем point_title на основе id_point
             const sensorKeys = Object.keys(room.sensors);
-            const id_point = this.checkIdPoint(idPoint, sensorKeys.length);
-            console.log('Выполнена проверка на соответсвие значения id_point диапазону из конфигурационного файла - ', id_point);
+            // console.log('sensorKeys = ', sensorKeys);
+            const id_point = this.checkId(idPoint, sensorKeys.length);
+            this.id_point = id_point;
+            // console.log('Выполнена проверка на соответсвие значения id_point диапазону из конфигурационного файла - ', id_point);
 
             if (id_point > 0 && id_point <= sensorKeys.length) {
                 this.point_title = sensorKeys[id_point - 1];
-                // console.log('Определили наименование датчика = ', this.point_title);
+                console.log('Определили наименование датчика = ', this.point_title);
                 this.point_value = room.sensors[this.point_title] || 99 ; //Если датчик не найден, то возвращаем значение по умолчанию
                 // console.log('Время последнего обновления датчика = ', room.time[this.point_title], ' . и текущее время - ', new Date().toLocaleTimeString());
                
                 this.time_periodUpdated = this.getPeriodMinutes(room.time[this.point_title]);// Определяем время последненго обновления
                 this.getStateInfo(this.time_periodUpdated); // Задаем параметр визуализации состояния связи с устройством - stateInfo
-                // console.log('Определили значение датчика = ', this.point_value , 'и время обновления = ', this.time_periodUpdated);
+                console.log('Определили значение датчика = ', this.point_value , 'и время обновления = ', this.time_periodUpdated);
             }
             break;
         }
@@ -143,13 +158,15 @@ export default {
     // this.reloadPage();
     return;
     },
-    checkIdPoint(idPoint, idPoint_length) {
-      if (idPoint > idPoint_length) {
+    checkId(Point, Point_length) {
+      if (Point > Point_length) {
+        console.log('Переходим в начало списка');
         return 1;
-      } if (idPoint < 1) {
-        return idPoint_length;
+      } if (Point < 1) {
+        console.log('Переходим в конец списка');
+        return Point_length;
       } else {
-        return idPoint;
+        return Point;
       }
     },
     getPeriodMinutes(lastTime) {
@@ -159,9 +176,9 @@ export default {
 
       const timeDifference = currentDate - lastDate;
       const seconds = Math.floor(timeDifference / 1000);
-      const minutes = Math.floor(seconds / 60);
-      const hours = Math.floor(minutes / 60);
-      console.log(`Прошло времени: ${hours} часов, ${minutes % 60} минут, ${seconds % 60} секунд`);
+      // const minutes = Math.floor(seconds / 60);
+      // const hours = Math.floor(minutes / 60);
+      // console.log(`Прошло времени: ${hours} часов, ${minutes % 60} минут, ${seconds % 60} секунд`);
 
       if (seconds > 20) {
         this.flagReloadPage = true;
@@ -192,23 +209,91 @@ export default {
       if (newState.incrementPoint !== undefined) this.id_point = this.id_point + newState['incrementPoint'];
       if (newState.icrementRoom !== undefined) this.id = this.id + newState['icrementRoom'];
       if (newState.controlState !== undefined) this.control_state = newState.control_state;
+      console.log('Обновляем данные для текущей комнаты и датчика при помощи getConfigValues', this.id, this.id_point);
       this.getConfigValues(this.id, this.id_point);
     },
+    // defineTouchComponent(event, type) {
+    //   console.log('Приступили к обработке события', event);
+    //   const touch = event.touches[0];
+    //   const x = touch.clientX;
+    //   const y = touch.clientY;
+    //   console.log('Получены координаты x = ', x, 'y = ', y);
 
+    //   const valueBlock = this.$refs.valueBlock.getBoundingClientRect();
+    //   const setpointBlock = this.$refs.setpointBlock.getBoundingClientRect();
+
+    //   if (x >= valueBlock.left && x <= valueBlock.right && y >= valueBlock.top && y <= valueBlock.bottom) {
+    //     this.$refs.valueBlock.__vue__`handleTouch${type.charAt(0).toUpperCase() + type.slice(1)}`;
+    //   } else if (x >= setpointBlock.left && x <= setpointBlock.right && y >= setpointBlock.top && y <= setpointBlock.bottom) {
+    //     this.$refs.setpointBlock.__vue__`handleTouch${type.charAt(0).toUpperCase() + type.slice(1)}`;
+    //   }
+    // },
+    
+  //   defineTouchComponent(event, type) {
+  //   console.log('Приступили к обработке события', event);
+  //   const touch = event.touches[0];
+  //   const x = touch.clientX;
+  //   const y = touch.clientY;
+  //   console.log('Получены координаты x = ', x, 'и y = ', y);
+
+  //   const valueBlock = this.$refs.valueBlock;
+  //   const setpointBlock = this.$refs.setpointBlock;
+
+  //   if (valueBlock && setpointBlock) {
+  //     const valueBlockRect = valueBlock.getBoundingClientRect();
+  //     const setpointBlockRect = setpointBlock.getBoundingClientRect();
+
+  //     if (x >= valueBlockRect.left && x <= valueBlockRect.right && y >= valueBlockRect.top && y <= valueBlockRect.bottom) {
+  //       this.$refs.valueBlock.__vue__`handleTouch${type.charAt(0).toUpperCase() + type.slice(1)}`;
+  //     } else if (x >= setpointBlockRect.left && x <= setpointBlockRect.right && y >= setpointBlockRect.top && y <= setpointBlockRect.bottom) {
+  //       this.$refs.setpointBlock.__vue__`handleTouch${type.charAt(0).toUpperCase() + type.slice(1)}`;
+  //     }
+  //   } else {
+  //     console.error('Элементы valueBlock или setpointBlock не найдены');
+  //   }
+  // },
+  defineTouchComponent(event, type) {
+  if (!type) {
+    console.error('Параметр type не определен');
+    return;
   }
+  
+  // console.log('Приступили к обработке события', event);
+  const touch = event.touches[0];
+  const x = touch.clientX;
+  const y = touch.clientY;
+  // console.log('Получены координаты x = ', x, 'и y = ', y);
+
+  const valueBlock = this.$refs.valueBlock;
+  // console.log('valueBlock = ', valueBlock);
+  const setpointBlock = this.$refs.setpointBlock;
+  // console.log('setpointBlock = ', setpointBlock);
+
+  if (valueBlock && setpointBlock) {
+    const valueBlockRect = valueBlock.getBoundingClientRect();
+    const setpointBlockRect = setpointBlock.getBoundingClientRect();
+
+    if (x >= (valueBlockRect.left-200) && x <= (valueBlockRect.right+200) && y >= (valueBlockRect.right-200) && y >= (valueBlockRect.top-200) && y <= (valueBlockRect.bottom+200)) {
+      // this.$refs.valueBlock.__vue__`handleTouch${type.charAt(0).toUpperCase() + type.slice(1)}`;
+      this.selectedComponent = 'valueBlock';
+      // console.log('Выбран - valueBlockRect = ', valueBlockRect);
+      return;
+    } else if (x >= setpointBlockRect.left && x <= setpointBlockRect.right && y >= setpointBlockRect.top && y <= setpointBlockRect.bottom) {
+      // this.$refs.setpointBlock.__vue__`handleTouch${type.charAt(0).toUpperCase() + type.slice(1)}`;
+      // console.log('Выбран - setpointBlock = ', setpointBlock);
+      this.selectedComponent = 'setpointBlock';
+      return;
+    }
+  } else {
+    console.error('Элементы valueBlock или setpointBlock не найдены');
+  }
+
+},
+}
 }
 </script>
 
 <style scoped>
-  .roomTitle {
-    text-align: center;
-    height: 6vh;
-    margin-top: 4vh;
-  }
-  .pointTitle {
-    text-align: center;
-    height: 2vh;
-    margin-bottom: 6vh;
-  }
+
 
 </style>
