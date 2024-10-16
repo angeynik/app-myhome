@@ -102,11 +102,10 @@ export default {
       this.socket.onmessage = async (event) => {
         try {
           const jsomMess = await this.blobToJson(event.data); // Преобразуем Blob в JSON из полученного сообщения
-          console.log('Получено сообщение:', jsomMess);
+          // console.log('Получено сообщение:', jsomMess);
           this.messageFromServer = jsomMess;
           // this.CheckMessage(jsomMess);
-          const checkMess = this.CheckMessage(jsomMess);
-          console.log('Проверка сообщения: ', checkMess);
+          this.CheckMessage(jsomMess);
           
 
           // this.isSending = true;
@@ -208,10 +207,10 @@ switch (n.type) {
     }
   break;
   case 'get':
-    console.log(`Получено cообщение с типом Get: ${n}`);
+    // console.log(`Получено cообщение с типом Get: ${n}`);
   break;
     default:
-    console.log(`Получено cообщение с неизвестным типом`);
+    // console.log(`Получено cообщение с неизвестным типом`);
     this.sendLogToServer ('error', 'Получено cообщение с неизвестным типом');
     break;
     }
@@ -227,7 +226,7 @@ switch (n.type) {
     let payload;
     if (message) {
       payload = { type, message };
-      console.log ('Отправка на сервер лога: ', payload);
+      // console.log ('Отправка на сервер лога: ', payload);
     } else {
       payload = { type:'error', message: 'Ошибка отправки - Пустое сообщения'};
       console.log ('Ошибка отправки - Пустое сообщения' );

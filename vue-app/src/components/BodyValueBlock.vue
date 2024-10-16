@@ -33,8 +33,8 @@
       <svg class="sensorControl">
         <use href="#sensorfront" :fill="borderColor" stroke="white" stroke-width="2"></use>
       </svg>
-      <span class="value">{{ point_value }} </span> 
-      <!-- <span class="value">C</span> -->
+      <span class="value">{{ point_value }}  </span> 
+      <!-- <span class="value"> °C </span> -->
     </div>
     </div>
   </template>
@@ -61,7 +61,6 @@ export default {
         }
     },
     created() {
-        this.detectDevice(); // Проверка на мобильное устройство
         this.debouncedCalculateItem = this.debounce(this.calculateItem, 1000);
         this.debouncedCalculateRoom = this.debounce(this.calculateRoom, 1000);
     },
@@ -92,11 +91,6 @@ export default {
 
   },
   methods: {
-    detectDevice() {
-      // Проверка на мобильное устройство
-      this.isMobile = /Mobi|Android/i.test(navigator.userAgent);
-      console.log('Используем мобильное устройство: ', this.isMobile);
-    },
     debounce(func, wait) {
       let timeout;
       return function(...args) {
@@ -143,12 +137,12 @@ export default {
         this.isSwipingY = true;
       }
       if (!this.isSwipingX && deltaX < 50 && deltaX > -50) {
-        console.log('Недостаточное смещение контролла');
+        // console.log('Недостаточное смещение контролла');
       } else {
         this.debouncedCalculateItem(deltaX);
-        console.log('Выполнено обновление индекса датчика');
+        // console.log('Выполнено обновление индекса датчика');
       }
-      if (!this.isSwipingY && deltaY < 50 && deltaY > -50) {
+      if (!this.isSwipingY && deltaY < 150 && deltaY > -150) {
         // console.log('Недостаточное смещение контролла');
       } else {
         this.debouncedCalculateRoom(deltaY);
@@ -163,18 +157,18 @@ export default {
       this.value += 0.75; // Обновляем значение value
       this.$emit('updateState', { controlState: this.controlState, value: this.value });
       this.buttonText = this.controlState ? 'Состояние: Включено' : 'Состояние: Выключено';
-      console.log('Текущее состояние controlState:', this.controlState);
+      // console.log('Текущее состояние controlState:', this.controlState);
     },
     calculateItem(value) {
       this.isTouching = false;
       if (value > 15) {
         this.incrementPoint = 1;
         this.$emit('updateState', { incrementPoint: this.incrementPoint });
-        console.log('Увеличили incrementPoint:', this.incrementPoint);
+        // console.log('Увеличили incrementPoint:', this.incrementPoint);
       } else if (value < -20) {
         this.incrementPoint = -1;
         this.$emit('updateState', { incrementPoint: this.incrementPoint });
-        console.log('Уменьшили incrementPoint:', this.incrementPoint);
+        // console.log('Уменьшили incrementPoint:', this.incrementPoint);
       }
     },
 
@@ -182,11 +176,11 @@ export default {
       if (value > 15) {
         this.icrementRoom = 1;
         this.$emit('updateState', { icrementRoom: this.icrementRoom });
-        console.log('Увеличили icrementRoom:', this.icrementRoom);
+        // console.log('Увеличили icrementRoom:', this.icrementRoom);
       } else if (value < -15) {
         this.icrementRoom = -1;
         this.$emit('updateState', { icrementRoom: this.icrementRoom });
-        console.log('Уменьшили icrementRoom:', this.icrementRoom);
+        // console.log('Уменьшили icrementRoom:', this.icrementRoom);
       }
     },
   },

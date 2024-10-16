@@ -6,7 +6,7 @@
         <h1> {{ room_title }}</h1>
       </div>
       <div class="pointTitle">
-        <h3> {{ point_title }}</h3>
+        <h3> {{ point_title }}, °C </h3>
       </div>
     </div>
         <!-- <h3> {{ id_item }}</h3> -->
@@ -26,12 +26,13 @@
             <div> point_value - {{ point_value }}</div>
             <div> Setpoint - {{ setpoint }}</div> -->
     <div style="align-self: flex-end;">
-      <div id="app_setpointblock" ref="setpointBlock"> 
+      <div style="width: 100vw;" id="app_setpointblock" ref="setpointBlock"> 
         <BodySetpontBlock 
         :setPoint="setpoint" 
         :highLimit="highLimit" 
         :lowLimit="lowLimit"
         :secectedComponent="selectedComponent"
+        @updateState="updateState"
         /> </div>
       <div class="time_periodUpdated"> Время с последнего обновления, минут - {{ time_periodUpdated }}</div>
     </div>
@@ -57,7 +58,7 @@ export default {
 
       lowLimit: 8, //Нижняя граница уставки
       highLimit: 32, //Верхняя граница уставки
-      setpoint: 23, // Значение уставки
+      setpoint: 23.0, // Значение уставки
 
       controlState: false, // Параметр позволяет пользователю Включать / Отключать контроль параметра
       time_periodUpdated: 0,
@@ -93,6 +94,7 @@ export default {
     mounted() {
       this.id = this.id_item;
       this.getConfigValues(this.id, this.id_point);
+      this.detectDevice(); // Проверка на мобильное устройство
     },
     beforeUnmount() {
     },
@@ -110,6 +112,7 @@ export default {
         return;
       },
     getConfigValues(id, idPoint) {
+      // console.log('Входим в getConfigValues с параметрами:', id, idPoint);
     // Получаем объект Config из localStorage
     const config = JSON.parse(localStorage.getItem('commonConfig'));
     if (!config) {
@@ -118,14 +121,15 @@ export default {
     } else {
     // console.log('Конфигурация "commonConfig" получена из localStorage успешно');
 
+    const roomKeys = Object.keys(config);
+    // console.log('roomKeys.length = ', roomKeys.length);
+    id = this.checkId(id, roomKeys.length);
+    this.id = id;
+
     // Ищем объект с соответствующим id
     for (const key in config) {
         if (config[key].id === id) {
           // console.log('Найдена комната с запрашиваемым ID:', key);
-            const roomKeys = Object.keys(config);
-            // console.log('roomKey = ', roomKey);
-            const check_id_room = this.checkId(id, roomKeys.length);
-            this.id = check_id_room;
 
             const room = config[key];
             this.room_title = room.title;
@@ -140,13 +144,13 @@ export default {
 
             if (id_point > 0 && id_point <= sensorKeys.length) {
                 this.point_title = sensorKeys[id_point - 1];
-                console.log('Определили наименование датчика = ', this.point_title);
+                // console.log('Определили наименование датчика = ', this.point_title);
                 this.point_value = room.sensors[this.point_title] || 99 ; //Если датчик не найден, то возвращаем значение по умолчанию
                 // console.log('Время последнего обновления датчика = ', room.time[this.point_title], ' . и текущее время - ', new Date().toLocaleTimeString());
                
                 this.time_periodUpdated = this.getPeriodMinutes(room.time[this.point_title]);// Определяем время последненго обновления
                 this.getStateInfo(this.time_periodUpdated); // Задаем параметр визуализации состояния связи с устройством - stateInfo
-                console.log('Определили значение датчика = ', this.point_value , 'и время обновления = ', this.time_periodUpdated);
+                // console.log('Определили значение датчика = ', this.point_value , 'и время обновления = ', this.time_periodUpdated);
             }
             break;
         }
@@ -159,13 +163,15 @@ export default {
     return;
     },
     checkId(Point, Point_length) {
+      // console.log('checkId Начинаем проверку для ID', Point, ' ID_length = ', Point_length);
       if (Point > Point_length) {
-        console.log('Переходим в начало списка');
+        // console.log('Переходим в начало списка');
         return 1;
       } if (Point < 1) {
-        console.log('Переходим в конец списка');
+        // console.log('Переходим в конец списка');
         return Point_length;
       } else {
+        // console.log('ID в диапазоне возвращаем Point = ', Point);
         return Point;
       }
     },
@@ -182,7 +188,7 @@ export default {
 
       if (seconds > 20) {
         this.flagReloadPage = true;
-        console.log(' flagReloadPage = true  Обновление страницы разрешено');
+        // console.log(' flagReloadPage = true  Обновление страницы разрешено');
       } else {
         this.flagReloadPage = false;
       }
@@ -204,54 +210,19 @@ export default {
     },
 
     updateState(newState) {
+      console.log('В функцию updateState получено новое состояние', newState);
       // const value = newState['incrementPoint'];
       // console.log('Обновляем индекс датчика в компоненте MainBody. updateState: ', newState['incrementPoint']);
       if (newState.incrementPoint !== undefined) this.id_point = this.id_point + newState['incrementPoint'];
       if (newState.icrementRoom !== undefined) this.id = this.id + newState['icrementRoom'];
       if (newState.controlState !== undefined) this.control_state = newState.control_state;
-      console.log('Обновляем данные для текущей комнаты и датчика при помощи getConfigValues', this.id, this.id_point);
+      // console.log('Обновляем данные для текущей комнаты и датчика при помощи getConfigValues', this.id, this.id_point);
+      if (newState.newSetPoint !== undefined) this.setpoint = newState.newSetPoint;
+      // if (newState.newSetPoint !== undefined) this.setpoint = parseFloat(newState.newSetPoint).toFixed(2);
+      console.log('Обновляем значение Уставки - SetPoint', this.setpoint);
       this.getConfigValues(this.id, this.id_point);
     },
-    // defineTouchComponent(event, type) {
-    //   console.log('Приступили к обработке события', event);
-    //   const touch = event.touches[0];
-    //   const x = touch.clientX;
-    //   const y = touch.clientY;
-    //   console.log('Получены координаты x = ', x, 'y = ', y);
-
-    //   const valueBlock = this.$refs.valueBlock.getBoundingClientRect();
-    //   const setpointBlock = this.$refs.setpointBlock.getBoundingClientRect();
-
-    //   if (x >= valueBlock.left && x <= valueBlock.right && y >= valueBlock.top && y <= valueBlock.bottom) {
-    //     this.$refs.valueBlock.__vue__`handleTouch${type.charAt(0).toUpperCase() + type.slice(1)}`;
-    //   } else if (x >= setpointBlock.left && x <= setpointBlock.right && y >= setpointBlock.top && y <= setpointBlock.bottom) {
-    //     this.$refs.setpointBlock.__vue__`handleTouch${type.charAt(0).toUpperCase() + type.slice(1)}`;
-    //   }
-    // },
     
-  //   defineTouchComponent(event, type) {
-  //   console.log('Приступили к обработке события', event);
-  //   const touch = event.touches[0];
-  //   const x = touch.clientX;
-  //   const y = touch.clientY;
-  //   console.log('Получены координаты x = ', x, 'и y = ', y);
-
-  //   const valueBlock = this.$refs.valueBlock;
-  //   const setpointBlock = this.$refs.setpointBlock;
-
-  //   if (valueBlock && setpointBlock) {
-  //     const valueBlockRect = valueBlock.getBoundingClientRect();
-  //     const setpointBlockRect = setpointBlock.getBoundingClientRect();
-
-  //     if (x >= valueBlockRect.left && x <= valueBlockRect.right && y >= valueBlockRect.top && y <= valueBlockRect.bottom) {
-  //       this.$refs.valueBlock.__vue__`handleTouch${type.charAt(0).toUpperCase() + type.slice(1)}`;
-  //     } else if (x >= setpointBlockRect.left && x <= setpointBlockRect.right && y >= setpointBlockRect.top && y <= setpointBlockRect.bottom) {
-  //       this.$refs.setpointBlock.__vue__`handleTouch${type.charAt(0).toUpperCase() + type.slice(1)}`;
-  //     }
-  //   } else {
-  //     console.error('Элементы valueBlock или setpointBlock не найдены');
-  //   }
-  // },
   defineTouchComponent(event, type) {
   if (!type) {
     console.error('Параметр type не определен');
@@ -280,15 +251,22 @@ export default {
       return;
     } else if (x >= setpointBlockRect.left && x <= setpointBlockRect.right && y >= setpointBlockRect.top && y <= setpointBlockRect.bottom) {
       // this.$refs.setpointBlock.__vue__`handleTouch${type.charAt(0).toUpperCase() + type.slice(1)}`;
-      // console.log('Выбран - setpointBlock = ', setpointBlock);
+      // console.log('Выбран - setpointBlock = ', setpointBlockRect);
       this.selectedComponent = 'setpointBlock';
+      console.log('Сохранен - selectedComponent = ', this.selectedComponent);
       return;
     }
   } else {
     console.error('Элементы valueBlock или setpointBlock не найдены');
   }
 
-},
+  },
+  detectDevice() {
+      // Проверка на мобильное устройство
+      this.isMobile = /Mobi|Android/i.test(navigator.userAgent);
+      console.log('Используем мобильное устройство: ', this.isMobile);
+  },
+
 }
 }
 </script>

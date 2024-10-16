@@ -58,7 +58,7 @@ body {
  .app {
     display: flex;
     flex-direction: column;
-     min-width: 100vw;
+     width: 100vw;
      min-height: 100vh;
      font-family: 'Avenir', Helvetica, Arial, sans-serif;
      -webkit-font-smoothing: antialiased;
@@ -176,18 +176,23 @@ body {
 }
 
 /* SVG Иконки */
-.icon {
+.icon_big {
   fill: var(--light_font);
-  display: block;
-  width: 8vh;
-  height: 8vh;
+  /* display: block; */
+  width: 4vh;
+  height: 4vh;
 }
 .icon:hover {
   fill: var(--violet);
   stroke: var(--background_color);
   stroke-width: 1vh;
 }
-
+.icon_small {
+  fill: var(--light_font);
+  /* display: block; */
+  /* width: 2vh; */
+  height: 4vh;
+}
 /* SVG Котроллы */
 .control {
   position: relative;
@@ -233,4 +238,57 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+/* setpointBlock */
+.setpointBlock {
+  display: flex;
+  flex-direction: column;
+  align-content: space-around;
+  /* justify-content: space-between; */
+  background-color: var(--background_color);
+  margin: 0;
+  box-shadow: 0vw -3vw 6vw rgba(225, 225, 225, 0.2), 0vw 2vw 3vw rgba(225, 225, 225, 0.2),inset 12vw 0 8vw -6vw rgba(0, 0, 0, 0.8), inset -12vw 0 8vw -6vw rgba(0, 0, 0, 0.8);
+}
+.setpointValue {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 2vw;
+  padding: 3vw 2vw 0 2vw;
+}
+
+.setpointValue_number {
+  min-width: 20vw;
+}
+.setpointValue_icon {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+  width: 35vw;
+}
+
+.setpointValue h1 {
+  align-items: center;
+  font-size: 1.2rem;
+  font-weight: 500;
+  /* letter-spacing: 0.5px; */
+  margin: 0;
+  padding: 0;
+}
+
+.setpointLimits {
+  display: flex;
+  height: 5vw;
+  justify-content: space-between;
+  padding: 0 6vw;
+}
+
+.setpointLimits h4 {
+  margin: 0;
+  font-size: 0.65rem;
+  color: var(--light_font_color);
+  font-weight: 500;
 }
