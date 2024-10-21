@@ -176,11 +176,12 @@ export default {
 //   return g_value;
 //   // return {"room": room, "groop": groop};
 // },
-  SetValue(name, data) {
-    console.log( 'Компонент APP.vue Функция SetValue приступила к обработке запроса на изменение значения параметра', name, data );
-    this.safeLocalSorage('manageConfig', name);
-    // var s_value = {type: 'confirm', name: n, value: true};
-    // return s_value;
+  SetValue(n) {
+    console.log( 'Компонент APP.vue Функция SetValue приступила к обработке запроса на изменение значения параметра', n );
+    // this.safeLocalSorage('manageConfig', data);
+
+    this.sendServerRequest(n.type, n.request, n.name, n.setpoint);
+    // console.log('type:', n.type, 'request:', n.request, 'name:', n.name, 'data:', n.setpoint);
   },
   CheckMessage(n) {
   if (n.type) {
@@ -277,6 +278,7 @@ export default {
               };
               this.safeLocalSorage('manageConfig', payload);
               console.log ('APP.vue sendServerRequest Сохранение в localStorage - "setpoint" ', payload);
+              this.isSending = true;
               this.sendMessage(JSON.stringify(payload));
               console.log ('APP.vue sendServerRequest Отправка на сервер - "setpoint" ', payload);
               return;
@@ -284,66 +286,95 @@ export default {
             return;
           }
 
-    },
-
+    },    
+    
     safeLocalSorage(name, message) {
-    console.log ('APP.vue safeLocalSorage Получено сообщение - ', name, message);
+    // console.log ('APP.vue safeLocalSorage Получено сообщение - ', name, message);
     // Получаем конфигурацию из localStorage
     let config = JSON.parse(localStorage.getItem([name]));
-    const timeUpdated = message.time;
-    // console.log('config:', config);
-
-    // Находим ключ комнаты в сообщении
+    let sensorKey, sensorValue, sensorKeyTime;
+    const timeUpdated = new Date().toLocaleString();
     const roomKey = Object.keys(message).find(key => key.startsWith('room'));
     console.log('roomKey:', roomKey); // Логирование roomKey
 
-    if (roomKey) {
-      console.log('Комната найдена в конфигурации:', roomKey);
-
-      const sensorKey = Object.keys(message[roomKey].sensors)[0];
-      const sensorValue = message[roomKey].sensors[sensorKey];
-      
-      // console.log('sensorKey:', sensorKey); // Логирование sensorKey
-      // console.log('sensorValue:', sensorValue); // Логирование sensorValue
-
-      // Проверяем, существует ли сенсор в конфигурации
-      if (config[roomKey] && config[roomKey].sensors && Object.prototype.hasOwnProperty.call(config[roomKey].sensors, sensorKey)) {
-        // Обновляем значение сенсора в конфигурации
-        config[roomKey].sensors[sensorKey] = sensorValue;
-        config[roomKey].time[sensorKey] = timeUpdated;
-        // console.log('Значение сенсора обновлено:', config[roomKey].sensors[sensorKey]);
-
-        // Сохраняем обновленную конфигурацию в localStorage
-        localStorage.setItem('commonConfig', JSON.stringify(config));
-        // console.log('Конфигурация "commonConfig" обновлена в localStorage', JSON.stringify(config));
-        localStorage.setItem('flag_commonConfigUpdated', 'true');
-        const chechValue = JSON.parse(localStorage.getItem('commonConfig'))[roomKey].sensors[sensorKey];
-        // console.log('chechValue:', chechValue);
-        // console.log(`Конфигурация "commonConfig" сохранена в localStorage, commonConfig.${roomKey}.sensors.${sensorKey} = ${chechValue},  commonConfig.${roomKey}.time.${sensorKey} = ${timeUpdated}  localStorage.getItem('flag_commonConfigUpdated') = ${localStorage.getItem('flag_commonConfigUpdated')}`);
-        this.sendLogToServer ('info', `Конфигурация "commonConfig" сохранена в localStorage,  commonConfig.${roomKey}.sensors.${sensorKey} = ${chechValue}`);
-      } else {
-        // console.error('Датчик не найден в конфигурации');
-        this.sendLogToServer ('error', 'Ошибка поиска ДАТЧИКА в файле конфигурации - датчик соответствующий идентификатору из сообщения Сервера не найден');
-      }
+    if (!config[name] && name === 'manageConfig') {
+      console.info('Конфигурация не найдена в localStorage для ключа:', name);
+      this.sendLogToServer('info', `Конфигурация не найдена в localStorage для ключа: ${name}`);
+      config[roomKey] = {
+            setpoint: {},
+            manage: {},
+            time: {},
+            title: '',
+          };
+          console.log('Создан новый объект комнаты:', roomKey, config);
+          localStorage.setItem([name], JSON.stringify(config));
     } else {
-      console.error('Комната не найдена в конфигурации');
-      this.sendLogToServer ('error', 'Ошибка поиска КОМНАТЫ в файле конфигурации - комната соответствующая идентификатору из сообщения Сервера не найдена');
+      console.log('Конфигурация найдена в localStorage для ключа:', name);
     }
-  },
+
+      switch (name) {
+        case 'manageConfig':
+          console.log('Переходим к сохранению значения в конфигурацию "manageConfig" в localStorage');
+          
+          sensorKey = Object.keys(message[roomKey])[0];
+          sensorValue = message[roomKey][sensorKey];
+          sensorKeyTime = sensorKey + '_time';
+          console.log('setpointKey:', sensorKey, 'setpointValue:', sensorValue); // Логирование setpointKey
+
+          config[roomKey].setpoint[sensorKey] = sensorValue;
+          config[roomKey].time[sensorKeyTime] = timeUpdated;
+          // console.log('Значение setpoint обновлено:', config[roomKey].setpoint[sensorKey]);
+          console.log('Значение setpoint обновлено:', config);
 
 
+          break;
+        case 'commonConfig':
+          // config = JSON.parse(localStorage.getItem('commonConfig'));
+          if (roomKey) {
+              console.log('Комната найдена в конфигурации:', roomKey);
 
+              sensorKey = Object.keys(message[roomKey].sensors)[0];
+              console.log('sensorKey:', sensorKey); // Логирование sensorKey
 
+              sensorValue = message[roomKey].sensors[sensorKey];
+              console.log('sensorValue:', sensorValue); // Логирование sensorValue
+              sensorKeyTime = sensorKey + '_time';
 
+              // Проверяем, существует ли сенсор в конфигурации
+              if (config[roomKey] && config[roomKey].sensors && Object.prototype.hasOwnProperty.call(config[roomKey].sensors, sensorKey)) {
+                // Обновляем значение сенсора в конфигурации
+                config[roomKey].sensors[sensorKey] = sensorValue;
+                config[roomKey].time[sensorKeyTime] = timeUpdated;
+                console.log('Значение сенсора обновлено:', config[roomKey].sensors[sensorKey]);
 
+                // Сохраняем обновленную конфигурацию в localStorage
+                localStorage.setItem('commonConfig', JSON.stringify(config));
+                // console.log('Конфигурация "commonConfig" обновлена в localStorage', JSON.stringify(config));
+                localStorage.setItem('flag_commonConfigUpdated', 'true');
+                const chechValue = JSON.parse(localStorage.getItem('commonConfig'))[roomKey].sensors[sensorKey];
+                // console.log('chechValue:', chechValue);
+                // console.log(`Конфигурация "commonConfig" сохранена в localStorage, commonConfig.${roomKey}.sensors.${sensorKey} = ${chechValue},  commonConfig.${roomKey}.time.${sensorKey} = ${timeUpdated}  localStorage.getItem('flag_commonConfigUpdated') = ${localStorage.getItem('flag_commonConfigUpdated')}`);
+                this.sendLogToServer ('info', `Конфигурация "commonConfig" сохранена в localStorage,  commonConfig.${roomKey}.sensors.${sensorKey} = ${chechValue}`);
+              } else {
+                // console.error('Датчик не найден в конфигурации');
+                this.sendLogToServer ('error', 'Ошибка поиска ДАТЧИКА в файле конфигурации - датчик соответствующий идентификатору из сообщения Сервера не найден');
+              }
+            
+            } else {
+              console.error('Комната не найдена в конфигурации');
+              this.sendLogToServer ('error', 'Ошибка поиска КОМНАТЫ в файле конфигурации - комната соответствующая идентификатору из сообщения Сервера не найдена');
+            }
+          break;
+      
+        default:
+          break;
+      }
+      console.log(`Конфигурация ${name} обновлена в localStorage`, config);
+    
 
-
-
-
-
-
-
-
+    },
+    
+    
 
   },
 }

@@ -386,7 +386,7 @@ export default {
     },
 
     updateState(newState) {
-      console.log('В функцию updateState получено новое состояние', newState);
+      // console.log('В функцию updateState получено новое состояние', newState);
       // const value = newState['incrementPoint'];
       // console.log('Обновляем индекс датчика в компоненте MainBody. updateState: ', newState['incrementPoint']);
       if (newState.incrementPoint !== undefined) this.id_point = this.id_point + newState['incrementPoint'];
@@ -396,12 +396,14 @@ export default {
 
       if (newState.newSetPoint !== undefined) this.setpoint = newState.newSetPoint;
 
-      if (newState.updatePermission !== undefined) this.$emit('newSetpoint', { 
-        [this.room_name]: {
-          setpoint: {
+      if (newState.updatePermission !== undefined && this.setpoint !== undefined) this.$emit('newSetpoint', 
+      { 
+          setpoint: { //Сообщение о изменении Уставки Для каждой группы параметров нужно писать свой разработчик
             [this.setName] : this.setpoint
-          }
-        }, request: 'setpoint'
+        }, 
+        request: 'setpoint',
+        type: 'post', 
+        name: this.room_name
       }); 
       
 
