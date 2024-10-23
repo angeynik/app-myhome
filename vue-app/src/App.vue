@@ -57,23 +57,23 @@ export default {
       WSconnected: false,
       messageFromServer: null,
       reconnectInterval: 2000, // Интервал переподключения в миллисекундах
-      setTemp: {
-        temp1: 20,
-        temp2: 10,
-        temp3: 30,
-        temp4: 15
-      },
-      testMessage: {
-        request: "sensor",
-        room03: { sensors: { key3: 'newValue' } },
-        type: "post"
-      },
-      TestConfig: {
-        room01: { sensors: { key1: 'value1' } },
-        room02: { sensors: { key2: 'value2' } },
-        room03: { sensors: { key3: 'value3' } },
-        // другие комнаты
-      },
+      // setTemp: {
+      //   temp1: 20,
+      //   temp2: 10,
+      //   temp3: 30,
+      //   temp4: 15
+      // },
+      // testMessage: {
+      //   request: "sensor",
+      //   room03: { sensors: { key3: 'newValue' } },
+      //   type: "post"
+      // },
+      // TestConfig: {
+      //   room01: { sensors: { key1: 'value1' } },
+      //   room02: { sensors: { key2: 'value2' } },
+      //   room03: { sensors: { key3: 'value3' } },
+      //   // другие комнаты
+      // },
       isSending: true
     };
   },
@@ -179,9 +179,9 @@ export default {
   SetValue(n) {
     console.log( 'Компонент APP.vue Функция SetValue приступила к обработке запроса на изменение значения параметра', n );
     // this.safeLocalSorage('manageConfig', data);
-
+    console.log('Функция SetValue: type:', n.type, 'request:', n.request, 'name:', n.name, 'data:', n.setpoint);
     this.sendServerRequest(n.type, n.request, n.name, n.setpoint);
-    // console.log('type:', n.type, 'request:', n.request, 'name:', n.name, 'data:', n.setpoint);
+    
   },
   CheckMessage(n) {
   if (n.type) {
@@ -271,7 +271,7 @@ export default {
           }
           return;
         } else if (request === 'setpoint') {
-               const payload = {
+              const payload = {
                 type: type,
                 request: request,
                 [name]: data,
