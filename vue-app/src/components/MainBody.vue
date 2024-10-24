@@ -102,12 +102,19 @@ export default {
     },
     props: {
     id_item: Number,
+    isSending: Boolean,
     },
     watch: {
       // Отслеживание изменений данных
       d_item(newValue) {this.id = newValue;},
       id(newValue) {this.getConfigValues(newValue, this.id_point);},
       id_point(newValue) {this.getConfigValues(this.id, newValue);},
+      isSending(newValue) {
+        console.log('MainBody - флаг isSending = true. Обновляем параметры Уставок', newValue);
+        if (newValue === true) {
+          this.getManageValues(this.id, this.getInfo(this.point_title));
+        }
+      },
       // setpoint() {
       //   this.getConfigValues(this.id, this.id_point);
       //   this.debounceSetpoint(this.setpoint);
@@ -177,7 +184,7 @@ export default {
 
                   // Определяем значения Уставки и лимитов
                   const set_key = this.getInfo(this.point_title);
-                  console.log('Результат getInfo set_key = ', set_key);
+                  // console.log('Результат getInfo set_key = ', set_key);
                   if (this.showSetpoint === true) {
                     this.setpoint = this.getManageValues(this.id, set_key);
                   } else {
@@ -206,7 +213,7 @@ export default {
       this.lowName = 'limDown'+name;
       this.highName = 'limUp'+name;
       this.stepName = 'limStep'+name;
-      // console.log('set = ', set, ' low = ', low, ' high = ', high, ' step = ', step);
+      // console.log('set = ', this.setName, ' low = ', this.lowName, ' high = ',  this.highName, ' step = ', this.stepName);
 
       // Получаем объект manageConfig из localStorage
       const Mconfig = JSON.parse(localStorage.getItem('manageConfig'));
@@ -250,7 +257,7 @@ export default {
     },
 
     getInfo (value) { // Получаем тип датчика по его наименованию
-      console.log('Приступили к выполнению функции getInfo с параметром value = ', value);
+      // console.log('MainBody.vue - Приступили к выполнению функции getInfo с параметром value = ', value);
       if (value.includes('Temp')) {
         this.point_title_name = 'Температура';
         this.point_title_sign = '°C';
