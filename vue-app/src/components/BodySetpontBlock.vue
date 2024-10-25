@@ -63,7 +63,7 @@
     </div>
 
     <div class="setpointValue_number"> 
-    <h1> {{ newSetPoint }} </h1>
+    <h1> {{ newSetPointValue }} </h1>
     </div>
 
     <div> 
@@ -89,12 +89,14 @@ export default {
     return {
       startX: 0,
       isTouching: false,
-      newSetPoint: this.setPoint,
+      newSetPointValue: this.setPoint,
     }
   },
   watch: {
     setPoint(newSetPoint) {
-      this.newSetPoint = parseFloat(newSetPoint).toFixed(1);
+      // console.log('Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
+      this.newSetPointValue = parseFloat(newSetPoint).toFixed(1);
+      // console.log('Обновили newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
     },
   },
   created() {
@@ -130,44 +132,63 @@ export default {
       const touch = event.touches[0];
       const deltaX = touch.clientX - this.startX;
 
-      if (deltaX < 10 && deltaX > - 10) {
+      if (deltaX < 8 && deltaX > - 8) {
         console.log('Недостаточное смещение контролла');
       } else {
+        // console.log('Достаточное смещение контролла. Вызываем функцию calculateSetpoint. Смещение - ', deltaX, ' Шаг - ', this.step, ' Минимум - ', this.lowLimit, ' Максимум - ', this.highLimit);
         this.debouncedCalculateSetpoint(deltaX, this.step, this.lowLimit, this.highLimit);
       }
     },
-
     calculateSetpoint(value, step, min, max) {
-      let newSetPointValue;
+      // console.log('BodySetpointBlock Функция calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
+      let newValue;
       const currentSetPoint = this.setPoint;
-      if (value > 10 && value < 100) {
-        newSetPointValue = currentSetPoint + step;
+      try {
+        if (value > 5 && value < 120) {
+        newValue = currentSetPoint + step;
       // console.log('Увеличили SetPoint:', newSetPointValue);
-      } else if (value < -5 && value > -100) {
-        newSetPointValue = currentSetPoint - step;
+      } else if (value < -5 && value > -120) {
+        newValue = currentSetPoint - step;
         // console.log('Уменьшили SetPoint:', newSetPointValue);
-      } else if (value > 100) {
-        newSetPointValue = currentSetPoint + (step*10);
+      } else if (value > 120) {
+        newValue = currentSetPoint + (step*10);
         // console.log('Увеличили SetPoint:', newSetPointValue);
-      } else if (value < - 100) {
-        newSetPointValue = currentSetPoint - (step*10);
+      } else if (value < - 120) {
+        newValue = currentSetPoint - (step*10);
         // console.log('Уменьшили SetPoint:', newSetPointValue);
       }
-      this.sendSetPoint(newSetPointValue, min, max);
+      } catch (error) {
+        console.error('BodySetpointBlock Функция calculateSetpoint Ошибка вычисления изменения Уставки', error);
+        this.sendLogToServer('error', 'BodySetpointBlock Функция calculateSetpoint Ошибка вычисления изменения Уставки', error); // отправка логов на сервер для сохранения в файл
+      }
+
+     this.sendSetPoint(newValue, min, max);
     },
 
     sendSetPoint(setPoint, min, max) {
-      if (setPoint > max) {
+      if (setPoint !== undefined && setPoint !== null && min !== undefined && max) {
+        try {
+          if (setPoint > max) {
         setPoint = max;
           this.$emit('updateState', { newSetPoint: setPoint });
-
+          // console.log(' BodySetpointBlock Функция sendSetPoint Ограничиваем Верхняю границу Уставки');
         } else if (setPoint < min) {
           setPoint = min;
+          // console.log(' BodySetpointBlock Функция sendSetPoint Ограничиваем Нижнюю границу Уставки');
           this.$emit('updateState', { newSetPoint: setPoint });
         } else {
+          // console.log(' BodySetpointBlock Функция sendSetPoint Отправляем Уставку без изменений');
           this.$emit('updateState', { newSetPoint: setPoint });
         }
-    },
+        } catch (error) {
+          console.error('BodySetpointBlock Функция sendSetPoint Ошибка проверки ограничений диапазона Уставки', error);
+          this.sendLogToServer('error', 'BodySetpointBlock Функция sendSetPoint Ошибка проверки ограничений диапазона Уставки', error); // отправка логов на сервер для сохранения в файл
+        }
+      } else {
+        console.error('BodySetpointBlock Функция sendSetPoint Попытка проверки с неопределенными значениями setPoint', setPoint, 'min', min, 'max', max);
+        this.sendLogToServer('error', 'BodySetpointBlock Функция sendSetPoint Попытка проверки с неопределенными значениями setPoint: ', setPoint); 
+    }
+  },
     debounce(func, wait) {
       // console.log('Активирована задержка выполнения функции', func, 'в', wait, 'мсек');
     let timeout;

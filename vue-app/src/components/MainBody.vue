@@ -66,8 +66,8 @@ export default {
       limLow: 8, //Нижняя граница уставки
       limHigh: 32, //Верхняя граница уставки
       limStep: 0.1, //Шаг уставки
-      setpoint: 23.0, // Значение уставки
-      newSetPoint: 0, // Новое значение уставки (получено с компонента BodySetpontBlock)
+      setpoint: localStorage.getItem('setpoint'), // Значение уставки
+      newSetValue: 0, // Новое значение уставки (получено с компонента BodySetpontBlock)
       showSetpoint: true, // Флаг разрешающий отображение компонента BodySetpontBlock (с уставкой и шкалой)
 
       controlState: false, // Параметр позволяет пользователю Включать / Отключать контроль параметра
@@ -79,7 +79,8 @@ export default {
       setUpdateTime: 1000, // время перезапуска обновления данных в секундах
       flagReloadPage: false, // флаг перезагрузки страницы
       secectedComponent: null, // выбранный Пользователем компонент (тачем)
-      setpoint2: '', // Объект с данными для отправки измененной Уставки для отправки на сервер и локального сохранения
+      valCommonConfig: {}, // Объект хранения текущих параметров конфигурации
+      valManageConfig: {}, // Объект хранения текущих параметров управления
 
       setName: '',
       lowName: '',
@@ -102,31 +103,37 @@ export default {
     },
     props: {
     id_item: Number,
-    isSending: Boolean,
+    localStorageUpdated: Boolean,
     },
     watch: {
       // Отслеживание изменений данных
       d_item(newValue) {this.id = newValue;},
       id(newValue) {this.getConfigValues(newValue, this.id_point);},
       id_point(newValue) {this.getConfigValues(this.id, newValue);},
-      isSending(newValue) {
-        console.log('MainBody - флаг isSending = true. Обновляем параметры Уставок', newValue);
-        if (newValue === true) {
-          this.getManageValues(this.id, this.getInfo(this.point_title));
+      localStorageUpdated(newValue) {
+        if (newValue !== undefined && this.localStorageUpdated === true) {
+        // console.log('MainBody - флаг localStorageUpdated - ', newValue);
+        this.valCommonConfig = JSON.parse(localStorage.getItem('commonConfig'));
+        this.valManageConfig = JSON.parse(localStorage.getItem('manageConfig'));
+        // console.log('MainBody - valCommonConfig - ', this.valCommonConfig, 'valManageConfig - ', this.valManageConfig);
+        } if (newValue === false) {
+          this.getConfigValues(this.id, this.id_point);
+          // this.reloadPage();
         }
       },
-      // setpoint() {
-      //   this.getConfigValues(this.id, this.id_point);
-      //   this.debounceSetpoint(this.setpoint);
-      // },
+
     },
     created() {
     // this.debounceSetpoint = this.debounce(this.setpointCollectMassage, 800);
+    localStorage.setItem('setpoint', 18);
     },
     mounted() {
       this.id = this.id_item;
-      this.getConfigValues(this.id, this.id_point);
       this.detectDevice(); // Проверка на мобильное устройство
+      this.valCommonConfig = JSON.parse(localStorage.getItem('commonConfig'));
+      this.valManageConfig = JSON.parse(localStorage.getItem('manageConfig'));
+      this.getConfigValues(this.id, this.id_point);
+      this.setpoint = localStorage.getItem('setpoint') || 0;
     },
     beforeUnmount() {
     },
@@ -146,7 +153,7 @@ export default {
     getConfigValues(id, idPoint) {
       // console.log('Входим в getConfigValues с параметрами:', id, idPoint);
     // Получаем объект Config из localStorage
-    const config = JSON.parse(localStorage.getItem('commonConfig'));
+    const config = this.valCommonConfig;
     if (!config) {
       console.error('Не удалось получить конфигурацию commonСonfig из localStorage');
       return;
@@ -179,7 +186,7 @@ export default {
                 this.point_title = sensorKeys[id_point - 1];
                 // console.log('Определили наименование датчика = ', this.point_title);
                 this.point_value = room.sensors[this.point_title] || null ; //Если датчик не найден, то возвращаем значение по умолчанию
-                // console.log('Время последнего обновления датчика = ', room.time[this.point_title], ' . и текущее время - ', new Date().toLocaleTimeString());
+                console.log('Время последнего обновления датчика = ', room.time[this.point_title], ' . и текущее время - ', new Date().toLocaleTimeString());
                
 
                   // Определяем значения Уставки и лимитов
@@ -187,17 +194,17 @@ export default {
                   // console.log('Результат getInfo set_key = ', set_key);
                   if (this.showSetpoint === true) {
                     this.setpoint = this.getManageValues(this.id, set_key);
-                  } else {
-                    break;
-                  }
-
-                this.time_periodUpdated = this.getPeriodMinutes(room.time[this.point_title]);// Определяем время последненго обновления
+                    // console.log('MainBody  Функция getConfigValue обновляем значение  -  setpoint = ', this.setpoint);
+                    }
+                    // Определяем время последненго обновления датчика
+                this.time_periodUpdated = this.getPeriodMinutes(room.time[this.point_title]);
                 this.getStateInfo(this.time_periodUpdated); // Задаем параметр визуализации состояния связи с устройством - stateInfo
                 // console.log('Определили значение датчика = ', this.point_value , 'и время обновления = ', this.time_periodUpdated);
             }
             break;
         }
         // this.reloadPage();
+        this.$emit('updateState', { getConfig: true });
     }
 
     }
@@ -211,16 +218,17 @@ export default {
       // Задаем ключи для получения параметров
       this.setName = 'set'+name;
       this.lowName = 'limDown'+name;
+      // console.log('MainBody Функция getManageValues Получили имя нижней границы lowName  ', this.lowName);
       this.highName = 'limUp'+name;
       this.stepName = 'limStep'+name;
       // console.log('set = ', this.setName, ' low = ', this.lowName, ' high = ',  this.highName, ' step = ', this.stepName);
 
       // Получаем объект manageConfig из localStorage
-      const Mconfig = JSON.parse(localStorage.getItem('manageConfig'));
-      // console.log('Получили manageConfig из localStorage', Mconfig);
+      const Mconfig = this.valManageConfig;
+      // console.log('Получили manageConfig из valManageConfig', Mconfig);
 
       if (!Mconfig) {
-        console.error('Не удалось получить конфигурацию manageConfig из localStorage');
+        // console.error('Не удалось получить конфигурацию manageConfig из localStorage');
         return;
       } else {
         // console.log('Конфигурация "manageConfig" для id -', id, ' получена из localStorage успешно', Mconfig);
@@ -228,10 +236,11 @@ export default {
   
       const roomID = this.getManageValues_checkID(id, Mconfig);
       // console.log('roomID = ', roomID);
-
-      this.limLow = Mconfig[roomID].setpoint[this.lowName];
-      this.limHigh = Mconfig[roomID].setpoint[this.highName];
-      this.limStep = Mconfig[roomID].setpoint[this.stepName];
+      // Значения граничных диапазонов всегда получаем из объекта common в manageConfig
+      this.limLow = Mconfig.common.setpoint[this.lowName];
+      // console.log('MainBody Функция getManageValues Обновили значение нижней границы limLow = ', this.limLow);
+      this.limHigh = Mconfig.common.setpoint[this.highName];
+      this.limStep = Mconfig.common.setpoint[this.stepName];
 
 
       // console.log('roomID = ', roomID, 'setPoint = ', this.setpoint, ' lowLimit = ', this.lowLimit, ' highLimit = ', this.highLimit, ' step = ', this.step);
@@ -240,17 +249,17 @@ export default {
         return Mconfig[roomID].setpoint[this.setName];
     },
     getManageValues_checkID(id, arr) {
-      // console.log('Приступили к выполнению функции getManageValues_checkID с параметром id = ', id);
+      // console.log(' getManageValues_checkID  --- Приступили к выполнению функции getManageValues_checkID с параметром id = ', id);
       let room = 'common';
       for (const key in arr) {
       if (arr[key].id === id) {
         room = key;
-        // console.log('Найдена комната с запрашиваемым ID:', room);
+        // console.log(' getManageValues_checkID --- Найдена комната с запрашиваемым ID:', room);
         break;
       }
       }
       if (room === 'common') {
-        // console.log('Комната с запрашиваемым ID не найдена');
+        // console.log(' getManageValues_checkID --- Комната с запрашиваемым ID не найдена', room);
       }
       return room;
 
@@ -359,28 +368,47 @@ export default {
       }
     },
     getPeriodMinutes(lastTime) {
-      const lastDate = new Date(lastTime);
-      const currentDate = new Date();
-      const timeDifferenceMinutes = Math.floor((currentDate - lastDate) / 60000); // разница в минутах
+      if (lastTime !== null || lastTime !== undefined) {
+        try {
+          const lastDate = new Date(lastTime);
+          const currentDate = new Date();
+          const timeDifferenceMinutes = Math.floor((currentDate - lastDate) / 60000); // разница в минутах
 
-      const timeDifference = currentDate - lastDate;
-      const seconds = Math.floor(timeDifference / 1000);
-      // const minutes = Math.floor(seconds / 60);
-      // const hours = Math.floor(minutes / 60);
-      // console.log(`Прошло времени: ${hours} часов, ${minutes % 60} минут, ${seconds % 60} секунд`);
+          const timeDifference = currentDate - lastDate;
+          const seconds = Math.floor(timeDifference / 1000);
+          // const minutes = Math.floor(seconds / 60);
+          // const hours = Math.floor(minutes / 60);
+          // console.log(`Прошло времени: ${hours} часов, ${minutes % 60} минут, ${seconds % 60} секунд`);
 
-      if (seconds > 20) {
-        this.flagReloadPage = true;
-        // console.log(' flagReloadPage = true  Обновление страницы разрешено');
-      } else {
-        this.flagReloadPage = false;
+          if (seconds > 20) {
+            this.flagReloadPage = true;
+            // console.log(' flagReloadPage = true  Обновление страницы разрешено');
+          } else {
+            this.flagReloadPage = false;
+          }
+          // return {
+          //   hours: hours,
+          //   minutes: minutes % 60,
+          //   seconds: seconds % 60
+          // };
+          return timeDifferenceMinutes;
+        } catch (error) {
+          console.error('MainBody Функция getPeriodMinutes Значение времени переданное в функцию не определено', error);
+          // В компоненте, который вызывает событие
+         this.$emit('updateState', {
+          sendLogToServer: 
+          { type: 'error', 
+          message: `MainBody Функция getPeriodMinutes Значение времени переданное в функцию не определено: ${error}` 
+        }
+        });
+
+
+
+          // this.$emit('updateState', {sendLogToServer: ('Error in getPeriodMinutes: ', error)});
+          // this.sendLogToServer('error', 'Client: Не удалось отправить сообщение: WS соединение не установлено');
+        }
       }
-      // return {
-      //   hours: hours,
-      //   minutes: minutes % 60,
-      //   seconds: seconds % 60
-      // };
-      return timeDifferenceMinutes;
+      
     },
     getStateInfo(time_period) {
       if (time_period && time_period < 5) {
@@ -403,14 +431,17 @@ export default {
 
       if (newState.newSetPoint !== undefined) this.setpoint = newState.newSetPoint;
 
-      if (newState.updatePermission !== undefined && this.setpoint !== undefined) this.$emit('newSetpoint', 
+      if (newState.updatePermission !== undefined && this.setpoint !== undefined) this.$emit('AppNewSetpoint',{
+        setpointUpdate:
       { 
           setpoint: { //Сообщение о изменении Уставки Для каждой группы параметров нужно писать свой разработчик
             [this.setName] : this.setpoint
         }, 
         request: 'setpoint',
         type: 'post', 
-        name: this.room_name
+        name: this.room_name,
+        id: this.id,
+        }
       }); 
       
 
