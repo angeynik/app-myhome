@@ -1,6 +1,7 @@
 
 
   <template>
+    <!-- <div> <h1> {{point_value}} </h1> </div> -->
     <div class="container">
       <svg style="position: absolute; width: 0; height: 0;">
         <defs>
@@ -25,15 +26,15 @@
     @updateState="updateState"
     >
     <svg class="sensorControl">
-        <use href="#sensorback" :stroke="borderColor" stroke-width="30"></use>
+        <use href="#sensorback" :stroke="borderColor" stroke-width="44"></use>
       </svg>
       <svg class="sensorControl">
         <use href="#sensorback" stroke="url(#gradientStroke)" stroke-width="18"></use>
       </svg>
       <svg class="sensorControl">
-        <use href="#sensorfront" :fill="borderColor" stroke="white" stroke-width="2"></use>
+        <use href="#sensorfront" :fill="placeColor" stroke="white" stroke-width="2"></use>
       </svg>
-      <span class="value">{{ point_value }}  </span> 
+      <span class="value"> {{ point_value }}  </span> 
       <!-- <span class="value"> °C </span> -->
     </div>
     </div>
@@ -65,30 +66,24 @@ export default {
         this.debouncedCalculateRoom = this.debounce(this.calculateRoom, 1000);
     },
   props: {   // Переменные полученные в компонент
-    state: Number,
+    stateSetpoint: Number,
+    stateTime: Number,
+    showSetpoint: Boolean,
     control_stateSelecte: Boolean,
     point_value: Number,
     secectedComponent: String,
   },
   computed: {
-    // title() {
-    //   return this.temperatures[this.currentTempIndex];
-    // },
-    // borderColor() {
-    //   return {
-    //     'border-red': this.state === 0,
-    //     'border-yellow': this.state === 1,
-    //     'border-green': this.state === 2,
-    //   };
-    // },
     borderColor() {
-      if (this.state === 1) return 'var(--sensor-green)';
-      if (this.state === 2) return 'var(--sensor-yellow)';
-      if (this.state === 3) return 'var(--sensor-red)';
-      if (this.state === 4) return 'var(--sensor-gray)';
-      return 'var(--sensor-green)'; // Значение по умолчанию
+      if (this.stateSetpoint === 1 && this.showSetpoint === true) return 'var(--violet)'; // Для комнаты задано персональное значение Уставки
+      if (this.stateSetpoint === 0) return 'var(--light_font)'; // Комнаты использует общую уставку
+      return 'var(--sensor-gray)'; // Значение не определено
     },
-
+    placeColor(){
+      if (this.stateTime === 1) return 'var(--sensor-green)'; // Интервал опроса менее 10 минут
+      if (this.stateTime === 0) return 'var(--sensor-red)'; // Интервал превышает 10 минут
+      return 'var(--sensor-gray)'; // Значение интервала опроса не определено
+    }
   },
   methods: {
     debounce(func, wait) {

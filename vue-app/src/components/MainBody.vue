@@ -17,7 +17,9 @@
             <div id="app_valueblock" ref="valueBlock" >
               <BodyValueBlock 
               :point_value="point_value" 
-              :state="stateInfo" 
+              :stateSetpoint="stateInfo"
+              :stateTime="stateTime"
+              :showSetpoint="showSetpoint"
               :control_stateSelected="controlState" 
               :secectedComponent="selectedComponent"
               @updateState="updateState"
@@ -72,12 +74,12 @@ export default {
 
       controlState: false, // Параметр позволяет пользователю Включать / Отключать контроль параметра
       time_periodUpdated: 0,
-      stateInfo: 2, // переменная отвечающая за визуализацию состояния связи с устройством в зависимости от времени последнего обновления
+      stateInfo: 0, // переменная отвечающая за визуализацию состояния связи с устройством в зависимости от времени последнего обновления
       //0 - не активно 9 - нет связи, 1 - есть связь 2 - есть связь, обнавлена не давно
     
       // Дополнительные (служебные) параметры
       setUpdateTime: 1000, // время перезапуска обновления данных в секундах
-      flagReloadPage: false, // флаг перезагрузки страницы
+
       secectedComponent: null, // выбранный Пользователем компонент (тачем)
       valCommonConfig: {}, // Объект хранения текущих параметров конфигурации
       valManageConfig: {}, // Объект хранения текущих параметров управления
@@ -111,7 +113,7 @@ export default {
       id(newValue) {this.getConfigValues(newValue, this.id_point);},
       id_point(newValue) {this.getConfigValues(this.id, newValue);},
       localStorageUpdated(newValue) {
-        if (newValue !== undefined && this.localStorageUpdated === true) {
+        if (newValue !== undefined || this.localStorageUpdated === true) {
         // console.log('MainBody - флаг localStorageUpdated - ', newValue);
         this.valCommonConfig = JSON.parse(localStorage.getItem('commonConfig'));
         this.valManageConfig = JSON.parse(localStorage.getItem('manageConfig'));
@@ -121,6 +123,10 @@ export default {
           // this.reloadPage();
         }
       },
+      // point_value(newValue) {
+      //   console.log('MainBody - значение point_value изменилось - ', newValue);
+      //   this.reloadPage();
+      // },
 
     },
     created() {
@@ -139,23 +145,18 @@ export default {
     },
     methods: {
       reloadPage() {
-        // Перезагрузка страницы
-        if (this.flagReloadPage === true) {
-        // console.log('reloadPage    Обновление страницы разрешено flagReloadPage -', this.flagReloadPage);
-        // console.log('reloadPage    Запрос на обновление сформирован LocalStorage - flag_commonConfigUpdated: ', localStorage.getItem('flag_commonConfigUpdated'));
+        // Перезагрузка страниц
         window.location.reload();
-        this.flagReloadPage = false;
-        } else {
-          return;
-        } 
         return;
       },
     getConfigValues(id, idPoint) {
       // console.log('Входим в getConfigValues с параметрами:', id, idPoint);
     // Получаем объект Config из localStorage
     const config = this.valCommonConfig;
+    // console.log('commonConfig = ', config);
     if (!config) {
       console.error('Не удалось получить конфигурацию commonСonfig из localStorage');
+
       return;
     } else {
     // console.log('Конфигурация "commonConfig" получена из localStorage успешно');
@@ -184,12 +185,31 @@ export default {
 
             if (id_point > 0 && id_point <= sensorKeys.length) {
                 this.point_title = sensorKeys[id_point - 1];
-                // console.log('Определили наименование датчика = ', this.point_title);
-                this.point_value = room.sensors[this.point_title] || null ; //Если датчик не найден, то возвращаем значение по умолчанию
-                console.log('Время последнего обновления датчика = ', room.time[this.point_title], ' . и текущее время - ', new Date().toLocaleTimeString());
-               
+                const timeTitle = this.point_title + '_time';
+                // console.log('Определили наименование переменной времени обновления датчика = ', timeTitle);
 
-                  // Определяем значения Уставки и лимитов
+            // Определяем значение датчика
+                const sensor_value = room.sensors[this.point_title] || null; //Если датчик не найден, то возвращаем значение по умолчанию
+                // console.log('Время последнего обновления датчика = ', room.time[timeTitle], ' . и текущее время - ', new Date().toLocaleTimeString());
+              if (sensor_value !== null && sensor_value !== undefined) {
+                switch (sensor_value) {
+                  case true:
+                  this.point_value = 'ON';
+                    break;
+                    case false:
+                  this.point_value = 'OFF';
+                    break;
+                  default:
+                  this.point_value  = parseFloat(sensor_value).toFixed(1);
+                    break;
+                }
+                console.log('Определили значение датчика = ', this.point_value);
+              } else {
+                console.error('Не удалось получить значение датчика:', this.point_title);
+                this.point_value = '???';
+              }
+
+            // Определяем значения Уставки и лимитов
                   const set_key = this.getInfo(this.point_title);
                   // console.log('Результат getInfo set_key = ', set_key);
                   if (this.showSetpoint === true) {
@@ -197,9 +217,15 @@ export default {
                     // console.log('MainBody  Функция getConfigValue обновляем значение  -  setpoint = ', this.setpoint);
                     }
                     // Определяем время последненго обновления датчика
-                this.time_periodUpdated = this.getPeriodMinutes(room.time[this.point_title]);
-                this.getStateInfo(this.time_periodUpdated); // Задаем параметр визуализации состояния связи с устройством - stateInfo
-                // console.log('Определили значение датчика = ', this.point_value , 'и время обновления = ', this.time_periodUpdated);
+                    if (room.time[timeTitle] !== null && room.time[timeTitle] !== undefined) {
+                      this.time_periodUpdated = this.getPeriodMinutes(room.time[timeTitle]);
+                      this.getStateTime(this.time_periodUpdated); // Задаем параметр визуализации состояния связи с устройством
+                      // console.log('Определили значение датчика = ', this.point_value , 'и время обновления = ', this.time_periodUpdated);
+                    } else {
+                      console.error('Время последнего обновления датчика не определено ', room.time[timeTitle] );
+                      this.stateTime = 0;
+                    }
+
             }
             break;
         }
@@ -245,7 +271,14 @@ export default {
 
       // console.log('roomID = ', roomID, 'setPoint = ', this.setpoint, ' lowLimit = ', this.lowLimit, ' highLimit = ', this.highLimit, ' step = ', this.step);
 
-            // Устанавливаем setPoint для найденного или дефолтного roomID
+      // Устанавливаем setPoint для найденного или дефолтного roomID
+ 
+      if (roomID !== 'common') {
+        this.stateInfo = 1;
+      } else {
+        this.stateInfo = 0;
+      }
+      console.log('Определяем флаг StateInfo = ', this.stateInfo);
         return Mconfig[roomID].setpoint[this.setName];
     },
     getManageValues_checkID(id, arr) {
@@ -254,11 +287,13 @@ export default {
       for (const key in arr) {
       if (arr[key].id === id) {
         room = key;
+        this.stateSetpoint = 1;
         // console.log(' getManageValues_checkID --- Найдена комната с запрашиваемым ID:', room);
         break;
       }
       }
       if (room === 'common') {
+        this.stateSetpoint = 0;
         // console.log(' getManageValues_checkID --- Комната с запрашиваемым ID не найдена', room);
       }
       return room;
@@ -368,55 +403,51 @@ export default {
       }
     },
     getPeriodMinutes(lastTime) {
-      if (lastTime !== null || lastTime !== undefined) {
+      // console.log('MainBody - Функция getPeriodMinutes Начинаем работу с lastTime = ', lastTime);
+      if (lastTime !== null && lastTime !== undefined) {
         try {
           const lastDate = new Date(lastTime);
+          // console.log('MainBody - Функция getPeriodMinutes lastDate = ', lastDate);
           const currentDate = new Date();
           const timeDifferenceMinutes = Math.floor((currentDate - lastDate) / 60000); // разница в минутах
 
-          const timeDifference = currentDate - lastDate;
-          const seconds = Math.floor(timeDifference / 1000);
+          // const timeDifference = currentDate - lastDate;
+          // const seconds = Math.floor(timeDifference / 1000);
           // const minutes = Math.floor(seconds / 60);
           // const hours = Math.floor(minutes / 60);
           // console.log(`Прошло времени: ${hours} часов, ${minutes % 60} минут, ${seconds % 60} секунд`);
 
-          if (seconds > 20) {
-            this.flagReloadPage = true;
-            // console.log(' flagReloadPage = true  Обновление страницы разрешено');
-          } else {
-            this.flagReloadPage = false;
-          }
-          // return {
-          //   hours: hours,
-          //   minutes: minutes % 60,
-          //   seconds: seconds % 60
-          // };
           return timeDifferenceMinutes;
         } catch (error) {
-          console.error('MainBody Функция getPeriodMinutes Значение времени переданное в функцию не определено', error);
+          console.error('MainBody Функция getPeriodMinutes Ошибка расчета интервала времени', error);
+          // В компоненте, который вызывает событие
+         this.$emit('updateState', {
+            sendLogToServer: 
+            { type: 'error', 
+            message: `MainBody Функция getPeriodMinutes Ошибка расчета интервала времени: ${error}` 
+            }
+          });
+          // this.$emit('updateState', {sendLogToServer: ('Error in getPeriodMinutes: ', error)});
+          // this.sendLogToServer('error', 'Client: Не удалось отправить сообщение: WS соединение не установлено');
+        }
+      } else {
+        console.error('MainBody Функция getPeriodMinutes Значение времени переданное в функцию не определено');
           // В компоненте, который вызывает событие
          this.$emit('updateState', {
           sendLogToServer: 
           { type: 'error', 
-          message: `MainBody Функция getPeriodMinutes Значение времени переданное в функцию не определено: ${error}` 
+          message: `MainBody Функция getPeriodMinutes Значение времени переданное в функцию не определено: ` 
         }
         });
-
-
-
-          // this.$emit('updateState', {sendLogToServer: ('Error in getPeriodMinutes: ', error)});
-          // this.sendLogToServer('error', 'Client: Не удалось отправить сообщение: WS соединение не установлено');
-        }
       }
       
     },
-    getStateInfo(time_period) {
-      if (time_period && time_period < 5) {
-        this.stateInfo = 2; // Недавно было выполнено обновление данных по этому датчику
-      } else if (time_period && time_period < 60) {
-        this.stateInfo = 1; // Данные о состоянии датчика получены в предалах 1 часа
+    getStateTime(time_period) {
+      if (time_period !== undefined && time_period < 60) {
+        this.stateTime = 1; // Недавно было выполнено обновление данных по этому датчику
+        // console.log('MainBody - Функция getStateTime stateTime - ', this.stateTime);
       } else {
-        this.stateInfo = 0; // Данные с датчика не обновляличь более 1 часа
+        this.stateTime = 0; // Данные с датчика не обновляличь более 1 часа
       }
     },
 
