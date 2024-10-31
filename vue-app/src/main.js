@@ -1,12 +1,11 @@
 import { createApp } from 'vue';
 import App from './App.vue';
+import router from './router';
+import config from './myhome_config.js'; // Импортируйте конфигурацию
 
 const app = createApp(App);
+app.use(router); // Подключаем маршрутизацию
 
-app.mount('#app');
-
-
-import config from './myhome_config.js'; // Импортируйте конфигурацию
 app.config.globalProperties.sPointRoom_all= config.sPointRoom_all;
 app.config.globalProperties.sPointRoom_01 = config.sPointRoom_01;
 app.config.globalProperties.sPointRoom_02 = config.sPointRoom_02;
@@ -43,4 +42,4 @@ app.config.globalProperties.sensorFire_02 = config.sensorFire_02;
 app.config.globalProperties.sensorLeak_01 = config.sensorLeak_01;
 app.config.globalProperties.sensorLeak_02 = config.sensorLeak_02;
 
-
+app.mount('#app');

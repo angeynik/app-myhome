@@ -286,10 +286,21 @@ body {
   justify-content: space-between;
   padding: 0 6vw;
 }
-
 .setpointLimits h4 {
   margin: 0;
   font-size: 0.75rem;
   color: var(--light_font_color);
   font-weight: 500;
+}
+.app-place_body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--header_color);
+}
+.app-place_module {
+  display: block; 
+  margin: 10px; 
+  padding: 20px; 
+  border: 1px solid #ccc; 
+  text-align: center; 
 }
