@@ -1,8 +1,9 @@
 <template> 
-    <div class="app-place_body">
-        <div class="app-place_module" @click="$emit('select', title)">{{ title }}</div>
-        
-    </div>
+        <div @click="$emit('select', title)">
+            <div class="app-place_module_icon"></div>
+            <h1 class="app-place_module_h1"> {{ title }} </h1>
+        </div>
+       
 </template>
 
 <script> 

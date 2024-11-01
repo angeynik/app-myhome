@@ -8,22 +8,24 @@
       <div class="icon"> menu </div>
     </header>
    
-    <div id="app_mainBody" class="mainBody">
-      <div v-if="!selectedComponent">
+
+      <div v-if="!selectedComponent" id="app_mainBody" class="mainBody">
+        <div class="app-place_body">
         <component :is="AppPlace" />
-        <AppPlace title="Комнаты" @select="selectComponent('Rooms')" />
-        <AppPlace title="Параметры" @select="selectComponent('Params')" />
-        <AppPlace title="Настройки" @select="selectComponent('MainSettings')" />
-        <AppPlace title="Уведомления" @select="selectComponent('MainAlarms')" />
-        <AppPlace title="Сценарии" @select="selectComponent('MainScenario')" />
-        <AppPlace title="Видео" @select="selectComponent('MainVideo')" />
-        <AppPlace title="Статистика" @select="selectComponent('MainStatistic')" />
+        <AppPlace class="app-place_module" title="Комнаты" @select="selectComponent('Rooms')" />
+        <AppPlace class="app-place_module" title="Параметры" @select="selectComponent('Params')" />
+        <AppPlace class="app-place_module"  title="Настройки" @select="selectComponent('MainSettings')" />
+        <AppPlace class="app-place_module"  title="Уведомления" @select="selectComponent('MainAlarms')" />
+        <AppPlace class="app-place_module"  title="Сценарии" @select="selectComponent('MainScenario')" />
+        <AppPlace class="app-place_module"  title="Видео" @select="selectComponent('MainVideo')" />
+        <AppPlace class="app-place_module"  title="Статистика" @select="selectComponent('MainStatistic')" />
+      </div>
       </div>
       
-      <div v-else>
+      <div v-else id="app_mainBody" class="mainBody">
         <component :is="selectedComponent" v-bind="this[propsTitle]"  @back="resetSelection" />
       </div>
-    </div>
+
 
     <div class="mainFooter"> 
       <MainFooter />
