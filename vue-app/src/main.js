@@ -1,10 +1,10 @@
 import { createApp } from 'vue';
 import App from './App.vue';
-import router from './router';
+// import router from './router';
 import config from './myhome_config.js'; // Импортируйте конфигурацию
 
 const app = createApp(App);
-app.use(router); // Подключаем маршрутизацию
+// app.use(router); // Подключаем маршрутизацию
 
 app.config.globalProperties.sPointRoom_all= config.sPointRoom_all;
 app.config.globalProperties.sPointRoom_01 = config.sPointRoom_01;

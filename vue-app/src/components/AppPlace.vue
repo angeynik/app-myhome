@@ -1,6 +1,7 @@
 <template> 
     <div class="app-place_body">
-        <router-link :to="link" class="app-place_module">{{ title }}</router-link>
+        <div class="app-place_module" @click="$emit('select', title)">{{ title }}</div>
+        
     </div>
 </template>
 
@@ -16,7 +17,7 @@ export default {
         required: true, 
         }, 
     }, 
-}; 
+    }; 
 </script>
 
 <style>

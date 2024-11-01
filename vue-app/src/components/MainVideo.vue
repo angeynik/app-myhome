@@ -1,7 +1,5 @@
 <template>
-  <div>
-  <h1>Настройки</h1>
-</div>
+  <h1>Видео</h1>
 </template>
 
 <script>

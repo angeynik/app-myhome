@@ -71,6 +71,9 @@ body {
  }
 
   .mainHeader {
+    display: grid;
+    grid-row: inherit;
+    grid-template-columns: 1fr 5fr 1fr;
     min-height: 60px;
     width: 100%;
     top: 0;
@@ -176,7 +179,12 @@ body {
 }
 
 /* SVG Иконки */
-.icon_big {
+.icon {
+    display: flex;
+    align-items: center;
+    justify-content: center
+}
+.icon.big {
   fill: var(--light_font);
   /* display: block; */
   width: 4vh;
@@ -187,7 +195,7 @@ body {
   stroke: var(--background_color);
   stroke-width: 1vh;
 }
-.icon_small {
+.icon.small {
   fill: var(--light_font);
   /* display: block; */
   /* width: 2vh; */
@@ -293,14 +301,15 @@ body {
   font-weight: 500;
 }
 .app-place_body {
-  margin: 0;
-  padding: 0;
-  background-color: var(--header_color);
+  margin: 20px;
+  padding: 20px;
+  /* background-color: var(--header_color); */
+  background: #5077f5;
 }
 .app-place_module {
   display: block; 
-  margin: 10px; 
-  padding: 20px; 
+  margin: 0px; 
+  padding: 0px; 
   border: 1px solid #ccc; 
   text-align: center; 
 }
