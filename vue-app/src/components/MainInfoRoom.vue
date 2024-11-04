@@ -26,10 +26,6 @@
               /> 
             </div>
 
-            <!-- <div> room_title - {{ room_title }}</div>
-            <div> point_title - {{ point_title }}</div>
-            <div> point_value - {{ point_value }}</div>
-            <div> Setpoint - {{ setpoint }}</div> -->
       <div style=" align-items: center; width: 100dvw;">
       <div id="app_setpointblock" ref="setpointBlock" v-show="showSetpoint"> 
         <BodySetpontBlock 
@@ -278,7 +274,7 @@ export default {
       } else {
         this.stateInfo = 0;
       }
-      console.log('Определяем флаг StateInfo = ', this.stateInfo);
+      // console.log('Определяем флаг StateInfo = ', this.stateInfo);
         return Mconfig[roomID].setpoint[this.setName];
     },
     getManageValues_checkID(id, arr) {
