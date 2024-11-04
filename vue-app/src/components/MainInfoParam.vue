@@ -1,7 +1,7 @@
 <template>
 
 <div class="container"
-    @touchstart="handleTouchStart"
+    @touchstart="handleTouchStart($event)"
     @touchend="handleTouchEnd" 
     @touchmove="handleTouchMove"
     >
@@ -18,10 +18,14 @@
               :group="param.group"
               :timeUpdated="param.timeDiff"
               @action="ParamPlaceAction"
+              @touchstart="handleTouchStart(param.id, $event)" 
+              @touchend="handleTouchEnd(param.id)" 
+              @touchmove="handleTouchMove($event)" 
+              :class="{ 'bordered': longPressId === param.id }"
               /> 
             </div>
 
-      <!-- <div style=" align-items: center; width: 100dvw;">
+      <div style=" align-items: center; width: 100dvw;">
       <div id="app_setpointblock" ref="setpointBlock" v-show="showSetpoint"> 
         <BodySetpontBlock 
         :setPoint="setpoint" 
@@ -31,8 +35,8 @@
         :secectedComponent="selectedComponent"
         @updateState="updateState"
         /> </div>
-      <div class="time_periodUpdated"> Время с последнего обновления, минут - {{ time_periodUpdated }}</div>
-    </div> -->
+      <!-- <div class="time_periodUpdated"> Время с последнего обновления, минут - {{ time_periodUpdated }}</div> -->
+    </div>
   </div>
 </template>
 
@@ -52,14 +56,30 @@ export default {
         key: '',
         paramsList: [],
         commonConfig: {},
-
+    // Переменные для обработки свайпа
+        keysArray: [],
+        key_index: 0, 
+        key_value: '', 
         isTouching: false, // Возникает при появлении события Касание по экрану
+        startX: 0, 
+        endX: 0, 
+        swipeThreshold: 80, // Порог срабатывания события Касание по экрану
+    // Переменные для блока Уставки
+        showSetpoint: false, // Показывать или нет блок с установкой значений
+        numSetpoint: false, // Ключ-индикатор параметров с числовыми значениями (для которых возможна Уставка)
+    // Переменные для обработки двойного касания и выбора компонента
+        longPressId: null, 
+        longPressTimer: null, 
+        doubleTapTimer: null, 
+        isDoubleTap: false,
         }
     },
     mounted () {
         this.commonConfig = JSON.parse(localStorage.getItem('commonConfig'));
-        this.key = 'Hum';
-        this.paramsList = this.getSortedParams(this.commonConfig, this.key);
+        this.keysArray = Object.keys(this.commonConfig.room00.info);
+        this.key = this.keysArray[this.key_index];
+        // this.paramsList = this.getSortedParams(this.commonConfig, this.key);
+        this.updateParamsList();
     },
     methods: {
         findKeys(config, key) {
@@ -77,7 +97,8 @@ export default {
             }
             return [...new Set(foundKeys)]; // Удаляем дубликаты
             },
-            getSortedParams(config, key) {
+        getSortedParams(config, key) {
+            console.log('MainInfoParam функция getSortedParams получила key - ', key);
                 const params = [];
                 const keys = this.findKeys(config, key); // Получаем ключи, содержащие `key`
                 for (let roomKey in config) {
@@ -87,9 +108,20 @@ export default {
                         const currentTime = new Date();
                         const savedTime = new Date(room.time[`${sensorKey}_time`]);
                         const timeDiff = Math.abs(currentTime - savedTime) / 1000 / 60; // Разница во времени в минутах
+                        
+                        let souce_value = room.sensors[sensorKey];
+                        if (typeof souce_value === 'number') { 
+                            souce_value = parseFloat(souce_value.toFixed(1));
+                            this.numSetpoint = true;
+                        } else if (typeof souce_value === 'boolean') {
+                             souce_value = souce_value ? 'ON' : 'OFF'; 
+                             this.numSetpoint = false;
+                            } else {
+                                this.numSetpoint = false;
+                            }
 
                         params.push({
-                        value: parseFloat(room.sensors[sensorKey].toFixed(1)),
+                        value: souce_value,
                         title: room.title,
                         group: room.group,
                         timeDiff: parseFloat(timeDiff.toFixed(1)),
@@ -100,64 +132,73 @@ export default {
                 }
                 console.log('params - ', params); // Убедимся, что параметры правильно извлекаются
                 return params;
-                },
-
-        // getSortedParams(config, key) {
-        //     const params = [];
-
-        //     for (let roomKey in config) {
-        //         const room = config[roomKey];
-
-        //         if (room.sensors && room.sensors[key]) {
-        //         const currentTime = new Date();
-        //         const savedTime = new Date(room.time[`${key}_time`]);
-        //         const timeDiff = Math.abs(currentTime - savedTime) / 1000 / 60; // Разница во времени в минутах
-
-        //         params.push({
-        //             value: room.sensors[key],
-        //             title: room.title,
-        //             group: room.group,
-        //             timeDiff: timeDiff
-        //         });
-        //         }
-        //     }
-        //     console.log('params - ', params);
-        //     return params;
-        //     },
+            },
         ParamPlaceAction (message) {
             console.log('MainInfoParam Функция ParamPlaceAction получила информацию от ParamPlace: ', message);
         },
-        handleTouchStart(event) {
-            console.log('Компонент MainInfoParam событие - handleTouchStart', event.touches[0].clientX, event.touches[0].clientY);
+        updateParamsList() { 
+            this.paramsList = this.getSortedParams(this.commonConfig, this.key); 
+            while (this.paramsList.length === 0) { 
+                this.key_index = (this.key_index + 1) % this.keysArray.length; 
+                this.key = this.keysArray[this.key_index]; 
+                this.paramsList = this.getSortedParams(this.commonConfig, this.key); 
+            } 
+            this.key_value = this.key; },
+        
+        handleTouchStart(id, event) {
+            // console.log('Компонент MainInfoParam событие - handleTouchStart', event.touches[0].clientX, event.touches[0].clientY);
             this.startX = event.touches[0].clientX;
             this.isTouching = true;
+
+        // Долгий тач 
+            this.longPressTimer = setTimeout(() => { 
+            this.longPressId = id; 
+            }, 3000); 
+        // Двойной тач 
+        if (this.doubleTapTimer) { 
+            clearTimeout(this.doubleTapTimer); 
+            this.doubleTapTimer = null; 
+            this.isDoubleTap = true; 
+            this.navigateToRoom(id); 
+        } else { 
+            this.doubleTapTimer = setTimeout(() => { 
+                this.doubleTapTimer = null; 
+                this.isDoubleTap = false; 
+            }, 300); }
         },
-        handleTouchEnd(component) {
-            console.log('Компонент MainInfoParam событие - handleTouchEnd, secectedComponent - ', component);
-            if (component === 'setpointBlock') {
-            console.log('Разрешаем изменять значение для Компонента setpointBlock');
-            const currentTime = new Date().getTime();
-            this.lastTouchTime = currentTime;
-            this.$emit('updateState', { updatePermission: true }); // Разрешаем обновление Уставки
-            return;
-            } else {
-            return;
-            }
+        handleTouchEnd() {
+            // console.log('Компонент MainInfoParam событие - handleTouchEnd, secectedComponent - ');
+                this.key = this.keysArray[this.key_index]; 
+                this.updateParamsList(); 
+                this.isTouching = false; 
         },
         handleTouchMove (event) {
-            console.log('Компонент MainInfoParam событие - handleTouchMove', event.touches[0].clientX, event.touches[0].clientY);
-            const touch = event.touches[0];
-            const deltaX = touch.clientX - this.startX;
-            if (deltaX < 8 && deltaX > - 8) {
-            return;
+            // console.log('Компонент MainInfoParam событие - handleTouchMove', event.touches[0].clientX);
+
+            if (this.isTouching) { 
+                // this.endX = event.touches[0].clientX; 
+                const deltaX = event.touches[0].clientX - this.startX; 
+                // console.log('Компонент MainInfoParam событие - handleTouchEnd, deltaX - ', deltaX, 'swipeThreshold - ', this.swipeThreshold);
+                if (deltaX > this.swipeThreshold) { 
+                    this.key_index = (this.key_index - 1 + this.keysArray.length) % this.keysArray.length;
+                    // console.log(' -1 _____ Компонент MainInfoParam событие - handleTouchEnd, key_index - ', this.key_index);
+                } else if (deltaX < -this.swipeThreshold) { 
+                    this.key_index = (this.key_index + 1) % this.keysArray.length; 
+                    // console.log('+1 _____ Компонент MainInfoParam событие - handleTouchEnd, key_index - ', this.key_index);
+                } 
             }
-            this.isTouching = false;
-            this.$emit('updateState', { updatePermission: false }); // Запрещаем обновление Уставки
-        }
+
+        },
+        navigateToRoom(id) { 
+            console.log('Переход в комнату с id:', id); 
+        // Ваша логика перехода в комнату 
+        },
     },
 }
 </script>
 
 <style>
-
+.bordered { 
+    border: 2px solid blue;
+}
 </style>
