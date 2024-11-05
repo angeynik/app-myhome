@@ -66,7 +66,6 @@ export default {
         swipeThreshold: 80, // Порог срабатывания события Касание по экрану
     // Переменные для блока Уставки
         showSetpoint: false, // Показывать или нет блок с установкой значений
-        numSetpoint: false, // Ключ-индикатор параметров с числовыми значениями (для которых возможна Уставка)
     // Переменные для обработки двойного касания и выбора компонента
         longPressId: null, 
         longPressTimer: null, 
@@ -83,6 +82,7 @@ export default {
     },
     methods: {
         findKeys(config, key) {
+            console.log('MainInfoParam функция findKeys получила key - ', key);
             const foundKeys = [];
 
             for (let roomKey in config) {
@@ -98,7 +98,7 @@ export default {
             return [...new Set(foundKeys)]; // Удаляем дубликаты
             },
         getSortedParams(config, key) {
-            console.log('MainInfoParam функция getSortedParams получила key - ', key);
+            // console.log('MainInfoParam функция getSortedParams получила key - ', key);
                 const params = [];
                 const keys = this.findKeys(config, key); // Получаем ключи, содержащие `key`
                 for (let roomKey in config) {
@@ -112,12 +112,18 @@ export default {
                         let souce_value = room.sensors[sensorKey];
                         if (typeof souce_value === 'number') { 
                             souce_value = parseFloat(souce_value.toFixed(1));
-                            this.numSetpoint = true;
+                            this.$emit('AppNewSetpoint', {
+                                showSetpoint: true
+                                });
                         } else if (typeof souce_value === 'boolean') {
                              souce_value = souce_value ? 'ON' : 'OFF'; 
-                             this.numSetpoint = false;
+                             this.$emit('AppNewSetpoint', {
+                                showSetpoint: false
+                                });
                             } else {
-                                this.numSetpoint = false;
+                                this.$emit('AppNewSetpoint', {
+                                showSetpoint: false
+                                });
                             }
 
                         params.push({
@@ -131,14 +137,15 @@ export default {
                     });
                 }
                 this.$emit('AppNewSetpoint', {
-                changeTitle: config.room00.info[key]
-            });
-                console.log('params - ', params); // Убедимся, что параметры правильно извлекаются
+                changeTitle: config.room00.info[key],
+                keys: key
+                });
+                // console.log('params - ', params); // Убедимся, что параметры правильно извлекаются
                 return params;
             },
-        ParamPlaceAction (message) {
-            console.log('MainInfoParam Функция ParamPlaceAction получила информацию от ParamPlace: ', message);
-        },
+        // ParamPlaceAction (message) {
+        //     console.log('MainInfoParam Функция ParamPlaceAction получила информацию от ParamPlace: ', message);
+        // },
         updateParamsList() { 
             this.paramsList = this.getSortedParams(this.commonConfig, this.key); 
             while (this.paramsList.length === 0) { 
@@ -150,9 +157,9 @@ export default {
         
         handleTouchStart(event, id) {
             if (!event) { 
-                console.log('Компонент MainInfoParam событие - handleTouchStart, не передан event', event);
+                console.error('Компонент MainInfoParam событие - handleTouchStart, не передан event', event);
             } else {
-            console.log('Компонент MainInfoParam событие - handleTouchStart', event.touches[0].clientX, event.touches[0].clientY);
+            // console.log('Компонент MainInfoParam событие - handleTouchStart', event.touches[0].clientX, event.touches[0].clientY);
             this.startX = event.touches[0].clientX;
             this.isTouching = true;
 

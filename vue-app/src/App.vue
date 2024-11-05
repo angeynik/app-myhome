@@ -3,7 +3,11 @@
     <header class="mainHeader">
       <div class="icon" @click=this.resetSelection> back </div>
       
-      <div><MainHeader :location="location_title" /></div>
+      <div><MainHeader 
+        :location="point_title_name" 
+        :location_sign="point_title_sign"
+        />
+      </div>
 
       <div class="icon"> menu </div>
     </header>
@@ -19,6 +23,7 @@
         <AppPlace class="app-place_module"  title="Сценарии" @select="selectComponent('MainScenario')" />
         <AppPlace class="app-place_module"  title="Видео" @select="selectComponent('MainVideo')" />
         <AppPlace class="app-place_module"  title="Статистика" @select="selectComponent('MainStatistic')" />
+        <AppPlace class="app-place_module"  title="О продукте" @select="selectComponent('MainCompany')" />
       </div>
       </div>
       
@@ -27,7 +32,15 @@
       </div>
 
     <div class="mainFooter"> 
-      <MainFooter />
+      <MainFooter v-show="!showSetpoint"/>
+      <BodySetpontBlock 
+        :setPoint="setpoint" 
+        :highLimit="limHigh" 
+        :lowLimit="limLow"
+        :step="limStep"
+        :secectedComponent="selectedComponent"
+        @updateState="changeSetpoint"
+        v-show="showSetpoint"/>
     </div>
   </div>
 </template>
@@ -42,6 +55,8 @@ import MainVideo from './components/MainVideo.vue';
 import MainAlarms from './components/MainAlarms.vue';
 import MainScenarios from './components/MainScenarios.vue';
 import MainStatistic from './components/MainStatistic.vue';
+import BodySetpontBlock from './components/BodySetpontBlock.vue';
+import MainCompany from './components/MainCompany.vue';
 
 export default { 
   name: 'App', 
@@ -55,15 +70,19 @@ export default {
     MainAlarms,
     MainScenarios,
     MainStatistic,
+    BodySetpontBlock,
+    MainCompany,
   }, 
   data() { 
     return { 
-      location_title: '',
+      point_title_name: '', // Тип параметра например Температура
+      point_title_sign: '', // Знак параметра например °C
       selectedComponent: null, // Состояние для выбранного компонента
       propsTitle: null, // Параметры передаваемые в компонент
   // Передаваемые переменные
       id_title: 3, // Храним название ID ПОСЛЕДНЕЙ промсотренной локации например Гостиная, 1 этаж
-      title_type: '', // Тип параметра например Температура
+      id_point: 1, // ID текущего датчика
+      // title_type: '', 
       value_current: 0, // Текущее значение параметра например 20
       value_set: 0, // Ожидаемое значение параметра например 22
       value_down: 10, // Минимальное значение параметра например 10
@@ -71,7 +90,7 @@ export default {
       info_status: '', // Переменная помогает видеть статус работы устройств используемых в конкретной локации Norm, Info, Warning, Alarm
       time_period_updated: 0, // Интервал от последнего обновления значения параметра до текущего момента (в секундах) 
   // Принимаемые переменные
-     
+    
 
   // Компонент BodyInformBlock
       mode_security: '', // Сценарий режима безопасность 
@@ -88,6 +107,17 @@ export default {
       reconnectInterval: 2000, // Интервал переподключения в миллисекундах
       isSending: true, // Флаг разрешающий отправку данных на сервер
       localStorageUpdated: false, // Флаг обновления конфигурации в localStorage
+
+// Параметры для работы с компонентов выбора уставки
+      valManageConfig:[],
+      key: 'Temp',
+      showSetpoint: false, // Показывать или нет блок с установкой значений
+      limLow: 8, //Нижняя граница уставки
+      limHigh: 32, //Верхняя граница уставки
+      limStep: 0.1, //Шаг уставки
+      setpoint: localStorage.getItem('setpoint'), // Значение уставки
+      newSetValue: 0, // Новое значение уставки (получено с компонента BodySetpontBlock)
+
     }; 
   },
   created() {
@@ -96,9 +126,11 @@ export default {
   },
   mounted() {
     this.connectWebSocket();
+    this.valManageConfig = JSON.parse(localStorage.getItem('manageConfig'));
     // this.sendServerRequest('get', 'config', 'name','manageConfig');
     // this.sendServerRequest('get', 'config', 'name','commonConfig');
     this.id_title = localStorage.getItem('id_title') || 3;
+    this.getManageValues(this.id_title, this.key);
   },
   beforeUnmount() {
     if (this.socket) {
@@ -383,11 +415,241 @@ export default {
         // console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение sendLogToServer - ', event.sendLogToServer);
         this.sendLogToServer(event.sendLogToServer.type, event.sendLogToServer.message);
       }
-      if (event.changeTitle && this.selectedComponent === 'MainInfo') {
-        console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle - ', event.changeTitle);
-        this.location_title = event.changeTitle.title;      
+      if (event.changeTitle.title !== undefined && this.selectedComponent === 'MainInfo') {
+        console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle - ', event);
+        this.getInfo(event.changeTitle.title);
+        this.point_title_name = event.changeTitle.key;     
+      }
+      if (event.showSetpoint !== undefined && this.selectedComponent === 'MainInfo') {
+        console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение showSetpoint - ', event.showSetpoint);
+        this.showSetpoint = event.showSetpoint;      
       }
   },
+  changeSetpoint(newState) {
+    if (newState !== null && newState !== undefined) {
+      console.log('App.vue - из компонентов в функцию changeSetpoint получено сообщение - ', newState);
+      if (newState.newSetPoint !== undefined) this.setpoint = newState.newSetPoint;
+
+      if (newState.updatePermission !== undefined && this.setpoint !== undefined) this.$emit('AppNewSetpoint',{
+        setpointUpdate:
+      { 
+          setpoint: { //Сообщение о изменении Уставки Для каждой группы параметров нужно писать свой разработчик
+            [this.setName] : this.setpoint
+        }, 
+        request: 'setpoint',
+        type: 'post', 
+        name: this.room_name,
+        id: this.id,
+        }
+      }); 
+    } else {
+      console.error('App.vue Функция changeSetpoint получила пустое значение setpoint', newState);
+    }
+
+  },
+  getManageValues(id, name) {
+      console.log('App.vue - Приступили к выполнению функции getManageValues с параметром id = ', id , ' и ключем = ', name);
+      // Задаем ключи для получения параметров
+      this.setName = 'set'+name;
+      this.lowName = 'limDown'+name;
+      console.log('MainBody Функция getManageValues Получили имя нижней границы lowName  ', this.lowName);
+      this.highName = 'limUp'+name;
+      this.stepName = 'limStep'+name;
+      console.log('set = ', this.setName, ' low = ', this.lowName, ' high = ',  this.highName, ' step = ', this.stepName);
+
+      // Получаем объект manageConfig из localStorage
+      const Mconfig = this.valManageConfig;
+      console.log('Получили manageConfig из valManageConfig', Mconfig);
+
+      if (!Mconfig) {
+        console.error('Не удалось получить конфигурацию manageConfig из localStorage');
+        return;
+      } else {
+        console.log('Конфигурация "manageConfig" для id -', id, ' получена из localStorage успешно', Mconfig);
+      }
+  
+      const roomID = this.getManageValues_checkID(id, Mconfig);
+      console.log('roomID = ', roomID);
+      // Значения граничных диапазонов всегда получаем из объекта common в manageConfig
+      this.limLow = Mconfig.common.setpoint[this.lowName];
+      console.log('MainBody Функция getManageValues Обновили значение нижней границы limLow = ', this.limLow);
+      this.limHigh = Mconfig.common.setpoint[this.highName];
+      this.limStep = Mconfig.common.setpoint[this.stepName];
+
+
+      console.log('roomID = ', roomID, 'setPoint = ', this.setpoint, ' lowLimit = ', this.lowLimit, ' highLimit = ', this.highLimit, ' step = ', this.step);
+
+      // Устанавливаем setPoint для найденного или дефолтного roomID
+ 
+      if (roomID !== 'common') {
+        this.stateInfo = 1;
+      } else {
+        this.stateInfo = 0;
+      }
+      // console.log('Определяем флаг StateInfo = ', this.stateInfo);
+        return Mconfig[roomID].setpoint[this.setName];
+    },
+    getManageValues_checkID(id, arr) {
+      // console.log(' getManageValues_checkID  --- Приступили к выполнению функции getManageValues_checkID с параметром id = ', id);
+      let room = 'common';
+      for (const key in arr) {
+      if (arr[key].id === id) {
+        room = key;
+        this.stateSetpoint = 1;
+        // console.log(' getManageValues_checkID --- Найдена комната с запрашиваемым ID:', room);
+        break;
+      }
+      }
+      if (room === 'common') {
+        this.stateSetpoint = 0;
+        // console.log(' getManageValues_checkID --- Комната с запрашиваемым ID не найдена', room);
+      }
+      return room;
+
+    },
+
+    getInfo (value) { // Получаем тип датчика по его наименованию
+      // console.log('MainBody.vue - Приступили к выполнению функции getInfo с параметром value = ', value);
+      if (value.includes('Temp')) {
+        this.point_title_name = 'Температура';
+        this.point_title_sign = '°C';
+        this.showSetpoint = true;
+        return 'Temp';
+      } else if (value.includes('Hum')) {
+        this.point_title_name = 'Влажность';
+        this.point_title_sign = '%';
+        this.showSetpoint = true;
+        return 'Hum';
+      } else if (value.includes('Lum')) {
+        this.point_title_name = 'Освещенность';
+        this.point_title_sign = 'lum';
+        this.showSetpoint = false;
+        return 'Lum';
+      } else if (value.includes('Pres')) {
+        this.point_title_name = 'Давление';
+        this.point_title_sign = 'hPa';
+        this.showSetpoint = false;
+        return 'Pres';
+      } else if (value.includes('Noise')) {
+        this.point_title_name = 'Уровень шума';
+        this.point_title_sign = 'dB';
+        this.showSetpoint = false;
+        return 'Noise';
+      } else if (value.includes('Co2')) {
+        this.point_title_name = 'CO2';
+        this.point_title_sign = 'ppm';
+        this.showSetpoint = true;
+        return 'CO2';
+      } else if (value.includes('Voc')) {
+        this.point_title_name = 'VOC';
+        this.point_title_sign = 'ppb';
+        this.showSetpoint = false;
+        return 'Voc';
+      } else if (value.includes('Mov')) {
+        this.point_title_name = 'Движение';
+        this.point_title_sign = 'on/off';
+        this.showSetpoint = false;
+        return 'Mov';
+      } else if (value.includes('Bat')) {
+        this.point_title_name = 'Напряжение батареи';
+        this.point_title_sign = 'V';
+        this.showSetpoint = false;
+        return 'Bat';
+      } else if (value.includes('Switch')) {
+        this.point_title_name = 'Переключатель';
+        this.point_title_sign = 'on/off';
+        this.showSetpoint = false;
+        return 'Switch';
+      } else if (value.includes('Relay')) {
+        this.point_title_name = 'Реле';
+        this.point_title_sign = 'on/off';
+        this.showSetpoint = false;
+        return 'Relay';
+      } else if (value.includes('Power')) {
+        this.point_title_name = 'Розетка';
+        this.point_title_sign = 'on/off';
+        this.showSetpoint = false;
+        return 'Power';
+      } else if (value.includes('Dimmer')) {
+        this.point_title_name = 'Контроллер';
+        this.point_title_sign = 'on/off';
+        this.showSetpoint = false;
+        return 'Dimmer';
+      } else if (value.includes('Fire')) {
+        this.point_title_name = 'Пожар';
+        this.point_title_sign = 'on/off';
+        this.showSetpoint = false;
+        return 'Fire';
+      } else if (value.includes('Leak')) {
+        this.point_title_name = 'Протечка';
+        this.point_title_sign = 'on/off';
+        this.showSetpoint = false;
+        return 'Leak';
+      } else if (value.includes('Smoke')) {
+        this.point_title_name = 'Дым';
+        this.point_title_sign = 'on/off';
+        this.showSetpoint = false;
+        return 'Smoke';
+      } else {
+        this.point_title_name = 'Неизвестное';
+        this.point_title_sign = '?';
+        this.showSetpoint = false;
+        return 'Unknown';
+      }
+    },
+    checkLength(Point, Point_length) {
+      // console.log('checkLength Начинаем проверку для ID', Point, ' ID_length = ', Point_length);
+      if (Point > Point_length) {
+        // console.log('Переходим в начало списка');
+        return 1;
+      } if (Point < 1) {
+        // console.log('Переходим в конец списка');
+        return Point_length;
+      } else {
+        // console.log('ID в диапазоне возвращаем Point = ', Point);
+        return Point;
+      }
+    },
+    getPeriodMinutes(lastTime) {
+      // console.log('MainBody - Функция getPeriodMinutes Начинаем работу с lastTime = ', lastTime);
+      if (lastTime !== null && lastTime !== undefined) {
+        try {
+          const lastDate = new Date(lastTime);
+          // console.log('MainBody - Функция getPeriodMinutes lastDate = ', lastDate);
+          const currentDate = new Date();
+          const timeDifferenceMinutes = Math.floor((currentDate - lastDate) / 60000); // разница в минутах
+
+          // const timeDifference = currentDate - lastDate;
+          // const seconds = Math.floor(timeDifference / 1000);
+          // const minutes = Math.floor(seconds / 60);
+          // const hours = Math.floor(minutes / 60);
+          // console.log(`Прошло времени: ${hours} часов, ${minutes % 60} минут, ${seconds % 60} секунд`);
+
+          return timeDifferenceMinutes;
+        } catch (error) {
+          console.error('MainBody Функция getPeriodMinutes Ошибка расчета интервала времени', error);
+          // В компоненте, который вызывает событие
+         this.$emit('updateState', {
+            sendLogToServer: 
+            { type: 'error', 
+            message: `MainBody Функция getPeriodMinutes Ошибка расчета интервала времени: ${error}` 
+            }
+          });
+          // this.$emit('updateState', {sendLogToServer: ('Error in getPeriodMinutes: ', error)});
+          // this.sendLogToServer('error', 'Client: Не удалось отправить сообщение: WS соединение не установлено');
+        }
+      } else {
+        console.error('MainBody Функция getPeriodMinutes Значение времени переданное в функцию не определено');
+          // В компоненте, который вызывает событие
+         this.$emit('updateState', {
+          sendLogToServer: 
+          { type: 'error', 
+          message: `MainBody Функция getPeriodMinutes Значение времени переданное в функцию не определено: ` 
+        }
+        });
+      }
+      
+    },
 
   }
 }; 

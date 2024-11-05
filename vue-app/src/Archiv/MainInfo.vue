@@ -66,7 +66,7 @@ export default {
     propsTitle: String,
   },
   created() {
-    console.log('MainInfo.vue: propsTitle', this.propsTitle);
+    // console.log('MainInfo.vue: propsTitle', this.propsTitle);
     // this.testFunct();
         // this.sendLogToServer('info', 'Client: Инициализация подключения логирования'); // отправка логов на сервер для сохранения в файл
         // localStorage.setItem('flag_commonConfigUpdated', 'false');
@@ -116,7 +116,7 @@ export default {
           }
         
         } else if (n.sendLogToServer !== undefined) {
-          console.log(' MainInfo Получено сообщение n.sendLogToServer', n.sendLogToServer );
+          // console.log(' MainInfo Получено сообщение n.sendLogToServer', n.sendLogToServer );
           this.$emit('eventsComponent', {
             sendLogToServer: {
               type: n.sendLogToServer.type, 
@@ -145,12 +145,14 @@ export default {
 
   },  
   messageFromInfoParam(n) {
-    console.log('MainInfo.vue: Функция messageFromInfoParam: Получено ообщение', n);
+    // console.log('MainInfo.vue: Функция messageFromInfoParam: Получено ообщение', n);
     if (n !== undefined && n !== null) {
       this.$emit('eventsComponent', {
         changeTitle: {
           title: n.changeTitle
         },
+        showSetpoint: n.showSetpoint,
+        key: n.keys,
       });
     }
   }, 
