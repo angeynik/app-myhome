@@ -18,7 +18,7 @@
               :group="param.group"
               :timeUpdated="param.timeDiff"
               @action="ParamPlaceAction"
-              @touchstart="handleTouchStart(param.id, $event)" 
+              @touchstart="handleTouchStart($event, param.id)" 
               @touchend="handleTouchEnd(param.id)" 
               @touchmove="handleTouchMove($event)" 
               :class="{ 'bordered': longPressId === param.id }"
@@ -130,6 +130,9 @@ export default {
                     }
                     });
                 }
+                this.$emit('AppNewSetpoint', {
+                changeTitle: config.room00.info[key]
+            });
                 console.log('params - ', params); // Убедимся, что параметры правильно извлекаются
                 return params;
             },
@@ -145,15 +148,19 @@ export default {
             } 
             this.key_value = this.key; },
         
-        handleTouchStart(id, event) {
-            // console.log('Компонент MainInfoParam событие - handleTouchStart', event.touches[0].clientX, event.touches[0].clientY);
+        handleTouchStart(event, id) {
+            if (!event) { 
+                console.log('Компонент MainInfoParam событие - handleTouchStart, не передан event', event);
+            } else {
+            console.log('Компонент MainInfoParam событие - handleTouchStart', event.touches[0].clientX, event.touches[0].clientY);
             this.startX = event.touches[0].clientX;
             this.isTouching = true;
 
         // Долгий тач 
             this.longPressTimer = setTimeout(() => { 
             this.longPressId = id; 
-            }, 3000); 
+            }, 1000); 
+
         // Двойной тач 
         if (this.doubleTapTimer) { 
             clearTimeout(this.doubleTapTimer); 
@@ -164,7 +171,8 @@ export default {
             this.doubleTapTimer = setTimeout(() => { 
                 this.doubleTapTimer = null; 
                 this.isDoubleTap = false; 
-            }, 300); }
+            }, 200); }
+        }
         },
         handleTouchEnd() {
             // console.log('Компонент MainInfoParam событие - handleTouchEnd, secectedComponent - ');

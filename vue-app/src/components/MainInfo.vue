@@ -146,6 +146,13 @@ export default {
   },  
   messageFromInfoParam(n) {
     console.log('MainInfo.vue: Функция messageFromInfoParam: Получено ообщение', n);
+    if (n !== undefined && n !== null) {
+      this.$emit('eventsComponent', {
+        changeTitle: {
+          title: n.changeTitle
+        },
+      });
+    }
   }, 
   // testFunct () {
 

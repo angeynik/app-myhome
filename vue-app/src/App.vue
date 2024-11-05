@@ -58,7 +58,7 @@ export default {
   }, 
   data() { 
     return { 
-      location_title: 'Your Location Title',
+      location_title: '',
       selectedComponent: null, // Состояние для выбранного компонента
       propsTitle: null, // Параметры передаваемые в компонент
   // Передаваемые переменные
@@ -383,7 +383,10 @@ export default {
         // console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение sendLogToServer - ', event.sendLogToServer);
         this.sendLogToServer(event.sendLogToServer.type, event.sendLogToServer.message);
       }
-
+      if (event.changeTitle && this.selectedComponent === 'MainInfo') {
+        console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle - ', event.changeTitle);
+        this.location_title = event.changeTitle.title;      
+      }
   },
 
   }
