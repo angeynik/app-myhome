@@ -1,136 +1,124 @@
 <template>
   <div class="app">
-    <header class="mainHeader">
-      <div class="icon" @click=this.resetSelection> back </div>
-      
-      <div><MainHeader 
-        :location="point_title_name" 
-        :location_sign="point_title_sign"
-        />
-      </div>
+      <header class="header">
 
-      <div class="icon"> menu </div>
-    </header>
+          <div class="icon" @click=this.resetSelection> back </div>
+          
+          <div style="display: flex; justify-content: center; width: 80%;"><MainHeader 
+            :location="header_title" 
+          />
+          </div>
+
+          <div class="icon"> menu </div>
+      </header>
    
 
-      <div v-if="!selectedComponent" id="app_place" class="mainBody">
-        <div class="app-place_body">
-        <component :is="AppPlace" />
-        <AppPlace class="app-place_module" title="Комнаты" @select="selectComponent('Rooms')" />
-        <AppPlace class="app-place_module" title="Параметры" @select="selectComponent('Params')" />
-        <AppPlace class="app-place_module"  title="Настройки" @select="selectComponent('MainSettings')" />
-        <AppPlace class="app-place_module"  title="Уведомления" @select="selectComponent('MainAlarms')" />
-        <AppPlace class="app-place_module"  title="Сценарии" @select="selectComponent('MainScenario')" />
-        <AppPlace class="app-place_module"  title="Видео" @select="selectComponent('MainVideo')" />
-        <AppPlace class="app-place_module"  title="Статистика" @select="selectComponent('MainStatistic')" />
-        <AppPlace class="app-place_module"  title="О продукте" @select="selectComponent('MainCompany')" />
-      </div>
-      </div>
+      <div class="body">
+
+        <div class="app-place_body" v-if="!selectedComponent" id="app_place" >
+          <component :is="AppPlace" />
+          <AppPlace class="app-place_module" title="Комнаты" @select="selectComponent('Rooms')" />
+          <AppPlace class="app-place_module" title="Параметры" @select="selectComponent('Params')" />
+          <AppPlace class="app-place_module"  title="Настройки" @select="selectComponent('MainSettings')" />
+          <AppPlace class="app-place_module"  title="Уведомления" @select="selectComponent('MainAlarms')" />
+          <AppPlace class="app-place_module"  title="Сценарии" @select="selectComponent('MainScenarios')" />
+          <AppPlace class="app-place_module"  title="Видео" @select="selectComponent('MainVideo')" />
+          <AppPlace class="app-place_module"  title="Статистика" @select="selectComponent('MainStatistic')" />
+          <AppPlace class="app-place_module"  title="О продукте" @select="selectComponent('MainCompany')" />
+        </div>
       
-      <div v-else id="app_component">
-        <component :is="selectedComponent" :propsTitle="propsTitle"  @eventsComponent="getEventsComponent" />
+        <div v-else id="app_component">
+          <component 
+          :is="selectedComponent" 
+          :propsTitle="propsTitle"  
+          @eventsComponent="getEventsComponent" 
+          />
+        </div>
       </div>
 
-    <div class="mainFooter"> 
-      <MainFooter v-show="!showSetpoint"/>
-      <BodySetpontBlock 
-        :setPoint="setpoint" 
-        :highLimit="limHigh" 
-        :lowLimit="limLow"
-        :step="limStep"
-        :secectedComponent="selectedComponent"
-        @updateState="changeSetpoint"
-        v-show="showSetpoint"/>
-    </div>
+      <footer class="footer"> 
+        <MainFooter v-show="!showSetpoint"/>
+        <BodySetpontBlock 
+          :setPoint="setpoint" 
+          :highLimit="limHigh" 
+          :lowLimit="limLow"
+          :step="limStep"
+          @updateState="changeSetpoint"
+          v-show="showSetpoint"/>
+      </footer>
   </div>
 </template>
 
 <script>
-import MainHeader from './components/MainHeader.vue'; 
-import MainFooter from './components/MainFooter.vue'; 
+import MainHeader from './components/MainHeader.vue';
+import MainFooter from './components/MainFooter.vue';
 import AppPlace from './components/AppPlace.vue'; 
+import MainBody from './components/MainBody.vue';
 import MainSettings from './components/MainSettings.vue';
-import MainInfo from './components/MainInfo.vue';
-import MainVideo from './components/MainVideo.vue';
 import MainAlarms from './components/MainAlarms.vue';
 import MainScenarios from './components/MainScenarios.vue';
+import MainVideo from './components/MainVideo.vue';
 import MainStatistic from './components/MainStatistic.vue';
-import BodySetpontBlock from './components/BodySetpontBlock.vue';
 import MainCompany from './components/MainCompany.vue';
 
 export default { 
   name: 'App', 
   components: { 
-    MainHeader, 
-    MainFooter, 
-    AppPlace, 
+    AppPlace,
+    MainBody,
+    MainHeader,
+    MainFooter,
     MainSettings,
-    MainInfo,
-    MainVideo,
     MainAlarms,
     MainScenarios,
+    MainVideo,
     MainStatistic,
-    BodySetpontBlock,
-    MainCompany,
+    MainCompany
   }, 
   data() { 
     return { 
-      point_title_name: '', // Тип параметра например Температура
-      point_title_sign: '', // Знак параметра например °C
-      selectedComponent: null, // Состояние для выбранного компонента
-      propsTitle: null, // Параметры передаваемые в компонент
-  // Передаваемые переменные
-      id_title: 3, // Храним название ID ПОСЛЕДНЕЙ промсотренной локации например Гостиная, 1 этаж
-      id_point: 1, // ID текущего датчика
-      // title_type: '', 
-      value_current: 0, // Текущее значение параметра например 20
-      value_set: 0, // Ожидаемое значение параметра например 22
-      value_down: 10, // Минимальное значение параметра например 10
-      value_up: 32, // Максимальное значение параметра например 32
-      info_status: '', // Переменная помогает видеть статус работы устройств используемых в конкретной локации Norm, Info, Warning, Alarm
-      time_period_updated: 0, // Интервал от последнего обновления значения параметра до текущего момента (в секундах) 
-  // Принимаемые переменные
-    
-
-  // Компонент BodyInformBlock
-      mode_security: '', // Сценарий режима безопасность 
-      mode_climat: '', // Сценарий режима управления климатом
-      mode_season: '', // Cезон работы системы - Зима Лето Межсезонье
-      mode_description: '', // Описание режима работы системы, какие функции выполняет, что в себя включает
-      mode_selected: '', // Наименование или номер выбранного режима - пользователь в первую очередь увидит текущий выбранный режим
-      mode_sorting: '', // Параметр отвечающий за сортировку (последовательность) отображения режимов
-
-// Параметры для управления подключением через ws
-      socket: null,
-      WSconnected: false,
-      messageFromServer: null,
+  // Ключи и флаги для обмена данными с сервером
+      isSending: false, // Флаг разрешения отправки запроса на сервер
+      WSconnected: false, // Флаг установленного соединения с сервером по WS
       reconnectInterval: 2000, // Интервал переподключения в миллисекундах
-      isSending: true, // Флаг разрешающий отправку данных на сервер
       localStorageUpdated: false, // Флаг обновления конфигурации в localStorage
 
-// Параметры для работы с компонентов выбора уставки
-      valManageConfig:[],
-      key: 'Temp',
-      showSetpoint: false, // Показывать или нет блок с установкой значений
-      limLow: 8, //Нижняя граница уставки
-      limHigh: 32, //Верхняя граница уставки
-      limStep: 0.1, //Шаг уставки
-      setpoint: localStorage.getItem('setpoint'), // Значение уставки
-      newSetValue: 0, // Новое значение уставки (получено с компонента BodySetpontBlock)
+  // Данные с сервера
+      messageFromServer: null, // Сообщение с сервера
+      socket: null,
+      valManageConfig:[], // Сохранение Конфигурации управления
+  // Работа с меню выбра компонентов
+    propsTitle:'',// идентификатор параметра сортировки room или params
+    selectedComponent: null, //  Имя выбранного компонента
+
+
+  // Данные о выбранном объекте (id комнаты, id параметра, наименования параметра)
+    header_title: '', // переменная для отображения в Header
+    room_id: 1, // id выбранной комнаты
+    room_title: '', // наименование выбранной комнаты Гостинная, Кухня, Спальня, etc
+    param_id: 0, // id выбранного параметра (температуры, влажности и т.д.)
+    param_key: '', // ключ выбранного параметра Temp, Hum, Move, etc
+    param_title: '', // наименование выбранного параметра Температура, Влажность, etc
+    param_sign: '', // знак единицы измерения (°C, %, мм, м, часы, мин, сек, мсек, мммсек, день, неделя, месяц, год)
+    group: '', // наменование группы параметров
 
     }; 
   },
   created() {
         this.sendLogToServer('info', 'Client: Инициализация подключения логирования'); // отправка логов на сервер для сохранения в файл
-        localStorage.setItem('flag_commonConfigUpdated', 'false');
+        this.selectedComponent = null;
   },
   mounted() {
     this.connectWebSocket();
-    this.valManageConfig = JSON.parse(localStorage.getItem('manageConfig'));
+    this.checkLocalStorage();
+    // localStorage.setItem('flag_commonConfigUpdated', 'false');
+    // this.valManageConfig = JSON.parse(localStorage.getItem('manageConfig'));
     // this.sendServerRequest('get', 'config', 'name','manageConfig');
     // this.sendServerRequest('get', 'config', 'name','commonConfig');
-    this.id_title = localStorage.getItem('id_title') || 3;
-    this.getManageValues(this.id_title, this.key);
+    // this.id_title = localStorage.getItem('id_title') || 3;
+    // this.getManageValues(this.id_title, this.key);
+    // console.log(localStorage.getItem('commonConfig'));
+    // console.log(localStorage.getItem('manageConfig'));
   },
   beforeUnmount() {
     if (this.socket) {
@@ -144,7 +132,8 @@ export default {
 
     this.socket = new WebSocket(`ws://${host}:${port}`);
       this.socket.onopen = () => {
-        console.log(`WebSocket соединение установлено на ${host}:${port}`);
+        // console.log(`WebSocket соединение установлено на ${host}:${port}`);
+        this.sendLogToServer('info', `WebSocket соединение установлено на ${host}:${port}`); 
         this.WSconnected = true; // Устанавливаем флаг соединения
         if (this.isSending === true) {
         this.sendServerRequest('get', 'config', 'name','manageConfig');
@@ -153,15 +142,16 @@ export default {
         this.isSending = false;
       }
       };
-
       this.socket.onmessage = async (event) => {
         try {
           const jsomMess = await this.blobToJson(event.data); // Преобразуем Blob в JSON из полученного сообщения
           // console.log('Получено сообщение:', jsomMess);
           this.messageFromServer = jsomMess;
           this.CheckMessage(jsomMess);
+          
         } catch (error) {
-          console.error(error);
+          // console.error(error);
+          this.sendLogToServer('error', `WebSocket Ошибка при получении сообщения с сервера ${error}`); 
         }
       };
 
@@ -178,14 +168,26 @@ export default {
     };
 
     },
-    sendMessage(message) {
+    checkLocalStorage() { // Проверка наличия конфигурации в localStorage
+      const commonData = JSON.parse(localStorage.getItem('commonConfig'));
+      const manageData = JSON.parse(localStorage.getItem('manageConfig'));
+      if (!commonData) {
+        this.isSending = true;
+        this.sendServerRequest('get', 'config', 'name','commonConfig');
+      } else if (!manageData) {
+        this.isSending = true;
+        this.sendServerRequest('get', 'config', 'name','manageConfig');
+      } else {
+        this.isSending = false;
+      }
+    },
+    sendMessage(message) { // Отправка сообщения на сервер
       if (this.socket && this.socket.readyState === WebSocket.OPEN && this.isSending) {
         this.isSending = false;
         this.socket.send(message);
-
         // console.log('Сообщение на сервер (WS) отправлено:', message);
       } else {
-        console.error('Не удалось отправить сообщение: соединение не установлено');
+        // console.error('Не удалось отправить сообщение: соединение не установлено');
         this.sendLogToServer('error', 'Client: Не удалось отправить сообщение: WS соединение не установлено'); // отправка логов на сервер для сохранения в файл
       }
     },
@@ -233,12 +235,11 @@ export default {
                 break;
               case 'sensors':
                 // console.log('Начинаем работу с сообщением с Request = sensors', n);
-
                 this.safeLocalSorage('commonConfig', n);
       // window.location.reload();
               break;
-                default:
-                break;
+            default:
+              break;
             }
           break;
           case 'get':
@@ -339,7 +340,7 @@ export default {
         if (!config[roomKey]) {
           // console.log(' 5 --- Конфигурация не найдена в localStorage для ключа:', name);
           // console.log(' APP SafeLocalSorage - id_title:', this.id_title);
-          this.sendLogToServer('info', `Конфигурация не найдена в localStorage для ключа: ${name}`);
+          this.sendLogToServer('warning', `Конфигурация не найдена в localStorage для ключа: ${name}`);
           config[roomKey] = {
                 setpoint: {},
                 manage: {},
@@ -347,8 +348,8 @@ export default {
                 title: '',
                 id: message.id,
               };
-              console.log('Создан новый объект комнаты:', roomKey, config);
-
+              // console.log('Создан новый объект комнаты:', roomKey, config);
+              this.sendLogToServer ('info', `Создан новый объект комнаты: ${roomKey}`);
               // localStorage.setItem([name], JSON.stringify(config));
         } else {
           // console.log(' 5 --- Конфигурация найдена в localStorage для ключа:', name);
@@ -360,8 +361,9 @@ export default {
           // console.log(' 6 --- Переходим к сохранению значения в конфигурацию "manageConfig" в localStorage');
           config[roomKey].setpoint[sensorKey] = sensorValue;
           config[roomKey].time[sensorKeyTime] = timeUpdated;
+          this.sendLogToServer ('info', `Обновили значение Уставки датчика ${sensorKey} в комнате ${roomKey} на ${sensorValue}`);
           break;
-          case 'commonConfig':
+        case 'commonConfig':
           if (!config[roomKey]) {
             // console.error('Датчик не найден в конфигурации для комнаты ', roomKey);
             this.sendLogToServer ('error', 'Ошибка поиска ДАТЧИКА в файле конфигурации - датчик соответствующий идентификатору из сообщения Сервера не найден');
@@ -375,6 +377,7 @@ export default {
               config[roomKey].sensors[sensorKey] = sensorValue;
               config[roomKey].time[sensorKeyTime] = new Date();
               // console.log('Значение сенсора ', sensorKey, ' обновлено:', config[roomKey].sensors[sensorKey]);
+              this.sendLogToServer ('info', `Значение сенсора ${sensorKey} обновлено на: ${config[roomKey].sensors[sensorKey]}`);
           }
 
           break;
@@ -390,41 +393,32 @@ export default {
       // console.log('selectComponent - ', component);
       if (component === 'Rooms') {
         this.propsTitle = 'rooms';
-        this.selectedComponent = 'MainInfo';
+        this.selectedComponent = 'MainBody';
         console.log('selectComponent - ', this.selectedComponent, this.propsTitle);
+        this.sendLogToServer('customer', `Меню выбора экрана Выбран: ${this.selectedComponent} - сортировка по Комнатам`); 
       } else if (component === 'Params') {
         this.propsTitle = 'params';
-        this.selectedComponent = 'MainInfo';
+        this.selectedComponent = 'MainBody';
         console.log('selectComponent - ', this.selectedComponent, this.propsTitle);
+        this.sendLogToServer('customer', `Меню выбора экрана Выбран: ${this.selectedComponent} - сортировка по Параметрам`); 
       } else {
         this.selectedComponent = component;
+        this.sendLogToServer('customer', `Меню выбора экрана Выбран: ${this.selectedComponent}`); 
       }
+
       // console.log('selectComponent - ', this.selectedComponent, this.propsTitle);
     },
     resetSelection() {
       // Возвращаемся к списку компонентов
       this.selectedComponent = null;
+      this.sendLogToServer('customer', `Меню выбора экрана сброшено по кнопке Back: ${this.selectedComponent} Пользователь вернулся на основной экран`); 
     },
-    getEventsComponent(event) { // Обработка сообщений из компонентов
-      // console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение - ', event);
-      if (event.sendServerRequest) {
-        // console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение - ', event.sendServerRequest);
-        this.sendServerRequest(event.sendServerRequest.type, event.sendServerRequest.request, event.sendServerRequest.name, event.sendServerRequest.setpoint);
-      }
-      if (event.sendLogToServer) {
-        // console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение sendLogToServer - ', event.sendLogToServer);
-        this.sendLogToServer(event.sendLogToServer.type, event.sendLogToServer.message);
-      }
-      if (event.changeTitle.title !== undefined && this.selectedComponent === 'MainInfo') {
-        console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle - ', event);
-        this.getInfo(event.changeTitle.title);
-        this.point_title_name = event.changeTitle.key;     
-      }
-      if (event.showSetpoint !== undefined && this.selectedComponent === 'MainInfo') {
-        console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение showSetpoint - ', event.showSetpoint);
-        this.showSetpoint = event.showSetpoint;      
-      }
-  },
+
+
+
+
+
+
   changeSetpoint(newState) {
     if (newState !== null && newState !== undefined) {
       console.log('App.vue - из компонентов в функцию changeSetpoint получено сообщение - ', newState);
@@ -651,6 +645,38 @@ export default {
       
     },
 
+
+
+
+
+    // Обработка сообщений из компонентов
+    getEventsComponent(event) { // Обработка сообщений из компонентов
+      //console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение - ', event);
+      if (event.sendServerRequest) {
+        // console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение - ', event.sendServerRequest);
+        this.sendServerRequest(event.sendServerRequest.type, event.sendServerRequest.request, event.sendServerRequest.name, event.sendServerRequest.setpoint);
+      }
+      if (event.sendLogToServer) {
+        // console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение sendLogToServer - ', event.sendLogToServer);
+        this.sendLogToServer(event.sendLogToServer.type, event.sendLogToServer.message);
+      }
+      if (this.selectedComponent === 'MainInfo') {
+          if (event.changeTitle.title !== undefined)  {
+          console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle - ', event);
+          this.getInfo(event.changeTitle.title);
+          this.point_title_name = event.changeTitle.key;     
+          }
+          if (event.showSetpoint !== undefined) {
+            console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение showSetpoint - ', event.showSetpoint);
+            this.showSetpoint = event.showSetpoint;      
+          }
+          if (event.customer_message !== undefined) {
+            // console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение customer_message - ', event.customer_message);
+            this.sendLogToServer('customer', event.customer_message ); 
+          }
+      } 
+      
+  },
   }
 }; 
 </script>

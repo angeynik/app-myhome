@@ -17,6 +17,10 @@
 }
 .html {
   font-size: 18px; /* Теперь 1rem = 18px */
+  height: 100%; 
+  margin: 0; 
+  padding: 0; 
+  /* box-sizing: border-box; */
 }
 .h1 {
   margin: 0;
@@ -50,28 +54,80 @@
   font-weight: 400;
   color: var(--light_font);
 }
-body {
-  display: flex !important;
-  margin: 0 !important;
-  border: 0 !important;
-}
  .app {
-    display: flex;
+    display: flex; 
+    flex-direction: column; 
+    height: 100vh; 
+    width: 100%;
+    background-color: var(--background_color);
+    color: var(--light_font);
+    font-family:   Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0px;
+    border: 0px;
+    /* display: flex;
     flex-direction: column;
+    justify-content: space-between; */
+    /* display: grid;
+    grid-template-rows: auto 10fr 1fr;
+    grid-row-start: auto;
+
      width: 100lvw;
-     min-height: 100dvh;
-     font-family: 'Avenir', Helvetica, Arial, sans-serif;
-     -webkit-font-smoothing: antialiased;
-     -moz-osx-font-smoothing: grayscale;
+     height: 100dvh;
+     font-family: 'times new roman', 'Avenir', Helvetica, Arial, sans-serif;
+
      text-align: center;
      background-color: var(--background_color);
      color: var(--light_font);
-     margin: 0px;
-     border: 0px;
+ */
  }
+ .header, .body, .footer { 
+  width: 100%; 
+}
+.body {
+  flex: 1 1 86%; 
+  overflow-y: auto;
+  margin: 0 !important;
+  border: 0 !important;
+  /* display: flex !important; */
 
-  .mainHeader {
-    display: grid;
+  background-color: var(--header_color);
+  color: var(--light_font);
+}
+.header {
+  flex: 0 0 8%; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+}
+.header_place {
+  display: grid;
+  grid-row: inherit;
+  grid-template-columns: 1fr 5fr 1fr;
+  height: 8vh;
+  width: 100vw
+}
+.footer {
+    flex: 0 0 6%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    
+    /* height: 6vh;
+    width: 100lvw; */
+    /* position: fixed; */
+    /* bottom: 0;
+    left: 0;
+    background-color: var(--background_color);
+    color: var(--light_font); */
+}
+.mainHeader {
+    display: flex;
+    justify-content: c;
+    width: 80%;
+
+    /* display: grid;
     grid-row: inherit;
     grid-template-columns: 1fr 5fr 1fr;
     min-height: 60px;
@@ -79,9 +135,9 @@ body {
     top: 0;
     left: 0;
     background-color: var(--background_color);
-    color: var(--light_font);
+    color: var(--light_font); */
     }
-    .mainFooter {
+  .mainFooter {
     min-height: 80px;
     width: 100%;
     /* position: fixed; */
@@ -152,30 +208,30 @@ body {
   }
 /* Горизонтальная ориентация */
 @media (orientation: landscape) {
-.app {
+/* .app {
   flex-direction: row;
-  }
-  .mainHeader {
+  } */
+  /* .mainHeader {
     width: 10vh;
     min-width: 100px;
     height: 100%;
     top: 0;
     left: 0;
-    }
-  .mainFooter {
+    } */
+  /* .mainFooter {
     width: 10vh;
     min-width: 100px;
     height: 100%;
     bottom: 0;
     left: auto;
     right: 0;
-    }
-  .mainBody {
+    } */
+  /* .mainBody {
     margin-top: 0;
     margin-bottom: 0;
     margin-left: 8vh;
     margin-bottom: 10vh;
-    }
+    } */
 }
 
 /* SVG Иконки */
@@ -303,7 +359,7 @@ body {
 /* Компонент AppPlace */
 .app-place_body {
   border: 0px;
-  padding: 10px;
+  padding: 14px;
   display: grid; 
   gap: 16px;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -316,9 +372,10 @@ body {
   color: var(--header_color);
   display: grid;
   grid-row: 1fr 5fr;
+  justify-items: center;
   border-radius: 16px; 
   border: 1px solid var(--background_color); 
-  box-shadow: 0 8px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
 }
 .app-place_module_h1 {
   height: 40px;
