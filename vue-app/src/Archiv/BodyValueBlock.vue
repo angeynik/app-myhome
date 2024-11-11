@@ -1,7 +1,6 @@
 
 
   <template>
-    <!-- <div> <h1> {{point_value}} </h1> </div> -->
     <div class="container">
       <svg style="position: absolute; width: 0; height: 0;">
         <defs>

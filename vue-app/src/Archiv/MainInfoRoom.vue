@@ -14,7 +14,7 @@
     </div>
         <!-- <h3> {{ id_item }}</h3> -->
         <!-- <h1> B O D Y </h1>  -->
-            <div id="app_valueblock" ref="valueBlock" >
+            <div id="app_valueblock" ref="valueBlock" style="height: 100%;">
               <BodyValueBlock 
               :point_value="point_value" 
               :stateSetpoint="stateInfo"

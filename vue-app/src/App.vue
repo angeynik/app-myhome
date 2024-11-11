@@ -30,7 +30,9 @@
         <div v-else id="app_component">
           <component 
           :is="selectedComponent" 
-          :propsTitle="propsTitle"  
+          :propsTitle="propsTitle" 
+          :room_id="room_id"
+          :param_id="param_id"
           @eventsComponent="getEventsComponent" 
           />
         </div>
@@ -88,19 +90,18 @@ export default {
       socket: null,
       valManageConfig:[], // Сохранение Конфигурации управления
   // Работа с меню выбра компонентов
-    propsTitle:'',// идентификатор параметра сортировки room или params
-    selectedComponent: null, //  Имя выбранного компонента
-
+      propsTitle:'',// идентификатор параметра сортировки room или params
+      selectedComponent: null, //  Имя выбранного компонента
 
   // Данные о выбранном объекте (id комнаты, id параметра, наименования параметра)
-    header_title: '', // переменная для отображения в Header
-    room_id: 1, // id выбранной комнаты
-    room_title: '', // наименование выбранной комнаты Гостинная, Кухня, Спальня, etc
-    param_id: 0, // id выбранного параметра (температуры, влажности и т.д.)
-    param_key: '', // ключ выбранного параметра Temp, Hum, Move, etc
-    param_title: '', // наименование выбранного параметра Температура, Влажность, etc
-    param_sign: '', // знак единицы измерения (°C, %, мм, м, часы, мин, сек, мсек, мммсек, день, неделя, месяц, год)
-    group: '', // наменование группы параметров
+      header_title: '', // переменная для отображения в Header
+      room_id: 1, // id выбранной комнаты
+      room_title: '', // наименование выбранной комнаты Гостинная, Кухня, Спальня, etc
+      param_id: 0, // id выбранного параметра (температуры, влажности и т.д.)
+      param_key: '', // ключ выбранного параметра Temp, Hum, Move, etc
+      param_title: '', // наименование выбранного параметра Температура, Влажность, etc
+      param_sign: '', // знак единицы измерения (°C, %, мм, м, часы, мин, сек, мсек, мммсек, день, неделя, месяц, год)
+      group: '', // наменование группы параметров
 
     }; 
   },
@@ -651,7 +652,7 @@ export default {
 
     // Обработка сообщений из компонентов
     getEventsComponent(event) { // Обработка сообщений из компонентов
-      //console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение - ', event);
+      // console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение - ', event);
       if (event.sendServerRequest) {
         // console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение - ', event.sendServerRequest);
         this.sendServerRequest(event.sendServerRequest.type, event.sendServerRequest.request, event.sendServerRequest.name, event.sendServerRequest.setpoint);
@@ -660,22 +661,18 @@ export default {
         // console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение sendLogToServer - ', event.sendLogToServer);
         this.sendLogToServer(event.sendLogToServer.type, event.sendLogToServer.message);
       }
-      if (this.selectedComponent === 'MainInfo') {
-          if (event.changeTitle.title !== undefined)  {
+      if (this.selectedComponent === 'MainBody') {
+          if (event.changeTitle)  {
           console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle - ', event);
           this.getInfo(event.changeTitle.title);
           this.point_title_name = event.changeTitle.key;     
           }
-          if (event.showSetpoint !== undefined) {
+          if (event.showSetpoint) {
             console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение showSetpoint - ', event.showSetpoint);
             this.showSetpoint = event.showSetpoint;      
           }
-          if (event.customer_message !== undefined) {
-            // console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение customer_message - ', event.customer_message);
-            this.sendLogToServer('customer', event.customer_message ); 
-          }
       } 
-      
+     
   },
   }
 }; 
