@@ -1,9 +1,11 @@
 <template>
+
     <div @click="$emit('room', id)">
-      <div class="paramPlace h3">{{ title }} </div>
-      <div class="paramPlace h1">{{ value }}</div>
-      <div class="paramPlace p"> обновление - {{ timeUpdated }} мин</div>
-      
+        <!-- <h2> Main Body Value </h2> -->
+      <div class="mainBodyValue_h3">{{ title }} </div>
+      <div class="mainBodyValue_h1">{{ value }}</div>
+      <div class="mainBodyValue_p"> обновление - {{ timeUpdated }} </div>
+     
   </div>
 </template>
 

@@ -4,8 +4,9 @@
 
           <div class="icon" @click=this.resetSelection> back </div>
           
-          <div style="display: flex; justify-content: center; width: 80%;"><MainHeader 
-            :location="header_title" 
+          <div style="display: flex; justify-content: center; width: 80%;">
+            <MainHeader 
+            :title="headerTitle" 
           />
           </div>
 
@@ -26,13 +27,14 @@
           <AppPlace class="app-place_module"  title="Статистика" @select="selectComponent('MainStatistic')" />
           <AppPlace class="app-place_module"  title="О продукте" @select="selectComponent('MainCompany')" />
         </div>
-      
+    
         <div v-else id="app_component">
-          <component 
+          <component
+
           :is="selectedComponent" 
           :propsTitle="propsTitle" 
           :room_id="room_id"
-          :param_id="param_id"
+          :param_key="param_key" 
           @eventsComponent="getEventsComponent" 
           />
         </div>
@@ -85,22 +87,28 @@ export default {
       reconnectInterval: 2000, // Интервал переподключения в миллисекундах
       localStorageUpdated: false, // Флаг обновления конфигурации в localStorage
 
+  // Ключи для работы с устройством Пользователя
+      isMobile: false, // Флаг мобильного устройства
+
   // Данные с сервера
       messageFromServer: null, // Сообщение с сервера
       socket: null,
-      valManageConfig:[], // Сохранение Конфигурации управления
+      manageConfig_val:{}, // Сохранение Конфигурации управления
+      commonConfig_val:{}, // Сохранение Конфигурации общих параметров
+
   // Работа с меню выбра компонентов
       propsTitle:'',// идентификатор параметра сортировки room или params
       selectedComponent: null, //  Имя выбранного компонента
+      headerTitle: "",
 
   // Данные о выбранном объекте (id комнаты, id параметра, наименования параметра)
       header_title: '', // переменная для отображения в Header
       room_id: 1, // id выбранной комнаты
       room_title: '', // наименование выбранной комнаты Гостинная, Кухня, Спальня, etc
       param_id: 0, // id выбранного параметра (температуры, влажности и т.д.)
-      param_key: '', // ключ выбранного параметра Temp, Hum, Move, etc
+      param_key: 'Temp', // ключ выбранного параметра Temp, Hum, Move, etc
       param_title: '', // наименование выбранного параметра Температура, Влажность, etc
-      param_sign: '', // знак единицы измерения (°C, %, мм, м, часы, мин, сек, мсек, мммсек, день, неделя, месяц, год)
+      // param_sign: '', // знак единицы измерения (°C, %, мм, м, часы, мин, сек, мсек, мммсек, день, неделя, месяц, год)
       group: '', // наменование группы параметров
 
     }; 
@@ -108,18 +116,15 @@ export default {
   created() {
         this.sendLogToServer('info', 'Client: Инициализация подключения логирования'); // отправка логов на сервер для сохранения в файл
         this.selectedComponent = null;
+        this.headerTitle = 'Главное меню';
   },
   mounted() {
     this.connectWebSocket();
     this.checkLocalStorage();
     // localStorage.setItem('flag_commonConfigUpdated', 'false');
-    // this.valManageConfig = JSON.parse(localStorage.getItem('manageConfig'));
-    // this.sendServerRequest('get', 'config', 'name','manageConfig');
-    // this.sendServerRequest('get', 'config', 'name','commonConfig');
-    // this.id_title = localStorage.getItem('id_title') || 3;
-    // this.getManageValues(this.id_title, this.key);
-    // console.log(localStorage.getItem('commonConfig'));
-    // console.log(localStorage.getItem('manageConfig'));
+    this.manageConfig_val = JSON.parse(localStorage.getItem('manageConfig'));
+    this.commonConfig_val = JSON.parse(localStorage.getItem('commonConfig'));
+    
   },
   beforeUnmount() {
     if (this.socket) {
@@ -327,14 +332,14 @@ export default {
     safeLocalSorage(name, message) {
       this.localStorageUpdated = false;
 
-    // console.log (' 3 --- входим в функцию  APP.vue safeLocalSorage Получено сообщение - ', name, message);
-    // Получаем конфигурацию из localStorage
-    let config = JSON.parse(localStorage.getItem([name]));
-    // console.log(' 4 --- APP.vue safeLocalSorage Получаем конфигурацию из localStorage ', name, ', config:', config);
-    let sensorKey, sensorValue, sensorKeyTime;
-    const timeUpdated = new Date().toLocaleString();
-    const roomKey = Object.keys(message).find(key => key.startsWith('room'));
-    // console.log('safeLocalSorage - roomKey:', roomKey); // Логирование roomKey
+      // console.log (' 3 --- входим в функцию  APP.vue safeLocalSorage Получено сообщение - ', name, message);
+      // Получаем конфигурацию из localStorage
+      let config = JSON.parse(localStorage.getItem([name]));
+      // console.log(' 4 --- APP.vue safeLocalSorage Получаем конфигурацию из localStorage ', name, ', config:', config);
+      let sensorKey, sensorValue, sensorKeyTime;
+      const timeUpdated = new Date().toLocaleString();
+      const roomKey = Object.keys(message).find(key => key.startsWith('room'));
+      // console.log('safeLocalSorage - roomKey:', roomKey); // Логирование roomKey
 
       switch (name) {
         case 'manageConfig':
@@ -375,7 +380,7 @@ export default {
               sensorValue = message[roomKey].sensors[sensorKey];
               // console.log('sensorValue:', sensorValue); // Логирование sensorValue
               sensorKeyTime = sensorKey + '_time';
-              config[roomKey].sensors[sensorKey] = sensorValue;
+              config[roomKey].sensors[sensorKey] = sensorValue.toFixed(3);
               config[roomKey].time[sensorKeyTime] = new Date();
               // console.log('Значение сенсора ', sensorKey, ' обновлено:', config[roomKey].sensors[sensorKey]);
               this.sendLogToServer ('info', `Значение сенсора ${sensorKey} обновлено на: ${config[roomKey].sensors[sensorKey]}`);
@@ -412,9 +417,14 @@ export default {
     resetSelection() {
       // Возвращаемся к списку компонентов
       this.selectedComponent = null;
+      this.headerTitle = 'Главное меню';
       this.sendLogToServer('customer', `Меню выбора экрана сброшено по кнопке Back: ${this.selectedComponent} Пользователь вернулся на основной экран`); 
     },
-
+    detectDevice() {
+      // Проверка на мобильное устройство
+      this.isMobile = /Mobi|Android/i.test(navigator.userAgent);
+      // console.log('Используем мобильное устройство: ', this.isMobile);
+  },
 
 
 
@@ -453,8 +463,8 @@ export default {
       console.log('set = ', this.setName, ' low = ', this.lowName, ' high = ',  this.highName, ' step = ', this.stepName);
 
       // Получаем объект manageConfig из localStorage
-      const Mconfig = this.valManageConfig;
-      console.log('Получили manageConfig из valManageConfig', Mconfig);
+      const Mconfig = this.manageConfig_val;
+      console.log('Получили manageConfig из manageConfig_val', Mconfig);
 
       if (!Mconfig) {
         console.error('Не удалось получить конфигурацию manageConfig из localStorage');
@@ -664,8 +674,25 @@ export default {
       if (this.selectedComponent === 'MainBody') {
           if (event.changeTitle)  {
           console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle - ', event);
-          this.getInfo(event.changeTitle.title);
-          this.point_title_name = event.changeTitle.key;     
+          // this.getInfo(event.changeTitle.title);
+          this.room_id = event.changeTitle.room;
+          this.room_title = event.changeTitle.roomRu;
+          this.param_key = event.changeTitle.param;
+          this.param_title = event.changeTitle.paramRu;
+          localStorage.setItem('param_key', event.changeTitle.param);
+          switch (event.changeTitle.type) {
+            case 'rooms':
+              console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle rooms - ', event.changeTitle.message.roomRu);
+              this.headerTitle = event.changeTitle.message.roomRu; 
+              console.log(' -   param_key  -    App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle rooms - ', this.param_key); 
+              break;
+            case 'params':
+              this.headerTitle = event.changeTitle.message.paramRu; 
+              console.log(' -   param_key  -    App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle rooms - ', this.param_key); 
+              break;
+            default:
+              break;
+          }   
           }
           if (event.showSetpoint) {
             console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение showSetpoint - ', event.showSetpoint);

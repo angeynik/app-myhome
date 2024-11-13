@@ -4,7 +4,7 @@
         <h1>Параметры</h1>
     
                 <div id="app_paramplace" class="app-place_body" style=" align-items: center; width: 100%;">
-                  <MainBodyParamValue 
+                  <MainBodyValue 
                   class="paramPlaceMain"
                   v-for="(param, index) in paramsList"
                   :key="index"
@@ -37,11 +37,11 @@
     </template>
     
     <script>
-    import MainBodyParamValue from './MainBodyParamValue.vue';
+    import MainBodyValue from './MainBodyValue.vue';
     export default {
         name: 'MainInfoParam',
         components: {
-            MainBodyParamValue
+            MainBodyValue
         },
         data() {
             return {
@@ -149,8 +149,9 @@
                     this.key = this.keysArray[this.key_index]; 
                     this.paramsList = this.getSortedParams(this.commonConfig, this.key); 
                 } 
-                this.key_value = this.key; },
-            
+                this.key_value = this.key; 
+            },
+           
             handleTouchStart(event, id) {
                 if (!event) { 
                     console.error('Компонент MainInfoParam событие - handleTouchStart, не передан event', event);
