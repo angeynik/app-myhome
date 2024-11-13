@@ -103,20 +103,21 @@ export default {
 
   // Данные о выбранном объекте (id комнаты, id параметра, наименования параметра)
       header_title: '', // переменная для отображения в Header
-      room_id: 1, // id выбранной комнаты
-      room_title: '', // наименование выбранной комнаты Гостинная, Кухня, Спальня, etc
-      param_id: 0, // id выбранного параметра (температуры, влажности и т.д.)
-      param_key: 'Temp', // ключ выбранного параметра Temp, Hum, Move, etc
-      param_title: '', // наименование выбранного параметра Температура, Влажность, etc
+      room_id: localStorage.getItem('room_id') || 1, // id выбранной комнаты
+      room_key: localStorage.getItem('room_key') || 'room01', // ключ выбранной комнаты room01 и тд
+      room_title: localStorage.getItem('room_title') || '', // наименование выбранной комнаты Гостинная, Кухня, Спальня, etc
+
+      param_id: localStorage.getItem('param_id') || 0, // id выбранного параметра (температуры, влажности и т.д.)
+      param_key: localStorage.getItem('param_key') || 'Temp', // ключ выбранного параметра Temp, Hum, Move, etc
+      param_title: localStorage.getItem('param_title') || '', // наименование выбранного параметра Температура, Влажность, etc
       // param_sign: '', // знак единицы измерения (°C, %, мм, м, часы, мин, сек, мсек, мммсек, день, неделя, месяц, год)
-      group: '', // наменование группы параметров
+      // group: '', // наменование группы параметров
 
     }; 
   },
   created() {
         this.sendLogToServer('info', 'Client: Инициализация подключения логирования'); // отправка логов на сервер для сохранения в файл
-        this.selectedComponent = null;
-        this.headerTitle = 'Главное меню';
+
   },
   mounted() {
     this.connectWebSocket();
@@ -124,7 +125,7 @@ export default {
     // localStorage.setItem('flag_commonConfigUpdated', 'false');
     this.manageConfig_val = JSON.parse(localStorage.getItem('manageConfig'));
     this.commonConfig_val = JSON.parse(localStorage.getItem('commonConfig'));
-    
+    this.initApp();
   },
   beforeUnmount() {
     if (this.socket) {
@@ -132,6 +133,31 @@ export default {
     }
   },
   methods: {
+    initApp() {
+      this.selectedComponent = null;
+      this.headerTitle = 'Главное меню';
+      localStorage.setItem('room_id', 1);
+      localStorage.setItem('param_key', 'Temp');
+      localStorage.setItem('room_key', localStorage.getItem('room_key') || 'room01');
+    },
+    findRoom (config, id) {
+      // console.log('Функция findRoom (App) config - ', config);
+      const n = Number(id); // Преобразуем строку в число
+      // const length = Object.keys(config).length;
+      // console.log('Функция findRoom (App) id - ', n);
+        for (let room in config) {
+          // console.log('Функция findRoom (App)  Перебор ключей - ', room);
+            if (config[room].id === n) {
+              // console.log('Функция findRoom (App)  Ключ найден - ', room);
+                localStorage.setItem('room_key', room);
+                localStorage.setItem('room_title', config[room].title);
+                // console.log('Функция findRoom (App)  - room - ', room, 'title - ',config[room].title);
+                return room;
+            } else {
+              console.error('Функция findRoom (App)  Ключ не найден - ', config[room].id, id);
+            }
+        }
+    },
     connectWebSocket() { // Соединение WebSocket на порту 9202
     const host = process.env.VUE_APP_EXT || process.env.VUE_APP_HOST || 'localhost';
     const port = process.env.VUE_APP_PORT || '9202';
@@ -185,6 +211,7 @@ export default {
         this.sendServerRequest('get', 'config', 'name','manageConfig');
       } else {
         this.isSending = false;
+        this.findRoom(commonData, localStorage.getItem('room_id'));
       }
     },
     sendMessage(message) { // Отправка сообщения на сервер
@@ -235,6 +262,7 @@ export default {
                 } else if (n.commonConfig) {
                   localStorage.setItem('commonConfig', JSON.stringify(n.commonConfig));
                   // console.log('Конфигурация "commonConfig" сохранена в localStorage');
+                  // this.findRoom(n.commonData, localStorage.getItem('room_id'));
                   this.sendLogToServer('info', 'Конфигурация "commonConfig" сохранена в localStorage');
                 }
       //  window.location.reload();
@@ -425,6 +453,9 @@ export default {
       this.isMobile = /Mobi|Android/i.test(navigator.userAgent);
       // console.log('Используем мобильное устройство: ', this.isMobile);
   },
+
+
+
 
 
 
@@ -672,27 +703,13 @@ export default {
         this.sendLogToServer(event.sendLogToServer.type, event.sendLogToServer.message);
       }
       if (this.selectedComponent === 'MainBody') {
+        console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle - ', event);
           if (event.changeTitle)  {
-          console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle - ', event);
-          // this.getInfo(event.changeTitle.title);
-          this.room_id = event.changeTitle.room;
-          this.room_title = event.changeTitle.roomRu;
-          this.param_key = event.changeTitle.param;
-          this.param_title = event.changeTitle.paramRu;
-          localStorage.setItem('param_key', event.changeTitle.param);
-          switch (event.changeTitle.type) {
-            case 'rooms':
-              console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle rooms - ', event.changeTitle.message.roomRu);
-              this.headerTitle = event.changeTitle.message.roomRu; 
-              console.log(' -   param_key  -    App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle rooms - ', this.param_key); 
-              break;
-            case 'params':
-              this.headerTitle = event.changeTitle.message.paramRu; 
-              console.log(' -   param_key  -    App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle rooms - ', this.param_key); 
-              break;
-            default:
-              break;
-          }   
+            try {
+              this.headerTitle = event.changeTitle.message; 
+            } catch (error) {
+              this.sendLogToServer ('warning', `Ошибка ${error} обработки сообщения changeTitle - ${event.changeTitle}`);
+            }
           }
           if (event.showSetpoint) {
             console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение showSetpoint - ', event.showSetpoint);
