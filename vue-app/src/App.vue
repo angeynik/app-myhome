@@ -33,8 +33,6 @@
 
           :is="selectedComponent" 
           :propsTitle="propsTitle" 
-          :room_id="room_id"
-          :param_key="param_key" 
           @eventsComponent="getEventsComponent" 
           />
         </div>
@@ -408,7 +406,7 @@ export default {
               sensorValue = message[roomKey].sensors[sensorKey];
               // console.log('sensorValue:', sensorValue); // Логирование sensorValue
               sensorKeyTime = sensorKey + '_time';
-              config[roomKey].sensors[sensorKey] = sensorValue.toFixed(3);
+              config[roomKey].sensors[sensorKey] = sensorValue.toFixed(1);
               config[roomKey].time[sensorKeyTime] = new Date();
               // console.log('Значение сенсора ', sensorKey, ' обновлено:', config[roomKey].sensors[sensorKey]);
               this.sendLogToServer ('info', `Значение сенсора ${sensorKey} обновлено на: ${config[roomKey].sensors[sensorKey]}`);
