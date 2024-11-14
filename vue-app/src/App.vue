@@ -45,7 +45,7 @@
 
       <footer class="footer"> 
         <MainFooter v-show="!showSetpoint"/>
-        <BodySetpontBlock 
+        <MainSetpoint
           :setPoint="setpoint" 
           :highLimit="limHigh" 
           :lowLimit="limLow"
@@ -59,6 +59,7 @@
 <script>
 import MainHeader from './components/MainHeader.vue';
 import MainFooter from './components/MainFooter.vue';
+import MainSetpoint from './components/MainSetpoint.vue';
 import AppPlace from './components/AppPlace.vue'; 
 import MainBody from './components/MainBody.vue';
 import MainSettings from './components/MainSettings.vue';
@@ -80,7 +81,8 @@ export default {
     MainScenarios,
     MainVideo,
     MainStatistic,
-    MainCompany
+    MainCompany,
+    MainSetpoint,
   }, 
   data() { 
     return { 
@@ -99,10 +101,18 @@ export default {
       manageConfig_val:{}, // Сохранение Конфигурации управления
       commonConfig_val:{}, // Сохранение Конфигурации общих параметров
 
-  // Работа с меню выбра компонентов
+  // Работа с меню выбора компонентов
+      showSetpoint: true,
       propsTitle:'',// идентификатор параметра сортировки room или params
       selectedComponent: null, //  Имя выбранного компонента
       headerTitle: "",
+
+  // Работа с компонентом Setpoint
+      setpoint: localStorage.getItem('setpoint') || null,
+      limHigh: null,
+      limLow: null,
+      limStep: null,
+      setName: null,
 
   // Данные о выбранном объекте (id комнаты, id параметра, наименования параметра)
       header_title: '', // переменная для отображения в Header
@@ -126,7 +136,7 @@ export default {
     this.connectWebSocket();
     this.checkLocalStorage();
     // localStorage.setItem('flag_commonConfigUpdated', 'false');
-    this.manageConfig_val = JSON.parse(localStorage.getItem('manageConfig'));
+    // this.manageConfig_val = JSON.parse(localStorage.getItem('manageConfig'));
     this.commonConfig_val = JSON.parse(localStorage.getItem('commonConfig'));
     this.initApp();
   },
@@ -142,6 +152,7 @@ export default {
       localStorage.setItem('room_id', 1);
       localStorage.setItem('param_key', 'Temp');
       localStorage.setItem('room_key', localStorage.getItem('room_key') || 'room01');
+      this.setpoint = this.getManageValues(localStorage.getItem('room_id'), localStorage.getItem('param_key'));
     },
     findRoom (config, id) {
       // console.log('Функция findRoom (App) config - ', config);
@@ -486,156 +497,160 @@ export default {
     }
 
   },
-  getManageValues(id, name) {
-      console.log('App.vue - Приступили к выполнению функции getManageValues с параметром id = ', id , ' и ключем = ', name);
+  getManageValues(id_room, param_key) {
+      console.log('App.vue - Приступили к выполнению функции getManageValues с параметром id = ', id_room , ' и ключем = ', param_key);
+      if (id_room === undefined || param_key === undefined) {
+        console.error('App.vue - Функция getManageValues получила пустое значение id_room или param_key');
+        this.sendLogToServer ('warning', `Функция getManageValues получила не корректные пееременные id_room = ${id_room} или param_key = ${param_key} - Значения для Setpoint и Limits НЕ определены `);
+        return;
+      } 
       // Задаем ключи для получения параметров
-      this.setName = 'set'+name;
-      this.lowName = 'limDown'+name;
-      console.log('MainBody Функция getManageValues Получили имя нижней границы lowName  ', this.lowName);
-      this.highName = 'limUp'+name;
-      this.stepName = 'limStep'+name;
-      console.log('set = ', this.setName, ' low = ', this.lowName, ' high = ',  this.highName, ' step = ', this.stepName);
-
-      // Получаем объект manageConfig из localStorage
-      const Mconfig = this.manageConfig_val;
-      console.log('Получили manageConfig из manageConfig_val', Mconfig);
-
+      this.setName = 'set'+param_key;
+      const lowName = 'limDown'+param_key;
+      const highName = 'limUp'+param_key;
+      const stepName = 'limStep'+param_key;
+      // console.log('set = ', this.setName, ' low = ', lowName, ' high = ',  highName, ' step = ', stepName);
+      try {
+        // Получаем объект manageConfig из localStorage
+      const Mconfig = JSON.parse(localStorage.getItem('manageConfig'));
       if (!Mconfig) {
         console.error('Не удалось получить конфигурацию manageConfig из localStorage');
         return;
       } else {
-        console.log('Конфигурация "manageConfig" для id -', id, ' получена из localStorage успешно', Mconfig);
-      }
-  
-      const roomID = this.getManageValues_checkID(id, Mconfig);
-      console.log('roomID = ', roomID);
-      // Значения граничных диапазонов всегда получаем из объекта common в manageConfig
-      this.limLow = Mconfig.common.setpoint[this.lowName];
-      console.log('MainBody Функция getManageValues Обновили значение нижней границы limLow = ', this.limLow);
-      this.limHigh = Mconfig.common.setpoint[this.highName];
-      this.limStep = Mconfig.common.setpoint[this.stepName];
+        // console.log('Конфигурация "manageConfig" для id -', id_room, ' получена из localStorage успешно', Mconfig);
+        // Значения граничных диапазонов всегда получаем из объекта common в manageConfig
+        this.limLow = Mconfig.common.setpoint[lowName];
+        this.limHigh = Mconfig.common.setpoint[highName];
+        this.limStep = Mconfig.common.setpoint[stepName];
 
+        const roomID = this.getManageValues_checkID(id_room, Mconfig);
+        console.log('roomID = ', roomID, 'setPoint = ', Mconfig[roomID].setpoint[this.setName], ' lowLimit = ', this.limLow, ' highLimit = ', this.limHigh, ' step = ', this.limStep);
 
-      console.log('roomID = ', roomID, 'setPoint = ', this.setpoint, ' lowLimit = ', this.lowLimit, ' highLimit = ', this.highLimit, ' step = ', this.step);
-
-      // Устанавливаем setPoint для найденного или дефолтного roomID
- 
-      if (roomID !== 'common') {
-        this.stateInfo = 1;
-      } else {
-        this.stateInfo = 0;
-      }
-      // console.log('Определяем флаг StateInfo = ', this.stateInfo);
         return Mconfig[roomID].setpoint[this.setName];
+      }
+      } catch (error) {
+        this.sendLogToServer ('error', `В ходе выполнения функции getManageValues для получения Setpoint и Limits возникла ошибка - ${error} - Значения для Setpoint и Limits НЕ определены `);   
+      }
+      
     },
+
     getManageValues_checkID(id, arr) {
-      // console.log(' getManageValues_checkID  --- Приступили к выполнению функции getManageValues_checkID с параметром id = ', id);
-      let room = 'common';
-      for (const key in arr) {
-      if (arr[key].id === id) {
-        room = key;
-        this.stateSetpoint = 1;
-        // console.log(' getManageValues_checkID --- Найдена комната с запрашиваемым ID:', room);
-        break;
+      // console.log('App - Функция getManageValues_checkID  --- Приступили к выполнению функции с параметром id = ', id);
+      const num_id = Number(id);
+      try {
+        for (const key in arr) {
+          if (arr[key].id === num_id) {
+            // console.log('App - getManageValues_checkID --- Находим комнату с запрашиваемым ID:', key);
+            return key;
+          } else {
+            // console.log('App -  getManageValues_checkID --- Комната с запрашиваемым ID не найдена');
+            return 'common';
+          }
+        } 
       }
-      }
-      if (room === 'common') {
-        this.stateSetpoint = 0;
-        // console.log(' getManageValues_checkID --- Комната с запрашиваемым ID не найдена', room);
-      }
-      return room;
-
-    },
-
-    getInfo (value) { // Получаем тип датчика по его наименованию
-      // console.log('MainBody.vue - Приступили к выполнению функции getInfo с параметром value = ', value);
-      if (value.includes('Temp')) {
-        this.point_title_name = 'Температура';
-        this.point_title_sign = '°C';
-        this.showSetpoint = true;
-        return 'Temp';
-      } else if (value.includes('Hum')) {
-        this.point_title_name = 'Влажность';
-        this.point_title_sign = '%';
-        this.showSetpoint = true;
-        return 'Hum';
-      } else if (value.includes('Lum')) {
-        this.point_title_name = 'Освещенность';
-        this.point_title_sign = 'lum';
-        this.showSetpoint = false;
-        return 'Lum';
-      } else if (value.includes('Pres')) {
-        this.point_title_name = 'Давление';
-        this.point_title_sign = 'hPa';
-        this.showSetpoint = false;
-        return 'Pres';
-      } else if (value.includes('Noise')) {
-        this.point_title_name = 'Уровень шума';
-        this.point_title_sign = 'dB';
-        this.showSetpoint = false;
-        return 'Noise';
-      } else if (value.includes('Co2')) {
-        this.point_title_name = 'CO2';
-        this.point_title_sign = 'ppm';
-        this.showSetpoint = true;
-        return 'CO2';
-      } else if (value.includes('Voc')) {
-        this.point_title_name = 'VOC';
-        this.point_title_sign = 'ppb';
-        this.showSetpoint = false;
-        return 'Voc';
-      } else if (value.includes('Mov')) {
-        this.point_title_name = 'Движение';
-        this.point_title_sign = 'on/off';
-        this.showSetpoint = false;
-        return 'Mov';
-      } else if (value.includes('Bat')) {
-        this.point_title_name = 'Напряжение батареи';
-        this.point_title_sign = 'V';
-        this.showSetpoint = false;
-        return 'Bat';
-      } else if (value.includes('Switch')) {
-        this.point_title_name = 'Переключатель';
-        this.point_title_sign = 'on/off';
-        this.showSetpoint = false;
-        return 'Switch';
-      } else if (value.includes('Relay')) {
-        this.point_title_name = 'Реле';
-        this.point_title_sign = 'on/off';
-        this.showSetpoint = false;
-        return 'Relay';
-      } else if (value.includes('Power')) {
-        this.point_title_name = 'Розетка';
-        this.point_title_sign = 'on/off';
-        this.showSetpoint = false;
-        return 'Power';
-      } else if (value.includes('Dimmer')) {
-        this.point_title_name = 'Контроллер';
-        this.point_title_sign = 'on/off';
-        this.showSetpoint = false;
-        return 'Dimmer';
-      } else if (value.includes('Fire')) {
-        this.point_title_name = 'Пожар';
-        this.point_title_sign = 'on/off';
-        this.showSetpoint = false;
-        return 'Fire';
-      } else if (value.includes('Leak')) {
-        this.point_title_name = 'Протечка';
-        this.point_title_sign = 'on/off';
-        this.showSetpoint = false;
-        return 'Leak';
-      } else if (value.includes('Smoke')) {
-        this.point_title_name = 'Дым';
-        this.point_title_sign = 'on/off';
-        this.showSetpoint = false;
-        return 'Smoke';
-      } else {
-        this.point_title_name = 'Неизвестное';
-        this.point_title_sign = '?';
-        this.showSetpoint = false;
-        return 'Unknown';
+      catch (error) {
+        this.sendLogToServer ('error', `Произошла ошибка при определении ключа для получения Setpoint и лемитов - ${error}`);
       }
     },
+
+
+
+
+
+
+
+
+
+
+    // getInfo (value) { // Получаем тип датчика по его наименованию
+    //   // console.log('MainBody.vue - Приступили к выполнению функции getInfo с параметром value = ', value);
+    //   if (value.includes('Temp')) {
+    //     this.point_title_name = 'Температура';
+    //     this.point_title_sign = '°C';
+    //     this.showSetpoint = true;
+    //     return 'Temp';
+    //   } else if (value.includes('Hum')) {
+    //     this.point_title_name = 'Влажность';
+    //     this.point_title_sign = '%';
+    //     this.showSetpoint = true;
+    //     return 'Hum';
+    //   } else if (value.includes('Lum')) {
+    //     this.point_title_name = 'Освещенность';
+    //     this.point_title_sign = 'lum';
+    //     this.showSetpoint = false;
+    //     return 'Lum';
+    //   } else if (value.includes('Pres')) {
+    //     this.point_title_name = 'Давление';
+    //     this.point_title_sign = 'hPa';
+    //     this.showSetpoint = false;
+    //     return 'Pres';
+    //   } else if (value.includes('Noise')) {
+    //     this.point_title_name = 'Уровень шума';
+    //     this.point_title_sign = 'dB';
+    //     this.showSetpoint = false;
+    //     return 'Noise';
+    //   } else if (value.includes('Co2')) {
+    //     this.point_title_name = 'CO2';
+    //     this.point_title_sign = 'ppm';
+    //     this.showSetpoint = true;
+    //     return 'CO2';
+    //   } else if (value.includes('Voc')) {
+    //     this.point_title_name = 'VOC';
+    //     this.point_title_sign = 'ppb';
+    //     this.showSetpoint = false;
+    //     return 'Voc';
+    //   } else if (value.includes('Mov')) {
+    //     this.point_title_name = 'Движение';
+    //     this.point_title_sign = 'on/off';
+    //     this.showSetpoint = false;
+    //     return 'Mov';
+    //   } else if (value.includes('Bat')) {
+    //     this.point_title_name = 'Напряжение батареи';
+    //     this.point_title_sign = 'V';
+    //     this.showSetpoint = false;
+    //     return 'Bat';
+    //   } else if (value.includes('Switch')) {
+    //     this.point_title_name = 'Переключатель';
+    //     this.point_title_sign = 'on/off';
+    //     this.showSetpoint = false;
+    //     return 'Switch';
+    //   } else if (value.includes('Relay')) {
+    //     this.point_title_name = 'Реле';
+    //     this.point_title_sign = 'on/off';
+    //     this.showSetpoint = false;
+    //     return 'Relay';
+    //   } else if (value.includes('Power')) {
+    //     this.point_title_name = 'Розетка';
+    //     this.point_title_sign = 'on/off';
+    //     this.showSetpoint = false;
+    //     return 'Power';
+    //   } else if (value.includes('Dimmer')) {
+    //     this.point_title_name = 'Контроллер';
+    //     this.point_title_sign = 'on/off';
+    //     this.showSetpoint = false;
+    //     return 'Dimmer';
+    //   } else if (value.includes('Fire')) {
+    //     this.point_title_name = 'Пожар';
+    //     this.point_title_sign = 'on/off';
+    //     this.showSetpoint = false;
+    //     return 'Fire';
+    //   } else if (value.includes('Leak')) {
+    //     this.point_title_name = 'Протечка';
+    //     this.point_title_sign = 'on/off';
+    //     this.showSetpoint = false;
+    //     return 'Leak';
+    //   } else if (value.includes('Smoke')) {
+    //     this.point_title_name = 'Дым';
+    //     this.point_title_sign = 'on/off';
+    //     this.showSetpoint = false;
+    //     return 'Smoke';
+    //   } else {
+    //     this.point_title_name = 'Неизвестное';
+    //     this.point_title_sign = '?';
+    //     this.showSetpoint = false;
+    //     return 'Unknown';
+    //   }
+    // },
     checkLength(Point, Point_length) {
       // console.log('checkLength Начинаем проверку для ID', Point, ' ID_length = ', Point_length);
       if (Point > Point_length) {
