@@ -34,6 +34,11 @@
           :is="selectedComponent" 
           :propsTitle="propsTitle" 
           @eventsComponent="getEventsComponent" 
+          @doubleclick="sortingDoubleClick"
+          @doubletouch="sortingDoubleTouch" 
+          @touchstart="handleTouchStart($event, param.id)" 
+          @touchend="handleTouchEnd(param.id)" 
+          @touchmove="handleTouchMove($event)"
           />
         </div>
       </div>
@@ -715,7 +720,13 @@ export default {
           }
       } 
      
-  },
+    },
+    sortingDoubleClick(event) {
+      console.log('App.vue - из компонентов в функцию handleDoubleClick получено сообщение - ', event);
+    },
+    sortingDoubleTouch(event) {
+      console.log('App.vue - из компонентов в функцию handleDoubleTouch получено сообщение - ', event);
+    },
   }
 }; 
 </script>

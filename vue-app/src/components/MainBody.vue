@@ -13,8 +13,9 @@
                   :group="param.group" 
                   :timeUpdated="param.timeDiff"
                   :resetSelected="resetSelected"
-                  :isSelected="isSelected === param.id ? true : false || propsTitle === 'param'"
+                  :isSelected="isSelected_(param.id, param.key)"
                   @select="getEventsComponent"
+                  @doubleclick="sortingDoubleClick"
                   @touchstart="handleTouchStart($event, param.id)" 
                   @touchend="handleTouchEnd(param.id)" 
                   @touchmove="handleTouchMove($event)" 
@@ -37,6 +38,7 @@ export default {
             commonConfig: {}, // Конфигурация выгруженная из localStorage
             viewArray: {}, // Список данных для вывода пользователю
     // Переменные сортировки по параметрам
+            customerSorting: this.propsTitle, // Переменная используемая для смены сортировки при двойном клике
             // key: '', // Индекс сортировки
             // keys: [], // Массив ключей для сортировки значений
             // paramsList: [], // Список отсортированных парметров (по комнатам или по типу параметра)
@@ -46,7 +48,8 @@ export default {
 
     // Управление экземплярами MainBodyValue
         isSelected: null,
-        resetSelected: false,
+        isSelectedID: null,
+        isSelectedParam: null,
         }
     },
     props: {
@@ -101,7 +104,7 @@ export default {
                 const commonConfig = JSON.parse(localStorage.getItem('commonConfig'));
                 const roomKey = localStorage.getItem('room_key');
                 const paramKey = localStorage.getItem('param_key');
-                console.log(' 0 ---- Функция selectSorting (MainBody). Из localStorage получили paramKey:', paramKey);
+                // console.log(' 0 ---- Функция selectSorting (MainBody). Из localStorage получили paramKey:', paramKey, 'roomKey:', roomKey);
                 if (commonConfig === null || roomKey === null || paramKey === null) {
                     //console.log('Ошибка функция selectSorting. commonConfig:', commonConfig, 'roomKey:', roomKey, 'paramKey:', paramKey);
                     this.sendEmitMessage('sendLogToServer','error', 'selectSorting(MainBody) - ошибка чтения данных из localStorage при выборе commonConfig - ${commonConfig}, roomKey - ${roomKey}, paramKey - ${paramKey}');
@@ -109,19 +112,18 @@ export default {
                 let sortArray = [];
                 switch (sort_type) {
                     case 'rooms':
-                        console.log('Sort Room 1      -     Функция selectSorting (MainBody.vue). Приступаем к сортировке по комнатам - Case: rooms');
+                        // console.log('Sort Room 1      -     Функция selectSorting (MainBody.vue). Приступаем к сортировке по комнатам - Case: rooms');
                         sortArray = this.getSortedRooms(commonConfig, roomKey);
                         if (!sortArray) {
                             this.sendEmitMessage('sendLogToServer','error', 'selectSorting - Массив данных с утройств для отображения пользователю  viewArray не определен');
                         }
-                        console.log('Sort Room 2      -     sortArray:', localStorage.getItem('room_title'));
+                        // console.log('Sort Room 2      -     sortArray:', localStorage.getItem('room_title'));
                         this.viewArray = sortArray;
                         this.sendEmitMessage('changeTitle', sort_type, localStorage.getItem('room_title'));
                         break;
 
                     case 'params':
-
-                        console.log('Sort Param 2      -     Функция selectSorting (MainBody.vue). Вызываем функцию getSortedParams с параметрамом paramKey - ', paramKey);
+                        // console.log('Sort Param 2      -     Функция selectSorting (MainBody.vue). Вызываем функцию getSortedParams с параметрамом paramKey - ', paramKey);
                         sortArray = this.getSortedParams(commonConfig, paramKey);
                         if (!sortArray) {
                             this.sendEmitMessage('sendLogToServer','warning', 'selectSorting - Массив данных с утройств для отображения пользователюviewArray не определен');
@@ -134,8 +136,6 @@ export default {
                         console.error('MainBody.vue: Функция selectSorting. Не опознаный тип сортировки:', sort_type);
                         break;
                 }
-
-
                 console.log(' Функция selectSorting (MainBody) Результат сортировки объекта - viewArray :', this.viewArray);
             } catch (error) {
                 this.sendEmitMessage('sendLogToServer','error', 'selectSorting(MainBody) - ошибка сортировки данных для отображения пользователю ${error}');
@@ -287,27 +287,25 @@ export default {
             return timeDiffMin;
         }
     },
+    isSelected_(id, paramKey) {
+        return id === this.isSelectedID && paramKey === this.isSelectedParam;
+    },
     getEventsComponent(event) {
         console.log('MainBody - Функция getEventsComponent получила событие - ', event);
         try {
-            switch (event.type) {
-            case 'select':
-            if (this.isSelected === event.message.id) { 
-                this.isSelected = null; // Снять выбор при повторном клике 
-                } else { 
-                    this.isSelected = event.message.id; // Установить выбор }
-                }
 
-                // if (this.isSelected === true) {
-                //     if (event.message.state === false) {
-                //         this.isSelected = event.message.state;
-                //     } else {
-                //         this.resetSelected = true
-                //     }
-                // }
-                
-                break;
-        
+            switch (event.type) {
+            case 'select':  {
+                const { id, paramKey } = event.message; 
+                    if (this.isSelectedID === id && this.isSelectedParam === paramKey) { 
+                        this.selectedId = null; // Снять выбор при повторном клике 
+                        this.isSelectedParam = null; 
+                    } else { 
+                        this.isSelectedID= id; // Установить выбор 
+                        this.isSelectedParam = paramKey; 
+                    } 
+                    break;
+                }
             default:
                 break;
         }
@@ -316,6 +314,30 @@ export default {
         }
 
     },
+    sortingDoubleClick(event) {
+        // console.log('  -------  DoubleClick      -------------    MainBody - Функция sortingDoubleClick получила событие - ', event);
+        try {
+        // console.log('  -------  DoubleClick      -------------    MainBody - Функция sortingDoubleClick получила roomKey и paramKey - ', event.roomKey, event.paramKey);
+            if (event.paramKey === null || event.roomKey === null) {
+                this.sendEmitMessage('sendLogToServer','error', 'sortingDoubleClick(MainBody) - Ошибка попытки изменить сортировку при двойном клике на область датчика - Не получены значения roomKey или paramKey');
+            } else  {
+                // console.log('  -------  DoubleClick      -------------    Собираемся сохранять в localStorage');
+                localStorage.setItem('room_key', event.roomKey);
+                localStorage.setItem('param_key', event.paramKey);
+                if (this.customerSorting === 'rooms') {
+                    this.customerSorting = 'params';
+                } else {
+                    this.customerSorting = 'rooms'
+                }
+                this.selectSorting(this.customerSorting); 
+            }
+        } catch (error) {
+            // console.error(`  Catch -------  DoubleClick      -------------    MainBody - Функция sortingDoubleClick - ошибка обработки события - ${error}`);
+            this.sendEmitMessage('sendLogToServer', 'error', `sortingDoubleClick(MainBody) - Ошибка попытки изменить сортировку при двойном клике на область датчика - Общая ошибка ${error}`);
+        }
+    },
+
+
 
 
 
