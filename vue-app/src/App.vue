@@ -34,11 +34,6 @@
           :is="selectedComponent" 
           :propsTitle="propsTitle" 
           @eventsComponent="getEventsComponent" 
-          @doubleclick="sortingDoubleClick"
-          @doubletouch="sortingDoubleTouch" 
-          @touchstart="handleTouchStart($event, param.id)" 
-          @touchend="handleTouchEnd(param.id)" 
-          @touchmove="handleTouchMove($event)"
           />
         </div>
       </div>

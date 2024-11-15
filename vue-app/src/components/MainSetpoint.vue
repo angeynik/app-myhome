@@ -14,7 +14,7 @@
         xmlns="http://www.w3.org/2000/svg" 
         stroke="white" 
         width="100%" 
-        height="auto" 
+        height="100%" 
         preserveAspectRatio="xMidYMid meet"
         >         
           <!-- <line x1="261.5" y1="10" x2="261.5" y2="50" stroke="white"/>

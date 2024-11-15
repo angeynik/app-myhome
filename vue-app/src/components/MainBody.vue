@@ -1,7 +1,6 @@
 <template>
     <div id="app_mainBody" class="mainBody">
-
-                <MainBodyValue 
+        <!-- <MainBodyValue 
                 class="mainBodyValue"
                   v-for="(param, index) in viewArray"
                   :key="index"
@@ -19,6 +18,25 @@
                   @touchstart="handleTouchStart($event, param.id)" 
                   @touchend="handleTouchEnd(param.id)" 
                   @touchmove="handleTouchMove($event)" 
+                  :class="{ 'bordered': longPressId === param.id }"
+                  />  -->
+
+                <MainBodyValue 
+                class="mainBodyValue"
+                  v-for="(param, index) in viewArray"
+                  :key="index"
+                  :id="param.id"
+                  :paramKey="param.key" 
+                  :roomKey="param.roomKey"
+                  :title="param.title" 
+                  :value="param.value"
+                  :group="param.group" 
+                  :timeUpdated="param.timeDiff"
+                  :resetSelected="resetSelected"
+                  :isSelected="isSelected_(param.id, param.key)"
+                  @select="getEventsComponent"
+                  @doubleclick="sortingDoubleClick"
+                  @doubletouch="sortingDoubleClick"
                   :class="{ 'bordered': longPressId === param.id }"
                   /> 
     </div>

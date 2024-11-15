@@ -1,12 +1,21 @@
 <template>
 
     <!-- <div @click="$emit('room', id)"> -->
-    <div 
+        <!-- <div 
     @click="customerClick"
     @dblclick="customerDoubleClick"
     @dbltap="customerDoubleClick"
     @touchstart="handleTouchStart" 
     @touchend="handleTouchEnd"
+    :class="{ selected: isSelected }"
+    > -->
+
+
+    <div 
+    @click="customerClick"
+    @dblclick="customerDoubleClick"
+    @touchstart="customerTouchStart" 
+    @touchend="customerTouchEnd"
     :class="{ selected: isSelected }"
     >
         <!-- <h2> Main Body Value </h2> -->
@@ -75,16 +84,21 @@ methods: {
             roomID: this.id,
         });
     },
-    handleTouchStart(event) {
-        // console.log('Функция handleTouchStart(MainBodyValue) - Пользователь начал двойной клик', event.touches[0].clientX, event.touches[0].clientY);
+    customerTouchStart(event) {
+        console.log('Функция handleTouchStart(MainBodyValue) - Пользователь сделал клик', event.touches[0].clientX, event.touches[0].clientY);
         if (event.touches.length === 1) { 
-            this.touchTimeout = setTimeout(() => { 
-                this.touchTimeout = null; 
+            if (this.touchTimeout) {
+                clearTimeout(this.touchTimeout);
+                this.touchTimeout = null;
                 this.$emit('doubletouch', { 
                     roomKey: this.roomKey, 
                     paramKey: this.paramKey, 
-                }); 
-            }, 300); 
+                });
+            } else {
+                this.touchTimeout = setTimeout(() => { 
+                    this.touchTimeout = null; 
+                }, 300); 
+            }
         }
     }, 
     handleTouchEnd() {
