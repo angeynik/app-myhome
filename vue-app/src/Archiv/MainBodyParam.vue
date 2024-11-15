@@ -37,7 +37,7 @@
     </template>
     
     <script>
-    import MainBodyValue from './MainBodyValue.vue';
+    import MainBodyValue from '../components/MainBodyValue.vue';
     export default {
         name: 'MainInfoParam',
         components: {

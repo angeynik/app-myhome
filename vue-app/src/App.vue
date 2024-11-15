@@ -168,7 +168,7 @@ export default {
                 // console.log('Функция findRoom (App)  - room - ', room, 'title - ',config[room].title);
                 return room;
             } else {
-              console.error('Функция findRoom (App)  Ключ не найден - ', config[room].id, id);
+              console.error('Функция findRoom (App)  Ключ -', id, ' не найден для - ', config[room].id);
             }
         }
     },
@@ -305,6 +305,25 @@ export default {
           // console.log(`Функция CheckType приступила к обработке запроса на проверку наличия параметра с именем ${n}`);
 
     },
+    checkMassageValue (value) { // Проверяем и преобразуем значение переменной 20.5 On Off ??? (при пустом значении)
+      if (value === null || value === undefined) {
+        this.sendLogToServer('warning', `Функция checkMassageValue  Ошибка попытки проверки значения датчика полученного с сервера для сообщения ${this.messageFromServer} Значения не определено -  ${value} Определяем как ??? `); 
+        return '???';
+      } else {
+          try {
+            switch (value) {
+                  case true:
+                  return 'ON';
+                  case false:
+                    return 'OFF';
+                  default:
+                  return parseFloat(value).toFixed(1);
+                }
+          } catch (error) {
+            this.sendLogToServer('error', `Функция checkMassageValue Общая ошибка при обработки значения датчика полученного с сервера ${error}`); 
+          }
+      }
+    },
     async sendLogToServer (type, message) {
   try {
     let payload;
@@ -328,7 +347,7 @@ export default {
   }
     },
     sendServerRequest(type, request, name, data)  { //Формируем и оправляем сообщение на сервер
-      // console.log ('  APP.vue sendServerRequest - request = ', request, 'data = ', data, 'type = ', type, 'name = ', name);
+      console.log ('1 ---  APP.vue sendServerRequest - request = ', request, 'data = ', data, 'type = ', type, 'name = ', name);
       let payload = {};
       const Config = localStorage.getItem([data]);
       switch (request) {
@@ -352,7 +371,7 @@ export default {
           break;
 
           case 'setpoint':
-                // console.log (' 2 ---  APP.vue sendServerRequest - request = setpoint" ', data);
+                console.log (' 2 ---  APP.vue sendServerRequest - request = setpoint" ', data);
                 payload = {
                 type: type,
                 request: request,
@@ -373,7 +392,7 @@ export default {
     },    
     safeLocalSorage(name, message) {
       this.localStorageUpdated = false;
-
+      this.messageFromServer = message;
       // console.log (' 3 --- входим в функцию  APP.vue safeLocalSorage Получено сообщение - ', name, message);
       // Получаем конфигурацию из localStorage
       let config = JSON.parse(localStorage.getItem([name]));
@@ -418,11 +437,10 @@ export default {
           } else {
             sensorKey = Object.keys(message[roomKey].sensors)[0];
               // console.log('sensorKey:', sensorKey); // Логирование sensorKey
-
-              sensorValue = message[roomKey].sensors[sensorKey];
+              sensorValue = this.checkMassageValue(message[roomKey].sensors[sensorKey]);
               // console.log('sensorValue:', sensorValue); // Логирование sensorValue
               sensorKeyTime = sensorKey + '_time';
-              config[roomKey].sensors[sensorKey] = sensorValue.toFixed(1);
+              config[roomKey].sensors[sensorKey] = sensorValue;
               config[roomKey].time[sensorKeyTime] = new Date();
               // console.log('Значение сенсора ', sensorKey, ' обновлено:', config[roomKey].sensors[sensorKey]);
               this.sendLogToServer ('info', `Значение сенсора ${sensorKey} обновлено на: ${config[roomKey].sensors[sensorKey]}`);
@@ -435,7 +453,7 @@ export default {
       }
       localStorage.setItem([name], JSON.stringify(config));
       this.localStorageUpdated = true;
-      console.log(`Конфигурация -- !!  ${name}  !! --  обновлена в localStorage`, config,  'localStorageUpdated: ', this.localStorageUpdated);
+// console.log(`Конфигурация -- !!  ${name}  !! --  обновлена в localStorage`, config,  'localStorageUpdated: ', this.localStorageUpdated);
     },
     selectComponent(component) {
       // console.log('selectComponent - ', component);
@@ -470,33 +488,68 @@ export default {
 
 
 
-
-
-
-
-
   changeSetpoint(newState) {
-    if (newState !== null && newState !== undefined) {
-      console.log('App.vue - из компонентов в функцию changeSetpoint получено сообщение - ', newState);
-      if (newState.newSetPoint !== undefined) this.setpoint = newState.newSetPoint;
-
-      if (newState.updatePermission !== undefined && this.setpoint !== undefined) this.$emit('AppNewSetpoint',{
-        setpointUpdate:
-      { 
-          setpoint: { //Сообщение о изменении Уставки Для каждой группы параметров нужно писать свой разработчик
-            [this.setName] : this.setpoint
-        }, 
-        request: 'setpoint',
-        type: 'post', 
-        name: this.room_name,
-        id: this.id,
-        }
-      }); 
+    console.log('App.vue - из компонентов в функцию changeSetpoint получено сообщение - ', newState);
+    if (newState === null || newState.newSetPoint === undefined) {
+      console.error('App.vue Функция changeSetpoint получила пустое значение setpoint', newState.newSetPoint);
+      this.sendLogToServer('warning', 'App.vue Функция changeSetpoint получила пустое значение setpoint для параметра ${this.setName}');
+      return;
     } else {
-      console.error('App.vue Функция changeSetpoint получила пустое значение setpoint', newState);
+      try {
+        console.log('App.vue Функция changeSetpoint получила значение setpoint - ', newState.newSetPoint);
+        this.setpoint = newState.newSetPoint;
+    // Отправляем на сервер сообщение вида {type, request, name, data}
+    // type - тип сообщения, request - название функции, name - имя комнаты (room00), data - данные вида {setTemp: 22}
+        const name = 'set'+localStorage.getItem('param_key');
+        const data = {[name]: newState.newSetPoint};
+        this.sendServerRequest('post', 'setpoint', localStorage.getItem('room_key'), data);
+  // const TEST = {
+  //       setpointUpdate:
+  //     { 
+  //         setpoint: { //Сообщение о изменении Уставки Для каждой группы параметров нужно писать свой разработчик
+  //           [this.setName] : this.setpoint
+  //       }, 
+  //       request: 'setpoint',
+  //       type: 'post', 
+  //       name: localStorage.getItem('room_key'),
+  //       id: localStorage.getItem('room_id'),
+  //       }
+  //     };
+  //     console.log('TEST', TEST);
+      } catch (error) {
+        this.sendLogToServer('error', 'App.vue Функция changeSetpoint Ошибка выполнения функции обработки ${error} для параметра ${this.setName}');
+      }
     }
-
   },
+
+
+
+
+  // changeSetpoint(newState) {
+  //   if (newState == null && newState !== undefined) {
+
+
+
+  //     console.log('App.vue - из компонентов в функцию changeSetpoint получено сообщение - ', newState);
+  //     if (newState.newSetPoint !== undefined) this.setpoint = newState.newSetPoint;
+      
+  //     if (newState.updatePermission !== undefined && this.setpoint !== undefined) this.$emit('AppNewSetpoint',{
+  //       setpointUpdate:
+  //     { 
+  //         setpoint: { //Сообщение о изменении Уставки Для каждой группы параметров нужно писать свой разработчик
+  //           [this.setName] : this.setpoint
+  //       }, 
+  //       request: 'setpoint',
+  //       type: 'post', 
+  //       name: this.room_name,
+  //       id: this.id,
+  //       }
+  //     }); 
+  //   } else {
+  //     console.error('App.vue Функция changeSetpoint получила пустое значение setpoint', newState);
+  //   }
+
+  // },
   getManageValues(id_room, param_key) {
       console.log('App.vue - Приступили к выполнению функции getManageValues с параметром id = ', id_room , ' и ключем = ', param_key);
       if (id_room === undefined || param_key === undefined) {
@@ -524,7 +577,7 @@ export default {
         this.limStep = Mconfig.common.setpoint[stepName];
 
         const roomID = this.getManageValues_checkID(id_room, Mconfig);
-        console.log('roomID = ', roomID, 'setPoint = ', Mconfig[roomID].setpoint[this.setName], ' lowLimit = ', this.limLow, ' highLimit = ', this.limHigh, ' step = ', this.limStep);
+        // console.log('roomID = ', roomID, 'setPoint = ', Mconfig[roomID].setpoint[this.setName], ' lowLimit = ', this.limLow, ' highLimit = ', this.limHigh, ' step = ', this.limStep);
 
         return Mconfig[roomID].setpoint[this.setName];
       }

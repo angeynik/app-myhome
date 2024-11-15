@@ -64,23 +64,8 @@
     font-family:   Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    margin: 0px;
-    border: 0px;
-    /* display: flex;
-    flex-direction: column;
-    justify-content: space-between; */
-    /* display: grid;
-    grid-template-rows: auto 10fr 1fr;
-    grid-row-start: auto;
-
-     width: 100lvw;
-     height: 100dvh;
-     font-family: 'times new roman', 'Avenir', Helvetica, Arial, sans-serif;
-
-     text-align: center;
-     background-color: var(--background_color);
-     color: var(--light_font);
- */
+    margin: 0 !important;
+    border: 0 !important;
  }
  .header, .body, .footer { 
   width: 100%; 
@@ -88,7 +73,7 @@
 .body {
   flex: 1 1 86%; 
   /* overflow-y: auto; */
-  margin: 0 !important;
+  margin: 1 !important;
   border: 0 !important;
   /* display: flex !important; */
   box-sizing: border-box !important;
@@ -364,34 +349,41 @@
   display: flex;
   flex-direction: column;
   align-content: space-around;
-  /* justify-content: space-between; */
+  align-items: stretch;
+  width: 100%;
   background-color: var(--background_color);
+  box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
   margin: 0;
   box-shadow: 0vw -3vw 6vw rgba(225, 225, 225, 0.2), 0vw 2vw 3vw rgba(225, 225, 225, 0.2),inset 12vw 0 8vw -6vw rgba(0, 0, 0, 0.8), inset -12vw 0 8vw -6vw rgba(0, 0, 0, 0.8);
 }
 .setpointValue {
   display: flex;
   flex-direction: row;
-  align-items: center;
   justify-content: space-between;
-  min-height: 2vw;
-  padding: 3vw 2vw 0 2vw;
+  width: 100%;
+  height: inherit;
+  box-sizing: border-box;
+  padding: 1vw 1.5vw 0 1.5vw;
 }
 
 .setpointValue_number {
-  min-width: 20vw;
+  min-width: 64px;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-self: center;
 }
 .setpointValue_icon {
+  height: 6vh;
+  width: 38vw;
   display: flex;
-  flex-direction: row;
   align-items: center;
-  justify-content: space-around;
-  width: 35vw;
+  box-sizing: border-box; 
 }
 
 .setpointValue h1 {
-  align-items: center;
-  font-size: 1.8rem;
+  /* align-items: center; */
+  font-size: 1.6rem;
   font-weight: 500;
   /* letter-spacing: 0.5px; */
   margin: 0;
@@ -402,7 +394,8 @@
   display: flex;
   height: 5vw;
   justify-content: space-between;
-  padding: 0 6vw;
+  align-items: flex-start;
+  padding: 0 5vw;
 }
 .setpointLimits h4 {
   margin: 0;

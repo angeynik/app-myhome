@@ -56,9 +56,7 @@ watch: {
 
 },
 methods: {
-    customerClick(event) { 
-        console.log(event.isTrusted);
-        // this.isSelected = !this.isSelected;
+    customerClick() { 
         this.$emit('select', {
             type: 'select', 
             message: {
@@ -70,14 +68,15 @@ methods: {
         }); 
     }, 
     customerDoubleClick() {
-        console.log('Функция customerDoubleClick(MainBodyValue) - Пользователь начал двойной клик');
+        // console.log('Функция customerDoubleClick(MainBodyValue) - Пользователь начал двойной клик');
         this.$emit('doubleclick', { 
             roomKey: this.roomKey, 
-            paramKey: this.paramKey, 
+            paramKey: this.paramKey,
+            roomID: this.id,
         });
     },
     handleTouchStart(event) {
-        console.log('Функция handleTouchStart(MainBodyValue) - Пользователь начал двойной клик', event.touches[0].clientX, event.touches[0].clientY);
+        // console.log('Функция handleTouchStart(MainBodyValue) - Пользователь начал двойной клик', event.touches[0].clientX, event.touches[0].clientY);
         if (event.touches.length === 1) { 
             this.touchTimeout = setTimeout(() => { 
                 this.touchTimeout = null; 
@@ -88,9 +87,8 @@ methods: {
             }, 300); 
         }
     }, 
-    handleTouchEnd(event) {
-        console.log('Функция handleTouchStart(MainBodyValue) - Пользователь завершил двойной клик', event.touches[0].clientX, event.touches[0].clientY);
-        console.log(event.isTrusted);
+    handleTouchEnd() {
+        // console.log('Функция handleTouchStart(MainBodyValue) - Пользователь завершил двойной клик', event.touches[0].clientX, event.touches[0].clientY);
         if (this.touchTimeout) { 
             clearTimeout(this.touchTimeout); 
             this.touchTimeout = null; 

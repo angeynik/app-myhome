@@ -21,8 +21,6 @@
                   @touchmove="handleTouchMove($event)" 
                   :class="{ 'bordered': longPressId === param.id }"
                   /> 
-
-
     </div>
 </template>
 
@@ -136,7 +134,7 @@ export default {
                         console.error('MainBody.vue: Функция selectSorting. Не опознаный тип сортировки:', sort_type);
                         break;
                 }
-                console.log(' Функция selectSorting (MainBody) Результат сортировки объекта - viewArray :', this.viewArray);
+                // console.log(' Функция selectSorting (MainBody) Результат сортировки объекта - viewArray :', this.viewArray);
             } catch (error) {
                 this.sendEmitMessage('sendLogToServer','error', 'selectSorting(MainBody) - ошибка сортировки данных для отображения пользователю ${error}');
             }    
@@ -144,7 +142,7 @@ export default {
     },
     getSortedParams(config, key) {
                     // console.log('MainInfoParam функция getSortedParams получила config - ', config, 'key - ', key);
-                    console.log('1   -------   Функция getSortedParams (MainBody) получила key - ', key);
+                    // console.log('1   -------   Функция getSortedParams (MainBody) получила key - ', key);
                     const params = [];
                     let keys = [];
                     try {
@@ -189,14 +187,14 @@ export default {
                             });
                         }
                         const titleRoom = this.findParamTitleRu(config, key);
-                        console.log(' !!!!!!!!!!!!!!!!!!!!   2 ----   Функция getSortedParams (MainBody) сохраняет titleRoom в localStorage - ', titleRoom);
+                        // console.log(' !!!!!!!!!!!!!!!!!!!!   2 ----   Функция getSortedParams (MainBody) сохраняет titleRoom в localStorage - ', titleRoom);
                         localStorage.setItem('param_title', titleRoom.titleRu);
                         localStorage.setItem('param_key', titleRoom.title);
                     } catch (error) {
                         this.sendEmitMessage('sendLogToServer','error', 'getSortedParams(MainBody) - ошибка сортировки данных для отображения пользователю ${error}');
                     }
                     if (!params) {
-                        // console.error('Функция getSortedParams не нашел ни одного ключа в config - ', config);
+                        console.error('Функция getSortedParams не нашел ни одного ключа в config - ', config);
                         this.sendEmitMessage('sendLogToServer','warning', 'getSortedParams(MainBody) -  не найден ни один ключ в config - ', params);
                     } else {
                         return params;
@@ -204,14 +202,14 @@ export default {
                         
     },
     getSortedRooms(config, room) {
-        console.log ('Функция getSortedRooms --- MainInfoParam получила config - ', config, 'room - ', room);
+        // console.log ('Функция getSortedRooms --- MainInfoParam получила config - ', config, 'room - ', room);
         try {
             const dataArray = []; // массив для хранения данных сенсоров
             if (config[room].sensors && config[room]) {
                 // console.log('Проверяем условие  getSortedRooms получила config[room].sensors - ', config[room].sensors);
 
                 Object.keys(config[room].sensors).forEach(sensorKey => {
-                    console.log('2 --- Функция getSortedRooms получила sensorKey - ', sensorKey);
+                //    console.log('2 --- Функция getSortedRooms получила sensorKey - ', sensorKey);
                     const timeDiff = this.calculateTime(new Date(config[room].time[`${sensorKey}_time`]));
                     // console.log('timeDiff', timeDiff);
 
@@ -226,14 +224,14 @@ export default {
                             roomKey: localStorage.getItem('room_key')
                         });
                     });
-                    console.log('room_title - ', config[room].title);
+                    // console.log('room_title - ', config[room].title);
                 localStorage.setItem('room_title', config[room].title);
                 } else {
-                    // console.error(' ---------   Функция getSortedRooms получила пустой массив sensors - ', config[room].sensors);
+                    console.error(' ---------   Функция getSortedRooms получила пустой массив sensors - ', config[room].sensors);
                     this.sendEmitMessage('sendLogToServer','error', 'selectSorting(MainBody) - получила пустой массив sensors - ${config[room].sensors}');
                 }
 
-            console.log('Результат функции getSortedRooms - dataArray  --- MainBody:', dataArray);
+            // console.log('Результат функции getSortedRooms - dataArray  --- MainBody:', dataArray);
             return dataArray; 
         } catch (error) {
             this.sendEmitMessage('sendLogToServer','error', 'getSortedRooms(MainBody) - ошибка сортировки данных Комнаты для отображения пользователю ${error}');
@@ -244,7 +242,7 @@ export default {
             try {
                 // const sensorKey = (key.replace(/[^a-zA-Z]/g, '')).substring(1); // оставляем только буквы и убираем первый символ
                 const sensorKey = key.replace(/[^a-zA-Z]/g, ''); // оставляем только буквы
-            console.log('Функция findParamTitleRu сохраняет в localStorage(param_key) значение из sensorKey - ', sensorKey);
+            // console.log('Функция findParamTitleRu сохраняет в localStorage(param_key) значение из sensorKey - ', sensorKey);
             const array = config['room00'].info;
             // console.log('Функция findParamTitleRu получила sensorKey - ', sensorKey);
             // console.log('Функция findParamTitleRu получила array - ', array);
@@ -291,7 +289,7 @@ export default {
         return id === this.isSelectedID && paramKey === this.isSelectedParam;
     },
     getEventsComponent(event) {
-        console.log('MainBody - Функция getEventsComponent получила событие - ', event);
+        // console.log('MainBody - Функция getEventsComponent получила событие - ', event);
         try {
 
             switch (event.type) {
@@ -315,13 +313,14 @@ export default {
 
     },
     sortingDoubleClick(event) {
-        // console.log('  -------  DoubleClick      -------------    MainBody - Функция sortingDoubleClick получила событие - ', event);
+        //console.log('  -------  DoubleClick      -------------    MainBody - Функция sortingDoubleClick получила событие - ', event);
         try {
         // console.log('  -------  DoubleClick      -------------    MainBody - Функция sortingDoubleClick получила roomKey и paramKey - ', event.roomKey, event.paramKey);
             if (event.paramKey === null || event.roomKey === null) {
-                this.sendEmitMessage('sendLogToServer','error', 'sortingDoubleClick(MainBody) - Ошибка попытки изменить сортировку при двойном клике на область датчика - Не получены значения roomKey или paramKey');
+                this.sendEmitMessage('sendLogToServer','warning', 'sortingDoubleClick(MainBody) - Ошибка попытки изменить сортировку при двойном клике на область датчика - Не получены значения roomKey или paramKey');
             } else  {
                 // console.log('  -------  DoubleClick      -------------    Собираемся сохранять в localStorage');
+                localStorage.setItem('room_id', event.roomID);
                 localStorage.setItem('room_key', event.roomKey);
                 localStorage.setItem('param_key', event.paramKey);
                 if (this.customerSorting === 'rooms') {
@@ -332,7 +331,7 @@ export default {
                 this.selectSorting(this.customerSorting); 
             }
         } catch (error) {
-            // console.error(`  Catch -------  DoubleClick      -------------    MainBody - Функция sortingDoubleClick - ошибка обработки события - ${error}`);
+            console.error(`  Catch -------  DoubleClick      -------------    MainBody - Функция sortingDoubleClick - ошибка обработки события - ${error}`);
             this.sendEmitMessage('sendLogToServer', 'error', `sortingDoubleClick(MainBody) - Ошибка попытки изменить сортировку при двойном клике на область датчика - Общая ошибка ${error}`);
         }
     },
