@@ -44,6 +44,7 @@
 
 <script>
 import MainBodyValue from './MainBodyValue.vue';
+import checkConfigs from '../utils/transformConfigs'
 export default {
     name: 'MainBody',
     components: {
@@ -77,7 +78,7 @@ export default {
 
     },
     mounted() {
-
+        this.checkConfigs = new checkConfigs(); // Создаемм объект класса checkConfigs
 
     },
     beforeUnmount() {
@@ -107,6 +108,7 @@ export default {
 
     },
     sendEmitMessage(event, name, message) {
+                console.log('MainBody - Функция sendEmitMessage формирует сообщение для отправки на сервер - ', event, name );    
                 this.$emit('eventsComponent',{
                     [event]: {
                         type: name,
@@ -305,20 +307,30 @@ export default {
     },
     isSelected_(id, paramKey) {
         return id === this.isSelectedID && paramKey === this.isSelectedParam;
+       
     },
     getEventsComponent(event) {
         // console.log('MainBody - Функция getEventsComponent получила событие - ', event);
         try {
+            const isSelectedNum = this.checkConfigs.typeofName(event.message.paramKey); // Проверка на возможность выбора Уставки 
+            //console.log('  ------     MainBody - Функция getEventsComponent получила событие - ', event, isSelectedNum);
 
             switch (event.type) {
             case 'select':  {
                 const { id, paramKey } = event.message; 
                     if (this.isSelectedID === id && this.isSelectedParam === paramKey) { 
                         this.selectedId = null; // Снять выбор при повторном клике 
-                        this.isSelectedParam = null; 
+                        this.isSelectedParam = null;
+                        this.sendEmitMessage('showSetpoint', 'isSelected', false);
                     } else { 
                         this.isSelectedID= id; // Установить выбор 
-                        this.isSelectedParam = paramKey; 
+                        this.isSelectedParam = paramKey;
+                        if (isSelectedNum === true) {
+                            this.sendEmitMessage('showSetpoint', 'isSelected', true);
+                        } else {
+                            this.sendEmitMessage('showSetpoint', 'isSelected', false);
+                        }
+                        
                     } 
                     break;
                 }
@@ -353,7 +365,14 @@ export default {
             this.sendEmitMessage('sendLogToServer', 'error', `sortingDoubleClick(MainBody) - Ошибка попытки изменить сортировку при двойном клике на область датчика - Общая ошибка ${error}`);
         }
     },
-
+    checkNumber(selectNum) {
+        console.log('  -------  checkNumber   Функция checkNumber Начинает проверку selectNum - ', selectNum);
+        if (selectNum === 'dTemp' || selectNum === 'dHum') {
+            return true
+        } else {
+            return false
+        }
+    },
 
 
 

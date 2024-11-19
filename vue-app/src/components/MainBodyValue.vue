@@ -27,11 +27,13 @@
 </template>
 
 <script>
+import checkConfigs from '../utils/transformConfigs'
 export default {
 name: 'ParamPlace', 
 data() {
     return {
         // isSelected: null,
+        checkConfigs: null,
     }
 },
 props: {
@@ -64,8 +66,13 @@ props: {
 watch: {
 
 },
+created() {
+    // Инициализация класса при создании компонента
+    this.checkConfigs = new checkConfigs();
+  },
 methods: {
     customerClick() { 
+
         this.$emit('select', {
             type: 'select', 
             message: {

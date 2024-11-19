@@ -97,7 +97,7 @@ export default {
       commonConfig_val:{}, // Сохранение Конфигурации общих параметров
 
   // Работа с меню выбора компонентов
-      showSetpoint: true,
+      showSetpoint: false,
       propsTitle:'',// идентификатор параметра сортировки room или params
       selectedComponent: null, //  Имя выбранного компонента
       headerTitle: "",
@@ -146,7 +146,8 @@ export default {
       this.headerTitle = 'Главное меню';
       localStorage.setItem('room_id', 1);
       localStorage.setItem('param_key', 'Temp');
-      localStorage.setItem('room_key', localStorage.getItem('room_key') || 'room01');
+      localStorage.setItem('room_key', 'room01');
+      localStorage.setItem('isSelectedNum', false); // isSelectedNum - флаг выбора параметра имеющего числовое значение и соответственно Уставку
       this.setpoint = this.getManageValues(localStorage.getItem('room_id'), localStorage.getItem('param_key'));
     },
     findRoom (config, id) {
@@ -498,19 +499,6 @@ export default {
         const name = 'set'+localStorage.getItem('param_key');
         const data = {[name]: newState.newSetPoint};
         this.sendServerRequest('post', 'setpoint', localStorage.getItem('room_key'), data);
-  // const TEST = {
-  //       setpointUpdate:
-  //     { 
-  //         setpoint: { //Сообщение о изменении Уставки Для каждой группы параметров нужно писать свой разработчик
-  //           [this.setName] : this.setpoint
-  //       }, 
-  //       request: 'setpoint',
-  //       type: 'post', 
-  //       name: localStorage.getItem('room_key'),
-  //       id: localStorage.getItem('room_id'),
-  //       }
-  //     };
-  //     console.log('TEST', TEST);
       } catch (error) {
         this.sendLogToServer('error', 'App.vue Функция changeSetpoint Ошибка выполнения функции обработки ${error} для параметра ${this.setName}');
       }
@@ -607,98 +595,6 @@ export default {
 
 
 
-
-
-
-    // getInfo (value) { // Получаем тип датчика по его наименованию
-    //   // console.log('MainBody.vue - Приступили к выполнению функции getInfo с параметром value = ', value);
-    //   if (value.includes('Temp')) {
-    //     this.point_title_name = 'Температура';
-    //     this.point_title_sign = '°C';
-    //     this.showSetpoint = true;
-    //     return 'Temp';
-    //   } else if (value.includes('Hum')) {
-    //     this.point_title_name = 'Влажность';
-    //     this.point_title_sign = '%';
-    //     this.showSetpoint = true;
-    //     return 'Hum';
-    //   } else if (value.includes('Lum')) {
-    //     this.point_title_name = 'Освещенность';
-    //     this.point_title_sign = 'lum';
-    //     this.showSetpoint = false;
-    //     return 'Lum';
-    //   } else if (value.includes('Pres')) {
-    //     this.point_title_name = 'Давление';
-    //     this.point_title_sign = 'hPa';
-    //     this.showSetpoint = false;
-    //     return 'Pres';
-    //   } else if (value.includes('Noise')) {
-    //     this.point_title_name = 'Уровень шума';
-    //     this.point_title_sign = 'dB';
-    //     this.showSetpoint = false;
-    //     return 'Noise';
-    //   } else if (value.includes('Co2')) {
-    //     this.point_title_name = 'CO2';
-    //     this.point_title_sign = 'ppm';
-    //     this.showSetpoint = true;
-    //     return 'CO2';
-    //   } else if (value.includes('Voc')) {
-    //     this.point_title_name = 'VOC';
-    //     this.point_title_sign = 'ppb';
-    //     this.showSetpoint = false;
-    //     return 'Voc';
-    //   } else if (value.includes('Mov')) {
-    //     this.point_title_name = 'Движение';
-    //     this.point_title_sign = 'on/off';
-    //     this.showSetpoint = false;
-    //     return 'Mov';
-    //   } else if (value.includes('Bat')) {
-    //     this.point_title_name = 'Напряжение батареи';
-    //     this.point_title_sign = 'V';
-    //     this.showSetpoint = false;
-    //     return 'Bat';
-    //   } else if (value.includes('Switch')) {
-    //     this.point_title_name = 'Переключатель';
-    //     this.point_title_sign = 'on/off';
-    //     this.showSetpoint = false;
-    //     return 'Switch';
-    //   } else if (value.includes('Relay')) {
-    //     this.point_title_name = 'Реле';
-    //     this.point_title_sign = 'on/off';
-    //     this.showSetpoint = false;
-    //     return 'Relay';
-    //   } else if (value.includes('Power')) {
-    //     this.point_title_name = 'Розетка';
-    //     this.point_title_sign = 'on/off';
-    //     this.showSetpoint = false;
-    //     return 'Power';
-    //   } else if (value.includes('Dimmer')) {
-    //     this.point_title_name = 'Контроллер';
-    //     this.point_title_sign = 'on/off';
-    //     this.showSetpoint = false;
-    //     return 'Dimmer';
-    //   } else if (value.includes('Fire')) {
-    //     this.point_title_name = 'Пожар';
-    //     this.point_title_sign = 'on/off';
-    //     this.showSetpoint = false;
-    //     return 'Fire';
-    //   } else if (value.includes('Leak')) {
-    //     this.point_title_name = 'Протечка';
-    //     this.point_title_sign = 'on/off';
-    //     this.showSetpoint = false;
-    //     return 'Leak';
-    //   } else if (value.includes('Smoke')) {
-    //     this.point_title_name = 'Дым';
-    //     this.point_title_sign = 'on/off';
-    //     this.showSetpoint = false;
-    //     return 'Smoke';
-    //   } else {
-    //     this.point_title_name = 'Неизвестное';
-    //     this.point_title_sign = '?';
-    //     this.showSetpoint = false;
-    //     return 'Unknown';
-    //   }
-    // },
     checkLength(Point, Point_length) {
       // console.log('checkLength Начинаем проверку для ID', Point, ' ID_length = ', Point_length);
       if (Point > Point_length) {
@@ -778,8 +674,9 @@ export default {
             }
           }
           if (event.showSetpoint) {
-            console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение showSetpoint - ', event.showSetpoint);
-            this.showSetpoint = event.showSetpoint;      
+            console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение showSetpoint - ', event.showSetpoint.isShow);
+            this.showSetpoint = event.showSetpoint.message;  
+             
           }
       } 
      
