@@ -325,6 +325,7 @@ export default {
                     } else { 
                         this.isSelectedID= id; // Установить выбор 
                         this.isSelectedParam = paramKey;
+                        this.sendEmitMessage('selectedItem', 'isSelected', {id: id, paramKey: paramKey});
                         if (isSelectedNum === true) {
                             this.sendEmitMessage('showSetpoint', 'isSelected', true);
                         } else {
