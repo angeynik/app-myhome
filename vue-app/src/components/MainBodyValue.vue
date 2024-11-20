@@ -72,7 +72,6 @@ created() {
   },
 methods: {
     customerClick() { 
-
         this.$emit('select', {
             type: 'select', 
             message: {

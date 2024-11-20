@@ -21,6 +21,8 @@
                   :class="{ 'bordered': longPressId === param.id }"
                   />  -->
 
+                  <!-- :paramKey="(param.key).substring(1)"  -->
+
                 <MainBodyValue 
                 class="mainBodyValue"
                   v-for="(param, index) in viewArray"
@@ -108,7 +110,7 @@ export default {
 
     },
     sendEmitMessage(event, name, message) {
-                console.log('MainBody - Функция sendEmitMessage формирует сообщение для отправки на сервер - ', event, name );    
+                //console.log('MainBody - Функция sendEmitMessage формирует сообщение для отправки на сервер - ', event, name );    
                 this.$emit('eventsComponent',{
                     [event]: {
                         type: name,
@@ -313,7 +315,7 @@ export default {
         // console.log('MainBody - Функция getEventsComponent получила событие - ', event);
         try {
             const isSelectedNum = this.checkConfigs.typeofName(event.message.paramKey); // Проверка на возможность выбора Уставки 
-            //console.log('  ------     MainBody - Функция getEventsComponent получила событие - ', event, isSelectedNum);
+            console.log(' Функция getEventsComponent (MainBody) получила событие результат проверки на возможность выбора Уставки из checkConfigs.typeofName isSelectedNum - ', isSelectedNum);
 
             switch (event.type) {
             case 'select':  {
@@ -325,13 +327,13 @@ export default {
                     } else { 
                         this.isSelectedID= id; // Установить выбор 
                         this.isSelectedParam = paramKey;
-                        this.sendEmitMessage('selectedItem', 'isSelected', {id: id, paramKey: paramKey});
                         if (isSelectedNum === true) {
                             this.sendEmitMessage('showSetpoint', 'isSelected', true);
                         } else {
                             this.sendEmitMessage('showSetpoint', 'isSelected', false);
                         }
-                        
+                        this.sendEmitMessage('selectedItem', 'isSelected', {id: id, paramKey: paramKey});
+                       
                     } 
                     break;
                 }
@@ -366,15 +368,6 @@ export default {
             this.sendEmitMessage('sendLogToServer', 'error', `sortingDoubleClick(MainBody) - Ошибка попытки изменить сортировку при двойном клике на область датчика - Общая ошибка ${error}`);
         }
     },
-    checkNumber(selectNum) {
-        console.log('  -------  checkNumber   Функция checkNumber Начинает проверку selectNum - ', selectNum);
-        if (selectNum === 'dTemp' || selectNum === 'dHum') {
-            return true
-        } else {
-            return false
-        }
-    },
-
 
 
 

@@ -213,7 +213,7 @@ export default {
       };
 
       this.socket.onclose = () => {
-      console.log('WebSocket соединение закрыто. Попытка переподключения через 5 секунд...');
+      console.error('WebSocket соединение закрыто. Попытка переподключения через 5 секунд...');
       this.WSconnected = false; // Сбросьте флаг соединения
       setTimeout(() => {
         this.connectWebSocket();
@@ -320,7 +320,7 @@ export default {
 
     },
     checkMassageValue (value) { // Проверяем и преобразуем значение переменной 20.5 On Off ??? (при пустом значении)
-      console.log('Функция checkMassageValue приступила к обработке значения:', value);
+      //console.log('Функция checkMassageValue приступила к обработке значения:', value);
       if (value === null || value === undefined) {
         this.sendLogToServer('warning', `Функция checkMassageValue  Ошибка попытки проверки значения датчика полученного с сервера для сообщения ${this.messageFromServer} Значения не определено -  ${value} Определяем как ??? `); 
         return '???';
@@ -401,7 +401,7 @@ export default {
           break;
 
         default:
-          console.log(`Получено cообщение с неизвестным типом`, request);
+          console.error(`Получено cообщение с неизвестным типом`, request);
           break;
       }
     },    
@@ -421,7 +421,7 @@ export default {
         case 'manageConfig':
         if (!config[roomKey]) {
           console.error(' 5 --- Конфигурация не найдена в localStorage для ключа:', name);
-          console.log(' Функция safeLocalSorage - config по ключу', roomKey, 'для', name, ':', config[roomKey]);
+          //console.log(' Функция safeLocalSorage - config по ключу', roomKey, 'для', name, ':', config[roomKey]);
           // console.log(' APP SafeLocalSorage - id_title:', this.id_title);
           this.sendLogToServer('warning', `Конфигурация не найдена в localStorage для ключа: ${name}`);
           config[roomKey] = {
@@ -455,7 +455,7 @@ export default {
             if (sensorKey === undefined || sensorKey === null) {
               console.error('Функция safeLocalSorage - Ошибка поиска датчика в конфигурации', name,' для комнаты ', roomKey);
             } else {
-              console.log('sensorKey:', sensorKey); // Логирование sensorKey
+              //console.log('sensorKey:', sensorKey); // Логирование sensorKey
               sensorValue = this.checkMassageValue(message[roomKey].sensors[sensorKey]);
               // console.log('sensorValue:', sensorValue); // Логирование sensorValue
               sensorKeyTime = sensorKey + '_time';
@@ -480,12 +480,12 @@ export default {
       if (component === 'Rooms') {
         this.propsTitle = 'rooms';
         this.selectedComponent = 'MainBody';
-        console.log('selectComponent - ', this.selectedComponent, this.propsTitle);
+        //console.log('selectComponent - ', this.selectedComponent, this.propsTitle);
         this.sendLogToServer('customer', `Меню выбора экрана Выбран: ${this.selectedComponent} - сортировка по Комнатам`); 
       } else if (component === 'Params') {
         this.propsTitle = 'params';
         this.selectedComponent = 'MainBody';
-        console.log('selectComponent - ', this.selectedComponent, this.propsTitle);
+        //console.log('selectComponent - ', this.selectedComponent, this.propsTitle);
         this.sendLogToServer('customer', `Меню выбора экрана Выбран: ${this.selectedComponent} - сортировка по Параметрам`); 
       } else {
         this.selectedComponent = component;
@@ -511,16 +511,17 @@ export default {
   changeSetpoint(newState) {
     console.log('В функцию changeSetpoint (App.vue) получено сообщение - newState:', newState);
     if (newState === null || newState.newSetPoint === undefined) {
-      console.error('App.vue Функция changeSetpoint получила пустое значение setpoint', newState.newSetPoint);
+      console.error('Функция changeSetpoint (App.vue) получила пустое значение setpoint', newState.newSetPoint);
       this.sendLogToServer('warning', 'App.vue Функция changeSetpoint получила пустое значение setpoint для параметра ${this.setName}');
       return;
     } else {
       try {
-        console.log('App.vue Функция changeSetpoint получила значение setpoint - ', newState.newSetPoint);
+        console.log(' Функция changeSetpoint (App.vue) получила значение setpoint - ', newState.newSetPoint);
         this.setpoint = newState.newSetPoint;
     // Отправляем на сервер сообщение вида {type, request, name, data}
     // type - тип сообщения, request - название функции, name - имя комнаты (room00), data - данные вида {setTemp: 22}
         const name = 'set'+localStorage.getItem('param_key');
+        // console.log('В функцию changeSetpoint получено сообщение - ', name);
         const data = {[name]: newState.newSetPoint};
         this.sendServerRequest('post', 'setpoint', localStorage.getItem('room_key'), data);
       } catch (error) {
@@ -557,35 +558,35 @@ export default {
   //   }
 
   // },
-  getManageValues(id_room, param_key) {
-      console.log('App.vue - Приступили к выполнению функции getManageValues с параметром id = ', id_room , ' и ключем = ', param_key);
+    getManageValues(id_room, param_key) {
+      //console.log(' Функция getManageValues получила параметры room_id = ', id_room , ' и param_key = ', param_key);
       if (id_room === undefined || param_key === undefined) {
         console.error('App.vue - Функция getManageValues получила пустое значение id_room или param_key');
         this.sendLogToServer ('warning', `Функция getManageValues получила не корректные пееременные id_room = ${id_room} или param_key = ${param_key} - Значения для Setpoint и Limits НЕ определены `);
         return;
       } 
-      // Задаем ключи для получения параметров
-      this.setName = 'set'+param_key;
-      const lowName = 'limDown'+param_key;
-      const highName = 'limUp'+param_key;
-      const stepName = 'limStep'+param_key;
-      // console.log('set = ', this.setName, ' low = ', lowName, ' high = ',  highName, ' step = ', stepName);
       try {
+        const paramKey = this.checkConfigs.checkSymbol(param_key, 0, 'd');
+        //console.log('paramKey = ', paramKey);
+
         // Получаем объект manageConfig из localStorage
       const Mconfig = JSON.parse(localStorage.getItem('manageConfig'));
       if (!Mconfig) {
         console.error('Не удалось получить конфигурацию manageConfig из localStorage');
         return;
       } else {
-        // console.log('Конфигурация "manageConfig" для id -', id_room, ' получена из localStorage успешно', Mconfig);
+        //console.log('Конфигурация "manageConfig" для id -', id_room, ' получена из localStorage успешно', Mconfig);
+
         // Значения граничных диапазонов всегда получаем из объекта common в manageConfig
-        this.limLow = Mconfig.common.setpoint[lowName];
-        this.limHigh = Mconfig.common.setpoint[highName];
-        this.limStep = Mconfig.common.setpoint[stepName];
+        this.limLow = Mconfig.common.setpoint['limDown'+paramKey];
+        console.log('this.limLow = ', 'limDown'+paramKey);
+        this.limHigh = Mconfig.common.setpoint['limUp'+paramKey];
+        this.limStep = Mconfig.common.setpoint['limStep'+paramKey];
 
+        this.setName = 'set'+paramKey;
         const roomID = this.getManageValues_checkID(id_room, Mconfig);
-        // console.log('roomID = ', roomID, 'setPoint = ', Mconfig[roomID].setpoint[this.setName], ' lowLimit = ', this.limLow, ' highLimit = ', this.limHigh, ' step = ', this.limStep);
-
+        this.setpoint = Mconfig[roomID].setpoint[this.setName];
+        //console.log('roomID = ', roomID, 'setPoint = ', setPoint, ' lowLimit = ', this.limLow, ' highLimit = ', this.limHigh, ' step = ', this.limStep);
         return Mconfig[roomID].setpoint[this.setName];
       }
       } catch (error) {
@@ -593,20 +594,22 @@ export default {
       }
       
     },
-
     getManageValues_checkID(id, arr) {
-      // console.log('App - Функция getManageValues_checkID  --- Приступили к выполнению функции с параметром id = ', id);
+      //console.log('App - Функция getManageValues_checkID (App) -- Получен массив ', arr);
+      //console.log('App - Функция getManageValues_checkID (App) -- Приступили к выполнению функции с параметром id = ', id);
       const num_id = Number(id);
+      let room_title = 'common';
       try {
         for (const key in arr) {
+          //console.log('Функция getManageValues_checkID (App) -- Перебираем ключи - ', key, ' в массиве - ', arr[key]);
           if (arr[key].id === num_id) {
-            // console.log('App - getManageValues_checkID --- Находим комнату с запрашиваемым ID:', key);
-            return key;
-          } else {
-            // console.log('App -  getManageValues_checkID --- Комната с запрашиваемым ID не найдена');
-            return 'common';
-          }
+            //console.log('Функция getManageValues_checkID (App) -- Находим комнату с запрашиваемым ID:', key);
+            room_title = key;
+            break;
+          } 
+            //console.log('Функция getManageValues_checkID (App) -- Комната с запрашиваемым ID не найдена возвращаем common');
         } 
+        return room_title;
       }
       catch (error) {
         this.sendLogToServer ('error', `Произошла ошибка при определении ключа для получения Setpoint и лемитов - ${error}`);
@@ -679,7 +682,7 @@ export default {
 
     // Обработка сообщений из компонентов
     getEventsComponent(event) { // Обработка сообщений из компонентов
-      console.log('В функцию getEventsComponent () получено сообщение - ', event);
+      //console.log('В функцию getEventsComponent () получено сообщение - ', event);
       if (event.sendServerRequest) {
         // console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение - ', event.sendServerRequest);
         this.sendServerRequest(event.sendServerRequest.type, event.sendServerRequest.request, event.sendServerRequest.name, event.sendServerRequest.setpoint);
@@ -689,7 +692,7 @@ export default {
         this.sendLogToServer(event.sendLogToServer.type, event.sendLogToServer.message);
       }
       if (this.selectedComponent === 'MainBody') {
-        console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle - ', event);
+        //console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle - ', event);
           if (event.changeTitle)  {
             try {
               this.headerTitle = event.changeTitle.message; 
@@ -698,12 +701,17 @@ export default {
             }
           }
           if (event.showSetpoint) {
-            console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение showSetpoint - ', event.showSetpoint.isShow);
+            console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение showSetpoint - ', event.showSetpoint);
             this.showSetpoint = event.showSetpoint.message;   
           } if (event.selectedItem) {
             console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение selectedItem - ', event.selectedItem);
-            const {set, name} = this.checkConfigs.find('manageConfig', 'setpoint', event.selectedItem.message);
-            console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение set - ', set, name);
+
+// Доделать - работа через методы класса checkConfigs
+// const {set, name} = this.checkConfigs.find('manageConfig', 'setpoint', event.selectedItem.message);
+
+            this.getManageValues(event.selectedItem.message.id, event.selectedItem.message.paramKey);
+
+            //console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение set - ', set, name);
           }
       } 
      

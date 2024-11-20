@@ -229,28 +229,32 @@
     },
 
     sendSetPoint(setPoint, min, max) {
-        if (setPoint !== undefined && setPoint !== null && min !== undefined && max) {
-          try {
-            if (setPoint > max) {
-          setPoint = max;
-            this.$emit('updateState', { newSetPoint: setPoint });
-            // console.log(' BodySetpointBlock Функция sendSetPoint Ограничиваем Верхняю границу Уставки');
-          } else if (setPoint < min) {
-            setPoint = min;
-            // console.log(' BodySetpointBlock Функция sendSetPoint Ограничиваем Нижнюю границу Уставки');
-            this.$emit('updateState', { newSetPoint: setPoint });
-          } else {
-            // console.log(' BodySetpointBlock Функция sendSetPoint Отправляем Уставку без изменений');
-            this.$emit('updateState', { newSetPoint: setPoint });
-          }
-          } catch (error) {
-            console.error('BodySetpointBlock Функция sendSetPoint Ошибка проверки ограничений диапазона Уставки', error);
-            this.sendEmitMessage('error', 'BodySetpointBlock Функция sendSetPoint Ошибка проверки ограничений диапазона Уставки', error); // отправка логов на сервер для сохранения в файл
-          }
-        } else {
+        if (setPoint === undefined || setPoint === null || min === undefined || max === undefined) {
           console.error('BodySetpointBlock Функция sendSetPoint Попытка проверки с неопределенными значениями setPoint', setPoint, 'min', min, 'max', max);
           this.sendEmitMessage('error', 'BodySetpointBlock Функция sendSetPoint Попытка проверки с неопределенными значениями setPoint: ', setPoint); 
-      }
+        } else {
+          //const paramKey = localStorage.getItem('param_key');
+            try {
+              if (setPoint > max) {
+              setPoint = max;
+              this.$emit('updateState', { newSetPoint: setPoint });
+              // console.log(' BodySetpointBlock Функция sendSetPoint Ограничиваем Верхняю границу Уставки');
+            } else if (setPoint < min) {
+              setPoint = min;
+              // console.log(' BodySetpointBlock Функция sendSetPoint Ограничиваем Нижнюю границу Уставки');
+              this.$emit('updateState', { newSetPoint: setPoint });
+            } else {
+              // console.log(' BodySetpointBlock Функция sendSetPoint Отправляем Уставку без изменений');
+              this.$emit('updateState', { newSetPoint: setPoint });
+            //   this.$emit('updateState', {sensors: {
+            //     [paramKey]: setPoint }
+            // });
+            }
+            } catch (error) {
+              console.error('BodySetpointBlock Функция sendSetPoint Ошибка проверки ограничений диапазона Уставки', error);
+              this.sendEmitMessage('error', 'BodySetpointBlock Функция sendSetPoint Ошибка проверки ограничений диапазона Уставки', error); // отправка логов на сервер для сохранения в файл
+            }
+         }
     },
     debounce(func, wait) {
         // console.log('Активирована задержка выполнения функции', func, 'в', wait, 'мсек');

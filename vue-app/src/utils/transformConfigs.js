@@ -12,7 +12,7 @@ class checkConfigs {
         // Инициализация, если необходимо
     }
     find(config, type, param) {
-        console.log("Для класса checkConfigs вызван метод find с параметрами: ", config, type, param);
+        //console.log("Для класса checkConfigs вызван метод find с параметрами: ", config, type, param);
         if (type === 'setpoint') {
             console.log('Поиск значения для параметра setpoint');
             const name = 'set'+param.paramKey;
@@ -25,13 +25,28 @@ class checkConfigs {
         }
     }
     
+    checkSymbol(variable, indexSymbol, symbol = '', addSymbol = '') {
+        // variable = Переменная для проверки например 'dTemp'
+        // indexSymbol = Позиция символа в строке например '0' или '1'
+        // symbol = Символ для проверки например 'd'
+        // addSymbol = Дополнительные символы для добавления например 'limDown'
+
+        if (indexSymbol === undefined || indexSymbol === null) {
+            return symbol + addSymbol;
+        } else {
+            if (variable[indexSymbol] === symbol) {
+                return variable.substring(indexSymbol + 1);
+            }
+            return variable;
+        }
+    }
     typeofValue(value) {
         console.log("Для класса checkConfigs вызван метод typeofValue с параметрами: ", value);
         // Ваш код здесь
     }
 
     typeofName(name) {
-        console.log("!!! Class - checkConfigs вызван метод typeofValue с параметрами: ", name);
+        //console.log("!!! Class - checkConfigs вызван метод typeofValue с параметрами: ", name);
         if (name === 'dTemp' || name === 'dHum') {
             return true
         } else {
