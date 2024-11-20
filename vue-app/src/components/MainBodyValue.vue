@@ -85,13 +85,11 @@ methods: {
     customerDoubleClick() {
         // console.log('Функция customerDoubleClick(MainBodyValue) - Пользователь начал двойной клик');
         this.$emit('doubleclick', { 
-            roomKey: this.roomKey, 
-            paramKey: this.paramKey,
-            roomID: this.id,
+            'changeSorting': true,
         });
     },
     customerTouchStart(event) {
-        console.log('Функция handleTouchStart(MainBodyValue) - Пользователь сделал клик', event.touches[0].clientX, event.touches[0].clientY);
+        //console.log('Функция handleTouchStart(MainBodyValue) - Пользователь сделал клик', event.touches[0].clientX, event.touches[0].clientY);
         if (event.touches.length === 1) { 
             if (this.touchTimeout) {
                 clearTimeout(this.touchTimeout);
@@ -99,7 +97,9 @@ methods: {
                 this.$emit('doubletouch', { 
                     roomKey: this.roomKey, 
                     paramKey: this.paramKey, 
+                    roomId: this.roomId,
                 });
+                console.log('Функция customerDoubleClick(MainBodyValue) отправила в MainBody  - room_id', this.room_id, 'room_key', this.room_key, 'param_key', this.param_key);
             } else {
                 this.touchTimeout = setTimeout(() => { 
                     this.touchTimeout = null; 

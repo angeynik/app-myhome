@@ -69,6 +69,7 @@ export default {
         isSelected: null,
         isSelectedID: null,
         isSelectedParam: null,
+        isSelectedRoom: null,
         }
     },
     props: {
@@ -315,18 +316,24 @@ export default {
         // console.log('MainBody - Функция getEventsComponent получила событие - ', event);
         try {
             const isSelectedNum = this.checkConfigs.typeofName(event.message.paramKey); // Проверка на возможность выбора Уставки 
-            console.log(' Функция getEventsComponent (MainBody) получила событие результат проверки на возможность выбора Уставки из checkConfigs.typeofName isSelectedNum - ', isSelectedNum);
+            //console.log(' Функция getEventsComponent (MainBody) получила событие результат проверки на возможность выбора Уставки из checkConfigs.typeofName isSelectedNum - ', isSelectedNum);
 
             switch (event.type) {
             case 'select':  {
-                const { id, paramKey } = event.message; 
+                const { id, paramKey, roomKey} = event.message; 
                     if (this.isSelectedID === id && this.isSelectedParam === paramKey) { 
                         this.selectedId = null; // Снять выбор при повторном клике 
                         this.isSelectedParam = null;
+                        this.isSelectedRoom = null;
                         this.sendEmitMessage('showSetpoint', 'isSelected', false);
                     } else { 
                         this.isSelectedID= id; // Установить выбор 
                         this.isSelectedParam = paramKey;
+                        this.isSelectedRoom = roomKey;
+                        localStorage.setItem('room_key', roomKey);
+                        localStorage.setItem('room_id', id);
+                        localStorage.setItem('param_key', paramKey);
+                        
                         if (isSelectedNum === true) {
                             this.sendEmitMessage('showSetpoint', 'isSelected', true);
                         } else {

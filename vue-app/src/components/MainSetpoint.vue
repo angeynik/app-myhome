@@ -157,6 +157,7 @@
     },
     created() {
       this.debouncedCalculateSetpoint = this.debounce(this.calculateSetpoint, 16);
+      this.debouncedUpdatePermitions = this.debounce(this.sendEmitMessage, 1000);
       },
     props: {   // Переменные полученные в компонент
       setPoint: Number,
@@ -179,12 +180,16 @@
         this.isTouching = true;
     },
     handleTouchEnd(component) {
-        console.log('Функция handleTouchEnd (MainSetpoint) событие - handleTouchEnd, secectedComponent - ', component);
+        //console.log('Функция handleTouchEnd (MainSetpoint) событие - handleTouchEnd, secectedComponent - ', component);
         if (component === 'setpointBlock') {
         // console.log('Разрешаем изменять значение для Компонента setpointBlock');
         const currentTime = new Date().getTime();
         this.lastTouchTime = currentTime;
-        this.$emit('updateState', { updatePermission: true }); // Разрешаем обновление Уставки
+        this.debouncedUpdatePermitions('updatePermission', 'permission', true);
+        // this.$emit('updateState', { 
+        //   type: 'updatePermission',
+        //   value: true 
+        // }); // Разрешаем обновление Уставки
         return;
       } else {
         return;
@@ -237,18 +242,20 @@
             try {
               if (setPoint > max) {
               setPoint = max;
-              this.$emit('updateState', { newSetPoint: setPoint });
+              // this.$emit('updateState', { newSetPoint: setPoint });
               // console.log(' BodySetpointBlock Функция sendSetPoint Ограничиваем Верхняю границу Уставки');
             } else if (setPoint < min) {
               setPoint = min;
               // console.log(' BodySetpointBlock Функция sendSetPoint Ограничиваем Нижнюю границу Уставки');
-              this.$emit('updateState', { newSetPoint: setPoint });
+              // this.$emit('updateState', { newSetPoint: setPoint });
             } else {
               // console.log(' BodySetpointBlock Функция sendSetPoint Отправляем Уставку без изменений');
-              this.$emit('updateState', { newSetPoint: setPoint });
-            //   this.$emit('updateState', {sensors: {
-            //     [paramKey]: setPoint }
-            // });
+              this.sendEmitMessage('newSetPoint', 'setpoint', setPoint);
+              //this.sendEmitMessage('updateState', 'newSetPoint', setPoint);
+              // this.$emit('updateState', { 
+              //   type: 'newSetPoint',
+              //   value: setPoint 
+              //   }); 
             }
             } catch (error) {
               console.error('BodySetpointBlock Функция sendSetPoint Ошибка проверки ограничений диапазона Уставки', error);

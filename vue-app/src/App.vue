@@ -45,7 +45,7 @@
           :highLimit="limHigh" 
           :lowLimit="limLow"
           :step="limStep"
-          @updateState="changeSetpoint"
+          @eventsComponent="getEventsComponent"
           v-show="showSetpoint"/>
       </footer>
   </div>
@@ -53,6 +53,7 @@
 
 <script>
 import CheckConfigs from './utils/transformConfigs';
+// import CalcTime from './utils/transformConfigs';
 
 import MainHeader from './components/MainHeader.vue';
 import MainFooter from './components/MainFooter.vue';
@@ -362,9 +363,10 @@ export default {
   }
     },
     sendServerRequest(type, request, name, data)  { //Формируем и оправляем сообщение на сервер
-      // console.log ('1 ---  APP.vue sendServerRequest - request = ', request, 'data = ', data, 'type = ', type, 'name = ', name);
+      console.log ('1 ---  APP.vue sendServerRequest - request = ', request, 'data = ', data, 'type = ', type, 'name = ', name);
       let payload = {};
       const Config = localStorage.getItem([data]);
+      //console.log (' Конфигурация ', data, ' существует', Config, 'name = ', name);
       switch (request) {
         case 'config':
           if (this.WSconnected && !Config) {
@@ -386,15 +388,16 @@ export default {
           break;
 
           case 'setpoint':
-                // console.log (' 2 ---  APP.vue sendServerRequest - request = setpoint" ', data);
+                //console.log (' 2 ---  APP.vue sendServerRequest - request = setpoint" ', data);
                 payload = {
                 type: type,
                 request: request,
                 [name]: data,
-                id: this.id_title,
+                id: localStorage.getItem('room_id'),
+                title: localStorage.getItem('room_title')
               };
               this.safeLocalSorage('manageConfig', payload);
-              // console.log (' 7 ---APP.vue sendServerRequest', payload, 'сохранен в localStorage');
+              //console.log (' 7 ---APP.vue sendServerRequest', payload, 'сохранен в localStorage');
               this.isSending = true;
               this.sendMessage(JSON.stringify(payload));
               // console.log ('APP.vue sendServerRequest Отправка на сервер - "setpoint" ', payload);
@@ -408,56 +411,68 @@ export default {
     safeLocalSorage(name, message) {
       this.localStorageUpdated = false;
       this.messageFromServer = message;
-      // console.log (' 3 --- Функция safeLocalSorage Получено сообщение - ', name, message);
+      //console.log (' 3 --- Функция safeLocalSorage Получено сообщение - ', name, message);
       // Получаем конфигурацию из localStorage
       let config = JSON.parse(localStorage.getItem([name]));
-      // console.log(' 4 --- APP.vue safeLocalSorage Получаем конфигурацию из localStorage ', name, ', config:', config);
-      let sensorKey, sensorValue, sensorKeyTime;
+      //console.log(' 4 --- APP.vue safeLocalSorage Получаем конфигурацию из localStorage ', name, ', config:', config);
+
+      let roomKey, sensorKey, sensorValue, sensorKeyTime;
+
+      
       const timeUpdated = new Date().toLocaleString();
-      const roomKey = Object.keys(message).find(key => key.startsWith('room'));
-      // console.log('safeLocalSorage - roomKey:', roomKey); // Логирование roomKey
 
       switch (name) {
         case 'manageConfig':
+
+        roomKey = localStorage.getItem('room_key');
+        sensorKey = 'set' + this.checkConfigs.checkSymbol(localStorage.getItem('param_key'), 0, 'd');
+
         if (!config[roomKey]) {
           console.error(' 5 --- Конфигурация не найдена в localStorage для ключа:', name);
           //console.log(' Функция safeLocalSorage - config по ключу', roomKey, 'для', name, ':', config[roomKey]);
           // console.log(' APP SafeLocalSorage - id_title:', this.id_title);
           this.sendLogToServer('warning', `Конфигурация не найдена в localStorage для ключа: ${name}`);
           config[roomKey] = {
-                setpoint: {},
+                setpoint: message[roomKey],
                 manage: {},
                 time: {},
-                title: '',
-                id: message.id,
+                title: localStorage.getItem('room_title'),
+                id: Number(localStorage.getItem('room_id')),
               };
-              // console.log('Создан новый объект комнаты:', roomKey, config);
+              //console.log('Создан новый объект комнаты:', config[roomKey]);
+
               this.sendLogToServer ('info', `Создан новый объект комнаты: ${roomKey}`);
               // localStorage.setItem([name], JSON.stringify(config));
         } else {
-          // console.log(' 5 --- Конфигурация найдена в localStorage для ключа:', name);
+          //console.log(' 5 --- Конфигурация найдена в localStorage для ключа:', name, 'roomKey: ', roomKey);
         }
-          sensorKey = Object.keys(message[roomKey])[0];
           sensorValue = message[roomKey][sensorKey];
           sensorKeyTime = sensorKey + '_time';
-          // console.log('sensorKey:', sensorKey, 'sensorValue:', sensorValue, 'sensorKeyTime:', sensorKeyTime); // Логирование setpointKey
-          // console.log(' 6 --- Переходим к сохранению значения в конфигурацию "manageConfig" в localStorage');
+          //console.log('sensorKey:', sensorKey, 'sensorValue:', sensorValue, 'sensorKeyTime:', sensorKeyTime); // Логирование setpointKey
+          //console.log(' 6 --- Переходим к сохранению значения в конфигурацию "manageConfig" в localStorage');
+          
           config[roomKey].setpoint[sensorKey] = sensorValue;
-          config[roomKey].time[sensorKeyTime] = timeUpdated;
+          config[roomKey].time[sensorKey + '_time'] = timeUpdated;
+          //console.log(' 6  --- Конфигурация сохранена в копию localStorage ', config[roomKey]);
+
+
           this.sendLogToServer ('info', `Обновили значение Уставки датчика ${sensorKey} в комнате ${roomKey} на ${sensorValue}`);
           break;
         case 'commonConfig':
+        roomKey = Object.keys(message).find(key => key.startsWith('room'));
+        //console.log(' Функция safeLocalSorage, request = ', name, ' определили roomKey:', roomKey); // Логирование roomKey
           if (!config[roomKey]) {
             console.error('Датчик не найден в конфигурации для комнаты ', roomKey);
             this.sendLogToServer ('error', 'Ошибка поиска ДАТЧИКА в файле конфигурации - датчик соответствующий идентификатору из сообщения Сервера не найден');
           } else {
             sensorKey = Object.keys(message[roomKey].sensors)[0];
+            //console.log(' 5 --- Функция safeLocalSorage, request = ', name, ' определили sensorKey: ', sensorKey);
             if (sensorKey === undefined || sensorKey === null) {
               console.error('Функция safeLocalSorage - Ошибка поиска датчика в конфигурации', name,' для комнаты ', roomKey);
             } else {
               //console.log('sensorKey:', sensorKey); // Логирование sensorKey
               sensorValue = this.checkMassageValue(message[roomKey].sensors[sensorKey]);
-              // console.log('sensorValue:', sensorValue); // Логирование sensorValue
+              //console.log('sensorValue:', sensorValue); // Логирование sensorValue
               sensorKeyTime = sensorKey + '_time';
               config[roomKey].sensors[sensorKey] = sensorValue;
               config[roomKey].time[sensorKeyTime] = new Date();
@@ -473,7 +488,7 @@ export default {
       }
       localStorage.setItem([name], JSON.stringify(config));
       this.localStorageUpdated = true;
-// console.log(`Конфигурация -- !!  ${name}  !! --  обновлена в localStorage`, config,  'localStorageUpdated: ', this.localStorageUpdated);
+console.log(`Конфигурация -- !!  ${name}  !! --  обновлена в localStorage`, config,  'localStorageUpdated: ', this.localStorageUpdated);
     },
     selectComponent(component) {
       // console.log('selectComponent - ', component);
@@ -508,85 +523,72 @@ export default {
 
 
 
-  changeSetpoint(newState) {
-    console.log('В функцию changeSetpoint (App.vue) получено сообщение - newState:', newState);
-    if (newState === null || newState.newSetPoint === undefined) {
-      console.error('Функция changeSetpoint (App.vue) получила пустое значение setpoint', newState.newSetPoint);
-      this.sendLogToServer('warning', 'App.vue Функция changeSetpoint получила пустое значение setpoint для параметра ${this.setName}');
-      return;
-    } else {
-      try {
-        console.log(' Функция changeSetpoint (App.vue) получила значение setpoint - ', newState.newSetPoint);
-        this.setpoint = newState.newSetPoint;
-    // Отправляем на сервер сообщение вида {type, request, name, data}
-    // type - тип сообщения, request - название функции, name - имя комнаты (room00), data - данные вида {setTemp: 22}
-        const name = 'set'+localStorage.getItem('param_key');
-        // console.log('В функцию changeSetpoint получено сообщение - ', name);
-        const data = {[name]: newState.newSetPoint};
-        this.sendServerRequest('post', 'setpoint', localStorage.getItem('room_key'), data);
-      } catch (error) {
-        this.sendLogToServer('error', 'App.vue Функция changeSetpoint Ошибка выполнения функции обработки ${error} для параметра ${this.setName}');
-      }
-    }
-  },
-
-
-
-
   // changeSetpoint(newState) {
-  //   if (newState == null && newState !== undefined) {
-
-
-
-  //     console.log('App.vue - из компонентов в функцию changeSetpoint получено сообщение - ', newState);
-  //     if (newState.newSetPoint !== undefined) this.setpoint = newState.newSetPoint;
-      
-  //     if (newState.updatePermission !== undefined && this.setpoint !== undefined) this.$emit('AppNewSetpoint',{
-  //       setpointUpdate:
-  //     { 
-  //         setpoint: { //Сообщение о изменении Уставки Для каждой группы параметров нужно писать свой разработчик
-  //           [this.setName] : this.setpoint
-  //       }, 
-  //       request: 'setpoint',
-  //       type: 'post', 
-  //       name: this.room_name,
-  //       id: this.id,
-  //       }
-  //     }); 
+  //   console.log('512 ----  В функцию changeSetpoint (App.vue) получено сообщение - newState:', newState);
+  //   if (newState === null || newState === undefined) {
+  //     console.error('Функция changeSetpoint (App.vue) получила пустое значение setpoint', newState);
+  //     this.sendLogToServer('warning', 'App.vue Функция changeSetpoint получила пустое значение setpoint для параметра ${this.setName}');
+  //     return;
   //   } else {
-  //     console.error('App.vue Функция changeSetpoint получила пустое значение setpoint', newState);
-  //   }
+  //     try {
+  //       //console.log(' Функция changeSetpoint (App.vue) получила значение setpoint - ', newState.newSetPoint);
+  //       // this.setpoint = newState.newSetPoint;
 
+  //       if (newState.type === 'newSetPoint') {
+  //         this.setpoint = newState.message;
+  //         console.log(' -- 539  ---  Функция changeSetpoint (App.vue) получила новое значение setpoint', newState.message);
+  //       } else if (newState.type === 'updatePermission' && newState.message === true) {
+  //           //console.log('  0000000   0000000  Функция changeSetpoint (App.vue) получила новое значение разрешение на обновление Уствки ', newState.message);
+  //           const roomId = localStorage.getItem('room_id');
+  //           const roomKey = localStorage.getItem('room_key');
+  //           const paramKey = this.checkConfigs.checkSymbol(localStorage.getItem('param_key'), 0, 'd');
+  //           console.log('Функция changeSetpoint (App.vue) получили значения Уставки - ', this.setpoint, ' для  - roomId:', roomId, ' - roomKey:', roomKey, ' - paramKey:', paramKey);
+      
+  //         // Отправляем на сервер сообщение вида {type, request, name, data}
+  //         // type - тип сообщения, request - название функции, name - имя комнаты (room00), data - данные вида {setTemp: 22}
+  //           const name = 'set'+paramKey;
+  //           // console.log('В функцию changeSetpoint получено сообщение - ', name);
+            
+  //           const data = {
+  //             [name]: this.setpoint,
+  //           };
+  //           this.sendServerRequest('post', 'setpoint', localStorage.getItem('room_key'), data);
+  //         }
+       
+  //     } catch (error) {
+  //       this.sendLogToServer('error', 'App.vue Функция changeSetpoint Ошибка выполнения функции обработки ${error} для параметра ${this.setName}');
+  //     }
+  //   }
   // },
-    getManageValues(id_room, param_key) {
-      //console.log(' Функция getManageValues получила параметры room_id = ', id_room , ' и param_key = ', param_key);
-      if (id_room === undefined || param_key === undefined) {
+
+
+
+
+    getManageValues(id_room, paramKey) {
+        //console.log(' Функция getManageValues получила параметры room_id = ', id_room , ' и param_key = ', param_key);
+      if (id_room === undefined || paramKey === undefined) {
         console.error('App.vue - Функция getManageValues получила пустое значение id_room или param_key');
-        this.sendLogToServer ('warning', `Функция getManageValues получила не корректные пееременные id_room = ${id_room} или param_key = ${param_key} - Значения для Setpoint и Limits НЕ определены `);
+        this.sendLogToServer ('warning', `Функция getManageValues получила не корректные пееременные id_room = ${id_room} или param_key = ${paramKey} - Значения для Setpoint и Limits НЕ определены `);
         return;
       } 
       try {
-        const paramKey = this.checkConfigs.checkSymbol(param_key, 0, 'd');
-        //console.log('paramKey = ', paramKey);
-
+        
         // Получаем объект manageConfig из localStorage
       const Mconfig = JSON.parse(localStorage.getItem('manageConfig'));
       if (!Mconfig) {
         console.error('Не удалось получить конфигурацию manageConfig из localStorage');
         return;
       } else {
-        //console.log('Конфигурация "manageConfig" для id -', id_room, ' получена из localStorage успешно', Mconfig);
+        //console.log('Функция getManageValues (App.vue) получила конфигурацию "manageConfig" для id - ', id_room, ' получена из localStorage успешно', Mconfig);
 
         // Значения граничных диапазонов всегда получаем из объекта common в manageConfig
         this.limLow = Mconfig.common.setpoint['limDown'+paramKey];
-        console.log('this.limLow = ', 'limDown'+paramKey);
         this.limHigh = Mconfig.common.setpoint['limUp'+paramKey];
         this.limStep = Mconfig.common.setpoint['limStep'+paramKey];
 
         this.setName = 'set'+paramKey;
         const roomID = this.getManageValues_checkID(id_room, Mconfig);
-        this.setpoint = Mconfig[roomID].setpoint[this.setName];
-        //console.log('roomID = ', roomID, 'setPoint = ', setPoint, ' lowLimit = ', this.limLow, ' highLimit = ', this.limHigh, ' step = ', this.limStep);
+        //console.log('roomID = ', roomID, 'setName = ', this.setName, ' lowLimit = ', this.limLow, ' highLimit = ', this.limHigh, ' step = ', this.limStep);
         return Mconfig[roomID].setpoint[this.setName];
       }
       } catch (error) {
@@ -682,7 +684,8 @@ export default {
 
     // Обработка сообщений из компонентов
     getEventsComponent(event) { // Обработка сообщений из компонентов
-      //console.log('В функцию getEventsComponent () получено сообщение - ', event);
+      // console.log(' ------ 712 -----В функцию getEventsComponent () получено сообщение - ', event);
+
       if (event.sendServerRequest) {
         // console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение - ', event.sendServerRequest);
         this.sendServerRequest(event.sendServerRequest.type, event.sendServerRequest.request, event.sendServerRequest.name, event.sendServerRequest.setpoint);
@@ -701,20 +704,45 @@ export default {
             }
           }
           if (event.showSetpoint) {
-            console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение showSetpoint - ', event.showSetpoint);
-            this.showSetpoint = event.showSetpoint.message;   
+            //console.log(' -- 731 --- В функцию getEventsComponent получено сообщение showSetpoint - ', event.showSetpoint);
+            this.showSetpoint = event.showSetpoint.message;  
+            //console.log(' ------ showSetpoint -----------   getEventsComponent  - Изменяем значение: ', this.showSetpoint);
           } if (event.selectedItem) {
-            console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение selectedItem - ', event.selectedItem);
+            //console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение selectedItem - ', event.selectedItem);
 
 // Доделать - работа через методы класса checkConfigs
 // const {set, name} = this.checkConfigs.find('manageConfig', 'setpoint', event.selectedItem.message);
-
-            this.getManageValues(event.selectedItem.message.id, event.selectedItem.message.paramKey);
+            const paramKey = this.checkConfigs.checkSymbol(event.selectedItem.message.paramKey, 0, 'd');
+            //console.log('Из метода checkConfigs в функцию getEventsComponent получен сообщение param_key - ', paramKey);
+            this.setpoint = this.getManageValues(event.selectedItem.message.id, paramKey);
 
             //console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение set - ', set, name);
           }
-      } 
-     
+      }
+      if (event.newSetPoint) {
+        //console.log(' -- 722 -- Из компонентов в функцию getEventsComponent получено сообщение newSetPoint - ', event.newSetPoint);
+          if (event.newSetPoint.message === null || event.newSetPoint.message === undefined) {
+          console.error('Попытка обновление Уставки пустым значением  - Функция getEventsComponent получила пустое значение newSetPoint', event.newSetPoint);
+        } else {
+          this.setpoint = event.newSetPoint.message;
+        }
+      }
+      if (event.updatePermission) {
+        //console.log('-- 725 --Из компонентов в функцию getEventsComponent получено сообщение updatePermission - ', event.updatePermission);
+          try {
+            //  const roomId = localStorage.getItem('room_id');
+            //   const roomKey = localStorage.getItem('room_key');
+              const paramKey = this.checkConfigs.checkSymbol(localStorage.getItem('param_key'), 0, 'd');
+              // console.log('Функция changeSetpoint (App.vue) получили значения Уставки - ', this.setpoint, ' для  - roomId:', roomId, ' - roomKey:', roomKey, ' - paramKey:', paramKey);
+              
+              const data = {
+                ['set'+paramKey]: this.setpoint,
+              };
+              this.sendServerRequest('post', 'setpoint', localStorage.getItem('room_key'), data);
+          } catch (error) {
+            console.error(`Ошибка ${error} обработки сообщения updatePermission - ${event.updatePermission}`);
+          }
+      }
     },
     sortingDoubleClick(event) {
       console.log('App.vue - из компонентов в функцию handleDoubleClick получено сообщение - ', event);

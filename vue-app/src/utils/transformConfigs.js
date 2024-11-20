@@ -3,7 +3,7 @@
 // Метод typeofValue - проверяет тип переменной в конфигурации commonConfig по значению ключа в конфигурации manageConfig 
 // Метод  typeofName - проверяет по имени переменной ее тип в конфигурации manageConfig 
 
-class checkConfigs {
+class CheckConfigs {
     constructor(manage = {}, common = {}, directory = {}) {
         // console.log("Для класса checkConfigs вызван конструктор с параметрами: ", manage, common, directory);
         this.manageConfig = manage;
@@ -17,7 +17,7 @@ class checkConfigs {
             console.log('Поиск значения для параметра setpoint');
             const name = 'set'+param.paramKey;
             console.log('Определили имя - ', name);
-            const common = this.manageConfig.common;
+            const common = this[config].common;
             const set = common.setpoint;
             //const set = param.id;
             // var setpoint = this[config].setpoint[name];
@@ -66,5 +66,11 @@ class checkConfigs {
         console.log(" Class - checkConfigs вызван метод setDirectoryConfig для получения конфигурации directoryConfig: ");
     }
 }
+// class CalcTime {
+//     updateGup(config, params) {
+//         console.log('Class - calcTime вызван метод updateGup с параметрами: ', config, params);
+//         return 200;
 
-export default checkConfigs;
+//     }
+// }
+export default CheckConfigs;
