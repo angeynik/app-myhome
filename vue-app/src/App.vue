@@ -161,25 +161,28 @@ export default {
       this.param_title = localStorage.getItem('param_title');
       localStorage.setItem('isSelectedNum', false); // isSelectedNum - флаг выбора параметра имеющего числовое значение и соответственно Уставку
       this.setpoint = this.getManageValues(localStorage.getItem('room_id'), localStorage.getItem('param_key'));
+
+      console.log(' --- 165 --- Функция CheckMessage - актуальный config из localStorage - ', JSON.parse(localStorage.getItem('commonConfig')));
     },
-    findRoom (config, id) {
-      // console.log('Функция findRoom (App) config - ', config);
-      const n = Number(id); // Преобразуем строку в число
-      // const length = Object.keys(config).length;
-      // console.log('Функция findRoom (App) id - ', n);
-        for (let room in config) {
-          // console.log('Функция findRoom (App)  Перебор ключей - ', room);
-            if (config[room].id === n) {
-              // console.log('Функция findRoom (App)  Ключ найден - ', room);
-                localStorage.setItem('room_key', room);
-                localStorage.setItem('room_title', config[room].title);
-                // console.log('Функция findRoom (App)  - room - ', room, 'title - ',config[room].title);
-                return room;
-            } else {
-              console.error('Функция findRoom (App)  Ключ -', id, ' не найден для - ', config[room].id);
-            }
-        }
-    },
+    // findRoom (config, id) {
+    //   // console.log('Функция findRoom (App) config - ', config);
+    //   const n = Number(id); // Преобразуем строку в число
+    //   // const length = Object.keys(config).length;
+    //   // console.log('Функция findRoom (App) id - ', n);
+    //     for (let room in config) {
+    //       // console.log('Функция findRoom (App)  Перебор ключей - ', room);
+    //         if (config[room].id === n) {
+    //           // console.log('Функция findRoom (App)  Ключ найден - ', room);
+    //             localStorage.setItem('room_key', room);
+    //             localStorage.setItem('room_title', config[room].title);
+    //             // console.log('Функция findRoom (App)  - room - ', room, 'title - ',config[room].title);
+    //             return room;
+    //         } else {
+    //           console.error('Функция findRoom (App)  Ключ -', id, ' не найден для - ', config[room].id);
+    //         }
+    //     }
+    // },
+
     connectWebSocket() { // Соединение WebSocket на порту 9202
     const host = process.env.VUE_APP_EXT || process.env.VUE_APP_HOST || 'localhost';
     const port = process.env.VUE_APP_PORT || '9202';
@@ -233,7 +236,7 @@ export default {
         this.sendServerRequest('get', 'config', 'name','manageConfig');
       } else {
         this.isSending = false;
-        this.findRoom(commonData, localStorage.getItem('room_id'));
+        //this.findRoom(commonData, localStorage.getItem('room_id'));
       }
     },
     sendMessage(message) { // Отправка сообщения на сервер
@@ -288,6 +291,8 @@ export default {
                   // console.log('Конфигурация "commonConfig" сохранена в localStorage');
                   // this.findRoom(n.commonData, localStorage.getItem('room_id'));
                   this.sendLogToServer('info', 'Конфигурация "commonConfig" сохранена в checkConfigs и в localStorage');
+                  
+
                 } else if (n.directoryConfig) {
                   this.checkConfigs.setDirectoryConfig(n.directoryConfig);
                   localStorage.setItem('directoryConfig', JSON.stringify(n.directoryConfig));

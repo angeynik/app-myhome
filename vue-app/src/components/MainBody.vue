@@ -209,10 +209,6 @@ export default {
                             }
                             });
                         }
-                        const titleRoom = this.findParamTitleRu(config, key);
-                        // console.log(' !!!!!!!!!!!!!!!!!!!!   2 ----   Функция getSortedParams (MainBody) сохраняет titleRoom в localStorage - ', titleRoom);
-                        localStorage.setItem('param_title', titleRoom.titleRu);
-                        localStorage.setItem('param_key', titleRoom.title);
                     } catch (error) {
                         this.sendEmitMessage('sendLogToServer','error', 'getSortedParams(MainBody) - ошибка сортировки данных для отображения пользователю ${error}');
                     }
@@ -236,19 +232,17 @@ export default {
                     const timeDiff = this.calculateTime(new Date(config[room].time[`${sensorKey}_time`]));
                     // console.log('timeDiff', timeDiff);
 
-                    const paramKey = this.findParamTitleRu(config, sensorKey).title;
+                    const paramKey = this.findParamTitleRu(config, sensorKey);
                         dataArray.push({
                             value: config[room].sensors[sensorKey],
-                            title: this.findParamTitleRu(config, sensorKey).titleRu,
+                            title: paramKey.titleRu,
                             group: config[room].group,
                             timeDiff: timeDiff,
                             id: config[room].id,
-                            key: paramKey,
+                            key: paramKey.title,
                             roomKey: localStorage.getItem('room_key')
                         });
                     });
-                    // console.log('room_title - ', config[room].title);
-                localStorage.setItem('room_title', config[room].title);
                 } else {
                     console.error(' ---------   Функция getSortedRooms получила пустой массив sensors - ', config[room].sensors);
                     this.sendEmitMessage('sendLogToServer','error', 'selectSorting(MainBody) - получила пустой массив sensors - ${config[room].sensors}');
@@ -332,8 +326,10 @@ export default {
                         this.isSelectedRoom = roomKey;
                         localStorage.setItem('room_key', roomKey);
                         localStorage.setItem('room_id', id);
+                        localStorage.setItem('room_title', JSON.parse(localStorage.getItem('commonConfig'))[roomKey].title);
                         localStorage.setItem('param_key', paramKey);
-                        
+                      
+                        //console.log('  ---- 338    ------  Функция getEventsComponent (MainBody) получила наименование выбранной комнаты - ', localStorage.getItem('room_title'));
                         if (isSelectedNum === true) {
                             this.sendEmitMessage('showSetpoint', 'isSelected', true);
                         } else {

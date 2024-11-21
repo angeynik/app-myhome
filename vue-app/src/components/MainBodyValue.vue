@@ -71,7 +71,8 @@ created() {
     this.checkConfigs = new checkConfigs();
   },
 methods: {
-    customerClick() { 
+    customerClick() {
+        console.log(' --- 75 --- Функция customerClick(MainBodyValue) - Пользователь сделал клик');
         this.$emit('select', {
             type: 'select', 
             message: {
@@ -83,7 +84,7 @@ methods: {
         }); 
     }, 
     customerDoubleClick() {
-        // console.log('Функция customerDoubleClick(MainBodyValue) - Пользователь начал двойной клик');
+        console.log('--- 87 ---Функция customerDoubleClick(MainBodyValue) - Пользователь начал двойной клик');
         this.$emit('doubleclick', { 
             'changeSorting': true,
         });
