@@ -24,7 +24,50 @@ class CheckConfigs {
             return {set, name};
         }
     }
+    getUniqueSensorKeys(config) { // Получаем уникальные ключи датчиков
+        let uniqueKeys = new Set();
     
+        for (const roomKey in config) {
+            if (config[roomKey].sensors) {
+                const sensorKeys = Object.keys(config[roomKey].sensors);
+               
+                sensorKeys.forEach(key => {
+                    const cleanKey = key.replace(/[0-9]/g, '');
+                    if (isNaN(cleanKey)) {
+                        uniqueKeys.add(cleanKey);
+                    }
+                });
+            }
+        }
+        return Array.from(uniqueKeys);
+    }
+   
+    updateRoomId(array, room_id, calcDirection) {
+        let id;
+        console.log(' Class - checkConfigs вызван метод updateRoomIndex с параметрами: ', array, room_id, calcDirection);
+        const length = Object.keys(array).length;
+        if (calcDirection === false) { // Уменьшение id на 1, если значение первое, вернуть индекс последнего элемента 
+            id = (room_id - 1 + length) % length; 
+        } else if (calcDirection === true) { // Увеличение id на 1, если значение последнее, вернуть индекс первого элемента 
+            id =(room_id + 1) % length; 
+        } 
+        if (id === 0) {
+            id = length-1;
+        }
+        for (let room in array) {
+            if (array[room].id === id) {
+                // const roomId = room;
+                return {
+                    roomId: id,
+                    roomKey: room,
+                    roomTitle: array[room].title
+                }
+            }
+        }
+    }
+    updateParamKey(length, paramKey, value) {
+        console.log(' Class - checkConfigs вызван метод updateParamIndex с параметрами: ', length, paramKey, value);
+    }
     checkSymbol(variable, indexSymbol, symbol = '', addSymbol = '') {
         // variable = Переменная для проверки например 'dTemp'
         // indexSymbol = Позиция символа в строке например '0' или '1'
@@ -65,6 +108,7 @@ class CheckConfigs {
         this.directoryConfig = directory;
         console.log(" Class - checkConfigs вызван метод setDirectoryConfig для получения конфигурации directoryConfig: ");
     }
+    
 }
 // class CalcTime {
 //     updateGup(config, params) {

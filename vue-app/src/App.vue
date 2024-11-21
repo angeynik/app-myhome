@@ -1,14 +1,56 @@
 <template>
+  
   <div class="app">
+    <svg display="none"> // Задаем код для визуализации области скрола для изменения уставки
+        <symbol id="arrowRight" 
+        viewBox="0 0 34 64"  
+        xmlns="http://www.w3.org/2000/svg" 
+        stroke="white" 
+        width="100%" 
+        height="100%" 
+        preserveAspectRatio="xMidYMid meet"
+        >         
+        <line y1="-2" x2="43.0756" y2="-2" transform="matrix(-0.684508 0.729005 -0.684508 -0.729005 30.4863 28.9999)" stroke="#E0DFE7" stroke-width="4"/>
+        <line y1="-2" x2="43.0756" y2="-2" transform="matrix(-0.684508 -0.729005 0.684508 -0.729005 33 31.4023)" stroke="#E0DFE7" stroke-width="4"/>
+        </symbol>
+        <symbol id="arrowLeft" 
+        viewBox="0 0 34 64"  
+        xmlns="http://www.w3.org/2000/svg" 
+        stroke="white" 
+        width="100%" 
+        height="100%" 
+        preserveAspectRatio="xMidYMid meet"
+        >         
+        <line y1="-2" x2="43.0756" y2="-2" transform="matrix(0.684508 -0.729005 0.684508 0.729005 3.51367 34.4023)" stroke="#E0DFE7" stroke-width="4"/>
+        <line y1="-2" x2="43.0756" y2="-2" transform="matrix(0.684508 0.729005 -0.684508 0.729005 1 31.9999)" stroke="#E0DFE7" stroke-width="4"/>
+      </symbol>
+    </svg>
       <header class="header">
 
           <div class="icon" @click=this.resetSelection> back </div>
-          
-          <div style="display: flex; justify-content: center; width: 80%;">
+        
+          <svg 
+          class="header_arrow"
+          v-show="showHeaderArrow"
+          @click="sortingBack"
+          >
+            <use href="#arrowLeft"></use>
+          </svg>
+
+          <div style="display: flex; justify-content: center; width: 86%;">
             <MainHeader 
-            :title="headerTitle" 
+            :title="headerTitle"
+            :mobile="isMobile" 
           />
           </div>
+
+          <svg 
+          class="header_arrow"
+          v-show="showHeaderArrow"
+          @click="sortingForvard"
+          >
+            <use href="#arrowRight"></use>
+          </svg>
 
           <div class="icon"> menu </div>
       </header>
@@ -32,7 +74,8 @@
           <component
 
           :is="selectedComponent" 
-          :propsTitle="propsTitle" 
+          :propsTitle="propsTitle"
+          :changeSorting="changeSorting" 
           @eventsComponent="getEventsComponent" 
           />
         </div>
@@ -84,7 +127,7 @@ export default {
   }, 
   data() { 
     return {
-      checkConfigs: null, // Переменная инициализации класса checkConfigs
+      CheckConfigs: null, // Переменная инициализации класса checkConfigs
 
   // Ключи и флаги для обмена данными с сервером
       isSending: false, // Флаг разрешения отправки запроса на сервер
@@ -94,6 +137,10 @@ export default {
 
   // Ключи для работы с устройством Пользователя
       isMobile: false, // Флаг мобильного устройства
+
+  // Ключи для работы c Header - стрелки изменения параметров сортировки
+      showHeaderArrow: false, // Флаг отображения стрелок выбора компонентов
+      changeSorting: false, // Флаг изменения параметров сортировки (prew - предыдущий компонент, next - следующий компонент)
 
   // Данные с сервера
       messageFromServer: null, // Сообщение с сервера
@@ -130,8 +177,8 @@ export default {
   },
   created() {
         this.sendLogToServer('info', 'Client: Инициализация подключения логирования'); // отправка логов на сервер для сохранения в файл
-        this.checkConfigs = new CheckConfigs();
-        
+        this.CheckConfigs = new CheckConfigs();
+       
   },
   mounted() {
     this.connectWebSocket();
@@ -140,6 +187,8 @@ export default {
     // this.manageConfig_val = JSON.parse(localStorage.getItem('manageConfig'));
     this.commonConfig_val = JSON.parse(localStorage.getItem('commonConfig'));
     this.initApp();
+    this.detectDevice();
+    //console.log(' --- 144 --- mounted - navigator.userAgent- ', navigator.userAgent);
   },
   beforeUnmount() {
     if (this.socket) {
@@ -162,7 +211,7 @@ export default {
       localStorage.setItem('isSelectedNum', false); // isSelectedNum - флаг выбора параметра имеющего числовое значение и соответственно Уставку
       this.setpoint = this.getManageValues(localStorage.getItem('room_id'), localStorage.getItem('param_key'));
 
-      console.log(' --- 165 --- Функция CheckMessage - актуальный config из localStorage - ', JSON.parse(localStorage.getItem('commonConfig')));
+      //console.log(' --- 165 --- Функция CheckMessage - актуальный config из localStorage - ', JSON.parse(localStorage.getItem('commonConfig')));
     },
     // findRoom (config, id) {
     //   // console.log('Функция findRoom (App) config - ', config);
@@ -501,74 +550,37 @@ console.log(`Конфигурация -- !!  ${name}  !! --  обновлена 
         this.propsTitle = 'rooms';
         this.selectedComponent = 'MainBody';
         //console.log('selectComponent - ', this.selectedComponent, this.propsTitle);
-        this.sendLogToServer('customer', `Меню выбора экрана Выбран: ${this.selectedComponent} - сортировка по Комнатам`); 
+        this.sendLogToServer('customer', `Меню выбора экрана Выбран: ${this.selectedComponent} - сортировка по Комнатам`);
+        this.showHeaderArrow = this.isMobile ? false : true;
       } else if (component === 'Params') {
         this.propsTitle = 'params';
         this.selectedComponent = 'MainBody';
         //console.log('selectComponent - ', this.selectedComponent, this.propsTitle);
-        this.sendLogToServer('customer', `Меню выбора экрана Выбран: ${this.selectedComponent} - сортировка по Параметрам`); 
+        this.sendLogToServer('customer', `Меню выбора экрана Выбран: ${this.selectedComponent} - сортировка по Параметрам`);
+        this.showHeaderArrow = this.isMobile ? false : true;
+        //console.log('Функция selectComponent - showHeaderArrow  -- ', this.showHeaderArrow, 'isMobile: ', this.isMobile);
       } else {
         this.selectedComponent = component;
         this.sendLogToServer('customer', `Меню выбора экрана Выбран: ${this.selectedComponent}`); 
+        this.showHeaderArrow = false;
       }
-
       // console.log('selectComponent - ', this.selectedComponent, this.propsTitle);
     },
     resetSelection() {
       // Возвращаемся к списку компонентов
       this.selectedComponent = null;
       this.headerTitle = 'Главное меню';
+      if (this.selectedComponent !== 'Params' || this.selectedComponent !== 'Rooms') {
+        this.showHeaderArrow = false;
+      }
       this.sendLogToServer('customer', `Меню выбора экрана сброшено по кнопке Back: ${this.selectedComponent} Пользователь вернулся на основной экран`); 
     },
     detectDevice() {
       // Проверка на мобильное устройство
       this.isMobile = /Mobi|Android/i.test(navigator.userAgent);
-      // console.log('Используем мобильное устройство: ', this.isMobile);
+      // const mobile = navigator.userAgent.match(/mobile/i);
+      // console.log('Используем мобильное устройство: ', !!mobile);
   },
-
-
-
-  // changeSetpoint(newState) {
-  //   console.log('512 ----  В функцию changeSetpoint (App.vue) получено сообщение - newState:', newState);
-  //   if (newState === null || newState === undefined) {
-  //     console.error('Функция changeSetpoint (App.vue) получила пустое значение setpoint', newState);
-  //     this.sendLogToServer('warning', 'App.vue Функция changeSetpoint получила пустое значение setpoint для параметра ${this.setName}');
-  //     return;
-  //   } else {
-  //     try {
-  //       //console.log(' Функция changeSetpoint (App.vue) получила значение setpoint - ', newState.newSetPoint);
-  //       // this.setpoint = newState.newSetPoint;
-
-  //       if (newState.type === 'newSetPoint') {
-  //         this.setpoint = newState.message;
-  //         console.log(' -- 539  ---  Функция changeSetpoint (App.vue) получила новое значение setpoint', newState.message);
-  //       } else if (newState.type === 'updatePermission' && newState.message === true) {
-  //           //console.log('  0000000   0000000  Функция changeSetpoint (App.vue) получила новое значение разрешение на обновление Уствки ', newState.message);
-  //           const roomId = localStorage.getItem('room_id');
-  //           const roomKey = localStorage.getItem('room_key');
-  //           const paramKey = this.checkConfigs.checkSymbol(localStorage.getItem('param_key'), 0, 'd');
-  //           console.log('Функция changeSetpoint (App.vue) получили значения Уставки - ', this.setpoint, ' для  - roomId:', roomId, ' - roomKey:', roomKey, ' - paramKey:', paramKey);
-      
-  //         // Отправляем на сервер сообщение вида {type, request, name, data}
-  //         // type - тип сообщения, request - название функции, name - имя комнаты (room00), data - данные вида {setTemp: 22}
-  //           const name = 'set'+paramKey;
-  //           // console.log('В функцию changeSetpoint получено сообщение - ', name);
-            
-  //           const data = {
-  //             [name]: this.setpoint,
-  //           };
-  //           this.sendServerRequest('post', 'setpoint', localStorage.getItem('room_key'), data);
-  //         }
-       
-  //     } catch (error) {
-  //       this.sendLogToServer('error', 'App.vue Функция changeSetpoint Ошибка выполнения функции обработки ${error} для параметра ${this.setName}');
-  //     }
-  //   }
-  // },
-
-
-
-
     getManageValues(id_room, paramKey) {
         //console.log(' Функция getManageValues получила параметры room_id = ', id_room , ' и param_key = ', param_key);
       if (id_room === undefined || paramKey === undefined) {
@@ -622,6 +634,95 @@ console.log(`Конфигурация -- !!  ${name}  !! --  обновлена 
         this.sendLogToServer ('error', `Произошла ошибка при определении ключа для получения Setpoint и лемитов - ${error}`);
       }
     },
+    sortingBack() {
+      const commonConfig = JSON.parse(localStorage.getItem('commonConfig'));
+      const sensorKeys = this.CheckConfigs.getUniqueSensorKeys(commonConfig);
+      console.log('App - Функция sortingBack (App) -- Получен массив sensorKeys - ', sensorKeys);
+      if (this.propsTitle === 'params') {
+        const updatedKey = this.CheckConfigs.updateParamKey(sensorKeys, localStorage.getItem('param_key'), false);
+        console.log('App - Функция sortingBack (App) -- Обновлены ключи сортировки по Комнатам - ', updatedKey);
+      } 
+      if (this.propsTitle === 'rooms') {
+        const updatedKey = this.CheckConfigs.updateRoomId(commonConfig, Number(localStorage.getItem('room_id')), false);
+        this.headerTitle = updatedKey.title;
+        localStorage.setItem('room_title', updatedKey.roomTitle);
+        localStorage.setItem('room_id', updatedKey.roomId);
+        localStorage.setItem('room_key', updatedKey.roomKey);
+        this.changeSorting = true;
+        console.log('App - Функция sortingBack (App) -- Обновлены ключи сортировки по Комнатам - ', updatedKey);
+      } else {
+        console.error(' Функция sortingBack (App) -- Параметр propsTitle не определен', this.propsTitle); 
+      }
+
+     
+    },
+    sortingForvard() {
+      const commonConfig = JSON.parse(localStorage.getItem('commonConfig'));
+      const sensorKeys = this.CheckConfigs.getUniqueSensorKeys(commonConfig);
+      console.log('App - Функция sortingBack (App) -- Получен массив sensorKeys - ', sensorKeys);
+      if (this.propsTitle === 'params') {
+        const updatedKey = this.CheckConfigs.updateParamKey(sensorKeys, localStorage.getItem('param_key'), true);
+        console.log('App - Функция sortingBack (App) -- Обновлены ключи сортировки по Комнатам - ', updatedKey);
+      } 
+      if (this.propsTitle === 'rooms') {
+        const updatedKey = this.CheckConfigs.updateRoomId(commonConfig, Number(localStorage.getItem('room_id')), true);
+        this.headerTitle = updatedKey.title;
+        localStorage.setItem('room_title', updatedKey.roomTitle);
+        localStorage.setItem('room_id', updatedKey.roomId);
+        localStorage.setItem('room_key', updatedKey.roomKey);
+        this.changeSorting = true;
+        console.log('App - Функция sortingBack (App) -- Обновлены ключи сортировки по Комнатам - ', updatedKey);
+      } else {
+        console.error(' Функция sortingBack (App) -- Параметр propsTitle не определен', this.propsTitle); 
+      }
+
+
+      //this.changeSorting = 'next';
+      //console.log('App - Функция sortingForvard (App) -- Переменную changeSorting установили = ', this.changeSorting);
+      
+    },
+  // changeSetpoint(newState) {
+  //   console.log('512 ----  В функцию changeSetpoint (App.vue) получено сообщение - newState:', newState);
+  //   if (newState === null || newState === undefined) {
+  //     console.error('Функция changeSetpoint (App.vue) получила пустое значение setpoint', newState);
+  //     this.sendLogToServer('warning', 'App.vue Функция changeSetpoint получила пустое значение setpoint для параметра ${this.setName}');
+  //     return;
+  //   } else {
+  //     try {
+  //       //console.log(' Функция changeSetpoint (App.vue) получила значение setpoint - ', newState.newSetPoint);
+  //       // this.setpoint = newState.newSetPoint;
+
+  //       if (newState.type === 'newSetPoint') {
+  //         this.setpoint = newState.message;
+  //         console.log(' -- 539  ---  Функция changeSetpoint (App.vue) получила новое значение setpoint', newState.message);
+  //       } else if (newState.type === 'updatePermission' && newState.message === true) {
+  //           //console.log('  0000000   0000000  Функция changeSetpoint (App.vue) получила новое значение разрешение на обновление Уствки ', newState.message);
+  //           const roomId = localStorage.getItem('room_id');
+  //           const roomKey = localStorage.getItem('room_key');
+  //           const paramKey = this.checkConfigs.checkSymbol(localStorage.getItem('param_key'), 0, 'd');
+  //           console.log('Функция changeSetpoint (App.vue) получили значения Уставки - ', this.setpoint, ' для  - roomId:', roomId, ' - roomKey:', roomKey, ' - paramKey:', paramKey);
+      
+  //         // Отправляем на сервер сообщение вида {type, request, name, data}
+  //         // type - тип сообщения, request - название функции, name - имя комнаты (room00), data - данные вида {setTemp: 22}
+  //           const name = 'set'+paramKey;
+  //           // console.log('В функцию changeSetpoint получено сообщение - ', name);
+            
+  //           const data = {
+  //             [name]: this.setpoint,
+  //           };
+  //           this.sendServerRequest('post', 'setpoint', localStorage.getItem('room_key'), data);
+  //         }
+       
+  //     } catch (error) {
+  //       this.sendLogToServer('error', 'App.vue Функция changeSetpoint Ошибка выполнения функции обработки ${error} для параметра ${this.setName}');
+  //     }
+  //   }
+  // },
+
+
+
+
+
 
 
 
@@ -747,6 +848,10 @@ console.log(`Конфигурация -- !!  ${name}  !! --  обновлена 
           } catch (error) {
             console.error(`Ошибка ${error} обработки сообщения updatePermission - ${event.updatePermission}`);
           }
+      }
+      if (event.updatedSorting) {
+        console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение updatedSorting - ', event.updatedSorting);
+        this.changeSorting = false;
       }
     },
     sortingDoubleClick(event) {

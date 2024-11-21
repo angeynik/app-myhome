@@ -85,6 +85,8 @@
   display: flex; 
   align-items: center; 
   justify-content: center;
+  box-sizing: border-box !important;
+  /* padding: 0 1vw 0 1vw; */
 }
 .header_place {
   display: grid;
@@ -93,34 +95,32 @@
   height: 8vh;
   width: 100vw
 }
+.header_arrow {
+  box-sizing: border-box !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 6vh;
+  margin: 0 1vw 0 1vw;
+  transition: transform 0.4s;
+}
+.header_arrow:hover {
+  transform: scale(1.3); /* Небольшое увеличение при наведении */
+  /* color: var(--orange) !important; */
+  fill: red !important;
+  /* stroke: red;
+  stroke-width: 2px; */
+}
 .footer {
     flex: 0 0 6%; 
     display: flex; 
     align-items: center; 
     justify-content: center;
-    
-    /* height: 6vh;
-    width: 100lvw; */
-    /* position: fixed; */
-    /* bottom: 0;
-    left: 0;
-    background-color: var(--background_color);
-    color: var(--light_font); */
 }
 .mainHeader {
     display: flex;
     justify-content: c;
     width: 80%;
-
-    /* display: grid;
-    grid-row: inherit;
-    grid-template-columns: 1fr 5fr 1fr;
-    min-height: 60px;
-    width: 100%;
-    top: 0;
-    left: 0;
-    background-color: var(--background_color);
-    color: var(--light_font); */
     }
   .mainFooter {
     min-height: 80px;
@@ -134,7 +134,7 @@
     .mainBody {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); /* Автоматическая подгонка элементов по ширине от 120px до доступного пространства */
-      grid-gap: 14px; /* Отступы между элементами */
+      grid-gap: 16px; /* Отступы между элементами */
       background-color: var(--header_color);
       height: 100%;
       width: 100%;
@@ -147,7 +147,7 @@
       max-width: 1800px;
       height: 20vh; */
       width: 100%;
-      max-width: 60vw;
+      max-width: 56vw;
       min-height: 160px;
       max-height: 180px;
       display: grid;
@@ -160,7 +160,7 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Легкая тень для визуального эффекта */
       padding: 10px;
       box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
-      transition: transform 0.3s; /* Плавное изменение размера */
+      transition: transform 0.4s; /* Плавное изменение размера */
       border-radius: 16px; 
       border: 1px solid var(--sensor-gray); 
       box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
@@ -277,7 +277,9 @@
 .icon {
     display: flex;
     align-items: center;
-    justify-content: center
+    justify-content: center;
+    box-sizing: border-box !important;
+    margin: 10px;
 }
 .icon.big {
   fill: var(--light_font);

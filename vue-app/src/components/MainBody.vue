@@ -64,6 +64,7 @@ export default {
             // paramKeysArray: [],
             // keyIndex: 0, // Индекс ключа сортировки получаем по значению param_key для комнаты с room_id (получены из App.vue)
             // paramKey_value: this.param_key || '', 
+            id: null, // Идентификатор комнаты используется для промежуточных расчетов 
 
     // Управление экземплярами MainBodyValue
         isSelected: null,
@@ -74,6 +75,8 @@ export default {
     },
     props: {
         propsTitle: String,
+        isMobile: Boolean,
+        changeSorting: String,
     },
     created() {
         this.sendEmitMessage('sendLogToServer','customer_message', 'Открыт компонент MainBody -  сортировки данных');
@@ -87,7 +90,19 @@ export default {
     beforeUnmount() {
     },
     watch: {
+        changeSorting: function(newValue) {
+            console.log('watch -  - changeSorting (MainBody) изменилось - ', newValue);
+            if (newValue === undefined || newValue === null || newValue === false) {
+                return;
+            } if (newValue === true) {
+                console.log('watch -  - changeSorting (MainBody) инициируем обновление сортировки  selectSorting');
+                this.selectSorting(this.propsTitle);
+                console.log('watch -  - changeSorting (MainBody) Отправляем в App сообщение updatedSorting с типом updated и значением true');
+                this.sendEmitMessage('updatedSorting', 'updated', true);
+            }
 
+           
+        }
     },
     methods: {
     init () {
@@ -120,10 +135,10 @@ export default {
                 });
     },
     selectSorting(sort_type) {
-            // console.log('MainBody.vue: Функция selectSorting. Выбор сортировки:', sort_type);
+            console.log('MainBody.vue: Функция selectSorting. Выбор сортировки:', sort_type);
             try {
                 const commonConfig = JSON.parse(localStorage.getItem('commonConfig'));
-                const roomKey = localStorage.getItem('room_key');
+                let roomKey = localStorage.getItem('room_key');
                 const paramKey = localStorage.getItem('param_key');
                 // console.log(' 0 ---- Функция selectSorting (MainBody). Из localStorage получили paramKey:', paramKey, 'roomKey:', roomKey);
                 if (commonConfig === null || roomKey === null || paramKey === null) {
@@ -133,7 +148,8 @@ export default {
                 let sortArray = [];
                 switch (sort_type) {
                     case 'rooms':
-                        // console.log('Sort Room 1      -     Функция selectSorting (MainBody.vue). Приступаем к сортировке по комнатам - Case: rooms');
+                        console.log('Sort Room 1      -     Функция selectSorting (MainBody.vue). Приступаем к сортировке по комнатам - Case: rooms');
+
                         sortArray = this.getSortedRooms(commonConfig, roomKey);
                         if (!sortArray) {
                             this.sendEmitMessage('sendLogToServer','error', 'selectSorting - Массив данных с утройств для отображения пользователю  viewArray не определен');
@@ -253,7 +269,8 @@ export default {
         } catch (error) {
             this.sendEmitMessage('sendLogToServer','error', 'getSortedRooms(MainBody) - ошибка сортировки данных Комнаты для отображения пользователю ${error}');
         }   
-    },   
+    },  
+
     findParamTitleRu(config, key) {
             // console.log('Функция findParamTitleRu Key - ', key);
             try {
