@@ -72,7 +72,7 @@ created() {
   },
 methods: {
     customerClick() {
-        console.log(' --- 75 --- Функция customerClick(MainBodyValue) - Пользователь сделал клик');
+        //console.log(' --- 75 --- Функция customerClick(MainBodyValue) - Пользователь сделал клик');
         this.$emit('select', {
             type: 'select', 
             message: {
@@ -84,10 +84,15 @@ methods: {
         }); 
     }, 
     customerDoubleClick() {
-        console.log('--- 87 ---Функция customerDoubleClick(MainBodyValue) - Пользователь начал двойной клик');
+        //console.log('--- 87 ---Функция customerDoubleClick(MainBodyValue) - Пользователь начал двойной клик');
+        // this.$emit('doubleclick', { 
+        //     'changeSorting': true,
+        // });
         this.$emit('doubleclick', { 
-            'changeSorting': true,
-        });
+                    roomKey: this.roomKey, 
+                    paramKey: this.paramKey, 
+                    roomId: this.id,
+                });
     },
     customerTouchStart(event) {
         //console.log('Функция handleTouchStart(MainBodyValue) - Пользователь сделал клик', event.touches[0].clientX, event.touches[0].clientY);
@@ -98,13 +103,13 @@ methods: {
                 this.$emit('doubletouch', { 
                     roomKey: this.roomKey, 
                     paramKey: this.paramKey, 
-                    roomId: this.roomId,
+                    roomId: this.id,
                 });
-                console.log('Функция customerDoubleClick(MainBodyValue) отправила в MainBody  - room_id', this.room_id, 'room_key', this.room_key, 'param_key', this.param_key);
+                //console.log('Функция customerDoubleClick(MainBodyValue) отправила в MainBody  - room_id', this.room_id, 'room_key', this.room_key, 'param_key', this.param_key);
             } else {
                 this.touchTimeout = setTimeout(() => { 
                     this.touchTimeout = null; 
-                }, 300); 
+                }, 400); 
             }
         }
     }, 

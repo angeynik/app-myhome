@@ -349,7 +349,7 @@ export default {
 
     },
     sortingDoubleClick(event) {
-        //console.log('  -------  DoubleClick      -------------    MainBody - Функция sortingDoubleClick получила событие - ', event);
+        console.log('  -------  DoubleClick      -------------    MainBody - Функция sortingDoubleClick получила событие - ', event);
         try {
         // console.log('  -------  DoubleClick      -------------    MainBody - Функция sortingDoubleClick получила roomKey и paramKey - ', event.roomKey, event.paramKey);
             if (event.paramKey === null || event.roomKey === null) {
