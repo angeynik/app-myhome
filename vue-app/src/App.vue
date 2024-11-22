@@ -112,6 +112,12 @@ import MainCompany from './components/MainCompany.vue';
 
 export default { 
   name: 'App', 
+  provide() { 
+    return { 
+      checkConfigs: new CheckConfigs() 
+    }; 
+  },
+
   components: { 
     AppPlace,
     MainBody,
@@ -125,9 +131,10 @@ export default {
     MainCompany,
     MainSetpoint,
   }, 
+
   data() { 
     return {
-      CheckConfigs: null, // Переменная инициализации класса checkConfigs
+      checkConfigs: new CheckConfigs(), // Переменная инициализации класса checkConfigs
 
   // Ключи и флаги для обмена данными с сервером
       isSending: false, // Флаг разрешения отправки запроса на сервер
@@ -177,7 +184,7 @@ export default {
   },
   created() {
         this.sendLogToServer('info', 'Client: Инициализация подключения логирования'); // отправка логов на сервер для сохранения в файл
-        this.CheckConfigs = new CheckConfigs();
+        // this.checkConfigs = new CheckConfigs();
        
   },
   mounted() {
@@ -331,6 +338,7 @@ export default {
                 if (n.manageConfig) {
                   //console.log(' 2 --- Функция CheckMessage - "config" ', n.manageConfig);
                   this.checkConfigs.setManageConfig(n.manageConfig);
+
                   localStorage.setItem('manageConfig', JSON.stringify(n.manageConfig));
                   // console.log('Конфигурация "manageConfig" сохранена в localStorage');
                   this.sendLogToServer('info', 'Конфигурация "manageConfig" сохранена в checkConfigs и в localStorage');
@@ -636,14 +644,14 @@ console.log(`Конфигурация -- !!  ${name}  !! --  обновлена 
     },
     sortingBack() {
       const commonConfig = JSON.parse(localStorage.getItem('commonConfig'));
-      const sensorKeys = this.CheckConfigs.getUniqueSensorKeys(commonConfig);
+      const sensorKeys = this.checkConfigs.getUniqueSensorKeys(commonConfig);
       console.log('App - Функция sortingBack (App) -- Получен массив sensorKeys - ', sensorKeys);
       if (this.propsTitle === 'params') {
-        const updatedKey = this.CheckConfigs.updateParamKey(sensorKeys, localStorage.getItem('param_key'), false);
+        const updatedKey = this.checkConfigs.updateParamKey(sensorKeys, localStorage.getItem('param_key'), false);
         console.log('App - Функция sortingBack (App) -- Обновлены ключи сортировки по Комнатам - ', updatedKey);
       } 
       if (this.propsTitle === 'rooms') {
-        const updatedKey = this.CheckConfigs.updateRoomId(commonConfig, Number(localStorage.getItem('room_id')), false);
+        const updatedKey = this.checkConfigs.updateRoomId(commonConfig, Number(localStorage.getItem('room_id')), false);
         this.headerTitle = updatedKey.title;
         localStorage.setItem('room_title', updatedKey.roomTitle);
         localStorage.setItem('room_id', updatedKey.roomId);
@@ -658,14 +666,14 @@ console.log(`Конфигурация -- !!  ${name}  !! --  обновлена 
     },
     sortingForvard() {
       const commonConfig = JSON.parse(localStorage.getItem('commonConfig'));
-      const sensorKeys = this.CheckConfigs.getUniqueSensorKeys(commonConfig);
+      const sensorKeys = this.checkConfigs.getUniqueSensorKeys(commonConfig);
       console.log('App - Функция sortingBack (App) -- Получен массив sensorKeys - ', sensorKeys);
       if (this.propsTitle === 'params') {
-        const updatedKey = this.CheckConfigs.updateParamKey(sensorKeys, localStorage.getItem('param_key'), true);
+        const updatedKey = this.checkConfigs.updateParamKey(sensorKeys, localStorage.getItem('param_key'), true);
         console.log('App - Функция sortingBack (App) -- Обновлены ключи сортировки по Комнатам - ', updatedKey);
       } 
       if (this.propsTitle === 'rooms') {
-        const updatedKey = this.CheckConfigs.updateRoomId(commonConfig, Number(localStorage.getItem('room_id')), true);
+        const updatedKey = this.checkConfigs.updateRoomId(commonConfig, Number(localStorage.getItem('room_id')), true);
         this.headerTitle = updatedKey.title;
         localStorage.setItem('room_title', updatedKey.roomTitle);
         localStorage.setItem('room_id', updatedKey.roomId);

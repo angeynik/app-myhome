@@ -4,13 +4,67 @@
 // Метод  typeofName - проверяет по имени переменной ее тип в конфигурации manageConfig 
 
 class CheckConfigs {
-    constructor(manage = {}, common = {}, directory = {}) {
-        // console.log("Для класса checkConfigs вызван конструктор с параметрами: ", manage, common, directory);
-        this.manageConfig = manage;
-        this.commonConfig = common;
-        this.directoryConfig = directory;
-        // Инициализация, если необходимо
+    constructor(manageConfig = {}, commonConfig = {}, directoryConfig = {}) {
+        console.log("Для класса CheckConfigs вызван конструктор с параметрами: ", manageConfig, commonConfig, directoryConfig);
+        this.manageConfig = manageConfig;
+        this.commonConfig = commonConfig;
+        this.directoryConfig = directoryConfig;
     }
+
+    // Статические переменные
+    static manage = 'manageConfig';
+    static common = 'commonConfig';
+    static directory = 'directoryConfig';
+  
+    // Обычные методы
+    getConfig(name) { // Получаем конфигурацию по имени - ключу
+       console.log('Для класса CheckConfigs вызван метод getConfig для получения конфигурации: ', name);
+       switch(name) {
+           case CheckConfigs.manage:
+               return this.manageConfig !== undefined && this.manageConfig !== null ? this.manageConfig : 'Конфигурация не найдена';
+           case CheckConfigs.common:
+               return this.commonConfig !== undefined && this.commonConfig !== null ? this.commonConfig : 'Конфигурация не найдена';
+           case CheckConfigs.directory:
+               return this.directoryConfig !== undefined && this.directoryConfig !== null ? this.directoryConfig : 'Конфигурация не найдена';
+           default:
+               return 'Конфигурация не найдена';
+       }
+    }
+// Получение конфигурации checkConfigs.getConfig(CheckConfigs.manage));
+
+    setConfig(name, config) { // Сохраняем конфигурацию по имени - ключу
+        console.log('Для класса CheckConfigs вызван метод setConfig для сохранения конфигурации: ', name, config);
+        
+        // Проверка корректности данных
+        if (!name || typeof name !== 'string') {
+            console.error('Ошибка: Неправильное значение name');
+            return 'Неправильное значение name';
+        }
+
+        if (typeof config !== 'object' || config === null) {
+            console.error('Ошибка: Неправильное значение config');
+            return 'Неправильное значение config';
+        }
+        
+        switch(name) {
+            case CheckConfigs.manage:
+                this.manageConfig = config;
+                break;
+            case CheckConfigs.common:
+                this.commonConfig = config;
+                break;
+            case CheckConfigs.directory:
+                this.directoryConfig = config;
+                break;
+            default:
+                console.error('Ошибка: Конфигурация не найдена');
+                return 'Конфигурация не найдена';
+        }
+    }
+// Обновление конфигурации checkConfigs.getConfig(CheckConfigs.manage)); 
+
+
+
     find(config, type, param) {
         //console.log("Для класса checkConfigs вызван метод find с параметрами: ", config, type, param);
         if (type === 'setpoint') {
@@ -25,6 +79,7 @@ class CheckConfigs {
         }
     }
     getUniqueSensorKeys(config) { // Получаем уникальные ключи датчиков
+        console.log(' Class - checkConfigs вызван метод getUniqueSensorKeys с параметрами: ', config);
         let uniqueKeys = new Set();
     
         for (const roomKey in config) {
@@ -89,23 +144,28 @@ class CheckConfigs {
     }
 
     typeofName(name) {
-        //console.log("!!! Class - checkConfigs вызван метод typeofValue с параметрами: ", name);
+        console.log("!!! Class - checkConfigs вызван метод typeofValue с параметрами: ", name);
         if (name === 'dTemp' || name === 'dHum') {
             return true
         } else {
             return false
         }
     }
-    setManageConfig(manage) {
-        this.manageConfig = manage;
+
+
+
+
+
+    setManageConfig(directoryConfig) {
+        this.manageConfig = directoryConfig;
         console.log(" Class - checkConfigs вызван метод setManageConfig для получения конфигурации manageConfig: ");
     }
-    setCommonConfig(common) {
-        this.commonConfig = common;
+    setCommonConfig(commonConfig) {
+        this.commonConfig = commonConfig;
         console.log(" Class - checkConfigs вызван метод setCommonConfig для получения конфигурации commonConfig: ");
     }
-    setDirectoryConfig(directory) {
-        this.directoryConfig = directory;
+    setDirectoryConfig(directoryConfig) {
+        this.directoryConfig = directoryConfig;
         console.log(" Class - checkConfigs вызван метод setDirectoryConfig для получения конфигурации directoryConfig: ");
     }
     

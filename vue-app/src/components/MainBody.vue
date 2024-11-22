@@ -46,8 +46,9 @@
 
 <script>
 import MainBodyValue from './MainBodyValue.vue';
-import checkConfigs from '../utils/transformConfigs'
+// import checkConfigs from '../utils/transformConfigs'
 export default {
+    inject: ['checkConfigs'],
     name: 'MainBody',
     components: {
         MainBodyValue,
@@ -84,7 +85,7 @@ export default {
 
     },
     mounted() {
-        this.checkConfigs = new checkConfigs(); // Создаемм объект класса checkConfigs
+        // this.checkConfigs = new checkConfigs(); // Создаемм объект класса checkConfigs
 
     },
     beforeUnmount() {
@@ -324,10 +325,10 @@ export default {
        
     },
     getEventsComponent(event) {
-        // console.log('MainBody - Функция getEventsComponent получила событие - ', event);
+        console.log('MainBody - Функция getEventsComponent получила событие - ', event);
         try {
             const isSelectedNum = this.checkConfigs.typeofName(event.message.paramKey); // Проверка на возможность выбора Уставки 
-            //console.log(' Функция getEventsComponent (MainBody) получила событие результат проверки на возможность выбора Уставки из checkConfigs.typeofName isSelectedNum - ', isSelectedNum);
+            console.log(' Функция getEventsComponent (MainBody) получила событие результат проверки на возможность выбора Уставки из checkConfigs.typeofName isSelectedNum - ', isSelectedNum);
 
             switch (event.type) {
             case 'select':  {
