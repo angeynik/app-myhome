@@ -184,8 +184,6 @@ export default {
   },
   created() {
         this.sendLogToServer('info', 'Client: Инициализация подключения логирования'); // отправка логов на сервер для сохранения в файл
-        // this.checkConfigs = new CheckConfigs();
-       
   },
   mounted() {
     this.connectWebSocket();
@@ -218,7 +216,7 @@ export default {
       localStorage.setItem('isSelectedNum', false); // isSelectedNum - флаг выбора параметра имеющего числовое значение и соответственно Уставку
       this.setpoint = this.getManageValues(localStorage.getItem('room_id'), localStorage.getItem('param_key'));
 
-      //console.log(' --- 165 --- Функция CheckMessage - актуальный config из localStorage - ', JSON.parse(localStorage.getItem('commonConfig')));
+      //console.log(' --- 165 --- Функция checkMessage - актуальный config из localStorage - ', JSON.parse(localStorage.getItem('commonConfig')));
     },
     // findRoom (config, id) {
     //   // console.log('Функция findRoom (App) config - ', config);
@@ -251,6 +249,7 @@ export default {
         if (this.isSending === true) {
         this.sendServerRequest('get', 'config', 'name','manageConfig');
         this.sendServerRequest('get', 'config', 'name','commonConfig');
+        this.sendServerRequest('get', 'config', 'name','directoryConfig');
       } else {
         this.isSending = false;
       }
@@ -260,7 +259,7 @@ export default {
           const jsomMess = await this.blobToJson(event.data); // Преобразуем Blob в JSON из полученного сообщения
           // console.log('Получено сообщение:', jsomMess);
           this.messageFromServer = jsomMess;
-          this.CheckMessage(jsomMess);
+          this.checkMessage(jsomMess);
           
         } catch (error) {
           // console.error(error);
@@ -284,12 +283,16 @@ export default {
     checkLocalStorage() { // Проверка наличия конфигурации в localStorage
       const commonData = JSON.parse(localStorage.getItem('commonConfig'));
       const manageData = JSON.parse(localStorage.getItem('manageConfig'));
+      const directoryConfig = JSON.parse(localStorage.getItem('directoryConfig'));
       if (!commonData) {
         this.isSending = true;
         this.sendServerRequest('get', 'config', 'name','commonConfig');
       } else if (!manageData) {
         this.isSending = true;
         this.sendServerRequest('get', 'config', 'name','manageConfig');
+      } else if (!directoryConfig) {
+        this.isSending = true;
+        this.sendServerRequest('get', 'config', 'name','directoryConfig');
       } else {
         this.isSending = false;
         //this.findRoom(commonData, localStorage.getItem('room_id'));
@@ -327,39 +330,52 @@ export default {
       reader.readAsText(blob);
     });
     },
-    CheckMessage(n) {
-        // console.log(' 1 --- Функция CheckMessage - Получено cообщение:', n);
-      if (n.type !== undefined) {
-        switch (n.type) {
+    checkMessage(n) {
+        // console.log(' 1 --- Функция checkMessage - Получено cообщение:', n);
+      if (n.type === undefined || n.type === null) {
+        console.error('Функция checkMessage (App) По WS получено сообщение с пустым типом:', n);
+        this.sendLogToServer ('error', `Функция checkMessage (App) По WS лучено пустое сообщение: ${n.type}`);
+      }
+      switch (n.type) {
           case 'post':
             // console.log(`Получено cообщение с типом POST: ${n}`);
             switch (n.request) {
               case 'config':
                 if (n.manageConfig) {
-                  //console.log(' 2 --- Функция CheckMessage - "config" ', n.manageConfig);
-                  this.checkConfigs.setManageConfig(n.manageConfig);
+                  //console.log(' 2 --- Функция checkMessage request = "config" manageConfig ', n.manageConfig);
+                  //this.checkConfigs.setManageConfig(n.manageConfig);
+                  this.checkConfigs.setConfig(CheckConfigs.manage, n.manageConfig); 
 
                   localStorage.setItem('manageConfig', JSON.stringify(n.manageConfig));
                   // console.log('Конфигурация "manageConfig" сохранена в localStorage');
                   this.sendLogToServer('info', 'Конфигурация "manageConfig" сохранена в checkConfigs и в localStorage');
-                } else if (n.commonConfig) {
-                  this.checkConfigs.setCommonConfig(n.commonConfig);
+                } 
+                if (n.commonConfig) {
+                  //console.log(' 2 --- Функция checkMessage request = "config" - commonConfig ', n.commonConfig);
+                  //this.checkConfigs.setCommonConfig(n.commonConfig);
+                  this.checkConfigs.setConfig(CheckConfigs.common, n.commonConfig); 
                   localStorage.setItem('commonConfig', JSON.stringify(n.commonConfig));
                   // console.log('Конфигурация "commonConfig" сохранена в localStorage');
                   // this.findRoom(n.commonData, localStorage.getItem('room_id'));
                   this.sendLogToServer('info', 'Конфигурация "commonConfig" сохранена в checkConfigs и в localStorage');
                   
-
-                } else if (n.directoryConfig) {
-                  this.checkConfigs.setDirectoryConfig(n.directoryConfig);
+                } 
+                if (n.directoryConfig) {
+                  //console.log(' 2 --- Функция checkMessage request = "config" directoryConfig ', n.directoryConfig);
+                  this.checkConfigs.setConfig(CheckConfigs.directory, n.directoryConfig); 
+      
                   localStorage.setItem('directoryConfig', JSON.stringify(n.directoryConfig));
                   // console.log('Конфигурация "directoryConfig" сохранена в localStorage');
                   this.sendLogToServer('info', 'Конфигурация "directoryConfig" сохранена в checkConfigs и в localStorage');
+                } else {
+                  console.log('Функция checkMessage (App) сообщение полученное по WS имеет неизвестный тип конфигурации');
+                  this.sendLogToServer('error', `Функция checkMessage (App) сообщение полученное по WS имеет неизвестный тип конфигурации ${n.request}`);
                 }
-      //  window.location.reload();
+               
                 break;
               case 'sensors':
-                // console.log('2 --- Функция CheckMessage -- Начинаем работу с сообщением с Request = sensors', n);
+                console.log('2 --- Функция checkMessage (App)-- Начинаем работу с сообщением полученным по WS с сервера  request = sensors, message:', n);
+
                 this.safeLocalSorage('commonConfig', n);
       // window.location.reload();
               break;
@@ -371,16 +387,10 @@ export default {
             // console.log(`Получено cообщение с типом Get: ${n}`);
           break;
             default:
-            // console.log(`Получено cообщение с неизвестным типом`);
-            this.sendLogToServer ('error', 'Получено cообщение с неизвестным типом');
+            // console.log(`Функция checkMessage (App) По WS Получено cообщение с неизвестным типом`);
+            this.sendLogToServer ('error', ` Функция checkMessage (App) По WS Получено cообщение с неизвестным типом ${n.type}`);
             break;
             }
-          } else {
-          console.error('App Функция CheckMessage. Тип:', n.type);
-          this.sendLogToServer ('error', `App Функция CheckMessage.  Тип: ${n.type}`);
-          }
-          // console.log(`Функция CheckType приступила к обработке запроса на проверку наличия параметра с именем ${n}`);
-
     },
     checkMassageValue (value) { // Проверяем и преобразуем значение переменной 20.5 On Off ??? (при пустом значении)
       //console.log('Функция checkMassageValue приступила к обработке значения:', value);
@@ -403,32 +413,38 @@ export default {
       }
     },
     async sendLogToServer (type, message) {
-  try {
-    let payload;
-    if (message) {
-      payload = { type, message };
-      console.log ('Отправка на сервер лога: ', payload);
-    } else {
-      payload = { type:'error', message: 'Ошибка отправки - Пустое сообщения'};
-      console.log ('Ошибка отправки - Пустое сообщения' );
-    }    
-    //await fetch(`http://${process.env.VUE_APP_HOST}:${process.env.VUE_APP_SERVER_PORT}/logs`, {
-    await fetch('http://localhost:3010/log', {
-      method: 'POST',
-      headers: {
-      'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-      });
-  } catch (error) {
-    this.$log.error('Failed to send log to server', error);
-  }
+      try {
+        let payload;
+        if (message) {
+          payload = { type, message };
+          console.log ('Отправка на сервер лога: ', payload);
+        } else {
+          payload = { type:'error', message: 'Ошибка отправки - Пустое сообщения'};
+          console.log ('Ошибка отправки - Пустое сообщения' );
+        }    
+        //await fetch(`http://${process.env.VUE_APP_HOST}:${process.env.VUE_APP_SERVER_PORT}/logs`, {
+        await fetch('http://localhost:3010/log', {
+          method: 'POST',
+          headers: {
+          'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+          });
+      } catch (error) {
+        this.$log.error('Failed to send log to server', error);
+      }
     },
+    // sendServerRequest
+    // type - тип запроса post, get
+    // request - причина (заголовок) запроса config, sensors, actuator
+    // name - имя переменной 
+    // data - значение переменной
+    // запрос формируется как {"type": type, "request": request, name: data}  -  пример {"type": "get", "request": "config", "name": "commonConfig"}
     sendServerRequest(type, request, name, data)  { //Формируем и оправляем сообщение на сервер
-      console.log ('1 ---  APP.vue sendServerRequest - request = ', request, 'data = ', data, 'type = ', type, 'name = ', name);
+      //console.log ('1 ---  APP.vue sendServerRequest - request = ', request, 'type = ', type, 'name = ', name, 'data = ', data);
       let payload = {};
-      const Config = localStorage.getItem([data]);
-      //console.log (' Конфигурация ', data, ' существует', Config, 'name = ', name);
+      const Config = JSON.parse(localStorage.getItem([data]));
+      //console.log ('  --- 447 --- Конфигурация ', data, ' существует', Config, 'name = ', name);
       switch (request) {
         case 'config':
           if (this.WSconnected && !Config) {
@@ -469,7 +485,8 @@ export default {
           console.error(`Получено cообщение с неизвестным типом`, request);
           break;
       }
-    },    
+    },   
+    // safeLocalSorage - сохраняем сообщение в localStorage
     safeLocalSorage(name, message) {
       this.localStorageUpdated = false;
       this.messageFromServer = message;

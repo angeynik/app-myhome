@@ -5,7 +5,7 @@
 
 class CheckConfigs {
     constructor(manageConfig = {}, commonConfig = {}, directoryConfig = {}) {
-        console.log("Для класса CheckConfigs вызван конструктор с параметрами: ", manageConfig, commonConfig, directoryConfig);
+        //console.log("Для класса CheckConfigs вызван конструктор с параметрами: ", manageConfig, commonConfig, directoryConfig);
         this.manageConfig = manageConfig;
         this.commonConfig = commonConfig;
         this.directoryConfig = directoryConfig;
@@ -61,10 +61,12 @@ class CheckConfigs {
                 return 'Конфигурация не найдена';
         }
     }
-// Обновление конфигурации checkConfigs.getConfig(CheckConfigs.manage)); 
+// Обновление конфигурации checkConfigs.setConfig(CheckConfigs.manage, array); 
 
-
-
+    setMessage(name, message) {
+        console.log(' Class - checkConfigs вызван метод setMessage с параметрами: ', message, 'name: ', name);
+    }
+// Сохранение сообщенияcheckConfigs.setMessage(CheckConfigs.manage, mesaage); 
     find(config, type, param) {
         //console.log("Для класса checkConfigs вызван метод find с параметрами: ", config, type, param);
         if (type === 'setpoint') {
