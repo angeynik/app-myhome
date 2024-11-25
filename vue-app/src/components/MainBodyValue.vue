@@ -22,6 +22,7 @@
       <div class="mainBodyValue_h3">{{ title }} </div>
       <div class="mainBodyValue_h1">{{ value }}</div>
       <div class="mainBodyValue_p"> обновление - {{ timeUpdated }} </div>
+      <!-- <h5> {{ paramKey }} </h5> -->
      
   </div>
 </template>
@@ -40,6 +41,9 @@ props: {
   title: { type: String, 
       required: true, 
   }, 
+  paramTitle: { type: String, 
+      required: true, 
+  },
   paramKey: { type: String, 
       required: true, 
   }, 
@@ -47,6 +51,9 @@ props: {
       required: true, 
   }, 
   id: { type: Number, 
+      required: true, 
+  },
+  roomTitle: { type: String, 
       required: true, 
   },
   value: { type: Number, 
@@ -72,11 +79,11 @@ created() {
   },
 methods: {
     customerClick() {
-        //console.log(' --- 75 --- Функция customerClick(MainBodyValue) - Пользователь сделал клик');
+        console.log(' --- 82 --- Функция customerClick(MainBodyValue) - Пользователь сделал клик');
         this.$emit('select', {
             type: 'select', 
             message: {
-            state: this.isSelected,
+            state: this.isSelecte,
             id: this.id,
             paramKey: this.paramKey,
             roomKey: this.roomKey,

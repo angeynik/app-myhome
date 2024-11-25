@@ -85,7 +85,7 @@ class CheckConfigs {
         return this[config].rooms[room_id].title;
     }
     getUniqueSensorKeys(config) { // Получаем уникальные ключи датчиков
-        console.log(' Class - checkConfigs вызван метод getUniqueSensorKeys с параметрами: ', config);
+        //console.log(' Class - checkConfigs вызван метод getUniqueSensorKeys с параметрами: ', config);
         let uniqueKeys = new Set();
     
         for (const roomKey in config) {

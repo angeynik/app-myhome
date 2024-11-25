@@ -27,15 +27,16 @@
                 class="mainBodyValue"
                   v-for="(param, index) in viewArray"
                   :key="index"
-                  :id="param.id"
-                  :paramKey="param.key" 
+                  :id="param.roomId"
+                  :paramKey="param.paramKey" 
                   :roomKey="param.roomKey"
-                  :title="param.title" 
+                  :title="param.Title" 
+                  :roomTitle="param.roomTitle" 
                   :value="param.value"
                   :group="param.group" 
                   :timeUpdated="param.timeDiff"
                   :resetSelected="resetSelected"
-                  :isSelected="isSelected_(param.id, param.key)"
+                  :isSelected="isSelected_(param.roomId, param.paramKey)"
                   @select="getEventsComponent"
                   @doubleclick="sortingDoubleClick"
                   @doubletouch="sortingDoubleClick"
@@ -157,8 +158,8 @@ export default {
                         }
                         // console.log('Sort Room 2      -     sortArray:', localStorage.getItem('room_title'));
                         this.viewArray = sortArray;
-                        this.sendEmitMessage('changeTitle', sort_type, sortArray[0].room_title);
-                        localStorage.setItem('room_title', sortArray[0].room_title);
+                        this.sendEmitMessage('changeTitle', sort_type, sortArray[0].roomTitle);
+                        localStorage.setItem('room_title', sortArray[0].roomTitle);
                         break;
 
                     case 'params':
@@ -218,13 +219,14 @@ export default {
                                 const paramKey = this.findParamTitleRu(config, sensorKey);
                                 //console.log('MainInfoParam функция getSortedParams получила paramKey - ', paramKey);
                                 const timeDiff = this.calculateTime(new Date(room.time[`${sensorKey}_time`]));
-                                
+                               
                                 params.push({
+                                Title: room.title,
                                 value: room.sensors[sensorKey],
-                                title: room.title,
+                                roomTitle: room.title,
                                 group: room.group,
                                 timeDiff: timeDiff,
-                                id: room.id,
+                                roomId: room.id,
                                 paramKey: paramKey.title,
                                 paramTitle: paramKey.titleRu,
                                 roomKey: roomKey
@@ -259,13 +261,14 @@ export default {
                     const paramKey = this.findParamTitleRu(config, sensorKey);
 
                         dataArray.push({
+                            Title: paramKey.titleRu,
                             value: config[room].sensors[sensorKey],
-                            title: paramKey.titleRu,
+                            paramTitle: paramKey.titleRu,
                             group: config[room].group,
                             timeDiff: timeDiff,
-                            id: config[room].id,
-                            room_title: config[room].title,
-                            key: paramKey.title,
+                            roomId: config[room].id,
+                            roomTitle: config[room].title,
+                            paramKey: paramKey.title,
                             roomKey: localStorage.getItem('room_key')
                         });
                     });
@@ -339,6 +342,7 @@ export default {
 
             switch (event.type) {
             case 'select':  {
+                console.log(' -- 345 --- Функция getEventsComponent (MainBody) case - select получила событие - ', event);
                 const { id, paramKey, roomKey} = event.message; 
                     if (this.isSelectedID === id && this.isSelectedParam === paramKey) { 
                         this.selectedId = null; // Снять выбор при повторном клике 
@@ -350,11 +354,12 @@ export default {
                         this.isSelectedParam = paramKey;
                         this.isSelectedRoom = roomKey;
                         localStorage.setItem('room_key', roomKey);
+                        localStorage.setItem('param_key', this.checkConfigs.checkSymbol(paramKey, 0, 'd'));
                         localStorage.setItem('room_id', id);
                         localStorage.setItem('room_title', JSON.parse(localStorage.getItem('commonConfig'))[roomKey].title);
-                        localStorage.setItem('param_key', paramKey);
+                        // localStorage.setItem('param_key', paramKey);
                       
-                        //console.log('  ---- 338    ------  Функция getEventsComponent (MainBody) получила наименование выбранной комнаты - ', localStorage.getItem('room_title'));
+                        console.log('  ---- 357    ------  Функция getEventsComponent (MainBody) case - select получила наименование выбранной комнаты - ', id, paramKey, roomKey, localStorage.getItem('room_title'));
                         if (isSelectedNum === true) {
                             this.sendEmitMessage('showSetpoint', 'isSelected', true);
                         } else {

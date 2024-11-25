@@ -29,8 +29,8 @@
         </svg>
     </div> -->
     <div> 
-        <h1> {{ title }} </h1>
-        <h5> Mobile - {{ mobile }} </h5>
+        <h2> {{ title }} </h2>
+        <!-- <h5> Mobile - {{ mobile }} </h5> -->
     </div>
     <!-- <div>
       <svg class="setpointValue_icon">
