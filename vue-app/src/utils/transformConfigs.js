@@ -80,6 +80,10 @@ class CheckConfigs {
             return {set, name};
         }
     }
+    findRoomTitle(config, room_id) {
+        //console.log(' Class - checkConfigs вызван метод findRoomTitle с параметрами: ', config, room_id);
+        return this[config].rooms[room_id].title;
+    }
     getUniqueSensorKeys(config) { // Получаем уникальные ключи датчиков
         console.log(' Class - checkConfigs вызван метод getUniqueSensorKeys с параметрами: ', config);
         let uniqueKeys = new Set();
@@ -89,7 +93,7 @@ class CheckConfigs {
                 const sensorKeys = Object.keys(config[roomKey].sensors);
                
                 sensorKeys.forEach(key => {
-                    const cleanKey = key.replace(/[0-9]/g, '');
+                    const cleanKey = key.replace(/[0-9]/g, '').substring(1);
                     if (isNaN(cleanKey)) {
                         uniqueKeys.add(cleanKey);
                     }
@@ -99,18 +103,23 @@ class CheckConfigs {
         return Array.from(uniqueKeys);
     }
    
-    updateRoomId(array, room_id, calcDirection) {
+    updateRoomId(array, room_id, direction) {
         let id;
-        console.log(' Class - checkConfigs вызван метод updateRoomIndex с параметрами: ', array, room_id, calcDirection);
+        //console.log(' Class - checkConfigs вызван метод updateRoomIndex с параметрами: ', array, room_id, calcDirection);
         const length = Object.keys(array).length;
-        if (calcDirection === false) { // Уменьшение id на 1, если значение первое, вернуть индекс последнего элемента 
+        if (direction === false) { // Уменьшение id на 1, если значение первое, вернуть индекс последнего элемента 
+            //console.log('Уменьшение id на 1, если значение первое, вернуть индекс последнего элемента');
             id = (room_id - 1 + length) % length; 
-        } else if (calcDirection === true) { // Увеличение id на 1, если значение последнее, вернуть индекс первого элемента 
-            id =(room_id + 1) % length; 
-        } 
-        if (id === 0) {
-            id = length-1;
-        }
+            if (id === 0) {
+                id = length-1;
+            }
+        } else if (direction === true) { // Увеличение id на 1, если значение последнее, вернуть индекс первого элемента 
+            //console.log('Увеличение id на 1, если значение последнее, вернуть индекс первого элемента');
+            id =(room_id + 1) % length;
+            if (id === length || id === 0) {
+                id = 1;
+            }
+        }   
         for (let room in array) {
             if (array[room].id === id) {
                 // const roomId = room;
@@ -122,9 +131,27 @@ class CheckConfigs {
             }
         }
     }
-    updateParamKey(length, paramKey, value) {
-        console.log(' Class - checkConfigs вызван метод updateParamIndex с параметрами: ', length, paramKey, value);
+    updateParamKey(array, param_key, direction) {
+        console.log(' Class - checkConfigs вызван метод updateParamIndex с параметрами: array: ', array, 'currentKey: ', param_key, 'direction: ', direction);
+        const currentIndex = array.indexOf(param_key);
+        console.log(' Class - checkConfigs вызван метод updateParamIndex с параметрами: currentIndex', currentIndex);
+        if (currentIndex === -1) {
+            console.error('Текущий ключ не найден в массиве');
+            return null;
+        }
+        let newIndex;
+    
+        if (direction) {
+            // Следующий элемент
+            newIndex = (currentIndex + 1) % array.length;
+        } else {
+            // Предыдущий элемент
+            newIndex = (currentIndex - 1 + array.length) % array.length;
+        }
+        return array[newIndex];
+       
     }
+
     checkSymbol(variable, indexSymbol, symbol = '', addSymbol = '') {
         // variable = Переменная для проверки например 'dTemp'
         // indexSymbol = Позиция символа в строке например '0' или '1'
@@ -158,18 +185,18 @@ class CheckConfigs {
 
 
 
-    setManageConfig(directoryConfig) {
-        this.manageConfig = directoryConfig;
-        console.log(" Class - checkConfigs вызван метод setManageConfig для получения конфигурации manageConfig: ");
-    }
-    setCommonConfig(commonConfig) {
-        this.commonConfig = commonConfig;
-        console.log(" Class - checkConfigs вызван метод setCommonConfig для получения конфигурации commonConfig: ");
-    }
-    setDirectoryConfig(directoryConfig) {
-        this.directoryConfig = directoryConfig;
-        console.log(" Class - checkConfigs вызван метод setDirectoryConfig для получения конфигурации directoryConfig: ");
-    }
+    // setManageConfig(directoryConfig) {
+    //     this.manageConfig = directoryConfig;
+    //     console.log(" Class - checkConfigs вызван метод setManageConfig для получения конфигурации manageConfig: ");
+    // }
+    // setCommonConfig(commonConfig) {
+    //     this.commonConfig = commonConfig;
+    //     console.log(" Class - checkConfigs вызван метод setCommonConfig для получения конфигурации commonConfig: ");
+    // }
+    // setDirectoryConfig(directoryConfig) {
+    //     this.directoryConfig = directoryConfig;
+    //     console.log(" Class - checkConfigs вызван метод setDirectoryConfig для получения конфигурации directoryConfig: ");
+    // }
     
 }
 // class CalcTime {

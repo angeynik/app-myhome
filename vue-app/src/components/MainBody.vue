@@ -136,7 +136,7 @@ export default {
                 });
     },
     selectSorting(sort_type) {
-            console.log('MainBody.vue: Функция selectSorting. Выбор сортировки:', sort_type);
+            //console.log('MainBody.vue: Функция selectSorting. Выбор сортировки:', sort_type);
             try {
                 const commonConfig = JSON.parse(localStorage.getItem('commonConfig'));
                 let roomKey = localStorage.getItem('room_key');
@@ -149,7 +149,7 @@ export default {
                 let sortArray = [];
                 switch (sort_type) {
                     case 'rooms':
-                        console.log('Sort Room 1      -     Функция selectSorting (MainBody.vue). Приступаем к сортировке по комнатам - Case: rooms');
+                        //console.log('Sort Room 1      -     Функция selectSorting (MainBody.vue). Приступаем к сортировке по комнатам - Case: rooms');
 
                         sortArray = this.getSortedRooms(commonConfig, roomKey);
                         if (!sortArray) {
@@ -157,24 +157,29 @@ export default {
                         }
                         // console.log('Sort Room 2      -     sortArray:', localStorage.getItem('room_title'));
                         this.viewArray = sortArray;
-                        this.sendEmitMessage('changeTitle', sort_type, localStorage.getItem('room_title'));
+                        this.sendEmitMessage('changeTitle', sort_type, sortArray[0].room_title);
+                        localStorage.setItem('room_title', sortArray[0].room_title);
                         break;
 
                     case 'params':
                         // console.log('Sort Param 2      -     Функция selectSorting (MainBody.vue). Вызываем функцию getSortedParams с параметрамом paramKey - ', paramKey);
                         sortArray = this.getSortedParams(commonConfig, paramKey);
+                        //console.log('sortArray:', sortArray);
                         if (!sortArray) {
                             this.sendEmitMessage('sendLogToServer','warning', 'selectSorting - Массив данных с утройств для отображения пользователюviewArray не определен');
                         }
                         this.viewArray = sortArray;
-                        this.sendEmitMessage('changeTitle', sort_type, localStorage.getItem('param_title'));
+                        //console.log(' Функция selectSorting (MainBody) Результат сортировки объекта - viewArray :', this.viewArray);
+                        localStorage.setItem('param_title', sortArray[0].paramTitle);
+                        this.sendEmitMessage('changeTitle', sort_type, sortArray[0].paramTitle);
 
                         break;
                     default:
                         console.error('MainBody.vue: Функция selectSorting. Не опознаный тип сортировки:', sort_type);
                         break;
                 }
-                // console.log(' Функция selectSorting (MainBody) Результат сортировки объекта - viewArray :', this.viewArray);
+
+                console.log(' Функция selectSorting (MainBody) Результат сортировки объекта - viewArray :', this.viewArray);
             } catch (error) {
                 this.sendEmitMessage('sendLogToServer','error', 'selectSorting(MainBody) - ошибка сортировки данных для отображения пользователю ${error}');
             }    
@@ -210,7 +215,8 @@ export default {
                             // console.log('MainInfoParam функция getSortedParams получила room - ', room);
                             keys.forEach(sensorKey => {
                             if (room.sensors && room.sensors[sensorKey]) {
-                                const paramKey = this.findParamTitleRu(config, sensorKey).title;
+                                const paramKey = this.findParamTitleRu(config, sensorKey);
+                                //console.log('MainInfoParam функция getSortedParams получила paramKey - ', paramKey);
                                 const timeDiff = this.calculateTime(new Date(room.time[`${sensorKey}_time`]));
                                 
                                 params.push({
@@ -219,7 +225,8 @@ export default {
                                 group: room.group,
                                 timeDiff: timeDiff,
                                 id: room.id,
-                                key: paramKey,
+                                paramKey: paramKey.title,
+                                paramTitle: paramKey.titleRu,
                                 roomKey: roomKey
                                 });
                                 // console.log('params - ', params);
@@ -245,17 +252,19 @@ export default {
                 // console.log('Проверяем условие  getSortedRooms получила config[room].sensors - ', config[room].sensors);
 
                 Object.keys(config[room].sensors).forEach(sensorKey => {
-                //    console.log('2 --- Функция getSortedRooms получила sensorKey - ', sensorKey);
+                //console.log('2 --- Функция getSortedRooms получила sensorKey - ', sensorKey);
                     const timeDiff = this.calculateTime(new Date(config[room].time[`${sensorKey}_time`]));
                     // console.log('timeDiff', timeDiff);
 
                     const paramKey = this.findParamTitleRu(config, sensorKey);
+
                         dataArray.push({
                             value: config[room].sensors[sensorKey],
                             title: paramKey.titleRu,
                             group: config[room].group,
                             timeDiff: timeDiff,
                             id: config[room].id,
+                            room_title: config[room].title,
                             key: paramKey.title,
                             roomKey: localStorage.getItem('room_key')
                         });
@@ -264,8 +273,6 @@ export default {
                     console.error(' ---------   Функция getSortedRooms получила пустой массив sensors - ', config[room].sensors);
                     this.sendEmitMessage('sendLogToServer','error', 'selectSorting(MainBody) - получила пустой массив sensors - ${config[room].sensors}');
                 }
-
-            // console.log('Результат функции getSortedRooms - dataArray  --- MainBody:', dataArray);
             return dataArray; 
         } catch (error) {
             this.sendEmitMessage('sendLogToServer','error', 'getSortedRooms(MainBody) - ошибка сортировки данных Комнаты для отображения пользователю ${error}');

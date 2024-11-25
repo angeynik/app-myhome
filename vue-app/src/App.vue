@@ -355,10 +355,12 @@ export default {
                   //this.checkConfigs.setCommonConfig(n.commonConfig);
                   this.checkConfigs.setConfig(CheckConfigs.common, n.commonConfig); 
                   localStorage.setItem('commonConfig', JSON.stringify(n.commonConfig));
-                  // console.log('Конфигурация "commonConfig" сохранена в localStorage');
+                  this.sensorKeys = this.checkConfigs.getUniqueSensorKeys(n.commonConfig);
+                  console.log('Конфигурация "commonConfig" сохранена в localStorage Получен массив параметров:', this.sensorKeys);
                   // this.findRoom(n.commonData, localStorage.getItem('room_id'));
+                  console.log('Обновлено значение headerTitle:', this.headerTitle);
                   this.sendLogToServer('info', 'Конфигурация "commonConfig" сохранена в checkConfigs и в localStorage');
-                  
+                 
                 } 
                 if (n.directoryConfig) {
                   //console.log(' 2 --- Функция checkMessage request = "config" directoryConfig ', n.directoryConfig);
@@ -374,7 +376,7 @@ export default {
                
                 break;
               case 'sensors':
-                console.log('2 --- Функция checkMessage (App)-- Начинаем работу с сообщением полученным по WS с сервера  request = sensors, message:', n);
+                //console.log('2 --- Функция checkMessage (App)-- Начинаем работу с сообщением полученным по WS с сервера  request = sensors, message:', n);
 
                 this.safeLocalSorage('commonConfig', n);
       // window.location.reload();
@@ -417,10 +419,10 @@ export default {
         let payload;
         if (message) {
           payload = { type, message };
-          console.log ('Отправка на сервер лога: ', payload);
+          //console.log ('Отправка на сервер лога: ', payload);
         } else {
           payload = { type:'error', message: 'Ошибка отправки - Пустое сообщения'};
-          console.log ('Ошибка отправки - Пустое сообщения' );
+          //console.log ('Ошибка отправки - Пустое сообщения' );
         }    
         //await fetch(`http://${process.env.VUE_APP_HOST}:${process.env.VUE_APP_SERVER_PORT}/logs`, {
         await fetch('http://localhost:3010/log', {
@@ -567,7 +569,7 @@ export default {
       }
       localStorage.setItem([name], JSON.stringify(config));
       this.localStorageUpdated = true;
-console.log(`Конфигурация -- !!  ${name}  !! --  обновлена в localStorage`, config,  'localStorageUpdated: ', this.localStorageUpdated);
+//console.log(`Конфигурация -- !!  ${name}  !! --  обновлена в localStorage`, config,  'localStorageUpdated: ', this.localStorageUpdated);
     },
     selectComponent(component) {
       // console.log('selectComponent - ', component);
@@ -661,11 +663,17 @@ console.log(`Конфигурация -- !!  ${name}  !! --  обновлена 
     },
     sortingBack() {
       const commonConfig = JSON.parse(localStorage.getItem('commonConfig'));
-      const sensorKeys = this.checkConfigs.getUniqueSensorKeys(commonConfig);
-      console.log('App - Функция sortingBack (App) -- Получен массив sensorKeys - ', sensorKeys);
       if (this.propsTitle === 'params') {
-        const updatedKey = this.checkConfigs.updateParamKey(sensorKeys, localStorage.getItem('param_key'), false);
-        console.log('App - Функция sortingBack (App) -- Обновлены ключи сортировки по Комнатам - ', updatedKey);
+        //console.log('App - Функция sortingBack (App) -- Получен массив ParamKey - ', localStorage.getItem('param_key'));
+        if (!this.sensorKeys) {
+          this.sensorKeys = this.checkConfigs.getUniqueSensorKeys(JSON.parse(localStorage.getItem('commonConfig')));
+        }
+        const paramKey = this.checkConfigs.updateParamKey(this.sensorKeys, localStorage.getItem('param_key'), false);
+        const paramTitle = JSON.parse(localStorage.getItem('commonConfig')).room00.info['d'+paramKey];
+        this.headerTitle = paramTitle;
+        localStorage.setItem('param_key', paramKey);
+        localStorage.setItem('param_title', paramTitle);
+        this.changeSorting = true;
       } 
       if (this.propsTitle === 'rooms') {
         const updatedKey = this.checkConfigs.updateRoomId(commonConfig, Number(localStorage.getItem('room_id')), false);
@@ -674,20 +682,28 @@ console.log(`Конфигурация -- !!  ${name}  !! --  обновлена 
         localStorage.setItem('room_id', updatedKey.roomId);
         localStorage.setItem('room_key', updatedKey.roomKey);
         this.changeSorting = true;
-        console.log('App - Функция sortingBack (App) -- Обновлены ключи сортировки по Комнатам - ', updatedKey);
+        //console.log('App - Функция sortingBack (App) -- Обновлены ключи сортировки по Комнатам - ', updatedKey);
       } else {
         console.error(' Функция sortingBack (App) -- Параметр propsTitle не определен', this.propsTitle); 
       }
 
-     
+    
     },
     sortingForvard() {
       const commonConfig = JSON.parse(localStorage.getItem('commonConfig'));
-      const sensorKeys = this.checkConfigs.getUniqueSensorKeys(commonConfig);
-      console.log('App - Функция sortingBack (App) -- Получен массив sensorKeys - ', sensorKeys);
       if (this.propsTitle === 'params') {
-        const updatedKey = this.checkConfigs.updateParamKey(sensorKeys, localStorage.getItem('param_key'), true);
-        console.log('App - Функция sortingBack (App) -- Обновлены ключи сортировки по Комнатам - ', updatedKey);
+        //console.log('App - Функция sortingBack (App) -- Получен массив ParamKey - ', localStorage.getItem('param_key'));
+        if (!this.sensorKeys) {
+          this.sensorKeys = this.checkConfigs.getUniqueSensorKeys(JSON.parse(localStorage.getItem('commonConfig')));
+        }
+        const paramKey = this.checkConfigs.updateParamKey(this.sensorKeys, localStorage.getItem('param_key'), true);
+        const paramTitle = JSON.parse(localStorage.getItem('commonConfig')).room00.info['d'+paramKey];
+        this.headerTitle = paramTitle;
+        localStorage.setItem('param_key', paramKey);
+        localStorage.setItem('param_title', paramTitle);
+        this.changeSorting = true;
+
+        //console.log('App - Функция sortingBack (App) -- Обновлены ключи сортировки по Комнатам - ', paramKey, 'paramTitleRu ', paramTitle);
       } 
       if (this.propsTitle === 'rooms') {
         const updatedKey = this.checkConfigs.updateRoomId(commonConfig, Number(localStorage.getItem('room_id')), true);
@@ -696,53 +712,12 @@ console.log(`Конфигурация -- !!  ${name}  !! --  обновлена 
         localStorage.setItem('room_id', updatedKey.roomId);
         localStorage.setItem('room_key', updatedKey.roomKey);
         this.changeSorting = true;
-        console.log('App - Функция sortingBack (App) -- Обновлены ключи сортировки по Комнатам - ', updatedKey);
+        //console.log('App - Функция sortingBack (App) -- Обновлены ключи сортировки по Комнатам - ', updatedKey);
       } else {
         console.error(' Функция sortingBack (App) -- Параметр propsTitle не определен', this.propsTitle); 
       }
-
-
-      //this.changeSorting = 'next';
-      //console.log('App - Функция sortingForvard (App) -- Переменную changeSorting установили = ', this.changeSorting);
-      
     },
-  // changeSetpoint(newState) {
-  //   console.log('512 ----  В функцию changeSetpoint (App.vue) получено сообщение - newState:', newState);
-  //   if (newState === null || newState === undefined) {
-  //     console.error('Функция changeSetpoint (App.vue) получила пустое значение setpoint', newState);
-  //     this.sendLogToServer('warning', 'App.vue Функция changeSetpoint получила пустое значение setpoint для параметра ${this.setName}');
-  //     return;
-  //   } else {
-  //     try {
-  //       //console.log(' Функция changeSetpoint (App.vue) получила значение setpoint - ', newState.newSetPoint);
-  //       // this.setpoint = newState.newSetPoint;
 
-  //       if (newState.type === 'newSetPoint') {
-  //         this.setpoint = newState.message;
-  //         console.log(' -- 539  ---  Функция changeSetpoint (App.vue) получила новое значение setpoint', newState.message);
-  //       } else if (newState.type === 'updatePermission' && newState.message === true) {
-  //           //console.log('  0000000   0000000  Функция changeSetpoint (App.vue) получила новое значение разрешение на обновление Уствки ', newState.message);
-  //           const roomId = localStorage.getItem('room_id');
-  //           const roomKey = localStorage.getItem('room_key');
-  //           const paramKey = this.checkConfigs.checkSymbol(localStorage.getItem('param_key'), 0, 'd');
-  //           console.log('Функция changeSetpoint (App.vue) получили значения Уставки - ', this.setpoint, ' для  - roomId:', roomId, ' - roomKey:', roomKey, ' - paramKey:', paramKey);
-      
-  //         // Отправляем на сервер сообщение вида {type, request, name, data}
-  //         // type - тип сообщения, request - название функции, name - имя комнаты (room00), data - данные вида {setTemp: 22}
-  //           const name = 'set'+paramKey;
-  //           // console.log('В функцию changeSetpoint получено сообщение - ', name);
-            
-  //           const data = {
-  //             [name]: this.setpoint,
-  //           };
-  //           this.sendServerRequest('post', 'setpoint', localStorage.getItem('room_key'), data);
-  //         }
-       
-  //     } catch (error) {
-  //       this.sendLogToServer('error', 'App.vue Функция changeSetpoint Ошибка выполнения функции обработки ${error} для параметра ${this.setName}');
-  //     }
-  //   }
-  // },
 
 
 
@@ -829,6 +804,7 @@ console.log(`Конфигурация -- !!  ${name}  !! --  обновлена 
         //console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle - ', event);
           if (event.changeTitle)  {
             try {
+              //console.log(' event.changeTitle ', event.changeTitle);
               this.headerTitle = event.changeTitle.message; 
             } catch (error) {
               this.sendLogToServer ('warning', `Ошибка ${error} обработки сообщения changeTitle - ${event.changeTitle}`);
