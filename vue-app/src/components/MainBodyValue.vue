@@ -35,6 +35,7 @@ data() {
     return {
         // isSelected: null,
         checkConfigs: null,
+        touchTimeout: null,
     }
 },
 props: {
@@ -79,7 +80,7 @@ created() {
   },
 methods: {
     customerClick() {
-        console.log(' --- 82 --- Функция customerClick(MainBodyValue) - Пользователь сделал клик');
+        //console.log(' --- 82 --- Функция customerClick(MainBodyValue) - Пользователь выбрал параметр', this.paramKey, 'для комнаты', this.roomKey);
         this.$emit('select', {
             type: 'select', 
             message: {
@@ -120,7 +121,7 @@ methods: {
             }
         }
     }, 
-    handleTouchEnd() {
+    customerTouchEnd() {
         // console.log('Функция handleTouchStart(MainBodyValue) - Пользователь завершил двойной клик', event.touches[0].clientX, event.touches[0].clientY);
         if (this.touchTimeout) { 
             clearTimeout(this.touchTimeout); 

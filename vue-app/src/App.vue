@@ -56,7 +56,10 @@
       </header>
    
 
-      <div class="body">
+      <div class="body"
+      @touchstart="appTouchStart($event, 'body')" 
+      @touchend="appTouchEnd($event, 'body')"
+      >
 
         <div class="app-place_body" v-if="!selectedComponent" id="app_place" >
           <component :is="AppPlace" />
@@ -72,7 +75,6 @@
     
         <div v-else id="app_component">
           <component
-
           :is="selectedComponent" 
           :propsTitle="propsTitle"
           :changeSorting="changeSorting" 
@@ -160,6 +162,10 @@ export default {
       propsTitle:'',// идентификатор параметра сортировки room или params
       selectedComponent: null, //  Имя выбранного компонента
       headerTitle: "",
+
+  // Работа с тачем для смены параметров сортировки
+      touchStartX: 0,
+      touchArea: null,
 
   // Работа с компонентом Setpoint
       setpoint: localStorage.getItem('setpoint') || null,
@@ -496,12 +502,8 @@ export default {
       // Получаем конфигурацию из localStorage
       let config = JSON.parse(localStorage.getItem([name]));
       //console.log(' 4 --- APP.vue safeLocalSorage Получаем конфигурацию из localStorage ', name, ', config:', config);
-
       let roomKey, sensorKey, sensorValue, sensorKeyTime;
-
-      
       const timeUpdated = new Date().toLocaleString();
-
       switch (name) {
         case 'manageConfig':
 
@@ -742,71 +744,92 @@ export default {
     } else {
         console.error('Функция sortingForvard (App) -- Параметр propsTitle не определен корректно', propsTitle);
     }
-},
-
-
-
-
-
-
-
-
-
-
-
-    checkLength(Point, Point_length) {
-      // console.log('checkLength Начинаем проверку для ID', Point, ' ID_length = ', Point_length);
-      if (Point > Point_length) {
-        // console.log('Переходим в начало списка');
-        return 1;
-      } if (Point < 1) {
-        // console.log('Переходим в конец списка');
-        return Point_length;
-      } else {
-        // console.log('ID в диапазоне возвращаем Point = ', Point);
-        return Point;
-      }
     },
-    getPeriodMinutes(lastTime) {
-      // console.log('MainBody - Функция getPeriodMinutes Начинаем работу с lastTime = ', lastTime);
-      if (lastTime !== null && lastTime !== undefined) {
-        try {
-          const lastDate = new Date(lastTime);
-          // console.log('MainBody - Функция getPeriodMinutes lastDate = ', lastDate);
-          const currentDate = new Date();
-          const timeDifferenceMinutes = Math.floor((currentDate - lastDate) / 60000); // разница в минутах
+    appTouchStart(event, area) {
+      console.log('App.vue - из компонентов в функцию appTouchStart получено сообщение - ', event, area);
+      if (!this.selectedComponent && area !== 'body') {
+        return;
+      }
+      this.touchStartX = event.changedTouches[0].clientX;
+      this.touchArea = area;
+    },
+    appTouchEnd(event,area) {
+      console.log('App.vue - из компонентов в функцию appTouchEnd получено сообщение - ', area);
+      if (!this.selectedComponent && area !== 'body') {
+        return;
+      }
+      if (this.touchArea === area) { 
+              const deltaX = event.changedTouches[0].clientX - this.touchStartX;
+              if (deltaX > 10) {
+                console.log ('deltaX > 0', deltaX);
+                this.sortingForvard();
+              } else if (deltaX < 10) {
+                console.log ('deltaX < 0', deltaX);
+                this.sortingBack();
 
-          // const timeDifference = currentDate - lastDate;
-          // const seconds = Math.floor(timeDifference / 1000);
-          // const minutes = Math.floor(seconds / 60);
-          // const hours = Math.floor(minutes / 60);
-          // console.log(`Прошло времени: ${hours} часов, ${minutes % 60} минут, ${seconds % 60} секунд`);
-
-          return timeDifferenceMinutes;
-        } catch (error) {
-          console.error('MainBody Функция getPeriodMinutes Ошибка расчета интервала времени', error);
-          // В компоненте, который вызывает событие
-         this.$emit('updateState', {
-            sendLogToServer: 
-            { type: 'error', 
-            message: `MainBody Функция getPeriodMinutes Ошибка расчета интервала времени: ${error}` 
+            } else {
+              console.log('Функция appTouchStart(MainBody) - Недостаточное смещение для смены параметра');
             }
-          });
-          // this.$emit('updateState', {sendLogToServer: ('Error in getPeriodMinutes: ', error)});
-          // this.sendLogToServer('error', 'Client: Не удалось отправить сообщение: WS соединение не установлено');
+        } else {
+          console.log('Функция appTouchStart(MainBody) - Смещение выполнено за пределами экрана');
         }
-      } else {
-        console.error('MainBody Функция getPeriodMinutes Значение времени переданное в функцию не определено');
-          // В компоненте, который вызывает событие
-         this.$emit('updateState', {
-          sendLogToServer: 
-          { type: 'error', 
-          message: `MainBody Функция getPeriodMinutes Значение времени переданное в функцию не определено: ` 
-        }
-        });
-      }
-      
     },
+
+    // checkLength(Point, Point_length) {
+    //   // console.log('checkLength Начинаем проверку для ID', Point, ' ID_length = ', Point_length);
+    //   if (Point > Point_length) {
+    //     // console.log('Переходим в начало списка');
+    //     return 1;
+    //   } if (Point < 1) {
+    //     // console.log('Переходим в конец списка');
+    //     return Point_length;
+    //   } else {
+    //     // console.log('ID в диапазоне возвращаем Point = ', Point);
+    //     return Point;
+    //   }
+    // },
+
+    
+    // getPeriodMinutes(lastTime) {
+    //   // console.log('MainBody - Функция getPeriodMinutes Начинаем работу с lastTime = ', lastTime);
+    //   if (lastTime !== null && lastTime !== undefined) {
+    //     try {
+    //       const lastDate = new Date(lastTime);
+    //       // console.log('MainBody - Функция getPeriodMinutes lastDate = ', lastDate);
+    //       const currentDate = new Date();
+    //       const timeDifferenceMinutes = Math.floor((currentDate - lastDate) / 60000); // разница в минутах
+
+    //       // const timeDifference = currentDate - lastDate;
+    //       // const seconds = Math.floor(timeDifference / 1000);
+    //       // const minutes = Math.floor(seconds / 60);
+    //       // const hours = Math.floor(minutes / 60);
+    //       // console.log(`Прошло времени: ${hours} часов, ${minutes % 60} минут, ${seconds % 60} секунд`);
+
+    //       return timeDifferenceMinutes;
+    //     } catch (error) {
+    //       console.error('MainBody Функция getPeriodMinutes Ошибка расчета интервала времени', error);
+    //       // В компоненте, который вызывает событие
+    //      this.$emit('updateState', {
+    //         sendLogToServer: 
+    //         { type: 'error', 
+    //         message: `MainBody Функция getPeriodMinutes Ошибка расчета интервала времени: ${error}` 
+    //         }
+    //       });
+    //       // this.$emit('updateState', {sendLogToServer: ('Error in getPeriodMinutes: ', error)});
+    //       // this.sendLogToServer('error', 'Client: Не удалось отправить сообщение: WS соединение не установлено');
+    //     }
+    //   } else {
+    //     console.error('MainBody Функция getPeriodMinutes Значение времени переданное в функцию не определено');
+    //       // В компоненте, который вызывает событие
+    //      this.$emit('updateState', {
+    //       sendLogToServer: 
+    //       { type: 'error', 
+    //       message: `MainBody Функция getPeriodMinutes Значение времени переданное в функцию не определено: ` 
+    //     }
+    //     });
+    //   }
+      
+    // },
 
 
 

@@ -117,7 +117,9 @@
     </svg>
  
     <div class="setpointValue">
-        <svg class="setpointValue_icon">
+        <svg class="setpointValue_icon"
+        @click="clickChangeSetpoint(-50)"
+        >
           <use href="#setpointSelector"></use>
         </svg>
 
@@ -125,7 +127,9 @@
       <h1> {{ newSetPointValue }} </h1>
       </div>
 
-        <svg class="setpointValue_icon">
+        <svg class="setpointValue_icon"
+        @click="clickChangeSetpoint(50)"
+        >
           <use href="#setpointSelector"></use>
         </svg>
 
@@ -157,7 +161,7 @@
     },
     created() {
       this.debouncedCalculateSetpoint = this.debounce(this.calculateSetpoint, 16);
-      this.debouncedUpdatePermitions = this.debounce(this.sendEmitMessage, 1000);
+      this.debouncedUpdatePermitions = this.debounce(this.sendEmitMessage, 800);
       },
     props: {   // Переменные полученные в компонент
       setPoint: Number,
@@ -167,6 +171,8 @@
     },
       methods: {
     sendEmitMessage(event, name, message) {
+      if (!event || !name || !message) return console.error('sendEmitMessage - event', event,'name - ', name, 'message - ', message, ' не переданы');
+      //console.log('Функция sendEmitMessage (MainSetpoint) формирует сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
                 this.$emit('eventsComponent',{
                     [event]: {
                         type: name,
@@ -209,8 +215,12 @@
     },
     calculateSetpoint(value, step, min, max) {
         // console.log('BodySetpointBlock Функция calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
-        let newValue;
-        const currentSetPoint = this.setPoint;
+        let newValue, currentSetPoint;
+        if (this.setPoint === null || this.setPoint === undefined) {
+          currentSetPoint = min;
+        } else {
+          currentSetPoint = this.setPoint;
+        }
         try {
           if (value > 5 && value < 120) {
           newValue = currentSetPoint + step;
@@ -232,7 +242,10 @@
   
        this.sendSetPoint(newValue, min, max);
     },
-
+    clickChangeSetpoint(value) {
+      this.calculateSetpoint(value, this.step, this.lowLimit, this.highLimit);
+      this.debouncedUpdatePermitions('updatePermission', 'permission', true);
+    },
     sendSetPoint(setPoint, min, max) {
         if (setPoint === undefined || setPoint === null || min === undefined || max === undefined) {
           console.error('BodySetpointBlock Функция sendSetPoint Попытка проверки с неопределенными значениями setPoint', setPoint, 'min', min, 'max', max);
