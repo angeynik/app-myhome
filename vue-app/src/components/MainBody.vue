@@ -93,13 +93,13 @@ export default {
     },
     watch: {
         changeSorting: function(newValue) {
-            console.log('watch -  - changeSorting (MainBody) изменилось - ', newValue);
+            //console.log('watch -  - changeSorting (MainBody) изменилось - ', newValue);
             if (newValue === undefined || newValue === null || newValue === false) {
                 return;
             } if (newValue === true) {
-                console.log('watch -  - changeSorting (MainBody) инициируем обновление сортировки  selectSorting');
+                //console.log('watch -  - changeSorting (MainBody) инициируем обновление сортировки  selectSorting');
                 this.selectSorting(this.propsTitle);
-                console.log('watch -  - changeSorting (MainBody) Отправляем в App сообщение updatedSorting с типом updated и значением true');
+                //console.log('watch -  - changeSorting (MainBody) Отправляем в App сообщение updatedSorting с типом updated и значением true');
                 this.sendEmitMessage('updatedSorting', 'updated', true);
             }
 
@@ -180,7 +180,7 @@ export default {
                         break;
                 }
 
-                console.log(' Функция selectSorting (MainBody) Результат сортировки объекта - viewArray :', this.viewArray);
+                //console.log(' Функция selectSorting (MainBody) Результат сортировки объекта - viewArray :', this.viewArray);
             } catch (error) {
                 this.sendEmitMessage('sendLogToServer','error', 'selectSorting(MainBody) - ошибка сортировки данных для отображения пользователю ${error}');
             }    
@@ -335,14 +335,14 @@ export default {
        
     },
     getEventsComponent(event) {
-        console.log('MainBody - Функция getEventsComponent получила событие - ', event);
+        //console.log('MainBody - Функция getEventsComponent получила событие - ', event);
         try {
             const isSelectedNum = this.checkConfigs.typeofName(event.message.paramKey); // Проверка на возможность выбора Уставки 
-            console.log(' Функция getEventsComponent (MainBody) получила событие результат проверки на возможность выбора Уставки из checkConfigs.typeofName isSelectedNum - ', isSelectedNum);
+            //console.log(' Функция getEventsComponent (MainBody) получила событие результат проверки на возможность выбора Уставки из checkConfigs.typeofName isSelectedNum - ', isSelectedNum);
 
             switch (event.type) {
             case 'select':  {
-                console.log(' -- 345 --- Функция getEventsComponent (MainBody) case - select получила событие - ', event);
+                //console.log(' -- 345 --- Функция getEventsComponent (MainBody) case - select получила событие - ', event);
                 const { id, paramKey, roomKey} = event.message; 
                     if (this.isSelectedID === id && this.isSelectedParam === paramKey) { 
                         this.selectedId = null; // Снять выбор при повторном клике 
@@ -359,7 +359,7 @@ export default {
                         localStorage.setItem('room_title', JSON.parse(localStorage.getItem('commonConfig'))[roomKey].title);
                         // localStorage.setItem('param_key', paramKey);
                       
-                        console.log('  ---- 357    ------  Функция getEventsComponent (MainBody) case - select получила наименование выбранной комнаты - ', id, paramKey, roomKey, localStorage.getItem('room_title'));
+                        //console.log('  ---- 357    ------  Функция getEventsComponent (MainBody) case - select получила наименование выбранной комнаты - ', id, paramKey, roomKey, localStorage.getItem('room_title'));
                         if (isSelectedNum === true) {
                             this.sendEmitMessage('showSetpoint', 'isSelected', true);
                         } else {
@@ -381,18 +381,23 @@ export default {
     sortingDoubleClick(event) {
         console.log('  -------  DoubleClick      -------------    MainBody - Функция sortingDoubleClick получила событие - ', event);
         try {
-        // console.log('  -------  DoubleClick      -------------    MainBody - Функция sortingDoubleClick получила roomKey и paramKey - ', event.roomKey, event.paramKey);
-            if (event.paramKey === null || event.roomKey === null) {
-                this.sendEmitMessage('sendLogToServer','warning', 'sortingDoubleClick(MainBody) - Ошибка попытки изменить сортировку при двойном клике на область датчика - Не получены значения roomKey или paramKey');
+        //console.log('  -------  DoubleClick      -------------    MainBody - Функция sortingDoubleClick получила roomKey и paramKey - ', event.roomKey, event.paramKey, 'event.roomID - ', event.roomID);
+            if (event.paramKey === null || event.roomKey === null || event.roomId === null) {
+                this.sendEmitMessage('sendLogToServer','warning', `sortingDoubleClick(MainBody) - Ошибка попытки изменить сортировку при двойном клике на область датчика - Не получены корректные значения roomId - ${event.roomId}, roomKey - ${event.roomKey}, paramKey - ${event.paramKey} `);
             } else  {
-                // console.log('  -------  DoubleClick      -------------    Собираемся сохранять в localStorage');
-                localStorage.setItem('room_id', event.roomID);
+                //console.log('  -------  DoubleClick      -------------    Собираемся сохранять в localStorage');
+                localStorage.setItem('room_id', event.roomId);
                 localStorage.setItem('room_key', event.roomKey);
                 localStorage.setItem('param_key', event.paramKey);
+                 console.log( 'Функция SortingDoubleClick - обновили локальные переменные: room_id - ', localStorage.getItem('room_id'), 'room_key - ', localStorage.getItem('room_key'), 'param_key - ', localStorage.getItem('param_key'));
                 if (this.customerSorting === 'rooms') {
                     this.customerSorting = 'params';
+                    //.log('  -------  DoubleClick      -------------    Наименование комнаты - ', localStorage.getItem('room_title'));
+                    //this.sendEmitMessage('changeTitle', this.customerSorting, 'Наименование комнаты');
                 } else {
                     this.customerSorting = 'rooms'
+                    //console.log('  -------  DoubleClick      -------------    Наименование параметра - ', localStorage.getItem('param_title'));
+                    //this.sendEmitMessage('changeTitle', this.customerSorting, 'Наименование параметра');
                 }
                 this.selectSorting(this.customerSorting); 
             }

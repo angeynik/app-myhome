@@ -102,25 +102,31 @@ class CheckConfigs {
         }
         return Array.from(uniqueKeys);
     }
-   
-    updateRoomId(array, room_id, direction) {
+       updateRoomId(array, room_id, direction) {
         let id;
-        //console.log(' Class - checkConfigs вызван метод updateRoomIndex с параметрами: ', array, room_id, calcDirection);
+        //console.log(' Class - checkConfigs вызван метод updateRoomId с параметрами: ', array, room_id, direction);
+        if (!array || typeof array !== 'object' || room_id === undefined || room_id === null || direction === undefined || typeof direction !== 'boolean') {
+            console.error('Ошибка иходных данных updateRoomId:', array, room_id, direction);
+        }
         const length = Object.keys(array).length;
         if (direction === false) { // Уменьшение id на 1, если значение первое, вернуть индекс последнего элемента 
-            //console.log('Уменьшение id на 1, если значение первое, вернуть индекс последнего элемента');
+            //console.log('updateRoomId Уменьшение id - ', room_id, 'на 1, если значение первое, вернуть индекс последнего элемента');
             id = (room_id - 1 + length) % length; 
             if (id === 0) {
                 id = length-1;
             }
+            //console.log('updateRoomId id - ', id);
         } else if (direction === true) { // Увеличение id на 1, если значение последнее, вернуть индекс первого элемента 
-            //console.log('Увеличение id на 1, если значение последнее, вернуть индекс первого элемента');
+            //console.log('updateRoomId Увеличение id - ', room_id, 'на 1, если значение последнее, вернуть индекс первого элемента');
             id =(room_id + 1) % length;
             if (id === length || id === 0) {
                 id = 1;
             }
-        }   
+            //console.log('updateRoomId id - ', id);
+        }  
+        //console.log(' Class - checkConfigs Приступаем к поиску комнаты с заданным id', id);
         for (let room in array) {
+            //console.log (array[room]);
             if (array[room].id === id) {
                 // const roomId = room;
                 return {
@@ -128,13 +134,17 @@ class CheckConfigs {
                     roomKey: room,
                     roomTitle: array[room].title
                 }
-            }
+            } 
         }
+        return null;
     }
     updateParamKey(array, param_key, direction) {
-        console.log(' Class - checkConfigs вызван метод updateParamIndex с параметрами: array: ', array, 'currentKey: ', param_key, 'direction: ', direction);
+        //console.log(' Class - checkConfigs вызван метод updateParamIndex с параметрами: array: ', array, 'currentKey: ', param_key, 'direction: ', direction);
+        if (!array || typeof array !== 'object' || param_key === undefined || param_key === null || direction === undefined || typeof direction !== 'boolean') {
+            console.error('Ошибка иходных данных updateRoomId:', array, param_key, direction);
+        }
         const currentIndex = array.indexOf(param_key);
-        console.log(' Class - checkConfigs вызван метод updateParamIndex с параметрами: currentIndex', currentIndex);
+        //console.log(' Class - checkConfigs вызван метод updateParamIndex с параметрами: currentIndex', currentIndex);
         if (currentIndex === -1) {
             console.error('Текущий ключ не найден в массиве');
             return null;
@@ -173,7 +183,7 @@ class CheckConfigs {
     }
 
     typeofName(name) {
-        console.log("!!! Class - checkConfigs вызван метод typeofValue с параметрами: ", name);
+        //console.log("!!! Class - checkConfigs вызван метод typeofValue с параметрами: ", name);
         if (name === 'dTemp' || name === 'dHum') {
             return true
         } else {
