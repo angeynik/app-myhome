@@ -245,11 +245,12 @@ export default {
 
     connectWebSocket() { // Соединение WebSocket на порту 9202
     const host = process.env.VUE_APP_EXT || process.env.VUE_APP_HOST || 'localhost';
-    const port = process.env.VUE_APP_PORT || '9202';
+    //const port = process.env.VUE_APP_PORT || '9202';
+    const port = '3010';
 
     this.socket = new WebSocket(`ws://${host}:${port}`);
       this.socket.onopen = () => {
-        // console.log(`WebSocket соединение установлено на ${host}:${port}`);
+        console.log(`WebSocket соединение установлено на ${host}:${port}`);
         this.sendLogToServer('info', `WebSocket соединение установлено на ${host}:${port}`); 
         this.WSconnected = true; // Устанавливаем флаг соединения
         if (this.isSending === true) {
@@ -746,7 +747,7 @@ export default {
     }
     },
     appTouchStart(event, area) {
-      console.log('App.vue - из компонентов в функцию appTouchStart получено сообщение - ', event, area);
+      //console.log('App.vue - из компонентов в функцию appTouchStart получено сообщение - ', event, area);
       if (!this.selectedComponent && area !== 'body') {
         return;
       }
@@ -754,25 +755,27 @@ export default {
       this.touchArea = area;
     },
     appTouchEnd(event,area) {
-      console.log('App.vue - из компонентов в функцию appTouchEnd получено сообщение - ', area);
+      //console.log('App.vue - из компонентов в функцию appTouchEnd получено сообщение - ', area);
       if (!this.selectedComponent && area !== 'body') {
         return;
       }
       if (this.touchArea === area) { 
               const deltaX = event.changedTouches[0].clientX - this.touchStartX;
               if (deltaX > 10) {
-                console.log ('deltaX > 0', deltaX);
+                //console.log ('deltaX > 0', deltaX);
                 this.sortingForvard();
               } else if (deltaX < 10) {
-                console.log ('deltaX < 0', deltaX);
+                //console.log ('deltaX < 0', deltaX);
                 this.sortingBack();
 
-            } else {
-              console.log('Функция appTouchStart(MainBody) - Недостаточное смещение для смены параметра');
-            }
-        } else {
-          console.log('Функция appTouchStart(MainBody) - Смещение выполнено за пределами экрана');
-        }
+            } 
+            // else {
+            //   console.log('Функция appTouchStart(MainBody) - Недостаточное смещение для смены параметра');
+            // }
+        } 
+        // else {
+        //   console.log('Функция appTouchStart(MainBody) - Смещение выполнено за пределами экрана');
+        // }
     },
 
     // checkLength(Point, Point_length) {
