@@ -246,7 +246,7 @@ export default {
     connectWebSocket() { // Соединение WebSocket на порту 9202
     const host = process.env.VUE_APP_EXT || process.env.VUE_APP_HOST || 'localhost';
     //const port = process.env.VUE_APP_PORT || '9202';
-    const port = '3010';
+    const port = '9202';
 
     this.socket = new WebSocket(`ws://${host}:${port}`);
       this.socket.onopen = () => {
