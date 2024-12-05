@@ -435,7 +435,7 @@ export default {
           //console.log ('Ошибка отправки - Пустое сообщения' );
         }    
         //await fetch(`http://${process.env.VUE_APP_HOST}:${process.env.VUE_APP_SERVER_PORT}/logs`, {
-        await fetch('http://localhost:3010/log', {
+        await fetch('http://${host}:${VUE_APP_SERVER_PORT}/log', {
           method: 'POST',
           headers: {
           'Content-Type': 'application/json'
