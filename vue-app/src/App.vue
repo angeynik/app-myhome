@@ -246,8 +246,9 @@ export default {
     connectWebSocket() { // Соединение WebSocket на порту 9202
     //const host = process.env.VUE_APP_EXT || process.env.VUE_APP_HOST || 'localhost';
     //const host = '192.168.1.88';
-    const host = process.env.VUE_APP_EXT;
-    console.log(' --- !!!!!!!!!!!!!!!!!! --- connectWebSocket - host - ', host); 
+    //const host = '129.47.1.46';
+   const host = process.env.VUE_APP_EXT;
+    console.log('--- connectWebSocket - host - ', host); 
     //const port = process.env.VUE_APP_PORT || '9202';
     const port = '9202';
 
@@ -267,7 +268,7 @@ export default {
       this.socket.onmessage = async (event) => {
         try {
           const jsomMess = await this.blobToJson(event.data); // Преобразуем Blob в JSON из полученного сообщения
-          // console.log('Получено сообщение:', jsomMess);
+          console.log('от Server Получено сообщение:', jsomMess);
           this.messageFromServer = jsomMess;
           this.checkMessage(jsomMess);
           
@@ -348,36 +349,35 @@ export default {
       }
       switch (n.type) {
           case 'post':
-            // console.log(`Получено cообщение с типом POST: ${n}`);
+            console.log(`Получено cообщение с типом POST: ${n.type}`);
             switch (n.request) {
               case 'config':
                 if (n.manageConfig) {
-                  //console.log(' 2 --- Функция checkMessage request = "config" manageConfig ', n.manageConfig);
+                  console.log(' 2 --- Функция checkMessage request = "config" manageConfig ', n.manageConfig);
                   //this.checkConfigs.setManageConfig(n.manageConfig);
                   this.checkConfigs.setConfig(CheckConfigs.manage, n.manageConfig); 
 
                   localStorage.setItem('manageConfig', JSON.stringify(n.manageConfig));
-                  // console.log('Конфигурация "manageConfig" сохранена в localStorage');
+                  console.log('Конфигурация "manageConfig" сохранена в localStorage');
                   this.sendLogToServer('info', 'Конфигурация "manageConfig" сохранена в checkConfigs и в localStorage');
                 } 
                 if (n.commonConfig) {
-                  //console.log(' 2 --- Функция checkMessage request = "config" - commonConfig ', n.commonConfig);
+                  console.log(' 2 --- Функция checkMessage request = "config" - commonConfig ', n.commonConfig);
                   //this.checkConfigs.setCommonConfig(n.commonConfig);
                   this.checkConfigs.setConfig(CheckConfigs.common, n.commonConfig); 
                   localStorage.setItem('commonConfig', JSON.stringify(n.commonConfig));
                   this.sensorKeys = this.checkConfigs.getUniqueSensorKeys(n.commonConfig);
-                  //console.log('Конфигурация "commonConfig" сохранена в localStorage Получен массив параметров:', this.sensorKeys);
+                  console.log('Конфигурация "commonConfig" сохранена в localStorage Получен массив параметров:', this.sensorKeys);
                   // this.findRoom(n.commonData, localStorage.getItem('room_id'));
                   //console.log('Обновлено значение headerTitle:', this.headerTitle);
-                  this.sendLogToServer('info', 'Конфигурация "commonConfig" сохранена в checkConfigs и в localStorage');
-                 
+                  this.sendLogToServer('info', 'Конфигурация "commonConfig" сохранена в checkConfigs и в localStorage'); 
                 } 
                 if (n.directoryConfig) {
-                  //console.log(' 2 --- Функция checkMessage request = "config" directoryConfig ', n.directoryConfig);
+                  console.log(' 2 --- Функция checkMessage request = "config" directoryConfig ', n.directoryConfig);
                   this.checkConfigs.setConfig(CheckConfigs.directory, n.directoryConfig); 
       
                   localStorage.setItem('directoryConfig', JSON.stringify(n.directoryConfig));
-                  // console.log('Конфигурация "directoryConfig" сохранена в localStorage');
+                  console.log('Конфигурация "directoryConfig" сохранена в localStorage');
                   this.sendLogToServer('info', 'Конфигурация "directoryConfig" сохранена в checkConfigs и в localStorage');
                 } else {
                   console.error('Функция checkMessage (App) сообщение полученное по WS имеет неизвестный тип конфигурации');
