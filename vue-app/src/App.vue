@@ -186,6 +186,15 @@ export default {
       // param_sign: '', // знак единицы измерения (°C, %, мм, м, часы, мин, сек, мсек, мммсек, день, неделя, месяц, год)
       // group: '', // наменование группы параметров
 
+    //Получаем данные из env
+      //const host = process.env.VUE_APP_EXT || process.env.VUE_APP_HOST || 'localhost';
+      //const host = '192.168.1.88';
+      host: '129.47.1.48',
+      //const host = process.env.VUE_APP_EXT;
+      //const port = process.env.VUE_APP_PORT || '9202';
+      port: '9202',
+      //const serverPort = process.env.VUE_APP_SERVER_PORT || '3010';
+      serverPort: '3010',
     }; 
   },
   created() {
@@ -246,18 +255,18 @@ export default {
     connectWebSocket() { // Соединение WebSocket на порту 9202
     //const host = process.env.VUE_APP_EXT || process.env.VUE_APP_HOST || 'localhost';
     //const host = '192.168.1.88';
-    const host = '129.47.1.48';
+    //const host = '129.47.1.48';
     //const host = process.env.VUE_APP_EXT;
-    console.log('--- connectWebSocket - host - ', host); 
+    console.log('--- connectWebSocket - host - ', this.host); 
     //const port = process.env.VUE_APP_PORT || '9202';
-    const port = '9202';
+    //const port = '9202';
     //const serverPort = process.env.VUE_APP_SERVER_PORT || '3010';
-    const serverPort = '3010';
+    //const serverPort = '3010';
 
-    this.socket = new WebSocket(`ws://${host}:${port}`);
+    this.socket = new WebSocket(`ws://${this.host}:${this.port}`);
       this.socket.onopen = () => {
-        console.log(`WebSocket соединение установлено на ${host}:${port}`);
-        this.sendLogToServer('info', `WebSocket соединение установлено на ${host}:${port}`); 
+        console.log(`WebSocket соединение установлено на ${this.host}:${this.port}`);
+        this.sendLogToServer('info', `WebSocket соединение установлено на ${this.host}:${this.port}`); 
         this.WSconnected = true; // Устанавливаем флаг соединения
         if (this.isSending === true) {
         this.sendServerRequest('get', 'config', 'name','manageConfig');
@@ -437,9 +446,9 @@ export default {
           //console.log ('Ошибка отправки - Пустое сообщения' );
         }    
         //await fetch(`http://${process.env.VUE_APP_HOST}:${process.env.VUE_APP_SERVER_PORT}/logs`, {
-        console.log (`Путь к серверу ${host}:${serverPort}/log для отправки на сервер лога`);
-        //await fetch(`http://${host}:${VUE_APP_SERVER_PORT}/log`, 
-        await fetch(`http://localhost:3010/log`, {
+        console.log (`Путь к серверу ${this.host}:${this.serverPort}/log для отправки на сервер лога`);
+        await fetch(`http://${this.host}:${this.serverPort}/log`, {
+        //await fetch(`http://localhost:3010/log`, {
           method: 'POST',
           headers: {
           'Content-Type': 'application/json'
