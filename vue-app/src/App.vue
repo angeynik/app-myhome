@@ -251,6 +251,7 @@ export default {
     console.log('--- connectWebSocket - host - ', host); 
     //const port = process.env.VUE_APP_PORT || '9202';
     const port = '9202';
+    const serverPort = process.env.VUE_APP_SERVER_PORT || '3010';
 
     this.socket = new WebSocket(`ws://${host}:${port}`);
       this.socket.onopen = () => {
@@ -435,8 +436,10 @@ export default {
           //console.log ('Ошибка отправки - Пустое сообщения' );
         }    
         //await fetch(`http://${process.env.VUE_APP_HOST}:${process.env.VUE_APP_SERVER_PORT}/logs`, {
-        console.log (`Путь к серверу: http://${host}:${VUE_APP_SERVER_PORT}/log для отправки на сервер лога`);
-        await fetch('http://${host}:${VUE_APP_SERVER_PORT}/log', {
+        const fetchPath = `http://${host}:${serverPort}/log`;
+        console.log (`Путь к серверу: http://${host}:${serverPort}/log для отправки на сервер лога, fetchPath = ${fetchPath}`);
+        
+        await fetch(`http://${host}:${VUE_APP_SERVER_PORT}/log`, {
           method: 'POST',
           headers: {
           'Content-Type': 'application/json'
