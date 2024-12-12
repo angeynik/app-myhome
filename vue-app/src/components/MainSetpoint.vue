@@ -172,7 +172,7 @@
       methods: {
     sendEmitMessage(event, name, message) {
       if (!event || !name || !message) return console.error('sendEmitMessage - event', event,'name - ', name, 'message - ', message, ' не переданы');
-      //console.log('Функция sendEmitMessage (MainSetpoint) формирует сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
+      console.log('Функция sendEmitMessage (MainSetpoint) формирует сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
                 this.$emit('eventsComponent',{
                     [event]: {
                         type: name,

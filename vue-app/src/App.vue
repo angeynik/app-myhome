@@ -380,7 +380,7 @@ export default {
                   console.log('Конфигурация "directoryConfig" сохранена в localStorage');
                   this.sendLogToServer('info', 'Конфигурация "directoryConfig" сохранена в checkConfigs и в localStorage');
                 } else {
-                  console.error('Функция checkMessage (App) сообщение полученное по WS имеет неизвестный тип конфигурации');
+                  console.error('Функция checkMessage (App) сообщение полученное по WS имеет неизвестный тип конфигурации', n.request);
                   this.sendLogToServer('error', `Функция checkMessage (App) сообщение полученное по WS имеет неизвестный тип конфигурации ${n.request}`);
                 }
                
@@ -443,7 +443,7 @@ export default {
           body: JSON.stringify(payload)
           });
       } catch (error) {
-        this.$log.error('Failed to send log to server', error);
+        console.error('Failed to send log to server', error);
       }
     },
     // sendServerRequest
@@ -468,6 +468,7 @@ export default {
             this.sendLogToServer ('info', `Конфигурация ${data} отсутствует. Отправляем запрос на получение конфигурации`);
             this.isSending = true;
             this.sendMessage(JSON.stringify(payload));
+            console.info('Функция sendServerRequest (App.vue) Отправка на запроса на получение конфигурации на сервер - ', payload);
             } else if (!this.WSconnected && Config) {
               // console.log('Конфигурация ', data, ' существует');
               this.isSending = false;
@@ -490,7 +491,7 @@ export default {
               //console.log (' 7 ---APP.vue sendServerRequest', payload, 'сохранен в localStorage');
               this.isSending = true;
               this.sendMessage(JSON.stringify(payload));
-              // console.log ('APP.vue sendServerRequest Отправка на сервер - "setpoint" ', payload);
+              console.log ('Функция sendServerRequest (App.vue) Отправка на сервер запроса на изменение уставки - "setpoint" ', payload);
           break;
 
         default:
@@ -882,7 +883,7 @@ export default {
           }
       }
       if (event.newSetPoint) {
-        //console.log(' -- 722 -- Из компонентов в функцию getEventsComponent получено сообщение newSetPoint - ', event.newSetPoint);
+        console.log(' ---- Из компонента MainSetpoint в функцию getEventsComponent (App.vue) получено сообщение newSetPoint - ', event.newSetPoint);
           if (event.newSetPoint.message === null || event.newSetPoint.message === undefined) {
           console.error('Попытка обновление Уставки пустым значением  - Функция getEventsComponent получила пустое значение newSetPoint', event.newSetPoint);
         } else {
