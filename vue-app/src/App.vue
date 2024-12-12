@@ -189,12 +189,13 @@ export default {
     //Получаем данные из env
       //const host = process.env.VUE_APP_EXT || process.env.VUE_APP_HOST || 'localhost';
       //const host = '192.168.1.88';
-      host: '129.47.1.48',
-      //const host = process.env.VUE_APP_EXT;
-      //const port = process.env.VUE_APP_PORT || '9202';
-      port: '9202',
-      //const serverPort = process.env.VUE_APP_SERVER_PORT || '3010';
-      serverPort: '3010',
+      //host: '129.47.1.48',
+      //port: '9202', 
+      //serverPort: '3010',
+      host: process.env.VUE_APP_EXT,
+      port: process.env.VUE_APP_PORT,
+      serverPort: process.env.VUE_APP_SERVER_PORT,
+
     }; 
   },
   created() {
@@ -253,11 +254,12 @@ export default {
     // },
 
     connectWebSocket() { // Соединение WebSocket на порту 9202
+    console.log('--- connectWebSocket - host - ', this.host, 'port - ', this.port); 
     //const host = process.env.VUE_APP_EXT || process.env.VUE_APP_HOST || 'localhost';
     //const host = '192.168.1.88';
     //const host = '129.47.1.48';
     //const host = process.env.VUE_APP_EXT;
-    console.log('--- connectWebSocket - host - ', this.host); 
+
     //const port = process.env.VUE_APP_PORT || '9202';
     //const port = '9202';
     //const serverPort = process.env.VUE_APP_SERVER_PORT || '3010';
