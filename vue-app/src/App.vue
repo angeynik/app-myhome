@@ -190,12 +190,12 @@ export default {
     //Получаем данные из env
       //const host = process.env.VUE_APP_EXT || process.env.VUE_APP_HOST || 'localhost';
       //const host = '192.168.1.88';
-      host: '129.47.1.48',
-      port: '9202', 
-      serverPort: '3010',
-      //host: process.env.VUE_APP_EXT,
-      //port: process.env.VUE_APP_PORT,
-      //serverPort: process.env.VUE_APP_SERVER_PORT,
+      // host: '129.47.1.48',
+      // port: '9202', 
+      // serverPort: '3010',
+      host: process.env.VUE_APP_EXT,
+      port: process.env.VUE_APP_PORT,
+      serverPort: process.env.VUE_APP_SERVER_PORT,
 
     }; 
   },
