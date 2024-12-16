@@ -165,6 +165,7 @@ export default {
 
   // Работа с тачем для смены параметров сортировки
       touchStartX: 0,
+      touchStartTime: 0,
       touchArea: null,
 
   // Работа с компонентом Setpoint
@@ -189,12 +190,12 @@ export default {
     //Получаем данные из env
       //const host = process.env.VUE_APP_EXT || process.env.VUE_APP_HOST || 'localhost';
       //const host = '192.168.1.88';
-      //host: '129.47.1.48',
-      //port: '9202', 
-      //serverPort: '3010',
-      host: process.env.VUE_APP_EXT,
-      port: process.env.VUE_APP_PORT,
-      serverPort: process.env.VUE_APP_SERVER_PORT,
+      host: '129.47.1.48',
+      port: '9202', 
+      serverPort: '3010',
+      //host: process.env.VUE_APP_EXT,
+      //port: process.env.VUE_APP_PORT,
+      //serverPort: process.env.VUE_APP_SERVER_PORT,
 
     }; 
   },
@@ -468,12 +469,13 @@ export default {
     // data - значение переменной
     // запрос формируется как {"type": type, "request": request, name: data}  -  пример {"type": "get", "request": "config", "name": "commonConfig"}
     sendServerRequest(type, request, name, data)  { //Формируем и оправляем сообщение на сервер
-      //console.log ('1 ---  APP.vue sendServerRequest - request = ', request, 'type = ', type, 'name = ', name, 'data = ', data);
+      console.log ('1 Функция sendServerRequest (App.vue) - request = ', request, 'type = ', type, 'name = ', name, 'data = ', data);
       let payload = {};
-      const Config = JSON.parse(localStorage.getItem([data]));
-      //console.log ('  --- 447 --- Конфигурация ', data, ' существует', Config, 'name = ', name);
+      let Config = {};
       switch (request) {
         case 'config':
+        Config = JSON.parse(localStorage.getItem([data]));
+        //console.log ('--- Конфигурация ', data, ' существует', Config, 'name = ', name);
           if (this.WSconnected && !Config) {
             payload = {
             type: type,
@@ -494,6 +496,8 @@ export default {
           break;
 
           case 'setpoint':
+          //Config = JSON.parse(localStorage.getItem('manageConfig'));
+          //console.log ('  --- 447 --- Конфигурация ', data, ' существует', Config, 'name = ', name);
                 //console.log (' 2 ---  APP.vue sendServerRequest - request = setpoint" ', data);
                 payload = {
                 type: type,
@@ -503,7 +507,7 @@ export default {
                 title: localStorage.getItem('room_title')
               };
               this.safeLocalSorage('manageConfig', payload);
-              //console.log (' 7 ---APP.vue sendServerRequest', payload, 'сохранен в localStorage');
+              console.log (' 7 ---APP.vue sendServerRequest', payload, 'сохранен в localStorage');
               this.isSending = true;
               this.sendMessage(JSON.stringify(payload));
               console.log ('Функция sendServerRequest (App.vue) Отправка на сервер запроса на изменение уставки - "setpoint" ', payload);
@@ -518,7 +522,7 @@ export default {
     safeLocalSorage(name, message) {
       this.localStorageUpdated = false;
       this.messageFromServer = message;
-      //console.log (' 3 --- Функция safeLocalSorage Получено сообщение - ', name, message);
+      console.log (' 3 --- Функция safeLocalSorage Получено сообщение - ', name, message);
       // Получаем конфигурацию из localStorage
       let config = JSON.parse(localStorage.getItem([name]));
       //console.log(' 4 --- APP.vue safeLocalSorage Получаем конфигурацию из localStorage ', name, ', config:', config);
@@ -583,15 +587,13 @@ export default {
               this.sendLogToServer ('info', `Значение сенсора ${sensorKey} обновлено на: ${config[roomKey].sensors[sensorKey]}`);
           }
         }
-
           break;
-
         default:
           break;
       }
       localStorage.setItem([name], JSON.stringify(config));
       this.localStorageUpdated = true;
-//console.log(`Конфигурация -- !!  ${name}  !! --  обновлена в localStorage`, config,  'localStorageUpdated: ', this.localStorageUpdated);
+console.log(`--- Функция safeLocalSorage (App.vue) - Конфигурация -- !!  ${name}  !! --  обновлена в localStorage`, config,  'localStorageUpdated: ', this.localStorageUpdated);
     },
     selectComponent(component) {
       // console.log('selectComponent - ', component);
@@ -766,24 +768,28 @@ export default {
     }
     },
     appTouchStart(event, area) {
-      //console.log('App.vue - из компонентов в функцию appTouchStart получено сообщение - ', event, area);
+      console.log('Функция appTouchStart (App) из компонентов получено сообщение - ', event, area);
       if (!this.selectedComponent && area !== 'body') {
         return;
       }
       this.touchStartX = event.changedTouches[0].clientX;
       this.touchArea = area;
+      this.touchStartTime = new Date().getTime();
     },
     appTouchEnd(event,area) {
       //console.log('App.vue - из компонентов в функцию appTouchEnd получено сообщение - ', area);
-      if (!this.selectedComponent && area !== 'body') {
+      const touchEndTime = new Date().getTime(); // Время окончания тача 
+      const touchDuration = touchEndTime - this.touchStartTime;
+      if (!this.selectedComponent && area !== 'body' || touchDuration < 600) {
         return;
       }
+
       if (this.touchArea === area) { 
               const deltaX = event.changedTouches[0].clientX - this.touchStartX;
-              if (deltaX > 10) {
+              if (deltaX > 100) {
                 //console.log ('deltaX > 0', deltaX);
                 this.sortingForvard();
-              } else if (deltaX < 10) {
+              } else if (deltaX < -100) {
                 //console.log ('deltaX < 0', deltaX);
                 this.sortingBack();
 
@@ -906,17 +912,19 @@ export default {
         }
       }
       if (event.updatePermission) {
-        //console.log('-- 725 --Из компонентов в функцию getEventsComponent получено сообщение updatePermission - ', event.updatePermission);
+        console.log('-- 725 --Из компонентов в функцию getEventsComponent получено сообщение updatePermission - ', event.updatePermission);
           try {
             //  const roomId = localStorage.getItem('room_id');
-            //   const roomKey = localStorage.getItem('room_key');
-              const paramKey = this.checkConfigs.checkSymbol(localStorage.getItem('param_key'), 0, 'd');
+            const roomKey = localStorage.getItem('room_key');
+            const paramKey = this.checkConfigs.checkSymbol(localStorage.getItem('param_key'), 0, 'd');
               // console.log('Функция changeSetpoint (App.vue) получили значения Уставки - ', this.setpoint, ' для  - roomId:', roomId, ' - roomKey:', roomKey, ' - paramKey:', paramKey);
+            console.log('Функция checkConfigs (App.vue) вернула значение paramKey- ', paramKey);
               
               const data = {
                 ['set'+paramKey]: this.setpoint,
               };
-              this.sendServerRequest('post', 'setpoint', localStorage.getItem('room_key'), data);
+              console.log(' --Функция getEventComponent - updatePermition (App.vue) сформированы данные для отправки на сервер - ', data);
+              this.sendServerRequest('post', 'setpoint', roomKey, data);
           } catch (error) {
             console.error(`Ошибка ${error} обработки сообщения updatePermission - ${event.updatePermission}`);
           }
