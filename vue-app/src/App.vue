@@ -235,36 +235,9 @@ export default {
 
       //console.log(' --- 165 --- Функция checkMessage - актуальный config из localStorage - ', JSON.parse(localStorage.getItem('commonConfig')));
     },
-    // findRoom (config, id) {
-    //   // console.log('Функция findRoom (App) config - ', config);
-    //   const n = Number(id); // Преобразуем строку в число
-    //   // const length = Object.keys(config).length;
-    //   // console.log('Функция findRoom (App) id - ', n);
-    //     for (let room in config) {
-    //       // console.log('Функция findRoom (App)  Перебор ключей - ', room);
-    //         if (config[room].id === n) {
-    //           // console.log('Функция findRoom (App)  Ключ найден - ', room);
-    //             localStorage.setItem('room_key', room);
-    //             localStorage.setItem('room_title', config[room].title);
-    //             // console.log('Функция findRoom (App)  - room - ', room, 'title - ',config[room].title);
-    //             return room;
-    //         } else {
-    //           console.error('Функция findRoom (App)  Ключ -', id, ' не найден для - ', config[room].id);
-    //         }
-    //     }
-    // },
 
     connectWebSocket() { // Соединение WebSocket на порту 9202
     console.log('--- connectWebSocket - host - ', this.host, 'port - ', this.port); 
-    //const host = process.env.VUE_APP_EXT || process.env.VUE_APP_HOST || 'localhost';
-    //const host = '192.168.1.88';
-    //const host = '129.47.1.48';
-    //const host = process.env.VUE_APP_EXT;
-
-    //const port = process.env.VUE_APP_PORT || '9202';
-    //const port = '9202';
-    //const serverPort = process.env.VUE_APP_SERVER_PORT || '3010';
-    //const serverPort = '3010';
 
     this.socket = new WebSocket(`ws://${this.host}:${this.port}`);
       this.socket.onopen = () => {
@@ -803,22 +776,6 @@ console.log(`--- Функция safeLocalSorage (App.vue) - Конфигурац
         // }
     },
 
-    // checkLength(Point, Point_length) {
-    //   // console.log('checkLength Начинаем проверку для ID', Point, ' ID_length = ', Point_length);
-    //   if (Point > Point_length) {
-    //     // console.log('Переходим в начало списка');
-    //     return 1;
-    //   } if (Point < 1) {
-    //     // console.log('Переходим в конец списка');
-    //     return Point_length;
-    //   } else {
-    //     // console.log('ID в диапазоне возвращаем Point = ', Point);
-    //     return Point;
-    //   }
-    // },
-
-    
-    // getPeriodMinutes(lastTime) {
     //   // console.log('MainBody - Функция getPeriodMinutes Начинаем работу с lastTime = ', lastTime);
     //   if (lastTime !== null && lastTime !== undefined) {
     //     try {
