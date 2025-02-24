@@ -27,7 +27,7 @@
     </svg>
       <header class="header">
 
-          <div class="icon" @click=this.resetSelection> back </div>
+          <div class="icon" @click=this.resetLoginSelection> back </div>
         
           <svg 
           class="header_arrow"
@@ -52,9 +52,42 @@
             <use href="#arrowRight"></use>
           </svg>
 
-          <div class="icon"> menu </div>
+         <!-- <div class="icon"> menu </div> --> 
+         <svg class="header_user_icon" v-if="isAuthenticated" @click="goToDashboard">
+          <use href="#userIcon"></use>
+        </svg>
+         <div class="icon" @click="toggleMenu">menu</div>
+
       </header>
-   
+        <!-- Попап-меню -->
+      <div v-if="showMenu" class="popup-overlay" @click="closeMenu">
+        <div class="popup-menu" @click.stop>
+          <div @click="showLoginForm">Авторизация</div>
+          <div @click="logout">Выход</div>
+        </div>
+      </div>
+
+  <!-- Попап-авторизация -->
+        <div v-if="showLogin" class="popup-overlay" @click="closeLoginForm">
+          <div class="popup-login" @click.stop>
+            <form @submit.prevent="login">
+              <label for="username">Username:</label>
+              <input v-model="username" id="username" type="text" required />
+
+              <label for="password">Password:</label>
+              <input v-model="password" id="password" type="password" required />
+
+              <button type="submit">Login</button>
+              <button type="button" @click="closeLoginForm">Cancel</button>
+            </form>
+          </div>
+        </div>
+
+
+  
+  
+
+
 
       <div class="body"
       @touchstart="appTouchStart($event, 'body')" 
@@ -97,6 +130,8 @@
 </template>
 
 <script>
+import store from './store';
+
 import CheckConfigs from './utils/transformConfigs';
 // import CalcTime from './utils/transformConfigs';
 
@@ -136,6 +171,10 @@ export default {
 
   data() { 
     return {
+      showMenu: false,
+      showLogin: false,
+      username: '',
+      password: '',
       checkConfigs: new CheckConfigs(), // Переменная инициализации класса checkConfigs
 
   // Ключи и флаги для обмена данными с сервером
@@ -217,7 +256,49 @@ export default {
       this.socket.close();
     }
   },
+  computed: {
+    isAuthenticated() {
+      return store.state.isAuthenticated;
+    },
+    user() {
+      return store.state.user;
+    },
+  },
   methods: {
+    // Авторизация
+    toggleMenu() {
+      this.showMenu = !this.showMenu;
+    },
+    closeMenu() {
+      this.showMenu = false;
+    },
+    showLoginForm() {
+      this.showLogin = true;
+      this.showMenu = false;
+    },
+    closeLoginForm() {
+      this.showLogin = false;
+    },
+    async login() {
+      try {
+        const user = { username: this.username }; // Пример для теста
+        store.login(user);
+        this.closeLoginForm();
+      } catch (error) {
+        console.error('Login failed');
+      }
+    },
+    logout() {
+      store.logout();
+    },
+    goToDashboard() {
+      this.$router.push('/dashboard');
+    },
+    resetLoginSelection() {
+      // Логика для сброса выбора
+    },
+
+
     initApp() {
       this.selectedComponent = null;
       this.headerTitle = 'Главное меню';
@@ -903,4 +984,35 @@ console.log(`--- Функция safeLocalSorage (App.vue) - Конфигурац
 
 <style>
 /* Ваши стили */
+/* Стили для попап-меню и попап-авторизации */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.popup-menu, .popup-login {
+  background: #fff;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  z-index: 1001;
+}
+
+.popup-menu {
+  display: flex;
+  flex-direction: column;
+}
+
+.popup-login {
+  display: flex;
+  flex-direction: column;
+}
 </style>
