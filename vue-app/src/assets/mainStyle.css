@@ -1,0 +1,21 @@
+#app {
+    font-family: Avenir, Helvetica, Arial, sans-serif;
+    text-align: center;
+    color: var(--);
+    margin-top: 20px;
+  }
+  
+  nav {
+    margin-bottom: 20px;
+  }
+  
+  nav a {
+    margin: 0 10px;
+    text-decoration: none;
+    color: #8898a8;
+  }
+  
+  nav a.router-link-exact-active {
+    color: #42b983;
+    font-weight: bold;
+  }
