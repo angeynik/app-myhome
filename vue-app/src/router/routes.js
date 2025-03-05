@@ -5,6 +5,7 @@ import ManufactAutomatation from '../ManufactAutomatation.vue';
 import IntroduceHome from '../IntroduceHome.vue';
 import Login from '../components/AppLogin.vue';
 import Profile from '../components/AppProfile.vue';
+import UserConfig from '@/components/UserConfig.vue';
 
 
 const routes = [
@@ -40,7 +41,12 @@ const routes = [
     name: 'Profile',
     component: Profile,
     //meta: { requiresAuth: true } // Указываем, что маршрут требует авторизации
-  }
+  },
+  {
+    path: '/users',
+    name: 'Users',
+    component: UserConfig, 
+  },
 ];
 
 const router = createRouter({
