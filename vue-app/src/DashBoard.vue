@@ -204,11 +204,11 @@ export default {
 
     }; 
   },
-  created() {
-        this.sendLogToServer('info', 'Client: Инициализация подключения логирования'); // отправка логов на сервер для сохранения в файл
-  },
+  // created() {
+  //       this.sendLogToServer('info', 'Client: Инициализация подключения логирования'); // отправка логов на сервер для сохранения в файл
+  // },
   mounted() {
-    this.connectWebSocket();
+    //this.connectWebSocket();
     this.checkLocalStorage();
     // localStorage.setItem('flag_commonConfigUpdated', 'false');
     // this.manageConfig_val = JSON.parse(localStorage.getItem('manageConfig'));
@@ -240,49 +240,10 @@ export default {
 
       //console.log(' --- 165 --- Функция checkMessage - актуальный config из localStorage - ', JSON.parse(localStorage.getItem('commonConfig')));
     },
-
-    connectWebSocket() { // Соединение WebSocket на порту 9202
-    console.log('--- connectWebSocket - host - ', this.host, 'port - ', this.port); 
-
-    this.socket = new WebSocket(`ws://${this.host}:${this.port}`);
-      this.socket.onopen = () => {
-        console.log(`WebSocket соединение установлено на ${this.host}:${this.port}`);
-        this.sendLogToServer('info', `WebSocket соединение установлено на ${this.host}:${this.port}`); 
-        this.WSconnected = true; // Устанавливаем флаг соединения
-        if (this.isSending === true) {
-        this.sendServerRequest('get', 'config', 'name','manageConfig');
-        this.sendServerRequest('get', 'config', 'name','commonConfig');
-        this.sendServerRequest('get', 'config', 'name','directoryConfig');
-      } else {
-        this.isSending = false;
-      }
-      };
-      this.socket.onmessage = async (event) => {
-        try {
-          const jsomMess = await this.blobToJson(event.data); // Преобразуем Blob в JSON из полученного сообщения
-          console.log('от Server Получено сообщение:', jsomMess);
-          this.messageFromServer = jsomMess;
-          this.checkMessage(jsomMess);
-          
-        } catch (error) {
-          // console.error(error);
-          this.sendLogToServer('error', `WebSocket Ошибка при получении сообщения с сервера ${error}`); 
-        }
-      };
-
-      this.socket.onerror = (error) => {
-        console.error('WebSocket ошибка:', error);
-      };
-
-      this.socket.onclose = () => {
-      console.error('WebSocket соединение закрыто. Попытка переподключения через 5 секунд...');
-      this.WSconnected = false; // Сбросьте флаг соединения
-      setTimeout(() => {
-        this.connectWebSocket();
-      }, this.reconnectInterval);
-    };
-
+    async sendLogToServer(type, message) {
+    await this.$store.dispatch('sendLogToServer', { type, message });
     },
+    
     checkLocalStorage() { // Проверка наличия конфигурации в localStorage
       const commonData = JSON.parse(localStorage.getItem('commonConfig'));
       const manageData = JSON.parse(localStorage.getItem('manageConfig'));
@@ -416,30 +377,31 @@ export default {
           }
       }
     },
-    async sendLogToServer (type, message) {
-      try {
-        let payload;
-        if (message) {
-          payload = { type, message };
-          //console.log ('Отправка на сервер лога: ', payload);
-        } else {
-          payload = { type:'error', message: 'Ошибка отправки - Пустое сообщения'};
-          //console.log ('Ошибка отправки - Пустое сообщения' );
-        }    
-        //await fetch(`http://${process.env.VUE_APP_HOST}:${process.env.VUE_APP_SERVER_PORT}/logs`, {
-        console.log (`Путь к серверу ${this.host}:${this.serverPort}/log для отправки на сервер лога`);
-        await fetch(`http://${this.host}:${this.serverPort}/log`, {
-        //await fetch(`http://localhost:3010/log`, {
-          method: 'POST',
-          headers: {
-          'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-          });
-      } catch (error) {
-        console.error('Failed to send log to server', error);
-      }
-    },
+
+    // async sendLogToServer (type, message) {
+    //   try {
+    //     let payload;
+    //     if (message) {
+    //       payload = { type, message };
+    //       //console.log ('Отправка на сервер лога: ', payload);
+    //     } else {
+    //       payload = { type:'error', message: 'Ошибка отправки - Пустое сообщения'};
+    //       //console.log ('Ошибка отправки - Пустое сообщения' );
+    //     }    
+    //     //await fetch(`http://${process.env.VUE_APP_HOST}:${process.env.VUE_APP_SERVER_PORT}/logs`, {
+    //     console.log (`Путь к серверу ${this.host}:${this.serverPort}/log для отправки на сервер лога`);
+    //     await fetch(`http://${this.host}:${this.serverPort}/log`, {
+    //     //await fetch(`http://localhost:3010/log`, {
+    //       method: 'POST',
+    //       headers: {
+    //       'Content-Type': 'application/json'
+    //       },
+    //       body: JSON.stringify(payload)
+    //       });
+    //   } catch (error) {
+    //     console.error('Failed to send log to server', error);
+    //   }
+    // },
     // sendServerRequest
     // type - тип запроса post, get
     // request - причина (заголовок) запроса config, sensors, actuator
