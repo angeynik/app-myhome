@@ -6,25 +6,25 @@ import IntroduceHome from '../IntroduceHome.vue';
 import Login from '../components/AppLogin.vue';
 import Profile from '../components/AppProfile.vue';
 import UserConfig from '@/components/UserConfig.vue';
-
+import AccessDenied from '@/components/AccessDenied.vue'; // Компонент для ошибки доступа
+import store from '@/store'; // Импортируем хранилище Vuex
 
 const routes = [
-{
+  {
     path: '/',
     name: 'Intro',
-    component: IntroduceHome, 
+    component: IntroduceHome,
   },
   {
     path: '/dashboard',
     name: 'DashBoard',
     component: Dashboard,
-    meta: { requiresAuth: true } // Указываем, что маршрут требует авторизации
+    meta: { requiresAuth: true, requiredLevel: 1 }, // Уровень доступа 1
   },
   {
     path: '/smart-home',
     name: 'SmartHome',
     component: SmartHome,
-    meta: { requiresAuth: true },
   },
   {
     path: '/manufact-automatation',
@@ -40,12 +40,18 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: Profile,
-    //meta: { requiresAuth: true } // Указываем, что маршрут требует авторизации
+    meta: { requiresAuth: true, requiredLevel: 2, level: 2 }, // Уровень доступа 2
   },
   {
     path: '/users',
     name: 'Users',
-    component: UserConfig, 
+    component: UserConfig,
+    meta: { requiresAuth: true, requiredLevel: 3, level: 3 }, // Уровень доступа 3
+  },
+  {
+    path: '/access-denied',
+    name: 'AccessDenied',
+    component: AccessDenied,
   },
 ];
 
@@ -54,14 +60,18 @@ const router = createRouter({
   routes,
 });
 
-// Проверка авторизации перед переходом на защищенные маршруты
 router.beforeEach((to, from, next) => {
   const isAuthenticated = !!localStorage.getItem('token'); // Проверяем наличие токена
-  if (to.matched.some(record => record.meta.requiresAuth)) {
+  const userLevel = store.getters.level; // Получаем уровень доступа пользователя из Vuex
+
+  if (to.matched.some((record) => record.meta.requiresAuth)) {
     if (!isAuthenticated) {
       // Сохраняем запрашиваемый маршрут
       localStorage.setItem('redirectPath', to.fullPath);
       next('/login'); // Перенаправляем на страницу логина
+    } else if (to.meta.requiredLevel && userLevel < to.meta.requiredLevel) {
+      // Если у пользователя недостаточно прав
+      next('/access-denied'); // Перенаправляем на страницу с ошибкой доступа
     } else {
       next(); // Продолжаем навигацию
     }

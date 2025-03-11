@@ -6,6 +6,7 @@ const store = createStore({
     user: {},
     status: '',
     socket: null, // Добавляем сокет в состояние
+    level: null,
   },
   mutations: {
     AUTH_REQUEST(state) {
@@ -15,6 +16,7 @@ const store = createStore({
       state.status = 'success';
       state.token = token;
       state.user = user;
+      state.level = user.userlevel;
     },
     AUTH_ERROR(state) {
       state.status = 'error';
@@ -23,6 +25,7 @@ const store = createStore({
       state.status = '';
       state.token = '';
       state.user = {};
+      state.level = null;
     },
     SET_SOCKET(state, socket) {
       state.socket = socket; // Сохраняем сокет в состоянии
@@ -53,13 +56,22 @@ const store = createStore({
       commit('AUTH_REQUEST');
 
       if (!state.socket) {
-        await this.dispatch('connectWebSocket'); // Устанавливаем соединение, если сокет не создан
+        try {
+          await this.dispatch('connectWebSocket');
+        } catch (error) {
+          commit('AUTH_ERROR');
+          return Promise.reject(new Error('Не удалось подключиться к серверу.'));
+        }
+      }
+
+      const socket = state.socket;
+
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        commit('AUTH_ERROR');
+        return Promise.reject(new Error('Соединение с сервером не установлено.'));
       }
 
       return new Promise((resolve, reject) => {
-        const socket = state.socket;
-
-        // Отправляем сообщение для авторизации
         socket.send(
           JSON.stringify({
             type: 'login',
@@ -74,7 +86,7 @@ const store = createStore({
 
           if (response.type === 'loginSuccess') {
             const token = response.token;
-            const userData = response.user;
+            const userData = { username: response.username, userlevel: response.userlevel };
 
             localStorage.setItem('token', token);
             commit('AUTH_SUCCESS', { token, user: userData });
@@ -100,6 +112,7 @@ const store = createStore({
         state.socket.close(); // Закрываем соединение
       }
       commit('LOGOUT');
+      
       localStorage.removeItem('token');
     },
     async sendLogToServer( { type, message }) {
@@ -121,6 +134,7 @@ const store = createStore({
     isAuthenticated: (state) => !!state.token,
     authStatus: (state) => state.status,
     user: (state) => state.user,
+    level: (state) => state.level,
   },
 });
 
