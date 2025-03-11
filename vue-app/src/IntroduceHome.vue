@@ -1,15 +1,18 @@
 <template>
-  <div>
-    <nav style="margin-bottom: 20px;">
+  <div class="header-bottom">
+    <nav>
       <router-link to="/login">Login</router-link> |
       <router-link to="/dashboard">Dashboard</router-link> |
       <router-link to="/smart-home">Smart Home</router-link> |
-      <router-link to="/manufact-automatation">Manufact Automation</router-link> |
+      <router-link to="/manufact-automatation">Automation</router-link> |
           <!-- Profile (доступна для level 2 и 3) -->
       <router-link v-if="userLevel >= 2" to="/profile">Profile</router-link>
           <!-- Users (доступна для level 3) -->
       <router-link v-if="userLevel >= 3" to="/users">Users</router-link>
     </nav>
+  </div>
+    <p style="width: 100%; height: 1px; background-color: var(--orange);"> </p>
+    <div style="align-items: center;">
     <h1>Добро пожаловать!</h1>
     <!-- <h2 style="width: 80%; align-content: flex-start;">
       Наша компания предлагает решения в сфере управления и автоматизации как для вашего дома, так и для вашего бизнеса.

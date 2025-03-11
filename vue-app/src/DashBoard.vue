@@ -25,8 +25,8 @@
         <line y1="-2" x2="43.0756" y2="-2" transform="matrix(0.684508 0.729005 -0.684508 0.729005 1 31.9999)" stroke="#E0DFE7" stroke-width="4"/>
       </symbol>
     </svg>
-      <header class="header">
-
+      <!-- <header class="header">
+        <div style="flex-direction: column;">
           <div class="icon" @click=this.resetSelection> back </div>
         
           <svg 
@@ -53,18 +53,56 @@
           </svg>
 
           <div class="icon"> menu </div>
-      </header>
-   
+        </div>
+          <div>
+            <nav style="margin-bottom: 20px; flex-direction: column;">
+              <router-link to="/login">Login</router-link> |
+              <router-link to="/dashboard">Dashboard</router-link> |
+              <router-link to="/smart-home">Smart Home</router-link> |
+              <router-link to="/manufact-automatation">Manufact Automation</router-link> |
+
+              <router-link v-if="userLevel >= 2" to="/profile">Profile</router-link>
+
+              <router-link v-if="userLevel >= 3" to="/users">Users</router-link>
+            </nav>
+          </div>
+      </header> -->
+      <header class="header">
+  <div class="header-top">
+    <div class="icon" @click="resetSelection">back</div>
+    <svg class="header_arrow" v-show="showHeaderArrow" @click="sortingBack">
+      <use href="#arrowLeft"></use>
+    </svg>
+    <div style="display: flex; justify-content: center; width: 86%;">
+      <MainHeader :title="headerTitle" :mobile="isMobile" />
+    </div>
+    <svg class="header_arrow" v-show="showHeaderArrow" @click="sortingForvard">
+      <use href="#arrowRight"></use>
+    </svg>
+    <div class="icon">menu</div>
+  </div>
+  <p style="width: 100%; height: 1px; background-color: var(--orange);"></p>
+  <div class="header-bottom">
+    <nav>
+      <router-link to="/login">Login</router-link>
+      <router-link to="/dashboard">Dashboard</router-link>
+      <router-link to="/smart-home">Smart Home</router-link>
+      <router-link to="/manufact-automatation">Automation</router-link>
+      <router-link v-if="userLevel >= 2" to="/profile">Profile</router-link>
+      <router-link v-if="userLevel >= 3" to="/users">Users</router-link>
+    </nav>
+  </div>
+</header>
 
       <div class="body"
       @touchstart="appTouchStart($event, 'body')" 
       @touchend="appTouchEnd($event, 'body')"
       >
-      <nav>
+      <!-- <nav>
         <router-link to="/dashboard">Dashboard</router-link> |
         <router-link to="/smart-home">Smart Home</router-link> |
         <router-link to="/manufact-automatation">Manufact Automation</router-link>
-      </nav>
+      </nav> -->
 
         <div class="app-place_body" v-if="!selectedComponent" id="app_place" >
           <component :is="AppPlace" />
@@ -102,6 +140,7 @@
 </template>
 
 <script>
+import { mapGetters } from 'vuex'; 
 import CheckConfigs from './utils/transformConfigs';
 // import CalcTime from './utils/transformConfigs';
 
@@ -221,6 +260,13 @@ export default {
     if (this.socket) {
       this.socket.close();
     }
+  },
+  computed: {
+    ...mapGetters(['level']), // Получаем уровень доступа из Vuex
+    userLevel() {
+      console.log('Уровень доступа пользователя:', this.level);
+      return this.level || 0; // Если уровень не задан, считаем его равным 0
+    },
   },
   methods: {
     initApp() {

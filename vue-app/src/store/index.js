@@ -89,8 +89,10 @@ const store = createStore({
             const userData = { username: response.username, userlevel: response.userlevel };
 
             localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(userData));
+            
             commit('AUTH_SUCCESS', { token, user: userData });
-            console.log('Логин и пароль приняты');
+            console.log('Логин и пароль приняты', userData);
             resolve(userData);
           } else if (response.type === 'loginError') {
             commit('AUTH_ERROR');
@@ -127,6 +129,17 @@ const store = createStore({
         });
       } catch (error) {
         console.error('Failed to send log to server', error);
+      }
+    },
+    
+    async initializeApp({ commit }) {
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user')); // Восстанавливаем данные пользователя
+  
+      if (token && user) {
+        commit('AUTH_SUCCESS', { token, user }); // Восстанавливаем состояние
+      } else {
+        commit('LOGOUT'); // Сбрасываем состояние, если данных нет
       }
     },
   },

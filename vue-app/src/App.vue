@@ -15,13 +15,23 @@ export default {
       serverPort: process.env.VUE_APP_SERVER_PORT,
     };
   },
+  // async mounted() {
+  //   try {
+  //     await this.$store.dispatch('connectWebSocket'); // Устанавливаем WebSocket-соединение
+  //   } catch (error) {
+  //     console.error('Ошибка при установке WebSocket-соединения:', error);
+  //   }
+  // },
+  
   async mounted() {
+    await this.$store.dispatch('initializeApp'); // Восстанавливаем состояние
     try {
       await this.$store.dispatch('connectWebSocket'); // Устанавливаем WebSocket-соединение
     } catch (error) {
       console.error('Ошибка при установке WebSocket-соединения:', error);
     }
   },
+  
   methods: {
     async sendLogToServer(type, message) {
     await this.$store.dispatch('sendLogToServer', { type, message });

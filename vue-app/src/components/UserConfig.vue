@@ -1,11 +1,27 @@
 <template>
+
     <div>
+      <header class="header">
+        <nav>
+          <router-link to="/login">Login</router-link> |
+          <router-link to="/dashboard">Dashboard</router-link> |
+          <router-link to="/smart-home">Smart Home</router-link> |
+          <router-link to="/manufact-automatation">Automation</router-link> |
+              <!-- Profile (доступна для level 2 и 3) -->
+          <router-link v-if="userLevel >= 2" to="/profile">Profile</router-link>
+              <!-- Users (доступна для level 3) -->
+          <router-link v-if="userLevel >= 3" to="/users">Users</router-link>
+        </nav>
+        <p style="width: 100%; height: 1px; background-color: var(--orange);"> </p>
+      </header>
+
+
       <h1>Управление пользователями</h1>
-  
+ 
       <!-- Форма для создания пользователя -->
-      <div>
+      <div style="padding: 0 10px 0 10px;">
         <h2>Создать нового пользователя</h2>
-        <form @submit.prevent="createUser">
+        <!-- <form @submit.prevent="createUser">
           <div>
             <label for="username">Имя пользователя:</label>
             <input type="text" id="username" v-model="newUser.username" required />
@@ -31,7 +47,30 @@
           </div>
           <p></p>
           <button type="submit">Создать пользователя</button>
-        </form>
+        </form> -->
+        <form @submit.prevent="createUser">
+      <div>
+        <label for="username">Имя пользователя:</label>
+        <input type="text" id="username" v-model="newUser.username" required />
+      </div>
+      <div>
+        <label for="password">Пароль:</label>
+        <input type="password" id="password" v-model="newUser.password" required />
+      </div>
+      <div>
+        <label for="dataSource">Источник данных:</label>
+        <input type="text" id="dataSource" v-model="newUser.dataSource" required />
+      </div>
+      <div>
+        <label for="permissionLevel">Уровень доступа:</label>
+        <select id="permissionLevel" v-model="newUser.permissionLevel" required>
+          <option value="1">Пользователь</option>
+          <option value="2"> Оператор </option>
+          <option value="3"> Администратор </option>
+        </select>
+      </div>
+      <button type="submit">Создать пользователя</button>
+    </form>
       </div>
   
       <!-- Сообщение об успешном создании пользователя -->
@@ -56,8 +95,17 @@
   
   <script>
   import { ref } from 'vue';
-  
+  import { mapGetters } from 'vuex'; 
+
   export default {
+    name: 'UserConfig',
+  computed: {
+    ...mapGetters(['level']), // Получаем уровень доступа из Vuex
+    userLevel() {
+      console.log('Уровень доступа пользователя:', this.level);
+      return this.level || 0; // Если уровень не задан, считаем его равным 0
+    },
+  },
     setup() {
       const newUser = ref({
         username: '',
