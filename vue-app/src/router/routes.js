@@ -62,7 +62,8 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const isAuthenticated = !!localStorage.getItem('token'); // Проверяем наличие токена
-  const userLevel = store.getters.level; // Получаем уровень доступа пользователя из Vuex
+  //const redirectPath = localStorage.getItem('redirectPath') || '/';
+  const userLevel = store.getters.level || 0; // Получаем уровень доступа пользователя из Vuex
 
   if (to.matched.some((record) => record.meta.requiresAuth)) {
     if (!isAuthenticated) {

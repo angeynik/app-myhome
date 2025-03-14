@@ -1,0 +1,86 @@
+
+
+<template>
+  <div class="header-bottom">
+    <nav>
+      <router-link to="/login">Login</router-link> |
+      <router-link to="/dashboard">Dashboard</router-link> |
+      <router-link to="/smart-home">Smart Home</router-link> |
+      <router-link to="/manufact-automatation">Automation</router-link> |
+      <!-- Profile (доступна для level 2 и 3) -->
+      <router-link v-if="userLevel >= 2" to="/profile">Profile</router-link>
+      <!-- Users (доступна для level 3) -->
+      <router-link v-if="userLevel >= 3" to="/users">Users</router-link>
+    </nav>
+  </div>
+  <p style="width: 100%; height: 1px; background-color: var(--orange);"></p>
+  <div style="padding: 0 10px 0 10px;">
+    <h1>Авторизация</h1>
+    <form @submit.prevent="login">
+      <input v-model="username" type="text" placeholder="Имя пользователя" required />
+      <input v-model="password" type="password" placeholder="Пароль" required />
+      <button type="submit"> Вход </button>
+    </form>
+    <p v-if="error" class="error">{{ error }}</p>
+  </div>
+</template>
+
+<script>
+import { ref, computed } from 'vue';
+import { useStore } from 'vuex';
+import { useRouter } from 'vue-router'; // Подключаем маршрутизатор
+
+export default {
+  name: 'AppLogin',
+  setup() {
+    const store = useStore(); // Подключаем Vuex-хранилище
+    const router = useRouter(); // Подключаем маршрутизатор
+
+    // Реактивные состояния для имени пользователя, пароля и ошибок
+    const username = ref('');
+    const password = ref('');
+    const error = ref('');
+
+    // Уровень пользователя из Vuex
+    const userLevel = computed(() => store.getters.level || 0);
+
+    // Метод для логина
+    const login = async () => {
+      try {
+        if (!username.value || !password.value) {
+          error.value = 'Пожалуйста, заполните все поля.';
+          return;
+        }
+
+        const user = { username: username.value, password: password.value };
+        await store.dispatch('login', user); // Диспетчеризация Vuex-экшена
+
+        // Получаем перенаправление или по умолчанию /dashboard
+        const redirectPath = localStorage.getItem('redirectPath') || '/dashboard';
+        localStorage.removeItem('redirectPath'); // Удаляем сохранённый путь
+        error.value = ''; // Сбрасываем ошибку при успешном входе
+        router.push(redirectPath); // Перенаправляем пользователя
+      } catch (err) {
+        // Обработка ошибок логина
+        error.value = 'Неверное имя пользователя или пароль.';
+      }
+    };
+
+    return {
+      username,
+      password,
+      error,
+      login,
+      userLevel,
+    };
+  },
+};
+</script>
+
+<style scoped>
+.error {
+  color: red;
+  font-weight: bold;
+}
+</style>
+

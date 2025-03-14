@@ -1,0 +1,9 @@
+import { mount } from '@vue/test-utils';
+import SmartHome from '@/components/SmartHome.vue';
+
+describe('SmartHome.vue', () => {
+  it('matches the snapshot', () => {
+    const wrapper = mount(SmartHome);
+    expect(wrapper.html()).toMatchSnapshot();
+  });
+});

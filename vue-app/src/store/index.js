@@ -32,6 +32,39 @@ const store = createStore({
     },
   },
   actions: {
+    async sendWSMessage({ state }, { type, payload }) {
+      return new Promise((resolve, reject) => {
+        const socket = state.socket;
+  
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          reject(new Error('Соединение с сервером не установлено.'));
+          return;
+        }
+        // Отправляем сообщение на сервер
+        console.log('Отправляем сообщение на сервер (sendWSMessage в index.js):', type, payload);
+        socket.send(
+          JSON.stringify({
+            type,
+            ...payload, // Данные, которые нужно отправить
+          })
+        );
+  
+        // Обрабатываем ответ от сервера
+        socket.onmessage = (event) => {
+          const response = JSON.parse(event.data);
+  
+          if (response.type === `${type}Success`) {
+            resolve(response.message); // Успешный ответ
+          } else if (response.type === `${type}Error`) {
+            reject(new Error(response.message)); // Ошибка
+          }
+        };
+  
+        socket.onerror = (error) => {
+          reject(error);
+        };
+      });
+    },
     async connectWebSocket({ commit }) {
       return new Promise((resolve, reject) => {
         const socket = new WebSocket(`ws://${process.env.VUE_APP_HOST}:${process.env.VUE_APP_PORT}`);
