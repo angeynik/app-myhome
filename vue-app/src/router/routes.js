@@ -25,11 +25,13 @@ const routes = [
     path: '/smart-home',
     name: 'SmartHome',
     component: SmartHome,
+    meta: { requiresAuth: true, requiredLevel: 1 }, // Добавляем проверку аутентификации
   },
   {
     path: '/manufact-automatation',
     name: 'ManufactAutomatation',
     component: ManufactAutomatation,
+    meta: { requiresAuth: true, requiredLevel: 1 }, // Добавляем проверку аутентификации
   },
   {
     path: '/login',
@@ -40,18 +42,22 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: Profile,
-    meta: { requiresAuth: true, requiredLevel: 2, level: 2 }, // Уровень доступа 2
+    meta: { requiresAuth: true, requiredLevel: 2 }, // Уровень доступа 2
   },
   {
     path: '/users',
     name: 'Users',
     component: UserConfig,
-    meta: { requiresAuth: true, requiredLevel: 3, level: 3 }, // Уровень доступа 3
+    meta: { requiresAuth: true, requiredLevel: 3 }, // Уровень доступа 3
   },
   {
     path: '/access-denied',
     name: 'AccessDenied',
     component: AccessDenied,
+  },
+  {
+    path: '/:pathMatch(.*)*', // Ловим все несуществующие маршруты
+    redirect: '/', // Перенаправляем на главную страницу
   },
 ];
 
@@ -61,13 +67,12 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = !!localStorage.getItem('token'); // Проверяем наличие токена
-  //const redirectPath = localStorage.getItem('redirectPath') || '/';
+  const isAuthenticated = !!store.getters.isAuthenticated; // Используем геттер из Vuex
   const userLevel = store.getters.level || 0; // Получаем уровень доступа пользователя из Vuex
 
   if (to.matched.some((record) => record.meta.requiresAuth)) {
     if (!isAuthenticated) {
-      // Сохраняем запрашиваемый маршрут
+      // Сохраняем запрашиваемый маршрут для перенаправления после входа
       localStorage.setItem('redirectPath', to.fullPath);
       next('/login'); // Перенаправляем на страницу логина
     } else if (to.meta.requiredLevel && userLevel < to.meta.requiredLevel) {

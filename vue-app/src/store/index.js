@@ -175,12 +175,15 @@ const store = createStore({
         commit('LOGOUT'); // Сбрасываем состояние, если данных нет
       }
     },
+    toLowerCase(_, str) {
+      return str.toLowerCase();
+    },
   },
   getters: {
     isAuthenticated: (state) => !!state.token,
     authStatus: (state) => state.status,
     user: (state) => state.user,
-    level: (state) => state.level,
+    level: (state) => state.level || 0,
   },
 });
 
