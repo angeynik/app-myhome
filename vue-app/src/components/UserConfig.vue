@@ -45,41 +45,40 @@
 
     <!-- Форма для связывания пользователя с источником данных -->
     <div style="padding: 0 10px 0 10px; margin-top: 20px;">
-      <h2>Связать пользователя с источником данных</h2>
-      <form @submit.prevent="linkUserToDataSource">
-        <div>
-          <label for="existingUser">Пользователь:</label>
-          <select id="existingUser" v-model="selectedUser" required>
-            <option v-for="user in users" :key="user.id" :value="user.id">{{ user.username }}</option>
-          </select>
-        </div>
-        <div>
-          <label for="existingDataSource">Источник данных:</label>
-          <select id="existingDataSource" v-model="selectedDataSource" required>
-            <option v-for="dataSource in dataSources" :key="dataSource.id" :value="dataSource.id">{{ dataSource.name }}</option>
-          </select>
-        </div>
-        <button type="submit">Связать</button>
-      </form>
+  <h2>Связать пользователя с источником данных</h2>
+  <form @submit.prevent="linkUserToDataSource">
+    <div>
+      <label for="existingUser">Пользователь:</label>
+      <select id="existingUser" v-model="selectedUser" required>
+        <option v-for="user in usersDB" :key="user.id" :value="user.id">
+          {{ user.username }}
+        </option>
+      </select>
+      <!-- Лог для проверки данных -->
+      <!-- <p>Список пользователей: {{ users }}</p> -->
     </div>
+    <div>
+      <label for="existingDataSource">Источник данных:</label>
+      <select id="existingDataSource" v-model="selectedDataSource" required>
+        <option v-for="dataSource in dataSources" :key="dataSource.id" :value="dataSource.id">
+          {{ dataSource.did }}
+        </option>
+      </select>
+      <!-- Лог для проверки данных -->
+      <!-- <p>Список источников данных: {{ dataSources }}</p> -->
+    </div>
+    <div style="display: flex; justify-content: space-between;">
+    <button @click="fetchUsers">Обновить список</button>
+    <button type="submit">Связать</button>
+  </div>
+  </form>
+</div>
 
     <!-- Сообщение об успешном создании пользователя -->
     <div v-if="successMessage" class="success-message">
       {{ successMessage }}
     </div>
 
-    <!-- Список существующих пользователей -->
-    <div>
-      <h2>Список пользователей</h2>
-      <button @click="fetchUsers">Обновить список</button>
-      <ul>
-        <li v-for="user in users" :key="user.id">
-          <strong>Имя:</strong> {{ user.username }} <br />
-          <strong>Источник данных:</strong> {{ user.dataSource }} <br />
-          <strong>Уровень доступа:</strong> {{ user.permissionLevel }}
-        </li>
-      </ul>
-    </div>
   </div>
 </template>
 
@@ -107,17 +106,12 @@ export default {
     });
 
     const successMessage = ref('');
-    const users = ref([]);
+    const usersDB = ref([]);
     const dataSources = ref([]);
-    const selectedUser = ref(null);
-    const selectedDataSource = ref(null);
+    const selectedUser = ref(null); // Хранит выбранный id пользователя
+    const selectedDataSource = ref(null); // Хранит выбранный id источника данных
     let isUsersLoaded = false;
     let isDataSourcesLoaded = false;
-
-    // const host = `'http://'${process.env.VUE_APP_HOST}` || 'http://localhost';
-    // const port = process.env.VUE_APP_SERVER_PORT || '3010';
-    // const url = `${host}:${port}/users`;
-    // const dataSourcesUrl = `${host}:${port}/data-sources`;
 
     const clearErrors = () => {
       errors.value.username = '';
@@ -155,7 +149,8 @@ export default {
       if (isValid) {
         try {
           await store.dispatch('sendWSMessage', {
-            type: 'createUser',
+            type: 'post',
+            request: 'createUser',
             payload: newUser.value,
           });
           successMessage.value = 'Пользователь успешно создан';
@@ -169,67 +164,96 @@ export default {
     };
 
     const linkUserToDataSource = async () => {
-      if (!selectedUser.value || !selectedDataSource.value) {
-        successMessage.value = 'Пожалуйста, выберите пользователя и источник данных';
-        return;
-      }
+  if (!selectedUser.value || !selectedDataSource.value) {
+    successMessage.value = 'Пожалуйста, выберите пользователя и источник данных';
+    return;
+  }
 
-      try {
-        await store.dispatch('sendWSMessage', {
-          type: 'linkUserToDataSource',
-          payload: {
-            userId: selectedUser.value,
-            dataSourceId: selectedDataSource.value,
-          },
-        });
-        successMessage.value = 'Пользователь успешно связан с источником данных';
-        fetchUsers(); // Обновляем список пользователей
-      } catch (error) {
-        console.error('Ошибка:', error);
-        successMessage.value = 'Ошибка при связывании пользователя с источником данных';
-      }
-    };
+  try {
+    await store.dispatch('sendWSMessage', {
+      type: 'post',
+      request: 'linkUserToDataSource',
+      payload: {
+        userId: selectedUser.value, // id пользователя
+        dataSourceId: selectedDataSource.value, // id источника данных
+      },
+    });
+    successMessage.value = 'Пользователь успешно связан с источником данных';
+  } catch (error) {
+    console.error('Ошибка:', error);
+    successMessage.value = 'Ошибка при связывании пользователя с источником данных';
+  }
+};
 
     const fetchUsers = async () => {
-      if (isUsersLoaded) return;
+  if (isUsersLoaded) return;
 
-      try {
-        const response = await store.dispatch('sendWSMessage', {
-          type: 'fetchUsers',
-        });
-        users.value = response.users; // Предполагаем, что сервер возвращает объект с ключом `users`
-        isUsersLoaded = true;
-      } catch (error) {
-        console.error('Ошибка:', error);
-        successMessage.value = 'Ошибка при загрузке списка пользователей';
-      }
-    };
-
-    const fetchDataSources = async () => {
-      if (isDataSourcesLoaded) return;
-
-      try {
-        const response = await store.dispatch('sendWSMessage', {
-          type: 'fetchDataSources',
-        });
-        dataSources.value = response.dataSources; // Предполагаем, что сервер возвращает объект с ключом `dataSources`
-        isDataSourcesLoaded = true;
-      } catch (error) {
-        console.error('Ошибка:', error);
-        successMessage.value = 'Ошибка при загрузке списка источников данных';
-      }
-    };
-
-    onMounted(() => {
-      fetchUsers();
-      fetchDataSources();
+  try {
+    const response = await store.dispatch('sendWSMessage', {
+      type: 'get',
+      request: 'fetchUsers',
     });
+
+    console.log('Ответ от сервера (fetchUsers):', response);
+
+    // Преобразуем данные в нужный формат
+    if (Array.isArray(response.users)) {
+      usersDB.value = response.users.map(user => ({
+        id: user.id,
+        username: user.username,
+      }));
+      console.log('Обновленный usersDB.value:', usersDB.value);
+        if (!isDataSourcesLoaded) {
+          // console.log('fetchDataSources()');
+          fetchDataSources();
+        }
+    } else {
+      console.error('Ошибка: response.users не является массивом.', response.users);
+    }
+    isUsersLoaded = true;
+    console.log('Список пользователей (usersDB):', usersDB.value); // Лог для проверки
+    if (isUsersLoaded) return;
+  } catch (error) {
+    console.error('Ошибка:', error);
+    successMessage.value = 'Ошибка при загрузке списка пользователей';
+  }
+};
+
+const fetchDataSources = async () => {
+  if (isDataSourcesLoaded) return;
+
+  try {
+    const response = await store.dispatch('sendWSMessage', {
+      type: 'get',
+      request: 'fetchDataSources',
+    });
+
+    console.log('Ответ от сервера (fetchDataSources):', response);
+
+    // Преобразуем данные в нужный формат
+    dataSources.value = response.sources.map(dataSource => ({
+      id: dataSource.id,
+      did: dataSource.did, // Используем did вместо name
+    }));
+    isDataSourcesLoaded = true;
+  } catch (error) {
+    console.error('Ошибка:', error);
+    successMessage.value = 'Ошибка при загрузке списка источников данных';
+  }
+};
+
+onMounted(() => {
+  if (!isUsersLoaded) {
+    console.log('onMounted - fetchUsers()');
+    fetchUsers();
+  }
+});
 
     return {
       newUser,
       errors,
       successMessage,
-      users,
+      usersDB,
       dataSources,
       selectedUser,
       selectedDataSource,

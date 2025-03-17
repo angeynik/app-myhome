@@ -32,31 +32,40 @@ const store = createStore({
     },
   },
   actions: {
-    async sendWSMessage({ state }, { type, payload }) {
+    async sendWSMessage({ state }, { type, request, payload }) {
       return new Promise((resolve, reject) => {
         const socket = state.socket;
-  
+ 
         if (!socket || socket.readyState !== WebSocket.OPEN) {
           reject(new Error('Соединение с сервером не установлено.'));
           return;
         }
+            // Уникальный идентификатор для запроса
+        const requestId = Date.now().toString();
+
         // Отправляем сообщение на сервер
-        console.log('Отправляем сообщение на сервер (sendWSMessage в index.js):', type, payload);
+        console.log('Отправляем сообщение на сервер (sendWSMessage в index.js):', type, request, payload);
         socket.send(
           JSON.stringify({
             type,
+            request,
+            requestId, // Добавляем уникальный идентификатор
             ...payload, // Данные, которые нужно отправить
           })
         );
   
         // Обрабатываем ответ от сервера
+
         socket.onmessage = (event) => {
           const response = JSON.parse(event.data);
-  
-          if (response.type === `${type}Success`) {
-            resolve(response.message); // Успешный ответ
-          } else if (response.type === `${type}Error`) {
-            reject(new Error(response.message)); // Ошибка
+          console.log('Получено сообщение от сервера (onmessage в index.js):', response);
+          
+          if (response.request === `${request}Success`) {
+            console.log('Успешный ответ от сервера (onmessage в index.js):', response);
+            resolve(response); // Успешный ответ
+          } else if (response.type === `error`) {
+            console.log('Ошибка от сервера (onmessage в index.js):', response);
+            reject(new Error(response)); // Ошибка
           }
         };
   

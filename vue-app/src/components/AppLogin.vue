@@ -1,4 +1,5 @@
 <template>
+  <div>
   <div class="header-bottom">
     <nav>
       <router-link to="/login">Login</router-link> |
@@ -10,7 +11,7 @@
       <!-- Users (доступна для level 3) -->
       <router-link v-if="userLevel >= 3" to="/users">Users</router-link>
     </nav>
-  
+  </div>
   <p style="width: 100%; height: 1px; background-color: var(--orange);"></p>
   <div style="padding: 0 10px 0 10px;">
     <h1>Авторизация</h1>
@@ -60,9 +61,17 @@ export default {
           return;
         }
 
-        const user = { username, password };
-        await store.dispatch('login', user); // Авторизация через WebSocket
-
+        // const user = { username, password };
+        // await store.dispatch('login', user);
+        // Авторизация через WebSocket
+        await store.dispatch('sendWSMessage', {
+            type: 'get',
+            request: 'login',
+            payload: {
+            username: username,
+            password: password,
+          },
+          });
         // Удаляем redirectPath из localStorage после успешного входа
         localStorage.removeItem('redirectPath');
 
