@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Dashboard from '../DashBoard.vue';
+import Dashboard from '../_DashBoard.vue';
 import SmartHome from '../SmartHome.vue';
 import ManufactAutomatation from '../ManufactAutomatation.vue';
 import IntroduceHome from '../IntroduceHome.vue';

@@ -77,11 +77,12 @@ const store = createStore({
     async connectWebSocket({ commit }) {
       return new Promise((resolve, reject) => {
         const socket = new WebSocket(`ws://${process.env.VUE_APP_HOST}:${process.env.VUE_APP_PORT}`);
-
+        //const socket = new WebSocket(`ws://${process.env.VUE_APP_HOST}:9202`);
         socket.onopen = () => {
-          console.log('WebSocket соединение установлено');
+          console.log('Index.js - WebSocket соединение установлено');
           commit('SET_SOCKET', socket); // Сохраняем сокет в состоянии
           resolve(socket);
+          console.log('socket - ', socket);
         };
 
         socket.onerror = (error) => {
@@ -90,7 +91,7 @@ const store = createStore({
         };
 
         socket.onclose = () => {
-          console.log('WebSocket соединение закрыто');
+          console.log('Index.js - WebSocket соединение закрыто');
         };
       });
     },
@@ -110,7 +111,7 @@ const store = createStore({
 
       if (!socket || socket.readyState !== WebSocket.OPEN) {
         commit('AUTH_ERROR');
-        return Promise.reject(new Error('Соединение с сервером не установлено.'));
+        return Promise.reject(new Error('Index.js - Соединение с сервером не установлено.'));
       }
 
       return new Promise((resolve, reject) => {

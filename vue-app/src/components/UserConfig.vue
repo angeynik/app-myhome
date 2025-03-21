@@ -139,10 +139,23 @@ export default {
         isValid = false;
       }
 
+      // // Проверка источника данных
+      // const dataSourceRegex = /^[a-zA-Z0-9_]{4,16}$/;
+      // if (!dataSourceRegex.test(newUser.value.dataSource)) {
+      //   errors.value.dataSource = 'Источник данных должен быть от 4 до 16 символов и содержать символ нижнего подчеркивания _ ';
+      //   isValid = false;
+      // }
       // Проверка источника данных
-      const dataSourceRegex = /^[a-zA-Z0-9_]{4,16}$/;
+      const dataSourceRegex = /^[a-zA-Z_][a-zA-Z0-9_$]{3,15}$/;
+      const reservedWords = [
+        'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER', 'TABLE', 'DATABASE', 'INDEX', 'VIEW'
+      ];
+
       if (!dataSourceRegex.test(newUser.value.dataSource)) {
-        errors.value.dataSource = 'Источник данных должен быть от 4 до 16 символов и содержать символ нижнего подчеркивания _ ';
+        errors.value.dataSource = 'Источник данных должен быть от 4 до 16 символов, начинаться с буквы или _ и содержать только буквы, цифры, _ и $';
+        isValid = false;
+      } else if (reservedWords.includes(newUser.value.dataSource.toUpperCase())) {
+        errors.value.dataSource = 'Источник данных не может быть зарезервированным словом SQL';
         isValid = false;
       }
 

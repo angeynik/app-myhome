@@ -11,7 +11,8 @@ export default {
     return {
       msg: 'Welcome to Your Vue.js App',
       host: process.env.VUE_APP_HOST,
-      port: process.env.VUE_APP_PORT,
+      //port: process.env.VUE_APP_PORT,
+      port: 9202,
       serverPort: process.env.VUE_APP_SERVER_PORT,
     };
   },
@@ -22,7 +23,7 @@ export default {
   //     console.error('Ошибка при установке WebSocket-соединения:', error);
   //   }
   // },
-  
+ 
   async mounted() {
     await this.$store.dispatch('initializeApp'); // Восстанавливаем состояние
     try {
