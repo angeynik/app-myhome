@@ -27,7 +27,7 @@ export default {
   async mounted() {
     await this.$store.dispatch('initializeApp'); // Восстанавливаем состояние
     try {
-      await this.$store.dispatch('connectWebSocket'); // Устанавливаем WebSocket-соединение
+      await this.$store.dispatch('websocket/connect'); // Устанавливаем WebSocket-соединение
     } catch (error) {
       console.error('Ошибка при установке WebSocket-соединения:', error);
     }

@@ -1,86 +1,238 @@
-// store/modules/auth.js
-const authModule = {
-    state: () => ({
-      token: localStorage.getItem('token') || '',
-      user: {},
-      status: '',
-      level: null,
-    }),
-    mutations: {
-      AUTH_REQUEST(state) {
-        state.status = 'loading';
-      },
-      AUTH_SUCCESS(state, { token, user }) {
-        state.status = 'success';
-        state.token = token;
-        state.user = user;
-        state.level = user.userlevel;
-      },
-      AUTH_ERROR(state) {
-        state.status = 'error';
-      },
-      LOGOUT(state) {
-        state.status = '';
-        state.token = '';
-        state.user = {};
-        state.level = null;
-      },
-      SET_SOCKET(state, socket) {
-        state.socket = socket; // Сохраняем сокет в состоянии
-      },
+export default {
+  namespaced: true,
+  state: () => ({
+    token: '',
+    user: {},
+    status: '',
+    level: 0,
+    dID: '',
+  }),
+  mutations: {
+    AUTH_REQUEST(state) {
+      state.status = 'loading';
     },
-    actions: {
+    AUTH_SUCCESS(state, { token, user }) {
+      state.token = token;
+      state.user = user;
+      state.level = user.userlevel;
+      state.dID = user.dID;
+      state.status = 'success';
+      console.log('Обновленное состояние:', state);
+    },
+  AUTH_ERROR(state) {
+      state.status = 'error';
+    },
+    LOGOUT(state) {
+      state.status = '';
+      state.token = '';
+      state.user = {};
+      state.level = 0;
+      state.dID = '';
+    }
+  },
+
+  actions: {
       async login({ commit, dispatch }, user) {
         commit('AUTH_REQUEST');
+        
         try {
-          await dispatch('connectWebSocket');
-          const socket = this.state.socket.socket;
-          if (!socket || socket.readyState !== WebSocket.OPEN) {
-            commit('AUTH_ERROR');
-            return Promise.reject(new Error('Соединение с сервером не установлено.'));
+          const response = await dispatch('websocket/send', {
+            type: 'auth',
+            request: 'login',
+            payload: {
+              username: user.username,
+              password: user.password
+            }
+          }, { root: true });
+    
+          console.log('Полный ответ сервера:', response);
+    
+          // Исправленная проверка ответа
+          if (response?.payload?.token && response?.payload?.userlevel) {
+            const userData = { 
+              username: response.payload.username,
+              userlevel: response.payload.userlevel,
+              dID: response.name // или response.payload.dID, в зависимости от сервера
+            };
+    
+            localStorage.setItem('token', response.payload.token);
+            localStorage.setItem('user', JSON.stringify(userData));
+            
+            commit('AUTH_SUCCESS', { 
+              token: response.payload.token, 
+              user: userData 
+            });
+            
+            return userData;
           }
-          return new Promise((resolve, reject) => {
-            socket.send(JSON.stringify({ type: 'login', ...user }));
-            socket.onmessage = (event) => {
-              const response = JSON.parse(event.data);
-              if (response.type === 'loginSuccess') {
-                const token = response.token;
-                const userData = { username: response.username, userlevel: response.userlevel };
-                localStorage.setItem('token', token);
-                localStorage.setItem('user', JSON.stringify(userData));
-                commit('AUTH_SUCCESS', { token, user: userData });
-                resolve(userData);
-              } else if (response.type === 'loginError') {
-                commit('AUTH_ERROR');
-                localStorage.removeItem('token');
-                reject(new Error(response.message));
-              }
-            };
-            socket.onerror = (error) => {
-              commit('AUTH_ERROR');
-              localStorage.removeItem('token');
-              reject(error);
-            };
-          });
+          throw new Error('Неверный формат ответа сервера');
         } catch (error) {
+          console.error('Ошибка авторизации:', error);
           commit('AUTH_ERROR');
-          return Promise.reject(new Error('Не удалось подключиться к серверу.'));
+          localStorage.removeItem('token');
+          throw error;
         }
       },
-      logout({ commit, state }) {
-        if (state.socket.socket) {
-          state.socket.socket.close();
-        }
+
+    logout({ commit, dispatch }) {
+      dispatch('websocket/disconnect', null, { root: true });
+      commit('LOGOUT');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    },
+
+    initializeApp({ commit }) {
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      if (token && user.username) {
+        commit('AUTH_SUCCESS', { token, user });
+      } else {
         commit('LOGOUT');
-        localStorage.removeItem('token');
-      },
-    },
-    getters: {
-      isAuthenticated: (state) => !!state.token,
-      authStatus: (state) => state.status,
-      user: (state) => state.user,
-      level: (state) => state.level || 0,
-    },
-  };
+      }
+    }
+  }
+};
+
+// export default {
+//   namespaced: true,
+//   state: () => ({
+//     token: '',
+//     user: {},
+//     status: '',
+//     level: 0,
+//     dID: '',
+//   }),
+//   mutations: {
+//     AUTH_REQUEST(state) {
+//       state.status = 'loading';
+//     },
+//   AUTH_SUCCESS(state, { token, user }) {
+//     console.log('Выполняется мутация AUTH_SUCCESS с данными:', { token, user });
+//     state.status = 'success';
+//     state.token = token;
+//     state.user = user;
+//     state.level = user.userlevel;
+//     state.dID = user.dID;
+//   },
+//     AUTH_ERROR(state) {
+//       state.status = 'error';
+//     },
+//     LOGOUT(state) {
+//       state.status = '';
+//       state.token = '';
+//       state.user = {};
+//       state.level = 0;
+//       state.dID = '';
+//     }
+//   },
+
+//   actions: {
+//     // async login({ commit, dispatch }, user) {
+//     //   commit('AUTH_REQUEST');
+      
+//     //   try {
+//     //     const response = await dispatch('websocket/send', {
+//     //       type: 'auth',
+//     //       request: 'login',
+//     //       name: '',
+//     //       payload: {
+//     //         username: user.username,
+//     //         password: user.password
+//     //       }
+//     //     }, { root: true });
   
-  export default authModule;
+//     //     // Добавляем проверку структуры ответа
+//     //     console.log('Ответ сервера:', response);
+        
+//     //     if (response && response.payload) {
+//     //       const { token, username, userlevel, requestID } = response.payload;
+          
+//     //       const userData = { 
+//     //         username,
+//     //         userlevel,
+//     //         dID: response.name || '',
+//     //         requestID
+//     //       };
+  
+//     //       localStorage.setItem('token', token);
+//     //       localStorage.setItem('user', JSON.stringify(userData));
+          
+//     //       commit('AUTH_SUCCESS', { 
+//     //         token, 
+//     //         user: userData 
+//     //       });
+          
+//     //       return userData;
+//     //     }
+//     //     throw new Error('Неверный формат ответа сервера');
+//     //   } catch (error) {
+//     //     console.error('Ошибка авторизации:', error);
+//     //     commit('AUTH_ERROR');
+//     //     localStorage.removeItem('token');
+//     //     throw error;
+//     //   }
+//     // },
+   
+//       async login({ commit, dispatch }, user) {
+//         commit('AUTH_REQUEST');
+        
+//         try {
+//           const response = await dispatch('websocket/send', {
+//             type: 'auth',
+//             request: 'login',
+//             payload: {
+//               username: user.username,
+//               password: user.password
+//             }
+//           }, { root: true });
+    
+//           // Добавляем логирование ответа
+//           console.log('Получен ответ от сервера:', response);
+    
+//           if (response && response.payload) {
+//             const userData = { 
+//               username: response.payload.username,
+//               userlevel: response.payload.userlevel,
+//               dID: response.name // Берем dID из поля name ответа
+//             };
+    
+//             localStorage.setItem('token', response.payload.token);
+//             localStorage.setItem('user', JSON.stringify(userData));
+            
+//             commit('AUTH_SUCCESS', { 
+//               token: response.payload.token, 
+//               user: userData 
+//             });
+    
+//             console.log('Данные после коммита:', store.state.auth); // Добавляем логирование
+//             return userData;
+//           }
+//           throw new Error('Неверный формат ответа сервера');
+//         } catch (error) {
+//           console.error('Ошибка авторизации:', error);
+//           commit('AUTH_ERROR');
+//           throw error;
+//         }
+//       },
+    
+//     logout({ commit, dispatch }) {
+//       dispatch('websocket/disconnect', null, { root: true });
+//       commit('LOGOUT');
+//       localStorage.removeItem('token');
+//       localStorage.removeItem('user');
+//     },
+
+//     initializeApp({ commit }) {
+//       const token = localStorage.getItem('token');
+//       const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+//       if (token && user.username) {
+//         commit('AUTH_SUCCESS', { token, user });
+//       } else {
+//         commit('LOGOUT');
+//       }
+//     }
+//   },
+  
+// };

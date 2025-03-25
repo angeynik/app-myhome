@@ -1,32 +1,38 @@
 <template>
   <div>
-  <div class="header-bottom">
-    <nav>
-      <router-link to="/login">Login</router-link> |
-      <router-link to="/dashboard">Dashboard</router-link> |
-      <router-link to="/smart-home">Smart Home</router-link> |
-      <router-link to="/manufact-automatation">Automation</router-link> |
-      <!-- Profile (доступна для level 2 и 3) -->
-      <router-link v-if="userLevel >= 2" to="/profile">Profile</router-link>
-      <!-- Users (доступна для level 3) -->
-      <router-link v-if="userLevel >= 3" to="/users">Users</router-link>
-    </nav>
+    <div class="header-bottom">
+      <nav>
+        <router-link to="/login">Login</router-link> |
+        <router-link to="/dashboard">Dashboard</router-link> |
+        <router-link to="/smart-home">Smart Home</router-link> |
+        <router-link to="/manufact-automatation">Automation</router-link> |
+        <router-link v-if="userLevel >= 2" to="/profile">Profile</router-link>
+        <router-link v-if="userLevel >= 3" to="/users">Users</router-link>
+      </nav>
+    </div>
+    <p style="width: 100%; height: 1px; background-color: var(--orange);"></p>
+    <div style="padding: 0 10px 0 10px;">
+      <h1>Авторизация</h1>
+      <form @submit.prevent="login">
+        <input ref="usernameInput" 
+               type="text" 
+               placeholder="Имя пользователя" 
+               required 
+               autocomplete="username" />
+        <input ref="passwordInput" 
+               type="password" 
+               placeholder="Пароль" 
+               required 
+               autocomplete="current-password" />
+        <button type="submit">Вход</button>
+      </form>
+      <p v-if="error" class="error">{{ error }}</p>
+    </div>
   </div>
-  <p style="width: 100%; height: 1px; background-color: var(--orange);"></p>
-  <div style="padding: 0 10px 0 10px;">
-    <h1>Авторизация</h1>
-    <form @submit.prevent="login">
-      <input ref="usernameInput" type="text" placeholder="Имя пользователя" required autocomplete="username" />
-      <input ref="passwordInput" type="password" placeholder="Пароль" required autocomplete="current-password" />
-      <button type="submit">Вход</button>
-    </form>
-    <p v-if="error" class="error">{{ error }}</p>
-  </div>
-</div>
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 
@@ -36,58 +42,56 @@ export default {
     const store = useStore();
     const router = useRouter();
 
-    // Реактивные ссылки для полей ввода
     const usernameInput = ref(null);
     const passwordInput = ref(null);
     const error = ref('');
 
-    // Получаем уровень доступа пользователя из Vuex
-    const userLevel = computed(() => {
-      const level = store.getters.level;
-      console.log('Уровень доступа пользователя:', level);
-      return level || 0; // Если уровень не задан, считаем его равным 0
-    });
+    // 1. Исправляем название переменных
+    const userLevel = computed(() => store.getters.level);
+    const dID = computed(() => store.getters.dID);
 
-    // Метод для авторизации
+    // 2. Исправляем логирование
+    console.log('Уровень из геттера:', userLevel.value);
+    console.log('dID из геттера:', dID.value);
+
     const login = async () => {
+      error.value = '';
       try {
-        console.log('Введенное имя пользователя:', usernameInput.value.value);
-        const username = await store.dispatch('toLowerCase', usernameInput.value.value);
+        const username = usernameInput.value.value.toLowerCase();
         const password = passwordInput.value.value;
-        console.log('Преобразованное имя пользователя:', username, 'и пароль:', password);
 
         if (!username || !password) {
-          error.value = 'Имя пользователя и пароль обязательны';
-          return;
+          throw new Error('Имя пользователя и пароль обязательны');
         }
 
-        // const user = { username, password };
-        // await store.dispatch('login', user);
-        // Авторизация через WebSocket
-        await store.dispatch('sendWSMessage', {
-            type: 'get',
-            request: 'login',
-            payload: {
-            username: username,
-            password: password,
-          },
-          });
-        // Удаляем redirectPath из localStorage после успешного входа
-        localStorage.removeItem('redirectPath');
+        // 3. Добавляем обработку успешного логина
+        await store.dispatch('auth/login', { 
+          username, 
+          password 
+        });
 
-        // Перенаправляем на защищенный маршрут
+        // 4. Добавляем проверку состояния после логина
+        console.log('Текущий уровень после логина:', store.getters.level);
+        console.log('Текущий dID после логина:', store.getters.dID);
+        
         const redirectPath = localStorage.getItem('redirectPath') || '/';
+        localStorage.removeItem('redirectPath');
         router.push(redirectPath);
+        
       } catch (err) {
-        error.value = 'Неверное имя пользователя или пароль';
+        error.value = err.message || 'Ошибка авторизации';
+        console.error('Ошибка входа:', err);
       }
     };
 
-    // При монтировании компонента фокусируемся на поле ввода имени пользователя
+    // 5. Добавляем watcher для отслеживания изменений
+    watch([userLevel, dID], ([newLevel, newDID]) => {
+      console.log('Уровень изменился:', newLevel);
+      console.log('dID изменился:', newDID);
+    });
+
     onMounted(() => {
-      if (usernameInput.value) {
-        usernameInput.value.focus();
-      }
+      usernameInput.value?.focus();
     });
 
     return {
@@ -95,6 +99,7 @@ export default {
       passwordInput,
       error,
       userLevel,
+      dID, // 6. Возвращаем dID в шаблон
       login,
     };
   },
