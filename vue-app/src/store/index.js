@@ -7,7 +7,11 @@ const store = createStore({
     auth,
     websocket
   },
-
+  actions: {
+    toLowerCase(_, str) {
+      return str.toLowerCase();
+    },
+  },
   getters: {
     isAuthenticated: (state) => !!state.auth.token,
     authStatus: (state) => state.auth.status,

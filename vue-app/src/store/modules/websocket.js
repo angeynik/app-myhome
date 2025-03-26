@@ -99,7 +99,7 @@ export default {
             requestId // Переносим requestId в payload
           }
         };
-        
+        console.log('Отправляем на сервер - ', message);
         socket.send(JSON.stringify(message));
 
         // Таймаут для обработки отсутствия ответа

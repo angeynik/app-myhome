@@ -140,14 +140,6 @@ export default {
         errors.value.password = 'Пароль должен быть от 10 до 32 символов, содержать минимум одну заглавную букву, цифру и спецсимвол.';
         isValid = false;
       }
-
-      // // Проверка источника данных
-      // const dataSourceRegex = /^[a-zA-Z0-9_]{4,16}$/;
-      // if (!dataSourceRegex.test(newUser.value.dataSource)) {
-      //   errors.value.dataSource = 'Источник данных должен быть от 4 до 16 символов и содержать символ нижнего подчеркивания _ ';
-      //   isValid = false;
-      // }
-      // Проверка источника данных
       const dataSourceRegex = /^[a-zA-Z_][a-zA-Z0-9_$]{3,15}$/;
       const reservedWords = [
         'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER', 'TABLE', 'DATABASE', 'INDEX', 'VIEW'
@@ -162,10 +154,12 @@ export default {
       }
 
       if (isValid) {
+        //console.log('Все проверки выполнены успешно - isValid:', isValid);
         try {
-          await store.dispatch('sendWSMessage', {
+          await store.dispatch('websocket/send', {
             type: 'post',
             request: 'createUser',
+            name: dID.value,
             payload: newUser.value,
           });
           successMessage.value = 'Пользователь успешно создан';
@@ -185,9 +179,10 @@ export default {
   }
 
   try {
-    await store.dispatch('sendWSMessage', {
+    await store.dispatch('websocket/send', {
       type: 'post',
       request: 'linkUserToDataSource',
+      name: dID.value,
       payload: {
         userId: selectedUser.value, // id пользователя
         dataSourceId: selectedDataSource.value, // id источника данных
@@ -267,7 +262,7 @@ const fetchDataSources = async () => {
 
 onMounted(() => {
   if (!isUsersLoaded) {
-    console.log('onMounted - fetchUsers()');
+    //console.log('onMounted - fetchUsers()');
     fetchUsers();
   }
 });
