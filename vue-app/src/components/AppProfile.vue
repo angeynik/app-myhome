@@ -1,7 +1,7 @@
 <!-- src/components/Profile.vue -->
 <template>
-    <div class="header-bottom">
-      <nav>
+    <div >
+      <nav class="header-bottom">
               <router-link to="/login">Login</router-link> |
               <router-link to="/dashboard">Dashboard</router-link> |
               <router-link to="/smart-home">Smart Home</router-link> |
@@ -11,39 +11,69 @@
                   <!-- Users (доступна для level 3) -->
               <router-link v-if="userLevel >= 3" to="/users">Users</router-link>
         </nav>
-        </div>
+
         <p style="width: 100%; height: 1px; background-color: var(--orange);"> </p>
         <div>
       <h1>Profile</h1>
-      <p>Welcome, {{ user.username }}!</p>
-      <button @click="logout">Logout</button>
+      <p>Welcome, {{ user?.username }}!</p>
+      <div>
+        <button 
+          @click="confirmLogout"
+          :disabled="isLoading"
+        >
+          <span v-if="isLoading">Выход...</span>
+          <span v-else>Выход</span>
+        </button>
+        <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+      </div>
     </div>
-  </template>
+  </div>
+</template>
  
   <script>
-  import { mapGetters, mapActions } from 'vuex';
+  import { ref, computed } from 'vue';
+  import { useStore } from 'vuex';
+  import { useRouter } from 'vue-router';
   
   export default {
-    computed: {
-      ...mapGetters(['user', 'isAuthenticated']),
-      ...mapGetters(['level']), // Получаем уровень доступа из Vuex
-    userLevel() {
-      console.log('Уровень доступа пользователя:', this.level);
-      return this.level || 0; // Если уровень не задан, считаем его равным 0
-    },
-    },
-    methods: {
-      ...mapActions(['logout']),
-      logout() {
-        this.logout();
-        this.$router.push('/login'); // Перенаправление после выхода
+    name: 'AppProfile',
+    setup() {
+      const store = useStore();
+      const router = useRouter();
+      const isLoading = ref(false);
+      const errorMessage = ref ('');
+      const user = computed(() => store.state.auth.user);
+      const userLevel = computed(() => store.getters.level);
+
+      const confirmLogout = () => {
+      if (window.confirm('Вы уверены, что хотите выйти?')) {
+        handleLogout();
       }
-    },
-    created() {
-      if (!this.isAuthenticated) {
-        this.$router.push('/login'); // Перенаправление на страницу входа, если пользователь не авторизован
+    };
+
+    const handleLogout = async () => {
+      try {
+        isLoading.value = true;
+        errorMessage.value = '';
+        await store.dispatch('auth/logout');
+        router.push('/'); // Перенаправляем на страницу входа
+      } catch (error) {
+        errorMessage.value = 'Ошибка выхода из системы';
+        console.error('Ошибка:', error);
+      } finally {
+        isLoading.value = false; // Обновляем состояние загрузки
       }
+    };
+      return {
+        handleLogout,
+        isLoading,
+        errorMessage,
+        confirmLogout,
+        user,
+        userLevel,
+      };
     }
   };
+
   </script>
   

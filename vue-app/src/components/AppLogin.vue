@@ -32,7 +32,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 
@@ -51,8 +51,8 @@ export default {
     const dID = computed(() => store.getters.dID);
 
     // 2. Исправляем логирование
-    console.log('Уровень из геттера:', userLevel.value);
-    console.log('dID из геттера:', dID.value);
+    //console.log('Уровень из геттера:', userLevel.value);
+    //console.log('dID из геттера:', dID.value);
 
     const login = async () => {
       error.value = '';
@@ -85,10 +85,10 @@ export default {
     };
 
     // 5. Добавляем watcher для отслеживания изменений
-    watch([userLevel, dID], ([newLevel, newDID]) => {
-      console.log('Уровень изменился:', newLevel);
-      console.log('dID изменился:', newDID);
-    });
+    // watch([userLevel, dID], ([newLevel, newDID]) => {
+    //   console.log('Уровень изменился:', newLevel);
+    //   console.log('dID изменился:', newDID);
+    // });
 
     onMounted(() => {
       usernameInput.value?.focus();

@@ -70,8 +70,8 @@ export default {
         }
       },
 
-    logout({ commit, dispatch }) {
-      dispatch('websocket/disconnect', null, { root: true });
+    logout({ commit}) {
+     //dispatch('websocket/disconnect', null, { root: true });
       commit('LOGOUT');
       localStorage.removeItem('token');
       localStorage.removeItem('user');

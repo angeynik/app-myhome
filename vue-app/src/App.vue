@@ -25,7 +25,7 @@ export default {
   // },
  
   async mounted() {
-    await this.$store.dispatch('initializeApp'); // Восстанавливаем состояние
+    await this.$store.dispatch('auth/initializeApp'); // Восстанавливаем состояние
     try {
       await this.$store.dispatch('websocket/connect'); // Устанавливаем WebSocket-соединение
     } catch (error) {

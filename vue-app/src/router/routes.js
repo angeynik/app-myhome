@@ -5,8 +5,8 @@ import ManufactAutomatation from '../ManufactAutomatation.vue';
 import IntroduceHome from '../IntroduceHome.vue';
 import Login from '../components/AppLogin.vue';
 import Profile from '../components/AppProfile.vue';
-import UserConfig from '@/components/UserConfig.vue';
-import AccessDenied from '@/components/AccessDenied.vue'; // Компонент для ошибки доступа
+import UserConfig from '../components/UserConfig.vue';
+import AccessDenied from '../components/AccessDenied.vue'; // Компонент для ошибки доступа
 import store from '@/store'; // Импортируем хранилище Vuex
 
 const routes = [
@@ -40,7 +40,7 @@ const routes = [
   },
   {
     path: '/profile',
-    name: 'Profile',
+    name: 'AppProfile',
     component: Profile,
     meta: { requiresAuth: true, requiredLevel: 2 }, // Уровень доступа 2
   },

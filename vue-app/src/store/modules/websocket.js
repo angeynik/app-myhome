@@ -1,10 +1,14 @@
 const generateRequestId = () => Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+const RECONNECT_DELAY = 3000; // Базовая задержка переподключения
+const MAX_RECONNECT_ATTEMPTS = 8; // Максимальное количество попыток
 
 export default {
   namespaced: true,
   state: {
     socket: null,
     pendingRequests: new Map(),
+    reconnectAttempts: 0,
+    explicitDisconnect: false
   },
   
   mutations: {
@@ -16,6 +20,12 @@ export default {
     },
     REMOVE_PENDING_REQUEST(state, requestId) {
       state.pendingRequests.delete(requestId);
+    },
+    SET_RECONNECT_ATTEMPTS(state, attempts) {
+      state.reconnectAttempts = attempts;
+    },
+    SET_EXPLICIT_DISCONNECT(state, value) {
+      state.explicitDisconnect = value;
     },
   },
 
@@ -40,10 +50,27 @@ export default {
           reject(error);
         };
 
-        socket.onclose = () => {
-          console.log('WebSocket disconnected');
+        // socket.onclose = () => {
+        //   console.log('WebSocket disconnected');
+        //   commit('SET_SOCKET', null);
+        // };
+
+        socket.onclose = (event) => {
+          console.log(`WebSocket closed: ${event.code} ${event.reason}`);
           commit('SET_SOCKET', null);
+          
+          if (!state.explicitDisconnect && state.reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            const delay = RECONNECT_DELAY * Math.pow(2, state.reconnectAttempts);
+            console.log(`Reconnecting in ${delay}ms...`);
+            
+            setTimeout(() => {
+              commit('SET_RECONNECT_ATTEMPTS', state.reconnectAttempts + 1);
+              dispatch('connect');
+            }, delay);
+          }
         };
+
+
       });
     },
 

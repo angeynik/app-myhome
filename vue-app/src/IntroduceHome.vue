@@ -1,6 +1,6 @@
 <template>
-  <div class="header-bottom">
-    <nav>
+  <div >
+    <nav class="header-bottom">
       <router-link to="/login">Login</router-link> |
       <router-link to="/dashboard">Dashboard</router-link> |
       <router-link to="/smart-home">Smart Home</router-link> |
@@ -10,7 +10,7 @@
           <!-- Users (доступна для level 3) -->
       <router-link v-if="userLevel >= 3" to="/users">Users</router-link>
     </nav>
-  </div>
+
     <p style="width: 100%; height: 1px; background-color: var(--orange);"> </p>
     <div style="align-items: center;">
     <h1>Добро пожаловать!</h1>
@@ -34,6 +34,7 @@
       </button>
     </div>
   </div>
+</div>
 </template>
 
 <script>

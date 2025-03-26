@@ -91,6 +91,8 @@ export default {
   setup() {
     const store = useStore();
     const userLevel = computed(() => store.getters.level || 0);
+    const dID = computed(() => store.getters.dID);
+    //console.log('dID - ', dID.value);
 
     const newUser = ref({
       username: '',
@@ -200,18 +202,24 @@ export default {
 
     const fetchUsers = async () => {
   if (isUsersLoaded) return;
-
+  console.log('Список пользователей не загружен - ', isUsersLoaded);
   try {
-    const response = await store.dispatch('sendWSMessage', {
+    console.log ('Формируем запрос на сервер', {
       type: 'get',
       request: 'fetchUsers',
+      name: dID.value,
+    })
+    const response = await store.dispatch('websocket/send', {
+      type: 'get',
+      request: 'fetchUsers',
+      name: dID.value,
     });
 
     console.log('Ответ от сервера (fetchUsers):', response);
 
     // Преобразуем данные в нужный формат
-    if (Array.isArray(response.users)) {
-      usersDB.value = response.users.map(user => ({
+    if (Array.isArray(response.payload.users)) {
+      usersDB.value = response.payload.users.map(user => ({
         id: user.id,
         username: user.username,
       }));
@@ -233,18 +241,20 @@ export default {
 };
 
 const fetchDataSources = async () => {
+  console.log('isDataSourcesLoaded - ', isDataSourcesLoaded);
   if (isDataSourcesLoaded) return;
 
   try {
-    const response = await store.dispatch('sendWSMessage', {
+    const response = await store.dispatch('websocket/send', {
       type: 'get',
       request: 'fetchDataSources',
+      name: dID.value,
     });
 
     console.log('Ответ от сервера (fetchDataSources):', response);
 
     // Преобразуем данные в нужный формат
-    dataSources.value = response.sources.map(dataSource => ({
+    dataSources.value = response.payload.sources.map(dataSource => ({
       id: dataSource.id,
       did: dataSource.did, // Используем did вместо name
     }));
