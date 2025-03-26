@@ -95,7 +95,7 @@ export default {
           if (response.type === 'error') {
             reject(new Error(response.message));
           } else {
-            resolve(response.payload);
+            resolve(response);
           }
         }
         
