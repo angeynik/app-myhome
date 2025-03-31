@@ -71,24 +71,21 @@ export default {
         });
 
         // 4. Добавляем проверку состояния после логина
-        console.log('Текущий уровень после логина:', store.getters.level);
-        console.log('Текущий dID после логина:', store.getters.dID);
+        //console.log('Текущий уровень после логина:', store.getters.level);
+        //console.log('Текущий dID после логина:', store.getters.dID);
         
+        alert(`✅ Вход для Пользователя ${username} прошел успешно!\n Уровень доступа ${store.getters.level}`);
+
         const redirectPath = localStorage.getItem('redirectPath') || '/';
         localStorage.removeItem('redirectPath');
         router.push(redirectPath);
         
       } catch (err) {
         error.value = err.message || 'Ошибка авторизации';
-        console.error('Ошибка входа:', err);
+        alert(`✅ Ошибка авторизации Пользователя!`);
+        console.error('Ошибка входа:', err.value );
       }
     };
-
-    // 5. Добавляем watcher для отслеживания изменений
-    // watch([userLevel, dID], ([newLevel, newDID]) => {
-    //   console.log('Уровень изменился:', newLevel);
-    //   console.log('dID изменился:', newDID);
-    // });
 
     onMounted(() => {
       usernameInput.value?.focus();
