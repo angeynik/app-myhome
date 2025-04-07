@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "-": "^0.0.1",
+    "@vueuse/core": "^13.0.0",
     "axios": "^1.8.1",
     "core-js": "^3.8.3",
     "crypto-browserify": "^3.12.0",

@@ -92,7 +92,7 @@ export default {
     const store = useStore();
     const userLevel = computed(() => store.getters.level || 0);
     const dID = computed(() => store.getters.dID);
-    //console.log('dID - ', dID.value);
+    console.log('dID - ', dID.value);
 
     const newUser = ref({
       username: '',
