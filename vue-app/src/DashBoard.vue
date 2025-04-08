@@ -517,8 +517,8 @@ export default {
         }
 
         const response = await this.sendMessage(payload);
-        
-        if (response.type === 'config') {
+        console.log(' -- 3 -- Функция sendServerRequest (App.vue) - response from Server ', response);
+        if (response.type === 'response') {
           localStorage.setItem(configName, JSON.stringify(response.payload));
           console.log('Конфигурация сохранена:', configName);
         }
@@ -528,29 +528,6 @@ export default {
         console.error('Ошибка запроса:', error);
         throw error;
       }
-          // if (!Config) {
-          //   console.log ('--- Конфигурация ', configName, ' НЕ существует - ', Config, 'name = ', name);
-
-          //   payload = {
-          //   type: type,
-          //   request: request,
-          //   name: name,
-          //   payload: configName,
-          //   };
-          //   console.log ('Функция sendServerRequest (App.vue) Отправка на запроса на получение конфигурации на сервер - ', payload);
-          //   //this.sendLogToServer ('info', `Конфигурация ${configName} отсутствует. Отправляем запрос на получение конфигурации`);
-          //   this.isSending = true;
-          //   this.sendMessage(payload);
-          //   //this.sendMessage(JSON.stringify(payload));
-          //   console.info('Функция sendServerRequest (App.vue) Отправка на запроса на получение конфигурации на сервер - ', payload);
-          //   } else if (Config) {
-          //     console.log('Конфигурация ', configName, ' существует');
-          //     this.isSending = false;
-          //   } else {
-          //     this.sendLogToServer ('error', `Проверка конфигурации ${configName}. WebSocket соединение НЕ установлено.`);
-          //     this.isSending = true;
-          //   }
-          //break;
 
           case 'setpoint':
           //Config = JSON.parse(localStorage.getItem('manageConfig'));
