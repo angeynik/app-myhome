@@ -240,9 +240,6 @@ export default {
 
     }; 
   },
-  // created() {
-  //       this.sendLogToServer('info', 'Client: Инициализация подключения логирования'); // отправка логов на сервер для сохранения в файл
-  // },
   mounted() {
     //this.$store.dispatch('websocket/connect');
     //this.connectWebSocket();
@@ -272,7 +269,7 @@ export default {
   },
   methods: {
     ...mapActions('websocket', ['send']), // Правильно маппим действие send из модуля websocket
-    ...mapActions(['sendLogToServer']), // Добавляем действие sendLogToServer
+    ...mapActions('log',['sendLogToServer']), // Добавляем действие sendLogToServer
 
     initApp() {
       this.selectedComponent = null;
@@ -291,72 +288,57 @@ export default {
 
       //console.log(' --- 165 --- Функция checkMessage - актуальный config из localStorage - ', JSON.parse(localStorage.getItem('commonConfig')));
     },
-    async sendLogToServer(type, message) {
-    await this.$store.dispatch('sendLogToServer', { type, message });
-    },
-    
-    checkLocalStorage() { // Проверка наличия конфигурации в localStorage
-      const commonData = JSON.parse(localStorage.getItem('commonConfig'));
-      const manageData = JSON.parse(localStorage.getItem('manageConfig'));
-      const directoryConfig = JSON.parse(localStorage.getItem('directoryConfig'));
-      if (!commonData) {
-        this.isSending = true;
-        this.sendServerRequest('get', 'config', this.userdID,'commonConfig');
-      } else if (!manageData) {
-        this.isSending = true;
-        this.sendServerRequest('get', 'config', this.userdID,'manageConfig');
-      } else if (!directoryConfig) {
-        this.isSending = true;
-        this.sendServerRequest('get', 'config', this.userdID,'directoryConfig');
+
+    async checkLocalStorage() {
+  try {
+    if (!this.$store.state.websocket.socket || 
+        this.$store.state.websocket.socket.readyState !== WebSocket.OPEN) {
+      await this.$store.dispatch('websocket/connect');
+    }
+    const requests = [
+      { config: 'commonConfig', exists: !!localStorage.getItem('commonConfig') },
+      { config: 'manageConfig', exists: !!localStorage.getItem('manageConfig') },
+      { config: 'directoryConfig', exists: !!localStorage.getItem('directoryConfig') }
+    ];
+
+    for (const { config, exists } of requests) {
+      if (!exists) {
+        await this.sendServerRequest('get', 'config', this.userdID, config);
       } else {
-        this.isSending = false;
-        //this.findRoom(commonData, localStorage.getItem('room_id'));
+        console.log(' Функция checkLocalStorage - актуальный config из localStorage - ', JSON.parse(localStorage.getItem(config)));
       }
-    },
-  //   async sendMessage(message) { // Отправка сообщения на сервер
-  //     console.log(' -- 314 -- Входим в функцию sendMessage ');
-  //     try {
-  //   const response = await this.send(message);
-    
-  //   // Обработка успешного ответа
-  //   if (response.type === 'config') {
-  //     if (response.commonConfig) {
-  //       localStorage.setItem('commonConfig', JSON.stringify(response.commonConfig));
-  //     }
-  //     // Аналогично для других типов конфигураций
-  //   }
-    
-  //   return response;
-    
-  // } catch (error) {
-  //   console.error('Ошибка запроса:', error);
-  //   this.sendLogToServer('error', `Ошибка запроса: ${error.message}`);
-  //   throw error;
-  // }
-
-
-  //     // if (this.socket && this.socket.readyState === WebSocket.OPEN && this.isSending) {
-  //     //   this.isSending = false;
-  //     //   this.socket.send(message);
-  //     //   console.log(' sendMessage -- Сообщение на сервер (WS) отправлено:', message);
-  //     // } else {
-  //     //   console.error('Не удалось отправить сообщение: соединение не установлено');
-  //     //   this.sendLogToServer('error', 'Client: Не удалось отправить сообщение: WS соединение не установлено'); // отправка логов на сервер для сохранения в файл
-  //     // }
-  //   },
-  async sendMessage(payload) {
+    }
+  } catch (error) {
+    console.error('Ошибка инициализации конфигураций:', error);
+  } finally {
+    this.isSending = false;
+  }
+},
+    async sendMessage(payload) {
     console.log(' -- 348 -- Входим в функцию sendMessage ');
-      try {
+    try {
+      if (!this.$store.state.websocket.socket || 
+        this.$store.state.websocket.socket.readyState !== WebSocket.OPEN) {
+      await this.$store.dispatch('websocket/connect');
+    }
         console.log('Отправка сообщения:', payload);
-        return await this.send(payload);
-      } catch (error) {
+        const response = await this.send(payload);
+        console.log(' -- 326 --- Получен ответ от сервера:', response);
+
+        if (response.type === 'error' && response.request === 'configError') {
+            console.warn(`Ошибка: ${response.manage}`);
+            //return { success: false, error: response.error }; // Вернуть результат
+            return response;
+        }
+        return response; // Успешный ответ
+    } catch (error) {
         console.error('Ошибка отправки:', error);
         await this.sendLogToServer({
-          type: 'error',
-          message: `WebSocket ошибка: ${error.message}`
+            type: 'error',
+            message: `WebSocket ошибка: ${error.message}`
         });
         throw error;
-      }
+    }
     },
     blobToJson(blob) { // Функция преобразования Blob в JSON
     return new Promise((resolve, reject) => {
@@ -368,13 +350,19 @@ export default {
           resolve(jsonObject);
         } catch (error) {
           reject('Ошибка при парсинге JSON: ' + error);
-          this.sendLogToServer('error', 'Client: Ошибка при парсинге JSON: ' + error);
+          this.sendLogToServer({
+          type: 'error',
+          message: `Client: Ошибка при парсинге JSON:: ${error}`
+          });
         }
       };
 
       reader.onerror = () => {
         reject('Ошибка при чтении Blob');
-        this.sendLogToServer('error', 'Client: Ошибка при чтении Blob');
+        this.sendLogToServer({
+          type: 'error',
+          message: `Client: Ошибка при чтении Blob`
+          });
       };
 
       reader.readAsText(blob);
@@ -384,7 +372,10 @@ export default {
         // console.log(' 1 --- Функция checkMessage - Получено cообщение:', n);
       if (n.type === undefined || n.type === null) {
         console.error('Функция checkMessage (App) По WS получено сообщение с пустым типом:', n);
-        this.sendLogToServer ('error', `Функция checkMessage (App) По WS лучено пустое сообщение: ${n.type}`);
+        this.sendLogToServer({
+          type: 'error',
+          message: `Функция checkMessage (App) По WS лучено пустое сообщение: ${n.type}`
+          });
       }
       switch (n.type) {
           case 'post':
@@ -464,94 +455,52 @@ export default {
       }
     },
 
-    // async sendLogToServer (type, message) {
-    //   try {
-    //     let payload;
-    //     if (message) {
-    //       payload = { type, message };
-    //       //console.log ('Отправка на сервер лога: ', payload);
-    //     } else {
-    //       payload = { type:'error', message: 'Ошибка отправки - Пустое сообщения'};
-    //       //console.log ('Ошибка отправки - Пустое сообщения' );
-    //     }    
-    //     //await fetch(`http://${process.env.VUE_APP_HOST}:${process.env.VUE_APP_SERVER_PORT}/logs`, {
-    //     console.log (`Путь к серверу ${this.host}:${this.serverPort}/log для отправки на сервер лога`);
-    //     await fetch(`http://${this.host}:${this.serverPort}/log`, {
-    //     //await fetch(`http://localhost:3010/log`, {
-    //       method: 'POST',
-    //       headers: {
-    //       'Content-Type': 'application/json'
-    //       },
-    //       body: JSON.stringify(payload)
-    //       });
-    //   } catch (error) {
-    //     console.error('Failed to send log to server', error);
-    //   }
-    // },
+
+
+
     // sendServerRequest
     // type - тип запроса post, get
     // request - причина (заголовок) запроса config, sensors, actuator
     // name - имя переменной 
     // data - значение переменной
     // запрос формируется как {"type": type, "request": request, name: data}  -  пример {"type": "get", "request": "config", "name": "commonConfig"}
-    async sendServerRequest(type, request, dIDname, configName)  { //Формируем и оправляем сообщение на сервер
-      const name = dIDname ?? this.userdID;
-      console.log (' -- 1 -- Функция sendServerRequest (App.vue) - request = ', request, 'type = ', type, 'dID = ', name, 'configName = ', configName);
-      let payload = {};
-      //let Config = {};
-      switch (request) {
-        case 'config':
-        // Config = JSON.parse(localStorage.getItem([configName]));
-        try {
-        const payload = {
-          type,
-          request,
-          name,
-          payload: { configName } // Правильная структура payload
-        };
+    async sendServerRequest(type, request, dIDname, configName) {
+  try {
+    const payload = {
+      type,
+      request,
+      name: dIDname,
+      payload: { configName }
+    };
+    console.log(' -- sendServerRequest -- Отправка запроса:', payload);
+    const response = await this.sendMessage(payload);
+    
+    if (response.type === 'response') {
+      localStorage.setItem(configName, JSON.stringify(response.payload));
+      //console.log('Конфигурация сохранена:', configName);
+      return true;
+    }
+    if (response.type === 'error' && response.request === 'configError') {
+      console.error('Ошибка запроса:', response.payload.message);
+      return true;
+    } 
+    else {
+      console.error('Неверный формат ответа от сервера', response);
+      //throw new Error('Неверный формат ответа от сервера');
+    }
+    
+    //return false;
+  } catch (error) {
+    console.error('Ошибка запроса:', error);
+    await this.sendLogToServer({
+      type: 'error',
+      message: `WebSocket ошибка: ${error.message}`
+    });
+    throw error;
+  }
+},    
+  
 
-        // Ждем установки соединения
-        if (!this.$store.state.websocket.socket || 
-            this.$store.state.websocket.socket.readyState !== WebSocket.OPEN) {
-          await this.$store.dispatch('websocket/connect');
-        }
-
-        const response = await this.sendMessage(payload);
-        console.log(' -- 3 -- Функция sendServerRequest (App.vue) - response from Server ', response);
-        if (response.type === 'response') {
-          localStorage.setItem(configName, JSON.stringify(response.payload));
-          console.log('Конфигурация сохранена:', configName);
-        }
-        
-        return response;
-      } catch (error) {
-        console.error('Ошибка запроса:', error);
-        throw error;
-      }
-
-          case 'setpoint':
-          //Config = JSON.parse(localStorage.getItem('manageConfig'));
-          //console.log ('  --- 447 --- Конфигурация ', data, ' существует', Config, 'name = ', name);
-                //console.log (' 2 ---  APP.vue sendServerRequest - request = setpoint" ', data);
-                payload = {
-                type: type,
-                request: request,
-                name: name,
-                id: localStorage.getItem('room_id'),
-                title: localStorage.getItem('room_title')
-              };
-              this.safeLocalSorage('manageConfig', payload);
-              console.log (' 7 ---APP.vue sendServerRequest', payload, 'сохранен в localStorage');
-              this.isSending = true;
-              this.sendMessage(JSON.stringify(payload));
-              console.log ('Функция sendServerRequest (App.vue) Отправка на сервер запроса на изменение уставки - "setpoint" ', payload);
-          break;
-
-        default:
-          console.error(`Получено cообщение с неизвестным типом`, request);
-          break;
-      }
-    },   
     // safeLocalSorage - сохраняем сообщение в localStorage
     safeLocalSorage(name, message) {
       this.localStorageUpdated = false;
@@ -572,7 +521,10 @@ export default {
           console.error(' 5 --- Конфигурация не найдена в localStorage для ключа:', name);
           //console.log(' Функция safeLocalSorage - config по ключу', roomKey, 'для', name, ':', config[roomKey]);
           // console.log(' APP SafeLocalSorage - id_title:', this.id_title);
-          this.sendLogToServer('warning', `Конфигурация не найдена в localStorage для ключа: ${name}`);
+          this.sendLogToServer({
+            type: 'warning',
+            message: `Конфигурация не найдена в localStorage для ключа: ${name}`
+          });
           config[roomKey] = {
                 setpoint: message[roomKey],
                 manage: {},
@@ -581,8 +533,10 @@ export default {
                 id: Number(localStorage.getItem('room_id')),
               };
               //console.log('Создан новый объект комнаты:', config[roomKey]);
-
-              this.sendLogToServer ('info', `Создан новый объект комнаты: ${roomKey}`);
+              this.sendLogToServer({
+                type: 'info',
+                message: `Создан новый объект комнаты: ${roomKey}`
+              });
               // localStorage.setItem([name], JSON.stringify(config));
         } else {
           //console.log(' 5 --- Конфигурация найдена в localStorage для ключа:', name, 'roomKey: ', roomKey);
@@ -596,15 +550,20 @@ export default {
           config[roomKey].time[sensorKey + '_time'] = timeUpdated;
           //console.log(' 6  --- Конфигурация сохранена в копию localStorage ', config[roomKey]);
 
-
-          this.sendLogToServer ('info', `Обновили значение Уставки датчика ${sensorKey} в комнате ${roomKey} на ${sensorValue}`);
+          this.sendLogToServer({
+                type: 'info',
+                message: `Обновили значение Уставки датчика ${sensorKey} в комнате ${roomKey} на ${sensorValue}`
+          });
           break;
         case 'commonConfig':
         roomKey = Object.keys(message).find(key => key.startsWith('room'));
         //console.log(' Функция safeLocalSorage, request = ', name, ' определили roomKey:', roomKey); // Логирование roomKey
           if (!config[roomKey]) {
             console.error('Датчик не найден в конфигурации для комнаты ', roomKey);
-            this.sendLogToServer ('error', 'Ошибка поиска ДАТЧИКА в файле конфигурации - датчик соответствующий идентификатору из сообщения Сервера не найден');
+            this.sendLogToServer({
+                type: 'info',
+                message: 'Ошибка поиска ДАТЧИКА в файле конфигурации - датчик соответствующий идентификатору из сообщения Сервера не найден'
+            });
           } else {
             sensorKey = Object.keys(message[roomKey].sensors)[0];
             //console.log(' 5 --- Функция safeLocalSorage, request = ', name, ' определили sensorKey: ', sensorKey);
@@ -618,7 +577,10 @@ export default {
               config[roomKey].sensors[sensorKey] = sensorValue;
               config[roomKey].time[sensorKeyTime] = new Date();
               // console.log('Значение сенсора ', sensorKey, ' обновлено:', config[roomKey].sensors[sensorKey]);
-              this.sendLogToServer ('info', `Значение сенсора ${sensorKey} обновлено на: ${config[roomKey].sensors[sensorKey]}`);
+              this.sendLogToServer({
+                type: 'info',
+                message: `Значение сенсора ${sensorKey} обновлено на: ${config[roomKey].sensors[sensorKey]}`
+              });
           }
         }
           break;
@@ -658,7 +620,10 @@ console.log(`--- Функция safeLocalSorage (App.vue) - Конфигурац
       if (this.selectedComponent !== 'Params' || this.selectedComponent !== 'Rooms') {
         this.showHeaderArrow = false;
       }
-      this.sendLogToServer('customer', `Меню выбора экрана сброшено по кнопке Back: ${this.selectedComponent} Пользователь вернулся на основной экран`); 
+          this.sendLogToServer({
+                type: 'info',
+                message: `Меню выбора экрана сброшено по кнопке Back: ${this.selectedComponent} Пользователь вернулся на основной экран`
+          }); 
     },
     detectDevice() {
       // Проверка на мобильное устройство
@@ -670,7 +635,10 @@ console.log(`--- Функция safeLocalSorage (App.vue) - Конфигурац
         //console.log(' Функция getManageValues получила параметры room_id = ', id_room , ' и param_key = ', param_key);
       if (id_room === undefined || paramKey === undefined) {
         console.error('App.vue - Функция getManageValues получила пустое значение id_room или param_key');
-        this.sendLogToServer ('warning', `Функция getManageValues получила не корректные пееременные id_room = ${id_room} или param_key = ${paramKey} - Значения для Setpoint и Limits НЕ определены `);
+        this.sendLogToServer({
+                type: 'warning',
+                message: `Функция getManageValues получила не корректные пееременные id_room = ${id_room} или param_key = ${paramKey} - Значения для Setpoint и Limits НЕ определены `
+          }); 
         return;
       } 
       try {
@@ -694,7 +662,10 @@ console.log(`--- Функция safeLocalSorage (App.vue) - Конфигурац
         return Mconfig[roomID].setpoint[this.setName];
       }
       } catch (error) {
-        this.sendLogToServer ('error', `В ходе выполнения функции getManageValues для получения Setpoint и Limits возникла ошибка - ${error} - Значения для Setpoint и Limits НЕ определены `);   
+        this.sendLogToServer({
+                type: 'error',
+                message: `В ходе выполнения функции getManageValues для получения Setpoint и Limits возникла ошибка - ${error} - Значения для Setpoint и Limits НЕ определены `
+          }); 
       }
       
     },
@@ -716,7 +687,10 @@ console.log(`--- Функция safeLocalSorage (App.vue) - Конфигурац
         return room_title;
       }
       catch (error) {
-        this.sendLogToServer ('error', `Произошла ошибка при определении ключа для получения Setpoint и лемитов - ${error}`);
+        this.sendLogToServer({
+                type: 'error',
+                message: `Произошла ошибка при определении ключа для получения Setpoint и лемитов - ${error}`
+          }); 
       }
     },
     sortingBack() {
@@ -837,45 +811,6 @@ console.log(`--- Функция safeLocalSorage (App.vue) - Конфигурац
         // }
     },
 
-    //   // console.log('MainBody - Функция getPeriodMinutes Начинаем работу с lastTime = ', lastTime);
-    //   if (lastTime !== null && lastTime !== undefined) {
-    //     try {
-    //       const lastDate = new Date(lastTime);
-    //       // console.log('MainBody - Функция getPeriodMinutes lastDate = ', lastDate);
-    //       const currentDate = new Date();
-    //       const timeDifferenceMinutes = Math.floor((currentDate - lastDate) / 60000); // разница в минутах
-
-    //       // const timeDifference = currentDate - lastDate;
-    //       // const seconds = Math.floor(timeDifference / 1000);
-    //       // const minutes = Math.floor(seconds / 60);
-    //       // const hours = Math.floor(minutes / 60);
-    //       // console.log(`Прошло времени: ${hours} часов, ${minutes % 60} минут, ${seconds % 60} секунд`);
-
-    //       return timeDifferenceMinutes;
-    //     } catch (error) {
-    //       console.error('MainBody Функция getPeriodMinutes Ошибка расчета интервала времени', error);
-    //       // В компоненте, который вызывает событие
-    //      this.$emit('updateState', {
-    //         sendLogToServer: 
-    //         { type: 'error', 
-    //         message: `MainBody Функция getPeriodMinutes Ошибка расчета интервала времени: ${error}` 
-    //         }
-    //       });
-    //       // this.$emit('updateState', {sendLogToServer: ('Error in getPeriodMinutes: ', error)});
-    //       // this.sendLogToServer('error', 'Client: Не удалось отправить сообщение: WS соединение не установлено');
-    //     }
-    //   } else {
-    //     console.error('MainBody Функция getPeriodMinutes Значение времени переданное в функцию не определено');
-    //       // В компоненте, который вызывает событие
-    //      this.$emit('updateState', {
-    //       sendLogToServer: 
-    //       { type: 'error', 
-    //       message: `MainBody Функция getPeriodMinutes Значение времени переданное в функцию не определено: ` 
-    //     }
-    //     });
-    //   }
-      
-    // },
 
 
 
@@ -891,7 +826,11 @@ console.log(`--- Функция safeLocalSorage (App.vue) - Конфигурац
       }
       if (event.sendLogToServer) {
         // console.log('App.vue - из компонентов в функцию getEventsComponent получено сообщение sendLogToServer - ', event.sendLogToServer);
-        this.sendLogToServer(event.sendLogToServer.type, event.sendLogToServer.message);
+      
+        this.sendLogToServer({
+                type: event.sendLogToServer.type,
+                message: event.sendLogToServer.message
+          }); 
       }
       if (this.selectedComponent === 'MainBody') {
         //console.log(' --- 806 --- App.vue - из компонентов в функцию getEventsComponent получено сообщение changeTitle - ', event);
@@ -902,7 +841,10 @@ console.log(`--- Функция safeLocalSorage (App.vue) - Конфигурац
               this.propsTitle = event.changeTitle.type;
               //console.log(' ------ getEventsComponent ------ changeTitle ---- Изменяем значение propsTitle: ', this.propsTitle, 'и headerTitle: ', this.headerTitle); 
             } catch (error) {
-              this.sendLogToServer ('warning', `Ошибка ${error} обработки сообщения changeTitle - ${event.changeTitle}`);
+              this.sendLogToServer({
+                type: 'warning',
+                message: `Ошибка ${error} обработки сообщения changeTitle - ${event.changeTitle}`
+          }); 
             }
           }
           if (event.showSetpoint) {

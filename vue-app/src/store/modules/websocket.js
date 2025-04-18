@@ -34,12 +34,19 @@ export default {
       if (state.socket && state.socket.readyState === WebSocket.OPEN) {
         return state.socket;
       }
-
+      if (state.reconnectAttempts > 0) {
+        await new Promise(resolve => 
+          setTimeout(resolve, RECONNECT_DELAY * Math.pow(2, state.reconnectAttempts)));
+          return dispatch('connect');
+        //return this.connect({ state, commit, dispatch });
+      }
+      
       return new Promise((resolve, reject) => {
         const socket = new WebSocket(`ws://${process.env.VUE_APP_HOST}:${process.env.VUE_APP_PORT}`);
         
         socket.onopen = () => {
           console.log('WebSocket connected');
+          commit('SET_RECONNECT_ATTEMPTS', 0); // Сброс счетчика
           socket.onmessage = (event) => dispatch('handleMessage', event);
           commit('SET_SOCKET', socket);
           resolve(socket);
@@ -47,14 +54,23 @@ export default {
 
         socket.onerror = (error) => {
           console.error('WebSocket error:', error);
+          if (!state.explicitDisconnect) {
+            setTimeout(() => dispatch('connect'), RECONNECT_DELAY);
+          }
           reject(error);
         };
 
-        // socket.onclose = () => {
-        //   console.log('WebSocket disconnected');
-        //   commit('SET_SOCKET', null);
-        // };
-
+        socket.onclose = () => {
+          if (state.explicitDisconnect) return;
+          
+          const delay = RECONNECT_DELAY * Math.pow(2, Math.min(state.reconnectAttempts, 5));
+          console.log(`Reconnecting in ${delay}ms...`);
+          
+          setTimeout(() => {
+            commit('SET_RECONNECT_ATTEMPTS', state.reconnectAttempts + 1);
+            dispatch('connect').catch(console.error);
+          }, delay);
+        };
         socket.onclose = (event) => {
           console.log(`WebSocket closed: ${event.code} ${event.reason}`);
           commit('SET_SOCKET', null);
@@ -109,30 +125,35 @@ export default {
         }, 10000);
       });
     },
-      handleMessage({ state, commit }, event) {
-        const response = JSON.parse(event.data);
-        
-        // Получаем requestId из payload
-        const requestId = response.payload?.requestId;
-        
-        if (requestId && state.pendingRequests.has(requestId)) {
-          const { resolve, reject } = state.pendingRequests.get(requestId);
-          commit('REMOVE_PENDING_REQUEST', requestId);
-          
-          if (response.type === 'error') {
-            reject(new Error(response.message));
+
+
+    handleMessage({ state, commit }, event) {
+      try {
+          const response = JSON.parse(event.data);
+          const requestId = response.payload?.requestId;
+  
+          if (requestId && state.pendingRequests.has(requestId)) {
+              const { resolve, reject } = state.pendingRequests.get(requestId);
+              commit('REMOVE_PENDING_REQUEST', requestId);
+  
+              if (response.type === 'error' && response.request === 'configError') {
+                  console.warn(`Ошибка от сервера: ${response.payload.message}`);
+                  // Возвращаем оригинальную структуру ответа сервера
+                  resolve(response); 
+              } else if (response.type === 'error') {
+                  reject(new Error(response.payload.message));
+              } else {
+                  resolve(response);
+              }
           } else {
-            resolve(response);
+              console.log('Необработанное сообщение:', response);
           }
-        }
-        
-        // Обработка глобальных сообщений
-        if (response.type === 'loginSuccess') {
-          // Пример обработки имени из ответа
-          const dataSourceName = response.name;
-          console.log('Источник данных:', dataSourceName);
-        }
+      } catch (error) {
+          console.error('Ошибка обработки сообщения:', error);
       }
+  },
+  
+
 
   }
 };
