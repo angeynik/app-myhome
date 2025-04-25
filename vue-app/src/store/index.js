@@ -2,12 +2,16 @@ import { createStore } from 'vuex';
 import auth from './modules/auth';
 import websocket from './modules/websocket';
 import log from './modules/log';
+import sortParams from './modules/sortParams';
+import config from './modules/config';
 
 const store = createStore({
   modules: {
     auth,
     websocket,
-    log
+    log,
+    sortParams,
+    config
   },
   actions: {
     toLowerCase(_, str) {
@@ -20,6 +24,7 @@ const store = createStore({
     user: (state) => state.auth.user,
     level: (state) => state.auth.user.userlevel || 0,
     dID: (state) => state.auth.user.dID || null,
+
   }
 });
 

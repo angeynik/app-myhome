@@ -1,15 +1,5 @@
 <template>
 
-    <!-- <div @click="$emit('room', id)"> -->
-        <!-- <div 
-    @click="customerClick"
-    @dblclick="customerDoubleClick"
-    @dbltap="customerDoubleClick"
-    @touchstart="handleTouchStart" 
-    @touchend="handleTouchEnd"
-    :class="{ selected: isSelected }"
-    > -->
-
 
     <div 
     @click="customerClick"
@@ -23,7 +13,7 @@
       <div class="mainBodyValue_h1">{{ value }}</div>
       <div class="mainBodyValue_p"> обновление - {{ timeUpdated }} </div>
       <!-- <h5> {{ paramKey }} </h5> -->
-     
+
   </div>
 </template>
 
