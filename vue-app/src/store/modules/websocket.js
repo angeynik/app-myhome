@@ -96,7 +96,7 @@ export default {
       }
     },
 
-    async send({ state, commit }, { type, name='', request, payload = {} }) {
+    async send({ state, commit }, { type, request, name, payload = {} }) {
       const socket = state.socket;
       if (!socket || socket.readyState !== WebSocket.OPEN) {
         throw new Error('WebSocket connection not established');
@@ -112,48 +112,66 @@ export default {
           name,
           payload: {
             ...payload,
-            requestId // Переносим requestId в payload
           }
         };
-        console.log('Отправляем на сервер - ', message);
+        //console.log('Отправляем на сервер - ', message);
         socket.send(JSON.stringify(message));
 
         // Таймаут для обработки отсутствия ответа
         setTimeout(() => {
           commit('REMOVE_PENDING_REQUEST', requestId);
           reject(new Error('Request timeout'));
-        }, 10000);
+        }, 2000);
       });
     },
 
 
-    handleMessage({ state, commit }, event) {
-      try {
-          const response = JSON.parse(event.data);
-          const requestId = response.payload?.requestId;
+  //   handleMessage({ state, commit }, event) {
+  //     try {
+  //       console.log ('socket.onmessage - получено сообщение', event.data);
+        
+
+  //         const response = JSON.parse(event.data);
+  //         const requestId = response.payload.requestId;
+  //         console.log(`Ответ handleMessage: requestId=${requestId}, содержится ли в pendingRequests=${state.pendingRequests.has(requestId)}`);
+          
+  //         if (requestId && state.pendingRequests.has(requestId)) {
+  //           console.log('requestId - совпал');
+  //             const { resolve, reject } = state.pendingRequests.get(requestId);
+  //             commit('REMOVE_PENDING_REQUEST', requestId);
+              
+  //             if (response.type === 'error' && response.request === 'configError') {
+  //                 console.warn(`Ошибка от сервера: ${response.payload.message}`);
+  //                 // Возвращаем оригинальную структуру ответа сервера
+  //                 resolve(response); 
+  //             } else if (response.type === 'error') {
+  //                 reject(new Error(response.payload.message));
+  //             } else {
+  //                 resolve(response);
+  //             }
+  //         } else {
+  //             console.log('Необработанное сообщение:', response.payload);
+  //         }
+  //     } catch (error) {
+  //         console.error('Ошибка обработки сообщения:', error);
+  //     }
+  // },
   
-          if (requestId && state.pendingRequests.has(requestId)) {
-              const { resolve, reject } = state.pendingRequests.get(requestId);
-              commit('REMOVE_PENDING_REQUEST', requestId);
-  
-              if (response.type === 'error' && response.request === 'configError') {
-                  console.warn(`Ошибка от сервера: ${response.payload.message}`);
-                  // Возвращаем оригинальную структуру ответа сервера
-                  resolve(response); 
-              } else if (response.type === 'error') {
-                  reject(new Error(response.payload.message));
-              } else {
-                  resolve(response);
-              }
-          } else {
-              console.log('Необработанное сообщение:', response);
-          }
-      } catch (error) {
-          console.error('Ошибка обработки сообщения:', error);
-      }
+handleMessage({ state, commit, rootGetters}, event) {
+  const response = JSON.parse(event.data);
+  const response_dId = response.name;
+  //const dId = state.dID;
+  const dId = rootGetters['dID'];
+  console.log(`Ответ handleMessage: dId=${response_dId}, содержится ли в dID - ${dId}`);
+  console.log(state, commit);
+  return response;
+},
+
+
+
   },
-  
-
-
-  }
+  getters: {
+    send: (state) => state.socket?.send.bind(state.socket),
+    isConnected: (state) => state.socket?.readyState === WebSocket.OPEN
+  },
 };
