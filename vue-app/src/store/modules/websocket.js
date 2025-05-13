@@ -112,7 +112,9 @@ export default {
           name,
           payload: {
             ...payload,
-          }
+            requestId: requestId
+          },
+          
         };
         //console.log('Отправляем на сервер - ', message);
         socket.send(JSON.stringify(message));
@@ -125,47 +127,38 @@ export default {
       });
     },
 
-
-  //   handleMessage({ state, commit }, event) {
-  //     try {
-  //       console.log ('socket.onmessage - получено сообщение', event.data);
+    handleMessage({ state, commit }, event) {
+      try {
+        console.log ('socket.onmessage - получено сообщение', event.data);
         
 
-  //         const response = JSON.parse(event.data);
-  //         const requestId = response.payload.requestId;
-  //         console.log(`Ответ handleMessage: requestId=${requestId}, содержится ли в pendingRequests=${state.pendingRequests.has(requestId)}`);
+          const response = JSON.parse(event.data);
+          const requestId = response.payload.requestId;
+          console.log(`Ответ handleMessage: requestId=${requestId}, содержится ли в pendingRequests=${state.pendingRequests.has(requestId)}`);
           
-  //         if (requestId && state.pendingRequests.has(requestId)) {
-  //           console.log('requestId - совпал');
-  //             const { resolve, reject } = state.pendingRequests.get(requestId);
-  //             commit('REMOVE_PENDING_REQUEST', requestId);
+          if (requestId && state.pendingRequests.has(requestId)) {
+            console.log('requestId - совпал');
+              const { resolve, reject } = state.pendingRequests.get(requestId);
+              commit('REMOVE_PENDING_REQUEST', requestId);
               
-  //             if (response.type === 'error' && response.request === 'configError') {
-  //                 console.warn(`Ошибка от сервера: ${response.payload.message}`);
-  //                 // Возвращаем оригинальную структуру ответа сервера
-  //                 resolve(response); 
-  //             } else if (response.type === 'error') {
-  //                 reject(new Error(response.payload.message));
-  //             } else {
-  //                 resolve(response);
-  //             }
-  //         } else {
-  //             console.log('Необработанное сообщение:', response.payload);
-  //         }
-  //     } catch (error) {
-  //         console.error('Ошибка обработки сообщения:', error);
-  //     }
-  // },
+              if (response.type === 'error' && response.request === 'configError') {
+                  console.warn(`Ошибка от сервера: ${response.payload.message}`);
+                  // Возвращаем оригинальную структуру ответа сервера
+                  resolve(response); 
+              } else if (response.type === 'error') {
+                  reject(new Error(response.payload.message));
+              } else {
+                  resolve(response);
+              }
+          } else {
+              console.log('Необработанное сообщение:', response.payload);
+          }
+      } catch (error) {
+          console.error('Ошибка обработки сообщения:', error);
+      }
+  },
   
-handleMessage({ state, commit, rootGetters}, event) {
-  const response = JSON.parse(event.data);
-  const response_dId = response.name;
-  //const dId = state.dID;
-  const dId = rootGetters['dID'];
-  console.log(`Ответ handleMessage: dId=${response_dId}, содержится ли в dID - ${dId}`);
-  console.log(state, commit);
-  return response;
-},
+
 
 
 

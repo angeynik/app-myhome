@@ -21,9 +21,9 @@ const store = createStore({
   getters: {
     isAuthenticated: (state) => !!state.auth.token,
     authStatus: (state) => state.auth.status,
-    user: (state) => state.auth.user,
-    level: (state) => state.auth.user.userlevel || 0,
-    dID: (state) => state.auth.user.dID || null,
+    user: (state) => state.auth.user.username || '',
+    level: (state) => state.auth.level || 0,
+    dID: (state) => state.auth.dID || null,
 
   }
 });
