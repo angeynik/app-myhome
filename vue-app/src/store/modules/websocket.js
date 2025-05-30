@@ -42,7 +42,8 @@ export default {
       }
       
       return new Promise((resolve, reject) => {
-        const socket = new WebSocket(`ws://${process.env.VUE_APP_HOST}:${process.env.VUE_APP_PORT}`);
+        console.log(`WebSocket connecting..on -  ws://${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`);
+        const socket = new WebSocket(`ws://${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`);
         
         socket.onopen = () => {
           console.log('WebSocket connected');
