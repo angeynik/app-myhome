@@ -104,6 +104,7 @@ export default {
       }
 
       const requestId = generateRequestId();
+      //const TIMEOUT = 5000;
       
       return new Promise((resolve, reject) => {
         commit('ADD_PENDING_REQUEST', { requestId, resolve, reject });
@@ -124,7 +125,7 @@ export default {
         setTimeout(() => {
           commit('REMOVE_PENDING_REQUEST', requestId);
           reject(new Error('Request timeout'));
-        }, 2000);
+        }, 3000);
       });
     },
 
@@ -135,7 +136,7 @@ export default {
 
           const response = JSON.parse(event.data);
           const requestId = response.payload.requestId;
-          console.log(`Ответ handleMessage: requestId=${requestId}, содержится ли в pendingRequests=${state.pendingRequests.has(requestId)}`);
+          console.log(`Ответ handleMessage: requestId=${requestId}, содержится вpendingRequests=${state.pendingRequests.has(requestId)}`);
           
           if (requestId && state.pendingRequests.has(requestId)) {
             console.log('requestId - совпал');
@@ -152,14 +153,13 @@ export default {
                   resolve(response);
               }
           } else {
-              console.log('Необработанное сообщение:', response.payload);
+              console.log('Необработанное сообщение:', response.payload, 'dID:', response.dID);
           }
       } catch (error) {
           console.error('Ошибка обработки сообщения:', error);
       }
   },
   
-
 
 
 
