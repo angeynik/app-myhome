@@ -109,10 +109,14 @@ export default {
   },
 
   computed: {
+    ...mapGetters('config', ['getSensorValue']),
     ...mapGetters(['level', 'dID']),
     ...mapGetters('sortParams', ['getSortParams', 'getRoomId', 'getParamKey', 'getRoomKey']),
     ...mapGetters('config', ['getCommonConfig', 'getManageConfig', 'getDirectoryConfig', 'getRoomConfig', 'getSensorConfig', 'isLoading', 'error']),
 
+    sensorValue() {
+      return this.getSensorValue(this.getRoomKey, this.getParamKey);
+    },
     userLevel() {
       return this.level || 0;
     },
@@ -123,7 +127,14 @@ export default {
       return this.getSortParams
     },
   },
-
+  watch: {
+    sensorValue(newVal) {
+      // Обновление UI при изменении значения
+      if (newVal !== undefined) {
+        this.updateChart(newVal);
+      }
+    }
+  },
   mounted() {
     this.initializeConfig();
     this.initSortParams();

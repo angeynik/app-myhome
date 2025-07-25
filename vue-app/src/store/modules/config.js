@@ -13,6 +13,37 @@ export default {
       console.log(`[Config] Конфигурация ${name} сохранена`);
       console.log(`[Config] Конфигурация ${localStorage.getItem(`config_${name}`)}`);
     },
+    UPDATE_SENSOR_VALUE(state, { dID, room, sensor, value, timestamp}) {
+          console.log(`[Config] Обновляем значение сенсора ${sensor} в комнате ${room}`);
+          if (!state.configs[dID]) {
+            console.warn(`[Config] Конфигурация ${dID} не найдена для обновления`);
+            return;
+          }
+          
+        // Создаем глубокую копию конфигурации
+          const configCopy = JSON.parse(JSON.stringify(state.configs[dID]));
+          console.log('--25-- [UpdateSensorValue] Конфигурация: для', sensor, ' - ', configCopy[room].sensors[sensor]);
+
+        // Находим и обновляем значение сенсора
+          if (configCopy[room].sensors[sensor]) {
+            configCopy[room].sensors[sensor].value = value;
+            configCopy[room].sensors[sensor].lastUpdate = new Date().toString() || timestamp;
+
+            
+        // Обновляем состояние и localStorage
+            state.configs[dID] = configCopy;
+            localStorage.setItem(`config_${dID}`, JSON.stringify(configCopy));
+            console.log(`[Config] Сенсор ${sensor} в комнате ${room} обновлен`);
+
+            const checkLocalStorage = localStorage.getItem(`config_${dID}`);
+            const checkState = JSON.parse(checkLocalStorage);
+            console.log(`[Config] Конфигурация ${dID}:`);
+            console.log(checkState); 
+
+          } else {
+            console.warn(`[Config] Сенсор ${sensor} в комнате ${room} не найден`);
+          }
+        },
     SET_LOADING(state, value) {
       state.loading = value;
     },
@@ -100,12 +131,47 @@ export default {
         console.error('[Config] Ошибка обработки ответа:', error);
         throw error;
       }
-    }
+    },
+        handleSensorUpdate({ commit }, { dID, payload }) {
+      try {
+        const { room, item_name, item_value, time } = payload;
+        
+        if (!dID || !room || !item_name || item_value === undefined) {
+          throw new Error('Невалидные данные сенсора');
+        }
+        
+        let timestamp;
+        try {
+          timestamp = time ? new Date(time).toISOString() : new Date().toISOString();
+        } catch (e) {
+          console.warn('[Config] Ошибка преобразования времени, используется текущее время');
+          timestamp = new Date().toISOString();
+        }
+
+        commit('UPDATE_SENSOR_VALUE', {
+          dID,
+          room,
+          sensor: item_name,
+          value: item_value,
+          timestamp
+        });
+        
+      } catch (error) {
+        console.error('[Config] Ошибка обработки данных сенсора:', error);
+      }
+    },
+
   },
   
   getters: {
     getConfig: state => name => state.configs[name] || {},
     isLoading: state => state.loading,
-    error: state => state.error
+    error: state => state.error,
+    getSensorValue: (state) => (roomKey, sensorKey) => {
+      const dID = state.auth?.dID; // Используем dID из состояния auth
+      if (!dID || !state.configs[dID]) return null;
+      
+      return state.configs[dID]?.commonConfig?.rooms?.[roomKey]?.sensors?.[sensorKey]?.value;
+    }
   }
 };
