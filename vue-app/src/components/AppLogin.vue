@@ -65,21 +65,23 @@ export default {
         }
 
         // 3. Добавляем обработку успешного логина
-        await store.dispatch('auth/login', { 
+        const userData = await store.dispatch('auth/login', { 
           username, 
           password 
         });
 
         // 4. Добавляем проверку состояния после логина
-        //console.log('Текущий уровень после логина:', store.getters.level);
-        //console.log('Текущий dID после логина:', store.getters.dID);
-        
+        console.log('Текущий уровень после логина:', store.getters.level);
+        console.log('Текущий dID после логина:', store.getters.dID);
+        if (userData) {
         alert(`✅ Вход для Пользователя ${username} прошел успешно!\n Уровень доступа ${store.getters.level}`);
 
         const redirectPath = localStorage.getItem('redirectPath') || '/';
         localStorage.removeItem('redirectPath');
         router.push(redirectPath);
-        
+        } else {
+          console.log(`❌ Проблемы авторизации в AppLogin.vue -- 83 --`);
+        }
       } catch (err) {
         error.value = err.message || 'Ошибка авторизации';
         alert(`✅ Ошибка авторизации Пользователя!`);
