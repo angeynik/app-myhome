@@ -9,21 +9,21 @@ export default {
   mutations: {
     SET_CONFIG(state, { name, config }) {
       state.configs[name] = config;
-      localStorage.setItem(`config_${name}`, JSON.stringify(config));
+      //localStorage.setItem(`config_${name}`, JSON.stringify(config));
       console.log(`[Config] Конфигурация ${name} сохранена`);
-      console.log(`[Config] Конфигурация ${localStorage.getItem(`config_${name}`)}`);
+      //console.log(`[Config] Конфигурация ${localStorage.getItem(`config_${name}`)}`);
     },
     UPDATE_SENSOR_VALUE(state, { dID, room, sensor, value, timestamp}) {
-          console.log(`[Config] Обновляем значение сенсора ${sensor} в комнате ${room}`);
-          if (!state.configs[dID]) {
+          console.log(`[Config] Шаг 1 - Запрос на обновление значение сенсора ${sensor} в комнате ${room} для конфигурации ${dID}`);
+          const configCopy = JSON.parse(JSON.stringify(state.configs[dID]));
+          if (!configCopy) {
             console.warn(`[Config] Конфигурация ${dID} не найдена для обновления`);
             return;
           }
-          
+        try {
         // Создаем глубокую копию конфигурации
-          const configCopy = JSON.parse(JSON.stringify(state.configs[dID]));
-          console.log('--25-- [UpdateSensorValue] Конфигурация: для', sensor, ' - ', configCopy[room].sensors[sensor]);
-
+          //const configCopy = JSON.parse(JSON.stringify(state.configs[dID]));
+          console.log('[Config] Шаг 2 - [UpdateSensorValue] Конфигурация: для', sensor, ' - ', configCopy[room].sensors[sensor]);
         // Находим и обновляем значение сенсора
           if (configCopy[room].sensors[sensor]) {
             configCopy[room].sensors[sensor].value = value;
@@ -33,16 +33,21 @@ export default {
         // Обновляем состояние и localStorage
             state.configs[dID] = configCopy;
             localStorage.setItem(`config_${dID}`, JSON.stringify(configCopy));
-            console.log(`[Config] Сенсор ${sensor} в комнате ${room} обновлен`);
+            console.log(`[Config] Сенсор ${sensor} в комнате ${room} обновлен для stateConfig Vuex:`);
+            console.log(configCopy);
 
-            const checkLocalStorage = localStorage.getItem(`config_${dID}`);
-            const checkState = JSON.parse(checkLocalStorage);
-            console.log(`[Config] Конфигурация ${dID}:`);
-            console.log(checkState); 
+            // const checkLocalStorage = localStorage.getItem(`config_${dID}`);
+            // const checkState = JSON.parse(checkLocalStorage);
+            // console.log(`[Config] Конфигурация ${dID}:`);
+            // console.log(checkState); 
 
           } else {
             console.warn(`[Config] Сенсор ${sensor} в комнате ${room} не найден`);
           }
+        } catch (error) {
+          console.log(error);
+        }
+
         },
     SET_LOADING(state, value) {
       state.loading = value;
@@ -70,7 +75,7 @@ export default {
       }
     },
     
-    async checkLocalStorage({ commit, dispatch, rootGetters }) {
+    async checkLocalStorage({state, commit, dispatch, rootGetters }) {
       commit('SET_LOADING', true);
       try {
         const dID = rootGetters['dID'];
@@ -78,17 +83,9 @@ export default {
           console.warn('[Config] dID не определен');
           return;
         }
-        
-        const storageKey = `config_${dID}`;
-        const storedConfig = localStorage.getItem(storageKey);
-        
-        if (storedConfig) {
-          commit('SET_CONFIG', {
-            name: dID,
-            config: JSON.parse(storedConfig)
-          });
-        } else {
-          console.log(`[Config] Конфигурация ${dID} отсутствует в localStorage`);
+        const storedConfig = state.configs[dID];
+        if (!storedConfig) {
+          console.log(`[Config] Конфигурация ${dID} отсутствует в Vuex state`);
           await dispatch('requestConfig', dID);
         }
       } catch (error) {
@@ -132,33 +129,34 @@ export default {
         throw error;
       }
     },
-        handleSensorUpdate({ commit }, { dID, payload }) {
-      try {
-        const { room, item_name, item_value, time } = payload;
-        
-        if (!dID || !room || !item_name || item_value === undefined) {
-          throw new Error('Невалидные данные сенсора');
-        }
-        
-        let timestamp;
-        try {
-          timestamp = time ? new Date(time).toISOString() : new Date().toISOString();
-        } catch (e) {
-          console.warn('[Config] Ошибка преобразования времени, используется текущее время');
-          timestamp = new Date().toISOString();
-        }
+    handleSensorUpdate({ commit }, { dID, payload }) {
+          console.log(`[handleSensorUpdate] dID - ${dID} data - ${payload}`);
+          try {
+            const { room, item_name, item_value, time } = payload;
+            
+            if (!dID || !room || !item_name || item_value === undefined) {
+              throw new Error('Невалидные данные сенсора');
+            }
+            
+            let timestamp;
+            try {
+              timestamp = time ? new Date(time).toISOString() : new Date().toISOString();
+            } catch (e) {
+              console.warn('[Config] Ошибка преобразования времени, используется текущее время');
+              timestamp = new Date().toISOString();
+            }
 
-        commit('UPDATE_SENSOR_VALUE', {
-          dID,
-          room,
-          sensor: item_name,
-          value: item_value,
-          timestamp
-        });
-        
-      } catch (error) {
-        console.error('[Config] Ошибка обработки данных сенсора:', error);
-      }
+            commit('UPDATE_SENSOR_VALUE', {
+              dID,
+              room,
+              sensor: item_name,
+              value: item_value,
+              timestamp
+            });
+            
+          } catch (error) {
+            console.error('[Config] Ошибка обработки данных сенсора:', error);
+          }
     },
 
   },

@@ -101,11 +101,12 @@ export default {
       });
     },
 
-    async handleMessage({ state, commit, dispatch }, event) {
+    async handleMessage({ state, commit, dispatch, rootGetters}, event) {
+      const auth_dID = rootGetters['dID'];
       try {
         const response = JSON.parse(event.data);
         console.log('[WebSocket] Received:', response);
-
+        const dID = response.name;
         if (response.request === 'loginSuccess' && state.pendingResponse?.type === 'login') {
           const { resolve } = state.pendingResponse;
           commit('CLEAR_PENDING_RESPONSE');
@@ -118,22 +119,23 @@ export default {
         }
        
         if (response.type === 'post') {
-          console.log('[WebSocket] Обрабатываем сообщение type = post');
+          //console.log('[WebSocket] Обрабатываем сообщение type = post');
+          //console.log('dID сообщения - ', dID, ' dID активного пользователя - ', auth_dID);
           // Обновляем значение датчика
-            if (response.request === 'sensor') {
+            if (response.request === 'sensor' && dID === auth_dID) {
+            //if (dID === auth_dID) {
               console.log('[WebSocket] Обрабатываем сообщение request = sensor');
-              const dID = response.dID || response.name;
-              if (!dID) {
-                console.warn('[WebSocket] Не определен dID для данных сенсора');
-                return;
-              }
               
+
               // Валидация payload
               if (!response.payload || typeof response.payload !== 'object') {
                 console.warn('[WebSocket] Невалидный payload сенсора');
                 return;
               }
               await dispatch('config/handleSensorUpdate', {dID, payload: response.payload}, { root: true });
+            } else {
+                console.log('[WebSocket] dID сообщения запроса', dID, ' не соответствует dID текущего пользователя - ', auth_dID);
+                return;
             }
 
             if (response.request === 'actuators') {
