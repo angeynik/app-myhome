@@ -37,6 +37,7 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: Login,
+    meta: { public: true } // Публичный маршрут
   },
   {
     path: '/profile',
@@ -70,6 +71,10 @@ router.beforeEach((to, from, next) => {
   const isAuthenticated = !!store.getters.isAuthenticated; // Используем геттер из Vuex
   const userLevel = store.getters.level || 0; // Получаем уровень доступа пользователя из Vuex
 
+    // Пропускаем публичные маршруты
+    if (to.matched.some(record => record.meta.public)) {
+      return next();
+    }
   if (to.matched.some((record) => record.meta.requiresAuth)) {
     if (!isAuthenticated) {
       // Сохраняем запрашиваемый маршрут для перенаправления после входа

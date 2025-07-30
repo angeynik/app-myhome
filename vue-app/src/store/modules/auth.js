@@ -21,6 +21,13 @@ export default {
       state.level = level;
       state.status = 'success';
     },
+  RESTORE_AUTH(state, data) {
+    state.token = data.token;
+    state.user = data.user;
+    state.dID = data.dID;
+    state.level = data.level;
+    state.status = 'success';
+  },
     AUTH_ERROR(state) {
       state.status = 'error';
     },
@@ -55,13 +62,21 @@ export default {
             userlevel: response.payload.userlevel,
             dID: response.name
           };
-          
+        // Сохраняем данные в localStorage
+          localStorage.setItem('authData', JSON.stringify({
+            token: response.payload.token,
+            user: userData,
+            dID: userData.dID,
+            level: userData.userlevel
+          }));
+
           commit('AUTH_SUCCESS', {
             token: response.payload.token,
             user: userData,
             dID: userData.dID,
             level: userData.userlevel
           });
+
           
           return userData;
         }
@@ -74,6 +89,7 @@ export default {
     
     logout({ commit }) {
       commit('LOGOUT');
+      localStorage.removeItem('authData'); // Очищаем хранилище
     }
   }
 };

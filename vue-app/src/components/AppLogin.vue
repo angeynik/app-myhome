@@ -1,4 +1,4 @@
-<template>
+t <template>
   <div>
     <div class="header-bottom">
       <nav>
@@ -73,12 +73,28 @@ export default {
         // 4. Добавляем проверку состояния после логина
         console.log('Текущий уровень после логина:', store.getters.level);
         console.log('Текущий dID после логина:', store.getters.dID);
-        if (userData) {
-        alert(`✅ Вход для Пользователя ${username} прошел успешно!\n Уровень доступа ${store.getters.level}`);
+        // if (userData) {
+        // alert(`✅ Вход для Пользователя ${username} прошел успешно!\n Уровень доступа ${store.getters.level}`);
 
-        const redirectPath = localStorage.getItem('redirectPath') || '/';
-        localStorage.removeItem('redirectPath');
-        router.push(redirectPath);
+        // const redirectPath = localStorage.getItem('redirectPath') || '/';
+        // localStorage.removeItem('redirectPath');
+        // router.push(redirectPath);
+
+
+          if (userData) {
+          // Добавляем проверку конфигурации
+          try {
+            await store.dispatch('config/ensureConfig', dID.value);
+          } catch (err) {
+            console.error('Ошибка при загрузке конфигурации:', err);
+            alert('⚠️ Конфигурация не загружена! Некоторые функции могут работать некорректно');
+          }
+
+          alert(`✅ Вход для Пользователя ${username} прошел успешно!\n Уровень доступа ${store.getters.level}`);
+          
+          const redirectPath = localStorage.getItem('redirectPath') || '/';
+          localStorage.removeItem('redirectPath');
+          router.push(redirectPath);
         } else {
           console.log(`❌ Проблемы авторизации в AppLogin.vue -- 83 --`);
         }
@@ -89,9 +105,9 @@ export default {
       }
     };
 
-    onMounted(() => {
-      usernameInput.value?.focus();
-    });
+      onMounted(() => {
+        usernameInput.value?.focus();
+      });
 
     return {
       usernameInput,

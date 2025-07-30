@@ -9,37 +9,30 @@ export default {
   mutations: {
     SET_CONFIG(state, { name, config }) {
       state.configs[name] = config;
-      //localStorage.setItem(`config_${name}`, JSON.stringify(config));
       console.log(`[Config] Конфигурация ${name} сохранена`);
-      //console.log(`[Config] Конфигурация ${localStorage.getItem(`config_${name}`)}`);
     },
     UPDATE_SENSOR_VALUE(state, { dID, room, sensor, value, timestamp}) {
-          console.log(`[Config] Шаг 1 - Запрос на обновление значение сенсора ${sensor} в комнате ${room} для конфигурации ${dID}`);
+          //console.log(`[Config] Шаг 1 - Запрос на обновление значение сенсора ${sensor} в комнате ${room} для конфигурации ${dID}`);
           const configCopy = JSON.parse(JSON.stringify(state.configs[dID]));
+
+          //console.log(`[Config] Шаг 2 - [UpdateSensorValue] Конфигурация: для`, configCopy);
+
           if (!configCopy) {
             console.warn(`[Config] Конфигурация ${dID} не найдена для обновления`);
             return;
           }
         try {
-        // Создаем глубокую копию конфигурации
-          //const configCopy = JSON.parse(JSON.stringify(state.configs[dID]));
-          console.log('[Config] Шаг 2 - [UpdateSensorValue] Конфигурация: для', sensor, ' - ', configCopy[room].sensors[sensor]);
+          //console.log('[Config] Шаг 3 - [UpdateSensorValue] Конфигурация: для', sensor, ' - ', configCopy[room].sensors[sensor]);
         // Находим и обновляем значение сенсора
           if (configCopy[room].sensors[sensor]) {
             configCopy[room].sensors[sensor].value = value;
             configCopy[room].sensors[sensor].lastUpdate = new Date().toString() || timestamp;
 
             
-        // Обновляем состояние и localStorage
+        // Обновляем состояние и stateConfig Vuex
             state.configs[dID] = configCopy;
-            localStorage.setItem(`config_${dID}`, JSON.stringify(configCopy));
             console.log(`[Config] Сенсор ${sensor} в комнате ${room} обновлен для stateConfig Vuex:`);
-            console.log(configCopy);
-
-            // const checkLocalStorage = localStorage.getItem(`config_${dID}`);
-            // const checkState = JSON.parse(checkLocalStorage);
-            // console.log(`[Config] Конфигурация ${dID}:`);
-            // console.log(checkState); 
+            //console.log(configCopy);
 
           } else {
             console.warn(`[Config] Сенсор ${sensor} в комнате ${room} не найден`);
@@ -58,16 +51,13 @@ export default {
   },
   
   actions: {
-    async initialize({ dispatch }) {
-      try {
-        await dispatch('checkWebsocketConnection');
-        await dispatch('checkLocalStorage');
-      } catch (error) {
-        console.error('[Config] Ошибка инициализации:', error);
-        throw error;
-      }
-    },
-    
+      async initialize({ dispatch, rootGetters }) {
+        const dID = rootGetters['dID'];
+        if (dID) {
+          await dispatch('ensureConfig', dID);
+        }
+      },
+
     async checkWebsocketConnection({ dispatch, rootState }) {
       if (!rootState.websocket.socket || 
           rootState.websocket.socket.readyState !== WebSocket.OPEN) {
@@ -75,7 +65,7 @@ export default {
       }
     },
     
-    async checkLocalStorage({state, commit, dispatch, rootGetters }) {
+    async checkConfigInState({state, commit, dispatch, rootGetters }) {
       commit('SET_LOADING', true);
       try {
         const dID = rootGetters['dID'];
@@ -114,6 +104,7 @@ export default {
     },
     
     async handleConfigResponse({ commit }, response) {
+      console.log('[Config] - handleConfigResponse - Обрабатываем ответ конфигурации:', response);
       try {
         const dID = response.name;
         const config = response.payload;
@@ -130,7 +121,7 @@ export default {
       }
     },
     handleSensorUpdate({ commit }, { dID, payload }) {
-          console.log(`[handleSensorUpdate] dID - ${dID} data - ${payload}`);
+          //console.log(`[handleSensorUpdate] dID - ${dID} data - ${payload}`);
           try {
             const { room, item_name, item_value, time } = payload;
             
@@ -159,6 +150,21 @@ export default {
           }
     },
 
+    async ensureConfig({ state, dispatch }, dID) {
+      if (!dID) {
+        throw new Error('dID не определен');
+      }
+      
+      // Проверяем наличие конфигурации в хранилище Vuex
+      if (state.configs[dID]) {
+        console.log(`[Config] Конфигурация ${dID} уже загружена`);
+        return;
+      }
+      
+      // Запрашиваем с сервера
+      console.log(`[Config] Конфигурация ${dID} отсутствует, запрашиваем...`);
+      await dispatch('requestConfig', dID);
+    },
   },
   
   getters: {

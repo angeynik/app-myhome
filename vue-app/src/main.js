@@ -7,4 +7,8 @@ const app = createApp(App);
 app.use(store);
 app.use(router); // Подключаем маршрутизацию
 
-app.mount('#app');
+// app.mount('#app');
+// Инициализируем хранилище перед монтированием
+store.dispatch('initializeStore').then(() => {
+  app.mount('#app');
+});

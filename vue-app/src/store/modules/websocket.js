@@ -58,7 +58,7 @@ export default {
           if (!state.explicitDisconnect) {
             setTimeout(() => dispatch('connect'), RECONNECT_DELAY);
           }
-          reject(error);
+          reject(new Error('WebSocket connection error'));
         };
 
         socket.onclose = () => {
@@ -85,7 +85,13 @@ export default {
 
     async send({ state, commit }, message) {
       if (!state.socket || state.socket.readyState !== WebSocket.OPEN) {
+    // Попытаемся переподключиться перед ошибкой
+      try {
+        await this.dispatch('connect');
+      } catch (err) {
         throw new Error('WebSocket connection not established');
+      }
+        //throw new Error('WebSocket connection not established');
       }
       
       return new Promise((resolve) => {
@@ -102,11 +108,12 @@ export default {
     },
 
     async handleMessage({ state, commit, dispatch, rootGetters}, event) {
-      const auth_dID = rootGetters['dID'];
+
       try {
         const response = JSON.parse(event.data);
         console.log('[WebSocket] Received:', response);
         const dID = response.name;
+        const auth_dID = rootGetters['dID'];
         if (response.request === 'loginSuccess' && state.pendingResponse?.type === 'login') {
           const { resolve } = state.pendingResponse;
           commit('CLEAR_PENDING_RESPONSE');

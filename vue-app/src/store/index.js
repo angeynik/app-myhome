@@ -17,6 +17,18 @@ const store = createStore({
     toLowerCase(_, str) {
       return str.toLowerCase();
     },
+    initializeStore({ commit }) {
+      const authData = localStorage.getItem('authData');
+      if (authData) {
+        try {
+          const parsedData = JSON.parse(authData);
+          commit('auth/RESTORE_AUTH', parsedData);
+        } catch (e) {
+          localStorage.removeItem('authData');
+          console.error('Ошибка восстановления сессии', e);
+        }
+      }
+    },
   },
   getters: {
     isAuthenticated: (state) => !!state.auth.token,
