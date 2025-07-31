@@ -83,7 +83,7 @@
 </template>
 
 <script>
-import { mapGetters, mapActions, mapMutations } from 'vuex';
+import { mapGetters, mapActions } from 'vuex';
 import AppPlace from './components/AppPlace.vue';
 import MainHeader from './components/MainHeader.vue';
 import MainFooter from './components/MainFooter.vue';
@@ -109,23 +109,42 @@ export default {
   },
 
   computed: {
-    ...mapGetters('config', ['getSensorValue']),
-    ...mapGetters(['level', 'dID']),
-    ...mapGetters('sortParams', ['getSortParams', 'getRoomId', 'getParamKey', 'getRoomKey']),
-    ...mapGetters('config', ['getCommonConfig', 'getManageConfig', 'getDirectoryConfig', 'getRoomConfig', 'getSensorConfig', 'isLoading', 'error']),
+    // ...mapGetters('config', ['getSensorValue']),
+    // ...mapGetters(['level', 'dID']),
+    // ...mapGetters('sortParams', [
+    //   'currentSortType',
+    //   'getRoomId',
+    //   'getRoomKey',
+    //   'getParamKey'
+    // ]),
+    // ...mapGetters('config', ['getCommonConfig', 'getManageConfig', 'getDirectoryConfig', 'getRoomConfig', 'getSensorConfig', 'isLoading', 'error']),
 
-    sensorValue() {
-      return this.getSensorValue(this.getRoomKey, this.getParamKey);
-    },
+    // sensorValue() {
+    //   return this.getSensorValue(this.getRoomKey, this.getParamKey);
+    // },
+    // userLevel() {
+    //   return this.level || 0;
+    // },
+    // userdID() {
+    //   return this.dID;
+    // },
+    // currentSortType() {
+    //   return this.getSortParams
+    // },
+    ...mapGetters(['level', 'dID']),
+    ...mapGetters('sortParams', [
+      'currentSortType',
+      'getRoomId',
+      'getRoomKey',
+      'getParamKey'
+    ]),
     userLevel() {
       return this.level || 0;
-    },
-    userdID() {
-      return this.dID;
-    },
-    currentSortType() {
-      return this.getSortParams
-    },
+    }
+  },
+  mounted() {
+    this.detectDevice();
+    this.initApp();
   },
   watch: {
     sensorValue(newVal) {
@@ -135,32 +154,88 @@ export default {
       }
     }
   },
-  mounted() {
-    this.initializeConfig();
-    this.initSortParams();
-    //this.checkLocalStorage();
-    this.initApp();
-    this.detectDevice();
-  },
 
+  // methods: {
+  //   ...mapActions('websocket', ['send']),
+  //   ...mapActions('log', ['sendLogToServer']),
+  //   ...mapActions('sortParams', [
+  //     'toggleSortType',
+  //     'setRoom',
+  //     'setParam',
+  //     'resetDefaults'
+  //   ]),
+  //   ...mapMutations('sortParams', ['SET_ROOM_ID', 'SET_PARAM_KEY', 'SET_ROOM_KEY', 'SET_SORT_TYPE']),
+  //   ...mapActions('config', ['initialize']),
+  //   async initializeConfig() {
+  //     try {
+  //       await this.initialize()
+  //       // Дополнительные действия после инициализации
+  //     } catch (error) {
+  //       console.error('Ошибка инициализации:', error)
+  //     }
+  //   },
+  //   initApp() {
+  //     this.resetDefaults()
+  //     this.selectedComponent = null
+  //     this.headerTitle = 'Главное меню'
+  //   },
+
+  //   handleRoomChange(room) {
+  //     this.setRoom({
+  //       id: room.id,
+  //       key: room.key,
+  //       title: room.title
+  //     });
+  //   },
+    
+  //   handleParamChange(param) {
+  //     this.setParam({
+  //       key: param.key,
+  //       title: param.title
+  //     });
+  //   },
+
+  //   selectComponent(component) {
+  //     if (component === 'Rooms') {
+  //       this.$store.commit('sortParams/SET_SORT_TYPE', 'rooms');
+  //     } else if (component === 'Params') {
+  //       this.$store.commit('sortParams/SET_SORT_TYPE', 'params');
+  //     }
+     
+  //     this.selectedComponent = 'MainBody';
+  //     this.showHeaderArrow = !this.isMobile;
+  //     console.log('selectedComponent:', this.selectedComponent);
+      
+  //     this.sendLogToServer({
+  //       type: 'info',
+  //       message: `Выбран компонент: ${this.selectedComponent}, сортировка по ${component}`
+  //     });
+  //   },
+
+  //   resetSelection() {
+  //     this.selectedComponent = null;
+  //     this.headerTitle = 'Главное меню';
+  //     this.showHeaderArrow = false;
+  //   },
+
+  //   detectDevice() {
+  //     this.isMobile = /Mobi|Android/i.test(navigator.userAgent);
+  //   },
+  // }
   methods: {
-    ...mapActions('websocket', ['send']),
-    ...mapActions('log', ['sendLogToServer']),
     ...mapActions('sortParams', ['initSortParams', 'resetDefaults']),
-    ...mapMutations('sortParams', ['SET_ROOM_ID', 'SET_PARAM_KEY', 'SET_ROOM_KEY', 'SET_SORT_TYPE']),
     ...mapActions('config', ['initialize']),
-    async initializeConfig() {
+    
+    async initApp() {
       try {
-        await this.initialize()
-        // Дополнительные действия после инициализации
+        // Инициализируем параметры сортировки
+        this.initSortParams();
+        
+        // Загружаем конфигурацию
+        await this.initialize();
       } catch (error) {
-        console.error('Ошибка инициализации:', error)
+        console.error('Ошибка инициализации:', error);
       }
-    },
-    initApp() {
-      this.resetDefaults()
-      this.selectedComponent = null
-      this.headerTitle = 'Главное меню'
     },
 
     selectComponent(component) {
@@ -172,12 +247,6 @@ export default {
      
       this.selectedComponent = 'MainBody';
       this.showHeaderArrow = !this.isMobile;
-      console.log('selectedComponent:', this.selectedComponent);
-      
-      this.sendLogToServer({
-        type: 'info',
-        message: `Выбран компонент: ${this.selectedComponent}, сортировка по ${component}`
-      });
     },
 
     resetSelection() {
@@ -188,7 +257,7 @@ export default {
 
     detectDevice() {
       this.isMobile = /Mobi|Android/i.test(navigator.userAgent);
-    },
+    }
   }
 };
 </script>

@@ -1,19 +1,73 @@
 <template>
+  <div 
+    class="sensor-card"
+    :class="{ selected: isSelected, [type]: true }"
+    @click="$emit('click')"
+    @dblclick="$emit('dblclick')"
+  >
+    <div class="sensor-header">
+      <h3>{{ title }}</h3>
+      <span v-if="roomTitle" class="room">{{ roomTitle }}</span>
+    </div>
+    
+    <div class="sensor-value">
+      {{ formattedValue }}
+      <span v-if="unit" class="unit">{{ unit }}</span>
+    </div>
+    
+    <div class="sensor-footer">
+      <time>{{ timeUpdated }}</time>
+    </div>
+  </div>
+</template>
 
+<script>
+export default {
+  name: 'MainBodyValue',
+  props: {
+    title: { type: String, required: true },
+    value: { type: Number, required: true },
+    unit: { type: String, default: '' },
+    timeUpdated: { type: String, required: true },
+    roomTitle: { type: String, required: true },
+    isSelected: { type: Boolean, default: false },
+  },
+  computed: {
+    type() {
+      if (this.unit === '°C') return 'temperature';
+      if (this.unit === '%') return 'humidity';
+      return 'default';
+    },
+    formattedValue() {
+      if (typeof this.value === 'number') {
+        return this.value.toFixed(2);
+      }
+      return this.value;
+    }
+  }
+}
+</script>
 
-    <div 
-    @click="customerClick"
-    @dblclick="customerDoubleClick"
-    @touchstart="customerTouchStart" 
-    @touchend="customerTouchEnd"
-    :class="{ selected: isSelected }"
-    >
-        <!-- <h2> Main Body Value </h2> -->
-      <div class="mainBodyValue_h3">{{ title }} </div>
-      <div class="mainBodyValue_h1">{{ value }}</div>
-      <div class="mainBodyValue_p"> обновление - {{ timeUpdated }} </div>
-      <!-- <h5> {{ paramKey }} </h5> -->
-
+<!-- <template>
+  <div 
+    class="sensor-card"
+    :class="{ selected: isSelected, [type]: true }"
+    @click="$emit('click')"
+    @dblclick="$emit('dblclick')"
+  >
+    <div class="sensor-header">
+      <h3>{{ title }}</h3>
+      <span v-if="roomTitle" class="room">{{ roomTitle }}</span>
+    </div>
+    
+    <div class="sensor-value">
+      {{ formattedValue }}
+      <span v-if="unit" class="unit">{{ unit }}</span>
+    </div>
+    
+    <div class="sensor-footer">
+      <time>{{ formattedTime }}</time>
+    </div>
   </div>
 </template>
 
@@ -53,6 +107,7 @@ props: {
   group: { type: String, 
       required: true, 
   },
+    unit: String,
   timeUpdated: { type: Number, 
       required: true, 
   },
@@ -61,6 +116,31 @@ props: {
       default: false,
   },
 }, 
+  computed: {
+    type() {
+      if (typeof this.value === 'number') {
+        if (this.unit === '°C') return 'temperature'
+        if (this.unit === '%') return 'humidity'
+      }
+      return 'default'
+    },
+    
+    formattedValue() {
+      if (typeof this.value === 'number') {
+        return this.value.toFixed(2)
+      }
+      return this.value
+    },
+    
+    formattedTime() {
+      if (!this.timeUpdated) return 'Нет данных'
+      
+      const date = new Date(this.timeUpdated)
+      return isNaN(date) 
+        ? this.timeUpdated 
+        : date.toLocaleTimeString()
+    }
+  },
 watch: {
 
 },
@@ -121,7 +201,7 @@ methods: {
 },
 
 }
-</script>
+</script> -->
 
 <style>
 .selected { 

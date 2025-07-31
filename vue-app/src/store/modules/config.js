@@ -176,6 +176,27 @@ export default {
       if (!dID || !state.configs[dID]) return null;
       
       return state.configs[dID]?.commonConfig?.rooms?.[roomKey]?.sensors?.[sensorKey]?.value;
-    }
+    },
+      getSensorData: (state) => (roomId) => {
+    return state.configs[roomId] || {}
+  },
+  getParamData: (state) => (paramKey) => {
+    // Возвращает данные параметра по всем комнатам
+    const result = {}
+    Object.entries(state.configs).forEach(([roomId, roomData]) => {
+      if (roomData.sensors[paramKey]) {
+        result[roomId] = {
+          value: roomData.sensors[paramKey],
+          time: roomData.time[`${paramKey}_time`],
+          roomTitle: roomData.title
+        }
+      }
+    })
+    return result
+  },
+  getCommonConfig: (state) => (dID) => {
+      if (!dID) return null;
+      return state.configs[dID]?.commonConfig || null;
+  },
   }
 };
