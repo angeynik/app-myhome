@@ -9,40 +9,20 @@ export default {
   mutations: {
     SET_CONFIG(state, { name, config }) {
       state.configs[name] = config;
-      console.log(`[Config] Конфигурация ${name} сохранена`);
-      console.log('[Config] - ', config);
     },
     UPDATE_SENSOR_VALUE(state, { dID, room, sensor, value, timestamp}) {
-          //console.log(`[Config] Шаг 1 - Запрос на обновление значение сенсора ${sensor} в комнате ${room} для конфигурации ${dID}`);
-          const configCopy = JSON.parse(JSON.stringify(state.configs[dID]));
+      const config = state.configs[dID];
+      if (!config) return;
 
-          //console.log(`[Config] Шаг 2 - [UpdateSensorValue] Конфигурация: для`, configCopy);
+      const roomObj = config[room];
+      if (!roomObj || !roomObj.sensors) return;
 
-          if (!configCopy) {
-            console.warn(`[Config] Конфигурация ${dID} не найдена для обновления`);
-            return;
-          }
-        try {
-          //console.log('[Config] Шаг 3 - [UpdateSensorValue] Конфигурация: для', sensor, ' - ', configCopy[room].sensors[sensor]);
-        // Находим и обновляем значение сенсора
-          if (configCopy[room].sensors[sensor]) {
-            configCopy[room].sensors[sensor].value = value;
-            configCopy[room].sensors[sensor].lastUpdate = new Date().toString() || timestamp;
-
-            
-        // Обновляем состояние и stateConfig Vuex
-            state.configs[dID] = configCopy;
-            //console.log(`[Config] Сенсор ${sensor} в комнате ${room} обновлен для stateConfig Vuex:`);
-            //console.log(configCopy);
-
-          } else {
-            console.warn(`[Config] Сенсор ${sensor} в комнате ${room} не найден`);
-          }
-        } catch (error) {
-          console.log(error);
-        }
-
-        },
+      const sensorObj = roomObj.sensors[sensor];
+      if (sensorObj) {
+        sensorObj.value = value;
+        sensorObj.lastUpdate = timestamp || new Date().toString();
+      }
+    },
     SET_LOADING(state, value) {
       state.loading = value;
     },
@@ -52,36 +32,24 @@ export default {
   },
   
   actions: {
-      async initialize({ dispatch, rootGetters }) {
-        const dID = rootGetters['dID'];
-        if (dID) {
-          await dispatch('ensureConfig', dID);
-        }
-      },
-
-    async checkWebsocketConnection({ dispatch, rootState }) {
-      if (!rootState.websocket.socket || 
-          rootState.websocket.socket.readyState !== WebSocket.OPEN) {
-        await dispatch('websocket/connect', null, { root: true });
+    async initialize({ dispatch, rootGetters }) {
+      const dID = rootGetters['dID'];
+      if (dID) {
+        await dispatch('ensureConfig', dID);
       }
     },
-    
-    async checkConfigInState({state, commit, dispatch, rootGetters }) {
+
+    async checkConfigInState({ commit, dispatch, rootGetters, state }) {
       commit('SET_LOADING', true);
       try {
         const dID = rootGetters['dID'];
-        if (!dID) {
-          console.warn('[Config] dID не определен');
-          return;
-        }
-        const storedConfig = state.configs[dID];
-        if (!storedConfig) {
-          console.log(`[Config] Конфигурация ${dID} отсутствует в Vuex state`);
+        if (!dID) return;
+        
+        if (!state.configs[dID]) {
           await dispatch('requestConfig', dID);
         }
       } catch (error) {
         commit('SET_ERROR', error);
-        console.error('[Config] Ошибка проверки хранилища:', error);
       } finally {
         commit('SET_LOADING', false);
       }
@@ -105,7 +73,6 @@ export default {
     },
     
     async handleConfigResponse({ commit }, response) {
-      console.log('[Config] - handleConfigResponse - Обрабатываем ответ конфигурации:', response);
       try {
         const dID = response.name;
         const config = response.payload;
@@ -115,56 +82,40 @@ export default {
         }
         
         commit('SET_CONFIG', { name: dID, config });
-        console.log(`[Config] Конфигурация ${dID} обновлена`);
       } catch (error) {
         console.error('[Config] Ошибка обработки ответа:', error);
         throw error;
       }
     },
     handleSensorUpdate({ commit }, { dID, payload }) {
-          //console.log(`[handleSensorUpdate] dID - ${dID} data - ${payload}`);
-          try {
-            const { room, item_name, item_value, time } = payload;
-            
-            if (!dID || !room || !item_name || item_value === undefined) {
-              throw new Error('Невалидные данные сенсора');
-            }
-            
-            let timestamp;
-            try {
-              timestamp = time ? new Date(time).toISOString() : new Date().toISOString();
-            } catch (e) {
-              console.warn('[Config] Ошибка преобразования времени, используется текущее время');
-              timestamp = new Date().toISOString();
-            }
+      try {
+        const { room, item_name, item_value, time } = payload;
+        if (!dID || !room || !item_name || item_value === undefined) return;
+        
+        let timestamp;
+        try {
+          timestamp = time ? new Date(time).toISOString() : new Date().toISOString();
+        } catch (e) {
+          timestamp = new Date().toISOString();
+        }
 
-            commit('UPDATE_SENSOR_VALUE', {
-              dID,
-              room,
-              sensor: item_name,
-              value: item_value,
-              timestamp
-            });
-            
-          } catch (error) {
-            console.error('[Config] Ошибка обработки данных сенсора:', error);
-          }
+        commit('UPDATE_SENSOR_VALUE', {
+          dID,
+          room,
+          sensor: item_name,
+          value: item_value,
+          timestamp
+        });
+      } catch (error) {
+        console.error('[Config] Ошибка обработки данных сенсора:', error);
+      }
     },
 
     async ensureConfig({ state, dispatch }, dID) {
-      if (!dID) {
-        throw new Error('dID не определен');
+      if (!dID) throw new Error('dID не определен');
+      if (!state.configs[dID]) {
+        await dispatch('requestConfig', dID);
       }
-      
-      // Проверяем наличие конфигурации в хранилище Vuex
-      if (state.configs[dID]) {
-        console.log(`[Config] Конфигурация ${dID} уже загружена`);
-        return;
-      }
-      
-      // Запрашиваем с сервера
-      console.log(`[Config] Конфигурация ${dID} отсутствует, запрашиваем...`);
-      await dispatch('requestConfig', dID);
     },
   },
   
@@ -172,32 +123,6 @@ export default {
     getConfig: state => name => state.configs[name] || {},
     isLoading: state => state.loading,
     error: state => state.error,
-    getSensorValue: (state) => (roomKey, sensorKey) => {
-      const dID = state.auth?.dID; // Используем dID из состояния auth
-      if (!dID || !state.configs[dID]) return null;
-      
-      return state.configs[dID]?.commonConfig?.rooms?.[roomKey]?.sensors?.[sensorKey]?.value;
-    },
-      getSensorData: (state) => (roomId) => {
-    return state.configs[roomId] || {}
-  },
-  getParamData: (state) => (paramKey) => {
-    // Возвращает данные параметра по всем комнатам
-    const result = {}
-    Object.entries(state.configs).forEach(([roomId, roomData]) => {
-      if (roomData.sensors[paramKey]) {
-        result[roomId] = {
-          value: roomData.sensors[paramKey],
-          time: roomData.time[`${paramKey}_time`],
-          roomTitle: roomData.title
-        }
-      }
-    })
-    return result
-  },
-  getCommonConfig: (state) => (dID) => {
-      if (!dID) return null;
-      return state.configs[dID]|| null;
-  },
+    getCommonConfig: (state) => (dID) => state.configs[dID] || null,
   }
 };

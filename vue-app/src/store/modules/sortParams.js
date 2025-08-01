@@ -37,7 +37,6 @@ export default {
     },
     
     SET_PARAM_TITLE(state, title) {
-      console.log('[sortParams] SET_PARAM_TITLE:', title); // Добавим лог
       state.paramTitle = title || 'Температура';
     },
     
@@ -62,17 +61,6 @@ export default {
       });
     },
     
-    resetDefaults({ commit }) {
-      commit('UPDATE_STATE', {
-        sortType: 'rooms',
-        roomId: 0,
-        roomKey: 'room01',
-        paramKey: 'Temp',
-        roomTitle: 'Главная комната',
-        paramTitle: 'Температура'
-      });
-    },
-    
     setRoom({ commit }, room) {
       commit('UPDATE_STATE', {
         roomId: room.id,
@@ -87,11 +75,6 @@ export default {
         paramTitle: param.title
       });
     },
-    
-    toggleSortType({ commit, state }) {
-      const newType = state.sortType === 'rooms' ? 'params' : 'rooms';
-      commit('SET_SORT_TYPE', newType);
-    }
   },
   
   getters: {
@@ -101,17 +84,5 @@ export default {
     getRoomTitle: state => state.roomTitle,
     getParamKey: state => state.paramKey,
     getParamTitle: state => state.paramTitle,
-    
-    // Комплексные геттеры
-    currentRoom: state => ({
-      id: state.roomId,
-      key: state.roomKey,
-      title: state.roomTitle
-    }),
-    
-    currentParam: state => ({
-      key: state.paramKey,
-      title: state.paramTitle
-    })
   }
 };

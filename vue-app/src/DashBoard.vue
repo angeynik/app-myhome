@@ -1,7 +1,6 @@
 <template>
   <div class="app">
     <svg display="none">
-      <!-- SVG стрелки для скрола -->
       <symbol id="arrowRight" viewBox="0 0 34 64" xmlns="http://www.w3.org/2000/svg" stroke="white">
         <line y1="-2" x2="43.0756" y2="-2" transform="matrix(-0.684508 0.729005 -0.684508 -0.729005 30.4863 28.9999)" stroke="#E0DFE7" stroke-width="4"/>
         <line y1="-2" x2="43.0756" y2="-2" transform="matrix(-0.684508 -0.729005 0.684508 -0.729005 33 31.4023)" stroke="#E0DFE7" stroke-width="4"/>
@@ -22,12 +21,6 @@
           <MainHeader :title="headerTitle" :mobile="isMobile" />
         </div>
         
-        <!-- <div class="debug-info">
-          Sort: {{ currentSortType }} | 
-          Room: {{ getRoomId }} ({{ getRoomKey }}) | 
-          Param: {{ getParamKey }}
-        </div> -->
-
         <svg class="header_arrow" v-show="showHeaderArrow" @click="sortingForvard">
           <use href="#arrowRight"></use>
         </svg>
@@ -49,9 +42,6 @@
     <div class="body"
       @touchstart.passive="handleTouchStart" 
       @touchend.passive="handleTouchEnd">
-
-      <p v-if="currentSortType === 'rooms'">Body - Сортировка по комнатам </p>
-      <p v-else-if="currentSortType === 'params'">Body - Сортировка по параметрам</p>
 
       <div class="app-place_body" v-if="!selectedComponent" id="app_place">
         <AppPlace class="app-place_module" title="Комнаты" @select="selectComponent('Rooms')" />
@@ -124,14 +114,7 @@ export default {
       if (!this.selectedComponent) {
         return "Главное меню";
       }
-      console.log('[DashBoard] headerTitle called', {
-        selectedComponent: this.selectedComponent,
-        currentSortType: this.currentSortType,
-        getRoomTitle: this.getRoomTitle,
-        getParamTitle: this.getParamTitle,
-        humanParamTitle: this.$options.computed.humanParamTitle.call(this),
-      });
-
+      
       if (this.selectedComponent === 'MainBody') {
         return this.currentSortType === 'rooms' 
           ? "Сортировка по комнатам - " + this.getRoomTitle
@@ -139,16 +122,16 @@ export default {
       }
       return "Dashboard";
     },
-  humanParamTitle() {
-    const baseKey = this.getParamKey.replace(/\d+/g, '');
-    const mappings = {
-      'dHum': 'Влажность',
-      'dTemp': 'Температура',
-      'dPress': 'Давление',
-      'dPower': 'Потребление',
-    };
-    return mappings[baseKey] || this.getParamKey;
-  },
+    humanParamTitle() {
+      const baseKey = this.getParamKey.replace(/\d+/g, '');
+      const mappings = {
+        'dHum': 'Влажность',
+        'dTemp': 'Температура',
+        'dPress': 'Давление',
+        'dPower': 'Потребление',
+      };
+      return mappings[baseKey] || this.getParamKey;
+    },
   },
   mounted() {
     this.detectDevice();
@@ -156,15 +139,12 @@ export default {
   },
 
   methods: {
-    ...mapActions('sortParams', ['initSortParams', 'resetDefaults']),
+    ...mapActions('sortParams', ['initSortParams']),
     ...mapActions('config', ['initialize']),
     
     async initApp() {
       try {
-        // Инициализируем параметры сортировки
         this.initSortParams();
-        
-        // Загружаем конфигурацию
         await this.initialize();
       } catch (error) {
         console.error('Ошибка инициализации:', error);
@@ -184,7 +164,6 @@ export default {
 
     resetSelection() {
       this.selectedComponent = null;
-      this.headerTitle = 'Главное меню';
       this.showHeaderArrow = false;
     },
 
