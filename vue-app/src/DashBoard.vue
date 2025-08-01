@@ -22,11 +22,11 @@
           <MainHeader :title="headerTitle" :mobile="isMobile" />
         </div>
         
-        <div class="debug-info">
+        <!-- <div class="debug-info">
           Sort: {{ currentSortType }} | 
           Room: {{ getRoomId }} ({{ getRoomKey }}) | 
           Param: {{ getParamKey }}
-        </div>
+        </div> -->
 
         <svg class="header_arrow" v-show="showHeaderArrow" @click="sortingForvard">
           <use href="#arrowRight"></use>
@@ -50,8 +50,8 @@
       @touchstart.passive="handleTouchStart" 
       @touchend.passive="handleTouchEnd">
 
-      <p v-if="currentSortType === 'rooms'">Сортировка по комнатам </p>
-      <p v-else-if="currentSortType === 'params'">Сортировка по параметрам</p>
+      <p v-if="currentSortType === 'rooms'">Body - Сортировка по комнатам </p>
+      <p v-else-if="currentSortType === 'params'">Body - Сортировка по параметрам</p>
 
       <div class="app-place_body" v-if="!selectedComponent" id="app_place">
         <AppPlace class="app-place_module" title="Комнаты" @select="selectComponent('Rooms')" />
@@ -113,7 +113,9 @@ export default {
       'currentSortType',
       'getRoomId',
       'getRoomKey',
-      'getParamKey'
+      'getParamKey',
+      'getRoomTitle',
+      'getParamTitle'
     ]),
     userLevel() {
       return this.level || 0;
@@ -122,14 +124,31 @@ export default {
       if (!this.selectedComponent) {
         return "Главное меню";
       }
-      
+      console.log('[DashBoard] headerTitle called', {
+        selectedComponent: this.selectedComponent,
+        currentSortType: this.currentSortType,
+        getRoomTitle: this.getRoomTitle,
+        getParamTitle: this.getParamTitle,
+        humanParamTitle: this.$options.computed.humanParamTitle.call(this),
+      });
+
       if (this.selectedComponent === 'MainBody') {
         return this.currentSortType === 'rooms' 
-          ? "Сортировка по комнатам" 
-          : "Сортировка по параметрам";
+          ? "Сортировка по комнатам - " + this.getRoomTitle
+          : "Сортировка по параметрам - " + this.humanParamTitle;
       }
       return "Dashboard";
-    }
+    },
+  humanParamTitle() {
+    const baseKey = this.getParamKey.replace(/\d+/g, '');
+    const mappings = {
+      'dHum': 'Влажность',
+      'dTemp': 'Температура',
+      'dPress': 'Давление',
+      'dPower': 'Потребление',
+    };
+    return mappings[baseKey] || this.getParamKey;
+  },
   },
   mounted() {
     this.detectDevice();

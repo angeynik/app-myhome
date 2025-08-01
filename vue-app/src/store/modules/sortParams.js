@@ -17,7 +17,7 @@ export default {
     },
     
     SET_ROOM_ID(state, id) {
-      state.roomId = Number(id) || 1;
+      state.roomId = Number(id) || 0;
     },
     
     SET_PARAM_KEY(state, key) {
@@ -37,6 +37,7 @@ export default {
     },
     
     SET_PARAM_TITLE(state, title) {
+      console.log('[sortParams] SET_PARAM_TITLE:', title); // Добавим лог
       state.paramTitle = title || 'Температура';
     },
     
@@ -53,7 +54,7 @@ export default {
     initSortParams({ commit }) {
       commit('UPDATE_STATE', {
         sortType: 'rooms',
-        roomId: 1,
+        roomId: 0,
         roomKey: 'room01',
         paramKey: 'Temp',
         roomTitle: 'Главная комната',
@@ -64,7 +65,7 @@ export default {
     resetDefaults({ commit }) {
       commit('UPDATE_STATE', {
         sortType: 'rooms',
-        roomId: 1,
+        roomId: 0,
         roomKey: 'room01',
         paramKey: 'Temp',
         roomTitle: 'Главная комната',

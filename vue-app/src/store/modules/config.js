@@ -5,11 +5,12 @@ export default {
     loading: false,
     error: null
   }),
-  
+ 
   mutations: {
     SET_CONFIG(state, { name, config }) {
       state.configs[name] = config;
       console.log(`[Config] Конфигурация ${name} сохранена`);
+      console.log('[Config] - ', config);
     },
     UPDATE_SENSOR_VALUE(state, { dID, room, sensor, value, timestamp}) {
           //console.log(`[Config] Шаг 1 - Запрос на обновление значение сенсора ${sensor} в комнате ${room} для конфигурации ${dID}`);
@@ -31,7 +32,7 @@ export default {
             
         // Обновляем состояние и stateConfig Vuex
             state.configs[dID] = configCopy;
-            console.log(`[Config] Сенсор ${sensor} в комнате ${room} обновлен для stateConfig Vuex:`);
+            //console.log(`[Config] Сенсор ${sensor} в комнате ${room} обновлен для stateConfig Vuex:`);
             //console.log(configCopy);
 
           } else {

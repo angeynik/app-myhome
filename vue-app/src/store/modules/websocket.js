@@ -102,7 +102,7 @@ export default {
           });
         }
         
-        console.log('[WebSocket] Sending:', message);
+        //console.log('[WebSocket] Sending:', message);
         state.socket.send(JSON.stringify(message));
       });
     },
@@ -111,7 +111,7 @@ export default {
 
       try {
         const response = JSON.parse(event.data);
-        console.log('[WebSocket] Received:', response);
+        //console.log('[WebSocket] Received:', response);
         const dID = response.name;
         const auth_dID = rootGetters['dID'];
         if (response.request === 'loginSuccess' && state.pendingResponse?.type === 'login') {
@@ -131,7 +131,7 @@ export default {
           // Обновляем значение датчика
             if (response.request === 'sensor' && dID === auth_dID) {
             //if (dID === auth_dID) {
-              console.log('[WebSocket] Обрабатываем сообщение request = sensor');
+              //console.log('[WebSocket] Обрабатываем сообщение request = sensor');
               
 
               // Валидация payload

@@ -1,54 +1,5 @@
+
 <template>
-  <div 
-    class="sensor-card"
-    :class="{ selected: isSelected, [type]: true }"
-    @click="$emit('click')"
-    @dblclick="$emit('dblclick')"
-  >
-    <div class="sensor-header">
-      <h3>{{ title }}</h3>
-      <span v-if="roomTitle" class="room">{{ roomTitle }}</span>
-    </div>
-    
-    <div class="sensor-value">
-      {{ formattedValue }}
-      <span v-if="unit" class="unit">{{ unit }}</span>
-    </div>
-    
-    <div class="sensor-footer">
-      <time>{{ timeUpdated }}</time>
-    </div>
-  </div>
-</template>
-
-<script>
-export default {
-  name: 'MainBodyValue',
-  props: {
-    title: { type: String, required: true },
-    value: { type: Number, required: true },
-    unit: { type: String, default: '' },
-    timeUpdated: { type: String, required: true },
-    roomTitle: { type: String, required: true },
-    isSelected: { type: Boolean, default: false },
-  },
-  computed: {
-    type() {
-      if (this.unit === '°C') return 'temperature';
-      if (this.unit === '%') return 'humidity';
-      return 'default';
-    },
-    formattedValue() {
-      if (typeof this.value === 'number') {
-        return this.value.toFixed(2);
-      }
-      return this.value;
-    }
-  }
-}
-</script>
-
-<!-- <template>
   <div 
     class="sensor-card"
     :class="{ selected: isSelected, [type]: true }"
@@ -201,10 +152,10 @@ methods: {
 },
 
 }
-</script> -->
+</script>
 
-<style>
+<!-- <style>
 .selected { 
     border: 3px solid var(--light_font); /* Пример изменения обводки */ 
     }
-</style>
+</style> -->
