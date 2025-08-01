@@ -196,7 +196,7 @@ export default {
   },
   getCommonConfig: (state) => (dID) => {
       if (!dID) return null;
-      return state.configs[dID]?.commonConfig || null;
+      return state.configs[dID]|| null;
   },
   }
 };

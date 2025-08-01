@@ -104,33 +104,10 @@ export default {
       isMobile: false,
       showHeaderArrow: false,
       selectedComponent: null,
-      headerTitle: "Главное меню",
     }; 
   },
 
   computed: {
-    // ...mapGetters('config', ['getSensorValue']),
-    // ...mapGetters(['level', 'dID']),
-    // ...mapGetters('sortParams', [
-    //   'currentSortType',
-    //   'getRoomId',
-    //   'getRoomKey',
-    //   'getParamKey'
-    // ]),
-    // ...mapGetters('config', ['getCommonConfig', 'getManageConfig', 'getDirectoryConfig', 'getRoomConfig', 'getSensorConfig', 'isLoading', 'error']),
-
-    // sensorValue() {
-    //   return this.getSensorValue(this.getRoomKey, this.getParamKey);
-    // },
-    // userLevel() {
-    //   return this.level || 0;
-    // },
-    // userdID() {
-    //   return this.dID;
-    // },
-    // currentSortType() {
-    //   return this.getSortParams
-    // },
     ...mapGetters(['level', 'dID']),
     ...mapGetters('sortParams', [
       'currentSortType',
@@ -140,88 +117,25 @@ export default {
     ]),
     userLevel() {
       return this.level || 0;
+    },
+    headerTitle() {
+      if (!this.selectedComponent) {
+        return "Главное меню";
+      }
+      
+      if (this.selectedComponent === 'MainBody') {
+        return this.currentSortType === 'rooms' 
+          ? "Сортировка по комнатам" 
+          : "Сортировка по параметрам";
+      }
+      return "Dashboard";
     }
   },
   mounted() {
     this.detectDevice();
     this.initApp();
   },
-  watch: {
-    sensorValue(newVal) {
-      // Обновление UI при изменении значения
-      if (newVal !== undefined) {
-        this.updateChart(newVal);
-      }
-    }
-  },
 
-  // methods: {
-  //   ...mapActions('websocket', ['send']),
-  //   ...mapActions('log', ['sendLogToServer']),
-  //   ...mapActions('sortParams', [
-  //     'toggleSortType',
-  //     'setRoom',
-  //     'setParam',
-  //     'resetDefaults'
-  //   ]),
-  //   ...mapMutations('sortParams', ['SET_ROOM_ID', 'SET_PARAM_KEY', 'SET_ROOM_KEY', 'SET_SORT_TYPE']),
-  //   ...mapActions('config', ['initialize']),
-  //   async initializeConfig() {
-  //     try {
-  //       await this.initialize()
-  //       // Дополнительные действия после инициализации
-  //     } catch (error) {
-  //       console.error('Ошибка инициализации:', error)
-  //     }
-  //   },
-  //   initApp() {
-  //     this.resetDefaults()
-  //     this.selectedComponent = null
-  //     this.headerTitle = 'Главное меню'
-  //   },
-
-  //   handleRoomChange(room) {
-  //     this.setRoom({
-  //       id: room.id,
-  //       key: room.key,
-  //       title: room.title
-  //     });
-  //   },
-    
-  //   handleParamChange(param) {
-  //     this.setParam({
-  //       key: param.key,
-  //       title: param.title
-  //     });
-  //   },
-
-  //   selectComponent(component) {
-  //     if (component === 'Rooms') {
-  //       this.$store.commit('sortParams/SET_SORT_TYPE', 'rooms');
-  //     } else if (component === 'Params') {
-  //       this.$store.commit('sortParams/SET_SORT_TYPE', 'params');
-  //     }
-     
-  //     this.selectedComponent = 'MainBody';
-  //     this.showHeaderArrow = !this.isMobile;
-  //     console.log('selectedComponent:', this.selectedComponent);
-      
-  //     this.sendLogToServer({
-  //       type: 'info',
-  //       message: `Выбран компонент: ${this.selectedComponent}, сортировка по ${component}`
-  //     });
-  //   },
-
-  //   resetSelection() {
-  //     this.selectedComponent = null;
-  //     this.headerTitle = 'Главное меню';
-  //     this.showHeaderArrow = false;
-  //   },
-
-  //   detectDevice() {
-  //     this.isMobile = /Mobi|Android/i.test(navigator.userAgent);
-  //   },
-  // }
   methods: {
     ...mapActions('sortParams', ['initSortParams', 'resetDefaults']),
     ...mapActions('config', ['initialize']),
@@ -263,5 +177,5 @@ export default {
 </script>
 
 <style>
-/* Ваши стили */
+
 </style>
