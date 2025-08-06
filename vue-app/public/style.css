@@ -133,7 +133,7 @@
     }
     .mainBody {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); /* Автоматическая подгонка элементов по ширине от 120px до доступного пространства */
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Автоматическая подгонка элементов по ширине от 120px до доступного пространства */
       grid-gap: 16px; /* Отступы между элементами */
       background-color: var(--header_color);
       height: 100%;
@@ -142,10 +142,16 @@
       padding: 16px; /* Отступы внутри контейнера */
       box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
     }    
-    .mainBodyValue {
+    .loading, .error {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 2rem;
+    }
+    .sensor-card {
       /* min-width: 160px;
       max-width: 1800px;
       height: 20vh; */
+      min-width: 180px;
       width: 100%;
       max-width: 56vw;
       min-height: 160px;
@@ -168,22 +174,27 @@
     .mainBodyValue:hover {
       transform: scale(1.08); /* Небольшое увеличение при наведении */
     }
-    .mainBodyValue_h1 {
+    .sensor-header {
       align-items: center;
-      font-size: 3rem;
-      font-weight: 700;
-      letter-spacing: 3px;
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: 4px;
       text-transform: uppercase;
     }
-    .mainBodyValue_h3 {
-      font-size: 1.1rem;
+    .sensor-value {
+      font-size: 2.4rem;
       font-weight: 500;
-      letter-spacing: 2px;
+      letter-spacing: 4px;
     }
-    .mainBodyValue_p {
-      font-size: 0.8rem;
+    .sensor-SetValue {
+      font-size: 1.2rem;
       font-weight: 300;
-      letter-spacing: 1px;
+      letter-spacing: 3px;
+    }
+    .sensor-footer {
+      font-size: 0.8rem;
+      font-weight: 200;
+      letter-spacing: 2px;
       color: var(--sensor-gray);
     }
   .valueBlock {

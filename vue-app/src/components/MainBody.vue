@@ -1,22 +1,24 @@
 <template>
-  <div id="app_mainBody" class="mainBody">
+
     <div v-if="isLoading" class="loading">Загрузка...</div>
     <div v-else-if="error" class="error">{{ error }}</div>
-    <div v-else >
+    <div v-else id="app_mainBody" class="mainBody">
       <MainBodyValue 
         v-for="(item, index) in viewArray"
         :key="`${index}-${item.paramKey}-${item.roomKey}`"
-        :title="item.title"
         :value="item.value"
         :unit="item.unit"
-        :timeUpdated="item.timeDiff"
+        :sortType="item.sortType"
         :roomTitle="item.roomTitle"
+        :paramTitle="item.paramTitle"
+        :setValue="item.setValue"
+        :timeUpdated="item.timeDiff"
         :isSelected="isSelected(item)"
         @click="selectItem(item)"
         @dblclick="toggleSorting(item)"
       /> 
     </div>
-  </div>
+
 </template>
 
 <script>
@@ -42,6 +44,9 @@ export default {
         ? `Комната: ${this.getRoomTitle}`
         : `Параметр: ${this.getParamTitle}`;
     },
+  isRoomSort() {
+    return this.currentSortType === 'rooms';
+  },
     humanParamTitle() {
       return this.getHumanParamTitle(this.getParamKey);
     },
@@ -162,6 +167,7 @@ export default {
           
           this.viewArray = this.getSortedParams(config, this.getParamKey);
         }
+        console.log('[MainBody] Результат сортировки:', this.viewArray);
       } catch (error) {
         console.error('[MainBody] Ошибка обновления вида:', error);
         this.viewArray = [];
@@ -177,19 +183,24 @@ export default {
         return [];
       }
 
-      return Object.entries(room.sensors).map(([sensorKey, sensorData]) => ({
+      return Object.entries(room.sensors).
+      map(([sensorKey, sensorData]) => {
+      const sensorSet = room.setpoints?.[sensorKey];
+      return {         
+          sortType: 'rooms',
           paramTitle: this.getSensorTitle(sensorKey),
-          title: room.title,
+          // title: room.title,
           paramKey: sensorKey,
-          value: parseFloat(sensorData.value) || 0,
+          value: sensorData?.value != null ? parseFloat(sensorData.value) : 0,
+          setValue: sensorSet?.value != null ? parseFloat(sensorSet.value) : null,
           unit: this.getUnit(sensorKey),
           timeDiff: this.getTimeDiff(sensorData.lastUpdate),
           roomTitle: room.title,
           roomId: room.id,
           roomKey
-      }));
-    },
-  
+      };
+    })
+  },
     getSortedParams(config, paramKey) {
       if (!config || !paramKey) {
         return [];
@@ -199,11 +210,14 @@ export default {
         .filter(([, room]) => room.sensors?.[paramKey] !== undefined)
         .map(([roomKey, room]) => {
           const sensorData = room.sensors[paramKey];
+          const sensorSet = room.setpoints?.[paramKey];
           return {
+            sortType: 'params',
             paramTitle: this.getSensorTitle(paramKey),
-            title: this.getSensorTitle(paramKey),
+            // title: this.getSensorTitle(paramKey),
             paramKey: paramKey,
-            value: parseFloat(sensorData.value) || 0,
+            value: sensorData?.value != null ? parseFloat(sensorData.value) : 0,
+            setValue: sensorSet?.value != null ? parseFloat(sensorSet.value) : null,
             unit: this.getUnit(paramKey),
             timeDiff: this.getTimeDiff(sensorData.lastUpdate),
             roomTitle: room.title,

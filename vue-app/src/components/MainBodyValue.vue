@@ -5,16 +5,21 @@
     @click="$emit('click')"
     @dblclick="$emit('dblclick')"
   >
-    <div class="sensor-header">
-      <h3>{{ title }}</h3>
-      <span v-if="roomTitle" class="room">{{ roomTitle }}</span>
+    <div v-if="sortType === 'rooms'" class="sensor-header">
+    <span class="room">{{ paramTitle }}</span>
     </div>
-    
+        <div v-else class="sensor-header">
+      <span class="room">{{ roomTitle }}</span>
+    </div>
+
     <div class="sensor-value">
-      {{ formattedValue }}
+      {{ formattedValue(value) }}
       <span v-if="unit" class="unit">{{ unit }}</span>
     </div>
-    
+       <div v-if="setValue != null || undefined" class="sensor-SetValue">
+      {{ formattedValue(setValue) }}
+      <span v-if="unit" class="unit">{{ unit }}</span>
+    </div>
     <div class="sensor-footer">
       <time>{{ formattedTime }}</time>
     </div>
@@ -25,9 +30,11 @@
 export default {
   name: 'ParamPlace', 
   props: {
-    title: { type: String, required: true }, 
+    paramTitle: { type: String, required: true }, 
     roomTitle: { type: String, required: true },
     value: { type: Number, required: true },
+    setValue: { type: Number, required: true },
+    sortType: { type: Number, required: true },
     unit: String,
     timeUpdated: { type: Number, required: true },
     isSelected: { type: Boolean, required: true, default: false },
@@ -40,14 +47,6 @@ export default {
       }
       return 'default'
     },
-    
-    formattedValue() {
-      if (typeof this.value === 'number') {
-        return this.value.toFixed(2)
-      }
-      return this.value
-    },
-    
     formattedTime() {
       if (!this.timeUpdated) return 'Нет данных'
       
@@ -56,6 +55,14 @@ export default {
         ? this.timeUpdated 
         : date.toLocaleTimeString()
     }
+  },
+  methods: {
+        formattedValue(value) {
+      if (typeof value === 'number') {
+        return value.toFixed(1)
+      }
+      return value
+    },
   }
 }
 </script>
