@@ -15,12 +15,39 @@ const routes = [
     name: 'Intro',
     component: IntroduceHome,
   },
-  {
-    path: '/dashboard',
-    name: 'DashBoard',
-    component: Dashboard,
-    meta: { requiresAuth: true, requiredLevel: 1 }, // Уровень доступа 1
-  },
+{
+  path: '/dashboard',
+  name: 'DashBoard',
+  component: Dashboard,
+  meta: { requiresAuth: true, requiredLevel: 1 },
+  children: [
+    {
+      path: '',
+      name: 'DashboardMain',
+      component: () => import('@/components/DashboardMain.vue')
+    },
+    {
+      path: 'rooms',
+      name: 'DashboardRooms',
+      component: () => import('@/components/DashboardRooms.vue')
+    },
+    {
+      path: 'params',
+      name: 'DashboardParams',
+      component: () => import('@/components/DashboardParams.vue')
+    },
+    {
+      path: 'common',
+      name: 'DashboardCommon',
+      component: () => import('@/components/DashboardCommon.vue')
+    },
+    {
+      path: 'settings',
+      name: 'DashboardSettings',
+      component: () => import('@/components/DashboardSettings.vue')
+    }
+  ]
+},
   {
     path: '/smart-home',
     name: 'SmartHome',

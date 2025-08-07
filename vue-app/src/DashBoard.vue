@@ -28,18 +28,26 @@
       </div>
       <p style="width: 100%; height: 1px; background-color: var(--orange);"></p>
       <div class="header-bottom">
-        <nav>
+        <!-- <nav>
           <router-link to="/login">Login</router-link>
           <router-link to="/dashboard">Dashboard</router-link>
           <router-link to="/smart-home">Smart Home</router-link>
           <router-link to="/manufact-automatation">Automation</router-link>
           <router-link v-if="userLevel >= 2" to="/profile">Profile</router-link>
           <router-link v-if="userLevel >= 3" to="/users">Users</router-link>
-        </nav>
+        </nav> -->
+      <nav>
+        <router-link to="/">main  </router-link>
+        <router-link to="/dashboard">dashboard   </router-link>
+        <router-link :to="{ name: 'DashboardRooms' }">rooms</router-link>
+        <router-link :to="{ name: 'DashboardParams' }">params</router-link>
+        <router-link :to="{ name: 'DashboardCommon' }">common</router-link>
+        <router-link :to="{ name: 'DashboardSettings' }">settings</router-link>
+      </nav>
       </div>
     </header>
 
-    <div class="body"
+    <!-- <div class="body"
       @touchstart.passive="handleTouchStart" 
       @touchend.passive="handleTouchEnd">
 
@@ -56,7 +64,27 @@
           @eventsComponent="handleComponentEvent" 
         />
       </div>
+    </div> -->
+  <div class="body"
+    @touchstart.passive="handleTouchStart" 
+    @touchend.passive="handleTouchEnd">
+
+    <div class="app-place_body" v-if="!selectedComponent" id="app_place">
+      <AppPlace class="app-place_module" title="Комнаты" @select="selectComponent('rooms')" />
+      <AppPlace class="app-place_module" title="Параметры" @select="selectComponent('params')" />
+      <AppPlace class="app-place_module" title="Основные" @select="selectComponent('common')" />
+      <AppPlace class="app-place_module" title="Настройки" @select="selectComponent('settings')" />
     </div>
+    
+    <div v-else id="app_component">
+      <component
+        :is="selectedComponent" 
+        :propsTitle="propsTitle"
+        :changeSorting="changeSorting" 
+        @eventsComponent="handleComponentEvent" 
+      />
+    </div>
+  </div>
 
     <footer class="footer"> 
       <MainFooter v-show="!showSetpoint"/>
@@ -137,7 +165,22 @@ export default {
     this.detectDevice();
     this.initApp();
   },
-
+  watch: {
+    '$route.name'(newRoute) {
+      if (newRoute === 'DashboardRooms') {
+        this.$store.commit('sortParams/SET_SORT_TYPE', 'rooms');
+        this.selectedComponent = 'MainBody';
+      } else if (newRoute === 'DashboardParams') {
+        this.$store.commit('sortParams/SET_SORT_TYPE', 'params');
+        this.selectedComponent = 'MainBody';
+      } else if (newRoute === 'DashboardCommon') {
+        this.selectedComponent = null;
+      } else if (newRoute === 'DashboardSettings') {
+        this.selectedComponent = null;
+      }
+      this.showHeaderArrow = ['DashboardRooms', 'DashboardParams'].includes(newRoute) && !this.isMobile;
+    }
+  },
   methods: {
     ...mapActions('sortParams', ['initSortParams']),
     ...mapActions('config', ['initialize']),
@@ -150,18 +193,42 @@ export default {
         console.error('Ошибка инициализации:', error);
       }
     },
-
-    selectComponent(component) {
-      if (component === 'Rooms') {
-        this.$store.commit('sortParams/SET_SORT_TYPE', 'rooms');
-      } else if (component === 'Params') {
-        this.$store.commit('sortParams/SET_SORT_TYPE', 'params');
-      }
-     
-      this.selectedComponent = 'MainBody';
-      this.showHeaderArrow = !this.isMobile;
-    },
-
+    // selectComponent(component) {
+    //   console.log('selectedComponent:', component);
+    //   if (component === 'rooms') {
+    //     this.$store.commit('sortParams/SET_SORT_TYPE', 'rooms');
+    //   } else if (component === 'params') {
+    //     this.$store.commit('sortParams/SET_SORT_TYPE', 'params');
+        
+    //   } else if (component === 'common') {
+    //     this.$store.commit('sortParams/SET_SORT_TYPE', 'common');
+    //   } else if (component === 'settings') {
+    //     this.$store.commit('sortParams/SET_SORT_TYPE', 'settings');
+    //   }
+    //   this.selectedComponent = 'MainBody';
+    //   this.showHeaderArrow = !this.isMobile;
+    // },
+selectComponent(component) {
+  console.log('selectedComponent:', component);
+  
+  // Устанавливаем тип сортировки
+  this.$store.commit('sortParams/SET_SORT_TYPE', component);
+  
+  // Для совместимости с роутером
+  if (component === 'rooms') {
+    this.$router.push({ name: 'DashboardRooms' });
+  } else if (component === 'params') {
+    this.$router.push({ name: 'DashboardParams' });
+  } else if (component === 'common') {
+    this.$router.push({ name: 'DashboardCommon' });
+  } else if (component === 'settings') {
+    this.$router.push({ name: 'DashboardSettings' });
+  }
+  
+  // Показываем MainBody только для rooms и params
+  this.selectedComponent = ['rooms', 'params'].includes(component) ? 'MainBody' : null;
+  this.showHeaderArrow = ['rooms', 'params'].includes(component) && !this.isMobile;
+},
     resetSelection() {
       this.selectedComponent = null;
       this.showHeaderArrow = false;

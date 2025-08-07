@@ -28,6 +28,9 @@ export default {
       if (this.$store.getters.isAuthenticated) {
         await this.$store.dispatch('config/initialize');
       }
+      if (this.$route.path === '/dashboard') {
+        this.$router.push({ name: 'DashboardMain' });
+      }
     } catch (error) {
       console.error('Ошибка инициализации приложения:', error);
     }

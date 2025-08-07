@@ -34,6 +34,15 @@ export default {
       viewArray: [],
     }
   },
+  props: {
+  initialSortType: {
+    type: String,
+    default: 'rooms'
+  }
+},
+created() {
+  this.SET_SORT_TYPE(this.initialSortType);
+},
   computed: {
     ...mapGetters('config', ['isLoading', 'error', 'getCommonConfig']),
     ...mapGetters('sortParams', ['currentSortType', 'getRoomId', 'getRoomKey', 'getParamKey', 'getRoomTitle', 'getParamTitle']),
@@ -64,7 +73,13 @@ export default {
       if (this.currentSortType === 'params') {
         this.updateView();
       }
-    }
+    },
+    getCommonConfig: {
+      handler(newVal) {
+        if (newVal) this.updateView();
+      },
+      deep: true
+    },
   },
   mounted() {
     this.updateView();
