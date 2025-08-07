@@ -53,11 +53,12 @@ export default {
     initSortParams({ commit }) {
       commit('UPDATE_STATE', {
         sortType: 'rooms',
+        roomTitle: 'Главная комната',
         roomId: 0,
         roomKey: 'room01',
         paramKey: 'Temp',
-        roomTitle: 'Главная комната',
-        paramTitle: 'Температура'
+        paramTitle: 'Температура',
+        paramType: 'num',
       });
     },
     

@@ -86,8 +86,29 @@ export default {
         'dTemp': 'Температура',
         'dPress': 'Давление',
         'dPower': 'Потребление',
+        'dMove': 'Движение',
+        'dFire': 'Контроль возгорания',
+        'dLeak': 'Контроль утечек',
       };
       return mappings[baseKey] || key;
+    },
+    getSensorValue(key, data) {
+      switch (key) {
+        case 'num':{
+          const numValue = data?.value != null ? parseFloat(data.value) : 0;
+          return numValue;
+          }
+        case 'bool':{
+          const boolValue = data?.type != null ? data.value : null;
+          if (boolValue === true) {
+            return 'ON'
+          }
+          return 'OFF';
+          }
+        default:
+          return null;
+
+      }
     },
     isSelected(item) {
       return this.selectedItem && 
@@ -186,12 +207,14 @@ export default {
       return Object.entries(room.sensors).
       map(([sensorKey, sensorData]) => {
       const sensorSet = room.setpoints?.[sensorKey];
+      //console.log('Тип параметра - ', sensorData.type);
       return {         
           sortType: 'rooms',
           paramTitle: this.getSensorTitle(sensorKey),
-          // title: room.title,
+          paramType: sensorData?.type != null ? sensorData.type : null,
           paramKey: sensorKey,
-          value: sensorData?.value != null ? parseFloat(sensorData.value) : 0,
+          //value: sensorData?.value != null ? parseFloat(sensorData.value) : 0,
+          value: this.getSensorValue(sensorData?.type, sensorData),
           setValue: sensorSet?.value != null ? parseFloat(sensorSet.value) : null,
           unit: this.getUnit(sensorKey),
           timeDiff: this.getTimeDiff(sensorData.lastUpdate),
@@ -214,9 +237,10 @@ export default {
           return {
             sortType: 'params',
             paramTitle: this.getSensorTitle(paramKey),
-            // title: this.getSensorTitle(paramKey),
+            paramType: sensorData?.type != null ? sensorData.type : null,
             paramKey: paramKey,
-            value: sensorData?.value != null ? parseFloat(sensorData.value) : 0,
+            //value: sensorData?.value != null ? parseFloat(sensorData.value) : 0,
+            value: this.getSensorValue(sensorData?.type, sensorData),
             setValue: sensorSet?.value != null ? parseFloat(sensorSet.value) : null,
             unit: this.getUnit(paramKey),
             timeDiff: this.getTimeDiff(sensorData.lastUpdate),

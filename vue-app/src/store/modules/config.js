@@ -12,6 +12,9 @@ export default {
     },
     UPDATE_SENSOR_VALUE(state, { dID, room, sensor, value, timestamp}) {
       const config = state.configs[dID];
+      //console.log(`[Config] - UPDATE_SENSOR_VALUE - state.configs[${dID}] ${JSON.stringify(config, null, 2)}`);
+      // const updatedRoom = config[room];
+      // console.log(`[Config] - UPDATE_SENSOR_VALUE - state.configs[${dID}] Обновляем комнату ${room} - ${JSON.stringify(updatedRoom, null, 2)}`);
       if (!config) return;
 
       const roomObj = config[room];
@@ -94,9 +97,9 @@ export default {
         
         let timestamp;
         try {
-          timestamp = time ? new Date(time).toISOString() : new Date().toISOString();
+          timestamp = time ? new Date(time).toString() : new Date().toString();
         } catch (e) {
-          timestamp = new Date().toISOString();
+          timestamp = new Date().toString();
         }
 
         commit('UPDATE_SENSOR_VALUE', {
@@ -106,6 +109,12 @@ export default {
           value: item_value,
           timestamp
         });
+        //console.log('[Config] Обновлено значение датчика Параметры запроса:', { dID, room, sensor: item_name, value: item_value, timestamp });
+        //const updatedConfig = state.configs[dID];
+        //console.log(`[Config] - UPDATE_SENSOR_VALUE - state.configs[${dID}] ${JSON.stringify(updatedConfig, null, 2)}`);
+        // const updatedRoom = updatedConfig[room];
+        // console.log(`[Config] - Результат обновления комнаты ${room} - ${JSON.stringify(updatedRoom, null, 2)}`);
+     
       } catch (error) {
         console.error('[Config] Ошибка обработки данных сенсора:', error);
       }

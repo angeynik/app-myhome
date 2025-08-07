@@ -130,7 +130,6 @@ export default {
           //console.log('dID сообщения - ', dID, ' dID активного пользователя - ', auth_dID);
           // Обновляем значение датчика
             if (response.request === 'sensor' && dID === auth_dID) {
-            //if (dID === auth_dID) {
               //console.log('[WebSocket] Обрабатываем сообщение request = sensor');
               
 
