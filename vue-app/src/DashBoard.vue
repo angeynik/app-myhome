@@ -38,7 +38,8 @@
         </nav> -->
       <nav>
         <router-link to="/">main  </router-link>
-        <router-link to="/dashboard">dashboard   </router-link>
+        <!-- <router-link to="/dashboard">dashboard   </router-link> -->
+        <router-link :to="{ name: 'DashBoard' }"> dashboard </router-link>
         <router-link :to="{ name: 'DashboardRooms' }">rooms</router-link>
         <router-link :to="{ name: 'DashboardParams' }">params</router-link>
         <router-link :to="{ name: 'DashboardCommon' }">common</router-link>
@@ -165,22 +166,21 @@ export default {
     this.detectDevice();
     this.initApp();
   },
-  watch: {
-    '$route.name'(newRoute) {
-      if (newRoute === 'DashboardRooms') {
-        this.$store.commit('sortParams/SET_SORT_TYPE', 'rooms');
-        this.selectedComponent = 'MainBody';
-      } else if (newRoute === 'DashboardParams') {
-        this.$store.commit('sortParams/SET_SORT_TYPE', 'params');
-        this.selectedComponent = 'MainBody';
-      } else if (newRoute === 'DashboardCommon') {
-        this.selectedComponent = null;
-      } else if (newRoute === 'DashboardSettings') {
-        this.selectedComponent = null;
-      }
-      this.showHeaderArrow = ['DashboardRooms', 'DashboardParams'].includes(newRoute) && !this.isMobile;
+watch: {
+  '$route.name'(newRoute) {
+    if (newRoute === 'DashBoard') {
+      this.selectedComponent = null;
+      this.showHeaderArrow = false;
+    } else if (newRoute === 'DashboardRooms') {
+      this.$store.commit('sortParams/SET_SORT_TYPE', 'rooms');
+      this.selectedComponent = 'MainBody';
+    } else if (newRoute === 'DashboardParams') {
+      this.$store.commit('sortParams/SET_SORT_TYPE', 'params');
+      this.selectedComponent = 'MainBody';
     }
-  },
+    this.showHeaderArrow = ['DashboardRooms', 'DashboardParams'].includes(newRoute) && !this.isMobile;
+  }
+},
   methods: {
     ...mapActions('sortParams', ['initSortParams']),
     ...mapActions('config', ['initialize']),
@@ -209,12 +209,6 @@ export default {
     //   this.showHeaderArrow = !this.isMobile;
     // },
 selectComponent(component) {
-  console.log('selectedComponent:', component);
-  
-  // Устанавливаем тип сортировки
-  this.$store.commit('sortParams/SET_SORT_TYPE', component);
-  
-  // Для совместимости с роутером
   if (component === 'rooms') {
     this.$router.push({ name: 'DashboardRooms' });
   } else if (component === 'params') {
@@ -225,7 +219,7 @@ selectComponent(component) {
     this.$router.push({ name: 'DashboardSettings' });
   }
   
-  // Показываем MainBody только для rooms и params
+  // Для основного состояния (DashboardMain) ничего не делаем
   this.selectedComponent = ['rooms', 'params'].includes(component) ? 'MainBody' : null;
   this.showHeaderArrow = ['rooms', 'params'].includes(component) && !this.isMobile;
 },

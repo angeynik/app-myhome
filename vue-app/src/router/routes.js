@@ -21,10 +21,10 @@ const routes = [
   component: Dashboard,
   meta: { requiresAuth: true, requiredLevel: 1 },
   children: [
-    {
-      path: '',
-      name: 'DashboardMain',
-      component: () => import('@/components/DashboardMain.vue')
+        {
+      path: '', // Пустой путь для основного состояния
+      name: 'Dashboad',
+      component: null // Явно указываем, что компонент не нужен
     },
     {
       path: 'rooms',
