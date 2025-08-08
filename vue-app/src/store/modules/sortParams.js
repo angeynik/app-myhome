@@ -6,10 +6,20 @@ export default {
     roomKey: 'room01',
     paramKey: 'Temp',
     roomTitle: 'Главная комната',
-    paramTitle: 'Температура'
+    paramTitle: 'Температура',
+    allRooms: [],
+    allParams: []
   }),
   
   mutations: {
+    SET_ALL_ROOMS(state, rooms) {
+      state.allRooms = rooms;
+      console.log('[sortParams] - SET_ALL_ROOMS Обновлен список доступных комнат: ', rooms);
+    },
+    SET_ALL_PARAMS(state, params) {
+      state.allParams = params;
+      console.log('[sortParams] - SET_ALL_PARAMS Обновлен список доступных параметров: ', params);
+    },
     SET_SORT_TYPE(state, type) {
       if (['rooms', 'params'].includes(type)) {
         state.sortType = type;
@@ -46,6 +56,7 @@ export default {
           state[key] = payload[key];
         }
       });
+      console.log('[sortParams] - UPDATE_STATE Выполнено обновление состояния');
     }
   },
   
@@ -76,6 +87,74 @@ export default {
         paramTitle: param.title
       });
     },
+    updateNavigationData({ commit, rootGetters }) {
+      const dID = rootGetters['dID'];
+      const config = rootGetters['config/getConfig'](dID);
+      if (!config) return;
+      console.log('[sortParams] - updateNavigationData Конфигурация получена успешно', config);
+      // Обновляем список комнат
+      const rooms = Object.keys(config).filter(key => 
+        config[key]?.sensors && Object.keys(config[key].sensors).length > 0
+      );
+      commit('SET_ALL_ROOMS', rooms);
+
+      // Обновляем список параметров
+      const paramsSet = new Set();
+      Object.values(config).forEach(room => {
+        if (room.sensors) {
+          Object.keys(room.sensors).forEach(k => paramsSet.add(k));
+        }
+      });
+      commit('SET_ALL_PARAMS', Array.from(paramsSet));
+    },
+    
+    switchToPrevRoom({ commit, state, rootGetters}) {
+      if (state.allRooms.length === 0) return;
+      
+      const currentIndex = state.allRooms.indexOf(state.roomKey);
+      const newIndex = (currentIndex - 1 + state.allRooms.length) % state.allRooms.length;
+      const newRoomKey = state.allRooms[newIndex];
+      const newRoom = rootGetters['config/getConfig'](rootGetters['dID'])[newRoomKey];
+      
+      commit('SET_ROOM_KEY', newRoomKey);
+      commit('SET_ROOM_ID', newRoom?.id || 0);
+      commit('SET_ROOM_TITLE', newRoom?.title || newRoomKey);
+    },
+    
+    switchToNextRoom({ commit, state, rootGetters }) {
+      if (state.allRooms.length === 0) return;
+      
+      const currentIndex = state.allRooms.indexOf(state.roomKey);
+      const newIndex = (currentIndex + 1) % state.allRooms.length;
+      const newRoomKey = state.allRooms[newIndex];
+      const newRoom = rootGetters['config/getConfig'](rootGetters['dID'])[newRoomKey];
+      
+      commit('SET_ROOM_KEY', newRoomKey);
+      commit('SET_ROOM_ID', newRoom?.id || 0);
+      commit('SET_ROOM_TITLE', newRoom?.title || newRoomKey);
+    },
+    
+    switchToPrevParam({ commit, state }) {
+      if (state.allParams.length === 0) return;
+      
+      const currentIndex = state.allParams.indexOf(state.paramKey);
+      const newIndex = (currentIndex - 1 + state.allParams.length) % state.allParams.length;
+      const newParamKey = state.allParams[newIndex];
+      
+      commit('SET_PARAM_KEY', newParamKey);
+      commit('SET_PARAM_TITLE', this.getSensorTitle(newParamKey));
+    },
+    
+    switchToNextParam({ commit, state }) {
+      if (state.allParams.length === 0) return;
+      
+      const currentIndex = state.allParams.indexOf(state.paramKey);
+      const newIndex = (currentIndex + 1) % state.allParams.length;
+      const newParamKey = state.allParams[newIndex];
+      
+      commit('SET_PARAM_KEY', newParamKey);
+      commit('SET_PARAM_TITLE', this.getSensorTitle(newParamKey));
+    }
   },
   
   getters: {

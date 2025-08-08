@@ -44,7 +44,7 @@ created() {
   this.SET_SORT_TYPE(this.initialSortType);
 },
   computed: {
-    ...mapGetters('config', ['isLoading', 'error', 'getCommonConfig']),
+    ...mapGetters('config', ['isLoading', 'error', 'getConfig']),
     ...mapGetters('sortParams', ['currentSortType', 'getRoomId', 'getRoomKey', 'getParamKey', 'getRoomTitle', 'getParamTitle']),
     ...mapGetters(['dID']),
     
@@ -74,7 +74,7 @@ created() {
         this.updateView();
       }
     },
-    getCommonConfig: {
+    getConfig: {
       handler(newVal) {
         if (newVal) this.updateView();
       },
@@ -155,116 +155,184 @@ created() {
     },
     
 
-    updateView() {
-      try {
-        const config = this.getCommonConfig(this.dID);
-        if (!config) {
-          this.viewArray = [];
-          return;
-        }
+  //   updateView() {
+  //     try {
+  //       const config = this.getConfig(this.dID);
+  //       if (!config) {
+  //         this.viewArray = [];
+  //         return;
+  //       }
 
-        if (this.currentSortType === 'rooms') {
-          if (!config[this.getRoomKey]) {
-            const validRooms = Object.keys(config).filter(key => 
-              config[key]?.sensors && Object.keys(config[key].sensors).length > 0
-            );
+  //       if (this.currentSortType === 'rooms') {
+  //         if (!config[this.getRoomKey]) {
+  //           const validRooms = Object.keys(config).filter(key => 
+  //             config[key]?.sensors && Object.keys(config[key].sensors).length > 0
+  //           );
             
-            if (validRooms.length > 0) {
-              const firstRoomKey = validRooms[0];
-              const room = config[firstRoomKey];
+  //           if (validRooms.length > 0) {
+  //             const firstRoomKey = validRooms[0];
+  //             const room = config[firstRoomKey];
               
-              this.SET_ROOM_KEY(firstRoomKey);
-              this.SET_ROOM_TITLE(room.title || firstRoomKey);
-              this.SET_ROOM_ID(room.id || 0);
-            }
-          }
+  //             this.SET_ROOM_KEY(firstRoomKey);
+  //             this.SET_ROOM_TITLE(room.title || firstRoomKey);
+  //             this.SET_ROOM_ID(room.id || 0);
+  //           }
+  //         }
           
-          this.viewArray = this.getSortedRooms(config, this.getRoomKey);
-        } 
-        else {
-          const paramExists = Object.values(config).some(room => 
-            room.sensors?.[this.getParamKey] !== undefined
-          );
+  //         this.viewArray = this.getSortedRooms(config, this.getRoomKey);
+  //       } 
+  //       else {
+  //         const paramExists = Object.values(config).some(room => 
+  //           room.sensors?.[this.getParamKey] !== undefined
+  //         );
           
-          if (!paramExists) {
-            const allParams = new Set();
-            Object.values(config).forEach(room => {
-              if (room.sensors) {
-                Object.keys(room.sensors).forEach(k => allParams.add(k));
-              }
-            });
+  //         if (!paramExists) {
+  //           const allParams = new Set();
+  //           Object.values(config).forEach(room => {
+  //             if (room.sensors) {
+  //               Object.keys(room.sensors).forEach(k => allParams.add(k));
+  //             }
+  //           });
             
-            if (allParams.size > 0) {
-              const firstParam = [...allParams][0];
-              this.SET_PARAM_KEY(firstParam);
-              this.SET_PARAM_TITLE(this.getSensorTitle(firstParam));
-            }
-          }
+  //           if (allParams.size > 0) {
+  //             const firstParam = [...allParams][0];
+  //             this.SET_PARAM_KEY(firstParam);
+  //             this.SET_PARAM_TITLE(this.getSensorTitle(firstParam));
+  //           }
+  //         }
           
-          this.viewArray = this.getSortedParams(config, this.getParamKey);
-        }
-        console.log('[MainBody] Результат сортировки:', this.viewArray);
-      } catch (error) {
-        console.error('[MainBody] Ошибка обновления вида:', error);
-        this.viewArray = [];
-      }
-    },
-    getSortedRooms(config, roomKey) {
-      if (!config || !roomKey || !config[roomKey]) {
-        return [];
-      }
+  //         this.viewArray = this.getSortedParams(config, this.getParamKey);
+  //       }
+  //       console.log('[MainBody] Результат сортировки:', this.viewArray);
+  //     } catch (error) {
+  //       console.error('[MainBody] Ошибка обновления вида:', error);
+  //       this.viewArray = [];
+  //     }
+  //   },
+  //   getSortedRooms(config, roomKey) {
+  //     if (!config || !roomKey || !config[roomKey]) {
+  //       return [];
+  //     }
       
-      const room = config[roomKey];
-      if (!room.sensors || Object.keys(room.sensors).length === 0) {
-        return [];
+  //     const room = config[roomKey];
+  //     if (!room.sensors || Object.keys(room.sensors).length === 0) {
+  //       return [];
+  //     }
+
+  //     return Object.entries(room.sensors).
+  //     map(([sensorKey, sensorData]) => {
+  //     const sensorSet = room.setpoints?.[sensorKey];
+  //     //console.log('Тип параметра - ', sensorData.type);
+  //     return {         
+  //         sortType: 'rooms',
+  //         paramTitle: this.getSensorTitle(sensorKey),
+  //         paramType: sensorData?.type != null ? sensorData.type : null,
+  //         paramKey: sensorKey,
+  //         //value: sensorData?.value != null ? parseFloat(sensorData.value) : 0,
+  //         value: this.getSensorValue(sensorData?.type, sensorData),
+  //         setValue: sensorSet?.value != null ? parseFloat(sensorSet.value) : null,
+  //         unit: this.getUnit(sensorKey),
+  //         timeDiff: this.getTimeDiff(sensorData.lastUpdate),
+  //         roomTitle: room.title,
+  //         roomId: room.id,
+  //         roomKey
+  //     };
+  //   })
+  // },
+  //   getSortedParams(config, paramKey) {
+  //     if (!config || !paramKey) {
+  //       return [];
+  //     }
+   
+  //     return Object.entries(config)
+  //       .filter(([, room]) => room.sensors?.[paramKey] !== undefined)
+  //       .map(([roomKey, room]) => {
+  //         const sensorData = room.sensors[paramKey];
+  //         const sensorSet = room.setpoints?.[paramKey];
+  //         return {
+  //           sortType: 'params',
+  //           paramTitle: this.getSensorTitle(paramKey),
+  //           paramType: sensorData?.type != null ? sensorData.type : null,
+  //           paramKey: paramKey,
+  //           //value: sensorData?.value != null ? parseFloat(sensorData.value) : 0,
+  //           value: this.getSensorValue(sensorData?.type, sensorData),
+  //           setValue: sensorSet?.value != null ? parseFloat(sensorSet.value) : null,
+  //           unit: this.getUnit(paramKey),
+  //           timeDiff: this.getTimeDiff(sensorData.lastUpdate),
+  //           roomTitle: room.title,
+  //           roomId: room.id,
+  //           roomKey: roomKey
+  //         };
+  //       });
+  //   },
+
+    updateView() {
+    try {
+      const config = this.getConfig(this.dID);
+      if (!config) {
+        this.viewArray = [];
+        return;
       }
 
-      return Object.entries(room.sensors).
-      map(([sensorKey, sensorData]) => {
+      if (this.currentSortType === 'rooms') {
+        this.viewArray = this.getSortedRooms(config, this.getRoomKey);
+      } else {
+        this.viewArray = this.getSortedParams(config, this.getParamKey);
+      }
+    } catch (error) {
+      console.error('[MainBody] Ошибка обновления вида:', error);
+      this.viewArray = [];
+    }
+  },
+  
+  getSortedRooms(config, roomKey) {
+    const room = config[roomKey];
+    if (!room?.sensors) return [];
+    
+    return Object.entries(room.sensors).map(([sensorKey, sensorData]) => {
       const sensorSet = room.setpoints?.[sensorKey];
-      //console.log('Тип параметра - ', sensorData.type);
       return {         
-          sortType: 'rooms',
-          paramTitle: this.getSensorTitle(sensorKey),
+        sortType: 'rooms',
+        paramTitle: this.getSensorTitle(sensorKey),
+        paramType: sensorData?.type != null ? sensorData.type : null,
+        paramKey: sensorKey,
+        value: this.getSensorValue(sensorData?.type, sensorData),
+        setValue: sensorSet?.value != null ? parseFloat(sensorSet.value) : null,
+        unit: this.getUnit(sensorKey),
+        timeDiff: this.getTimeDiff(sensorData.lastUpdate),
+        roomTitle: room.title,
+        roomId: room.id,
+        roomKey
+      };
+    });
+  },
+  
+  getSortedParams(config, paramKey) {
+    return Object.entries(config)
+      .filter(([, room]) => room.sensors?.[paramKey])
+      .map(([roomKey, room]) => {
+        const sensorData = room.sensors[paramKey];
+        const sensorSet = room.setpoints?.[paramKey];
+        return {
+          sortType: 'params',
+          paramTitle: this.getSensorTitle(paramKey),
           paramType: sensorData?.type != null ? sensorData.type : null,
-          paramKey: sensorKey,
-          //value: sensorData?.value != null ? parseFloat(sensorData.value) : 0,
+          paramKey,
           value: this.getSensorValue(sensorData?.type, sensorData),
           setValue: sensorSet?.value != null ? parseFloat(sensorSet.value) : null,
-          unit: this.getUnit(sensorKey),
+          unit: this.getUnit(paramKey),
           timeDiff: this.getTimeDiff(sensorData.lastUpdate),
           roomTitle: room.title,
           roomId: room.id,
           roomKey
-      };
-    })
+        };
+      });
   },
-    getSortedParams(config, paramKey) {
-      if (!config || !paramKey) {
-        return [];
-      }
-   
-      return Object.entries(config)
-        .filter(([, room]) => room.sensors?.[paramKey] !== undefined)
-        .map(([roomKey, room]) => {
-          const sensorData = room.sensors[paramKey];
-          const sensorSet = room.setpoints?.[paramKey];
-          return {
-            sortType: 'params',
-            paramTitle: this.getSensorTitle(paramKey),
-            paramType: sensorData?.type != null ? sensorData.type : null,
-            paramKey: paramKey,
-            //value: sensorData?.value != null ? parseFloat(sensorData.value) : 0,
-            value: this.getSensorValue(sensorData?.type, sensorData),
-            setValue: sensorSet?.value != null ? parseFloat(sensorSet.value) : null,
-            unit: this.getUnit(paramKey),
-            timeDiff: this.getTimeDiff(sensorData.lastUpdate),
-            roomTitle: room.title,
-            roomId: room.id,
-            roomKey: roomKey
-          };
-        });
-    },
+
+
+
+
+
     getTimeDiff(timestamp) {
       if (!timestamp) return 'Неизвестно';
     

@@ -28,14 +28,7 @@
       </div>
       <p style="width: 100%; height: 1px; background-color: var(--orange);"></p>
       <div class="header-bottom">
-        <!-- <nav>
-          <router-link to="/login">Login</router-link>
-          <router-link to="/dashboard">Dashboard</router-link>
-          <router-link to="/smart-home">Smart Home</router-link>
-          <router-link to="/manufact-automatation">Automation</router-link>
-          <router-link v-if="userLevel >= 2" to="/profile">Profile</router-link>
-          <router-link v-if="userLevel >= 3" to="/users">Users</router-link>
-        </nav> -->
+
       <nav>
         <router-link to="/">main  </router-link>
         <!-- <router-link to="/dashboard">dashboard   </router-link> -->
@@ -48,24 +41,6 @@
       </div>
     </header>
 
-    <!-- <div class="body"
-      @touchstart.passive="handleTouchStart" 
-      @touchend.passive="handleTouchEnd">
-
-      <div class="app-place_body" v-if="!selectedComponent" id="app_place">
-        <AppPlace class="app-place_module" title="Комнаты" @select="selectComponent('Rooms')" />
-        <AppPlace class="app-place_module" title="Параметры" @select="selectComponent('Params')" />
-      </div>
-      
-      <div v-else id="app_component">
-        <component
-          :is="selectedComponent" 
-          :propsTitle="propsTitle"
-          :changeSorting="changeSorting" 
-          @eventsComponent="handleComponentEvent" 
-        />
-      </div>
-    </div> -->
   <div class="body"
     @touchstart.passive="handleTouchStart" 
     @touchend.passive="handleTouchEnd">
@@ -179,50 +154,51 @@ watch: {
       this.selectedComponent = 'MainBody';
     }
     this.showHeaderArrow = ['DashboardRooms', 'DashboardParams'].includes(newRoute) && !this.isMobile;
+  },
+  getConfig: {
+    handler(newConfig) {
+      if (newConfig) {
+        this.updateNavigationData();
+      }
+    },
+    deep: true
   }
 },
   methods: {
-    ...mapActions('sortParams', ['initSortParams']),
+    ...mapActions('sortParams', [
+      'initSortParams', 
+      'updateNavigationData', 
+      'switchToPrevRoom', 
+      'switchToNextRoom', 
+      'switchToPrevParam', 
+      'switchToNextParam']),
     ...mapActions('config', ['initialize']),
     
     async initApp() {
+      console.log('[DashBoard] initApp');
       try {
         this.initSortParams();
         await this.initialize();
+        this.updateNavigationData();
       } catch (error) {
         console.error('Ошибка инициализации:', error);
       }
     },
-    // selectComponent(component) {
-    //   console.log('selectedComponent:', component);
-    //   if (component === 'rooms') {
-    //     this.$store.commit('sortParams/SET_SORT_TYPE', 'rooms');
-    //   } else if (component === 'params') {
-    //     this.$store.commit('sortParams/SET_SORT_TYPE', 'params');
-        
-    //   } else if (component === 'common') {
-    //     this.$store.commit('sortParams/SET_SORT_TYPE', 'common');
-    //   } else if (component === 'settings') {
-    //     this.$store.commit('sortParams/SET_SORT_TYPE', 'settings');
-    //   }
-    //   this.selectedComponent = 'MainBody';
-    //   this.showHeaderArrow = !this.isMobile;
-    // },
-selectComponent(component) {
-  if (component === 'rooms') {
-    this.$router.push({ name: 'DashboardRooms' });
-  } else if (component === 'params') {
-    this.$router.push({ name: 'DashboardParams' });
-  } else if (component === 'common') {
-    this.$router.push({ name: 'DashboardCommon' });
-  } else if (component === 'settings') {
-    this.$router.push({ name: 'DashboardSettings' });
-  }
-  
-  // Для основного состояния (DashboardMain) ничего не делаем
-  this.selectedComponent = ['rooms', 'params'].includes(component) ? 'MainBody' : null;
-  this.showHeaderArrow = ['rooms', 'params'].includes(component) && !this.isMobile;
-},
+    selectComponent(component) {
+      if (component === 'rooms') {
+        this.$router.push({ name: 'DashboardRooms' });
+      } else if (component === 'params') {
+        this.$router.push({ name: 'DashboardParams' });
+      } else if (component === 'common') {
+        this.$router.push({ name: 'DashboardCommon' });
+      } else if (component === 'settings') {
+        this.$router.push({ name: 'DashboardSettings' });
+      }
+      
+      // Для основного состояния (DashboardMain) ничего не делаем
+      this.selectedComponent = ['rooms', 'params', 'common', 'settings'].includes(component) ? 'MainBody' : null;
+      this.showHeaderArrow = ['rooms', 'params', 'common', 'settings'].includes(component) && !this.isMobile;
+    },
     resetSelection() {
       this.selectedComponent = null;
       this.showHeaderArrow = false;
@@ -230,11 +206,25 @@ selectComponent(component) {
 
     detectDevice() {
       this.isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    },
+    sortingBack() {
+      console.log('[DashBoard] sortingBack - изменяем сортировку');
+    if (this.currentSortType === 'rooms') {
+      this.switchToPrevRoom();
+    } else if (this.currentSortType === 'params') {
+      this.switchToPrevParam();
     }
+    },
+    sortingForvard() {
+      console.log('[DashBoard] sortingForvard - изменяем сортировку');
+      if (this.currentSortType === 'rooms') {
+      this.switchToNextRoom();
+    } else if (this.currentSortType === 'params') {
+      this.switchToNextParam();
+    }
+    },
   }
 };
 </script>
 
-<style>
-
-</style>
+<style lang="css" src="./assets/mainStyle.css"></style>
