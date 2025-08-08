@@ -60,27 +60,26 @@ created() {
       return this.getHumanParamTitle(this.getParamKey);
     },
   },
-  watch: {
-    currentSortType() {
-      this.updateView();
-    },
-    getRoomKey() {
-      if (this.currentSortType === 'rooms') {
-        this.updateView();
-      }
-    },
-    getParamKey() {
-      if (this.currentSortType === 'params') {
-        this.updateView();
-      }
-    },
-    getConfig: {
-      handler(newVal) {
-        if (newVal) this.updateView();
-      },
-      deep: true
-    },
+watch: {
+  currentSortType(newVal, oldVal) {
+    console.log(`[MainBody] Изменен тип сортировки: ${oldVal} -> ${newVal}`);
+    this.updateView();
   },
+  getRoomKey(newVal, oldVal) {
+    console.log(`[MainBody] Изменен ключ комнаты: ${oldVal} -> ${newVal}`);
+    if (this.currentSortType === 'rooms') this.updateView();
+  },
+  getParamKey(newVal, oldVal) {
+    console.log(`[MainBody] Изменен ключ параметра: ${oldVal} -> ${newVal}`);
+    if (this.currentSortType === 'params') this.updateView();
+  },
+  getConfig: {
+    handler(newVal) {
+      if (newVal) this.updateView();
+    },
+    deep: true
+  }
+},
   mounted() {
     this.updateView();
   },
@@ -107,6 +106,7 @@ created() {
       };
       return mappings[baseKey] || key;
     },
+
     getSensorValue(key, data) {
       switch (key) {
         case 'num':{
@@ -266,23 +266,47 @@ created() {
   //       });
   //   },
 
-    updateView() {
-    try {
-      const config = this.getConfig(this.dID);
-      if (!config) {
-        this.viewArray = [];
-        return;
-      }
+      updateView() {
+      try {
+        console.groupCollapsed('[MainBody] Обновление отображения');
+        const config = this.getConfig(this.dID);
+        if (!config) {
+          console.warn('Конфигурация не доступна');
+          this.viewArray = [];
+          return;
+        }
 
-      if (this.currentSortType === 'rooms') {
-        this.viewArray = this.getSortedRooms(config, this.getRoomKey);
-      } else {
-        this.viewArray = this.getSortedParams(config, this.getParamKey);
+        if (this.currentSortType === 'rooms') {
+          console.log(`Режим: комнаты (${this.getRoomKey})`);
+          this.viewArray = this.getSortedRooms(config, this.getRoomKey);
+        } else {
+          console.log(`Режим: параметры (${this.getParamKey})`);
+          this.viewArray = this.getSortedParams(config, this.getParamKey);
+        }
+        
+        console.log('Отображаемые элементы:', this.viewArray);
+        console.groupEnd();
+      } catch (error) {
+        console.error('[MainBody] Ошибка обновления:', error);
+        this.viewArray = [];
       }
-    } catch (error) {
-      console.error('[MainBody] Ошибка обновления вида:', error);
-      this.viewArray = [];
-    }
+    // updateView() {
+    // try {
+    //   const config = this.getConfig(this.dID);
+    //   if (!config) {
+    //     this.viewArray = [];
+    //     return;
+    //   }
+
+    //   if (this.currentSortType === 'rooms') {
+    //     this.viewArray = this.getSortedRooms(config, this.getRoomKey);
+    //   } else {
+    //     this.viewArray = this.getSortedParams(config, this.getParamKey);
+    //   }
+    // } catch (error) {
+    //   console.error('[MainBody] Ошибка обновления вида:', error);
+    //   this.viewArray = [];
+    // }
   },
   
   getSortedRooms(config, roomKey) {

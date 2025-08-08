@@ -155,14 +155,16 @@ watch: {
     }
     this.showHeaderArrow = ['DashboardRooms', 'DashboardParams'].includes(newRoute) && !this.isMobile;
   },
-  getConfig: {
-    handler(newConfig) {
-      if (newConfig) {
-        this.updateNavigationData();
-      }
-    },
-    deep: true
-  }
+    // Автоматическое обновление при изменении конфига
+    getConfig: {
+      handler(newConfig) {
+        if (newConfig) {
+          console.log('[DashBoard] Конфигурация изменена, обновляем навигацию');
+          this.updateNavigationData();
+        }
+      },
+      deep: true
+    }
 },
   methods: {
     ...mapActions('sortParams', [
@@ -208,20 +210,27 @@ watch: {
       this.isMobile = /Mobi|Android/i.test(navigator.userAgent);
     },
     sortingBack() {
-      console.log('[DashBoard] sortingBack - изменяем сортировку');
-    if (this.currentSortType === 'rooms') {
-      this.switchToPrevRoom();
-    } else if (this.currentSortType === 'params') {
-      this.switchToPrevParam();
-    }
-    },
-    sortingForvard() {
-      console.log('[DashBoard] sortingForvard - изменяем сортировку');
+      console.groupCollapsed('[DashBoard] Переключение на предыдущий элемент');
       if (this.currentSortType === 'rooms') {
-      this.switchToNextRoom();
-    } else if (this.currentSortType === 'params') {
-      this.switchToNextParam();
-    }
+        console.log('Тип: комнаты');
+        this.switchToPrevRoom();
+      } else if (this.currentSortType === 'params') {
+        console.log('Тип: параметры');
+        this.switchToPrevParam();
+      }
+      console.groupEnd();
+    },
+    
+    sortingForvard() {
+      console.groupCollapsed('[DashBoard] Переключение на следующий элемент');
+      if (this.currentSortType === 'rooms') {
+        console.log('Тип: комнаты');
+        this.switchToNextRoom();
+      } else if (this.currentSortType === 'params') {
+        console.log('Тип: параметры');
+        this.switchToNextParam();
+      }
+      console.groupEnd();
     },
   }
 };
