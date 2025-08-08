@@ -45,20 +45,25 @@ created() {
 },
   computed: {
     ...mapGetters('config', ['isLoading', 'error', 'getConfig']),
-    ...mapGetters('sortParams', ['currentSortType', 'getRoomId', 'getRoomKey', 'getParamKey', 'getRoomTitle', 'getParamTitle']),
+    ...mapGetters('sortParams', [
+      'currentSortType', 
+      'getRoomId', 
+      'getRoomKey', 
+      'getParamKey', 
+      'getRoomTitle', 
+      'getParamTitle',
+      'getSensorTitle',
+      'getUnit']),
     ...mapGetters(['dID']),
     
     sortingSubtitle() {
       return this.currentSortType === 'rooms' 
         ? `Комната: ${this.getRoomTitle}`
-        : `Параметр: ${this.getParamTitle}`;
+        : `Параметр: ${this.getSensorTitle(this.getParamKey)}`;
     },
   isRoomSort() {
     return this.currentSortType === 'rooms';
   },
-    humanParamTitle() {
-      return this.getHumanParamTitle(this.getParamKey);
-    },
   },
 watch: {
   currentSortType(newVal, oldVal) {
@@ -86,26 +91,26 @@ watch: {
   methods: {
     ...mapMutations('sortParams', ['SET_SORT_TYPE', 'SET_ROOM_ID', 'SET_ROOM_KEY', 'SET_PARAM_KEY', 'SET_ROOM_TITLE', 'SET_PARAM_TITLE']),
     
-    getUnit(key) {
-        if (key.includes('Temp')) return '°C';
-        if (key.includes('Hum')) return '%';
-        if (key.includes('Press')) return 'hPa';
-        if (key.includes('Power')) return 'W';
-        return '';
-    },
-    getSensorTitle(key) {
-      const baseKey = key.replace(/\d+/g, '');
-      const mappings = {
-        'dHum': 'Влажность',
-        'dTemp': 'Температура',
-        'dPress': 'Давление',
-        'dPower': 'Потребление',
-        'dMove': 'Движение',
-        'dFire': 'Контроль возгорания',
-        'dLeak': 'Контроль утечек',
-      };
-      return mappings[baseKey] || key;
-    },
+    // getUnit(key) {
+    //     if (key.includes('Temp')) return '°C';
+    //     if (key.includes('Hum')) return '%';
+    //     if (key.includes('Press')) return 'hPa';
+    //     if (key.includes('Power')) return 'W';
+    //     return '';
+    // },
+    // getSensorTitle(key) {
+    //   const baseKey = key.replace(/\d+/g, '');
+    //   const mappings = {
+    //     'dHum': 'Влажность',
+    //     'dTemp': 'Температура',
+    //     'dPress': 'Давление',
+    //     'dPower': 'Потребление',
+    //     'dMove': 'Движение',
+    //     'dFire': 'Контроль возгорания',
+    //     'dLeak': 'Контроль утечек',
+    //   };
+    //   return mappings[baseKey] || key;
+    // },
 
     getSensorValue(key, data) {
       switch (key) {
@@ -153,122 +158,9 @@ watch: {
         this.$store.commit('sortParams/SET_ROOM_TITLE', item.roomTitle);
       }
     },
-    
-
-  //   updateView() {
-  //     try {
-  //       const config = this.getConfig(this.dID);
-  //       if (!config) {
-  //         this.viewArray = [];
-  //         return;
-  //       }
-
-  //       if (this.currentSortType === 'rooms') {
-  //         if (!config[this.getRoomKey]) {
-  //           const validRooms = Object.keys(config).filter(key => 
-  //             config[key]?.sensors && Object.keys(config[key].sensors).length > 0
-  //           );
-            
-  //           if (validRooms.length > 0) {
-  //             const firstRoomKey = validRooms[0];
-  //             const room = config[firstRoomKey];
-              
-  //             this.SET_ROOM_KEY(firstRoomKey);
-  //             this.SET_ROOM_TITLE(room.title || firstRoomKey);
-  //             this.SET_ROOM_ID(room.id || 0);
-  //           }
-  //         }
-          
-  //         this.viewArray = this.getSortedRooms(config, this.getRoomKey);
-  //       } 
-  //       else {
-  //         const paramExists = Object.values(config).some(room => 
-  //           room.sensors?.[this.getParamKey] !== undefined
-  //         );
-          
-  //         if (!paramExists) {
-  //           const allParams = new Set();
-  //           Object.values(config).forEach(room => {
-  //             if (room.sensors) {
-  //               Object.keys(room.sensors).forEach(k => allParams.add(k));
-  //             }
-  //           });
-            
-  //           if (allParams.size > 0) {
-  //             const firstParam = [...allParams][0];
-  //             this.SET_PARAM_KEY(firstParam);
-  //             this.SET_PARAM_TITLE(this.getSensorTitle(firstParam));
-  //           }
-  //         }
-          
-  //         this.viewArray = this.getSortedParams(config, this.getParamKey);
-  //       }
-  //       console.log('[MainBody] Результат сортировки:', this.viewArray);
-  //     } catch (error) {
-  //       console.error('[MainBody] Ошибка обновления вида:', error);
-  //       this.viewArray = [];
-  //     }
-  //   },
-  //   getSortedRooms(config, roomKey) {
-  //     if (!config || !roomKey || !config[roomKey]) {
-  //       return [];
-  //     }
-      
-  //     const room = config[roomKey];
-  //     if (!room.sensors || Object.keys(room.sensors).length === 0) {
-  //       return [];
-  //     }
-
-  //     return Object.entries(room.sensors).
-  //     map(([sensorKey, sensorData]) => {
-  //     const sensorSet = room.setpoints?.[sensorKey];
-  //     //console.log('Тип параметра - ', sensorData.type);
-  //     return {         
-  //         sortType: 'rooms',
-  //         paramTitle: this.getSensorTitle(sensorKey),
-  //         paramType: sensorData?.type != null ? sensorData.type : null,
-  //         paramKey: sensorKey,
-  //         //value: sensorData?.value != null ? parseFloat(sensorData.value) : 0,
-  //         value: this.getSensorValue(sensorData?.type, sensorData),
-  //         setValue: sensorSet?.value != null ? parseFloat(sensorSet.value) : null,
-  //         unit: this.getUnit(sensorKey),
-  //         timeDiff: this.getTimeDiff(sensorData.lastUpdate),
-  //         roomTitle: room.title,
-  //         roomId: room.id,
-  //         roomKey
-  //     };
-  //   })
-  // },
-  //   getSortedParams(config, paramKey) {
-  //     if (!config || !paramKey) {
-  //       return [];
-  //     }
-   
-  //     return Object.entries(config)
-  //       .filter(([, room]) => room.sensors?.[paramKey] !== undefined)
-  //       .map(([roomKey, room]) => {
-  //         const sensorData = room.sensors[paramKey];
-  //         const sensorSet = room.setpoints?.[paramKey];
-  //         return {
-  //           sortType: 'params',
-  //           paramTitle: this.getSensorTitle(paramKey),
-  //           paramType: sensorData?.type != null ? sensorData.type : null,
-  //           paramKey: paramKey,
-  //           //value: sensorData?.value != null ? parseFloat(sensorData.value) : 0,
-  //           value: this.getSensorValue(sensorData?.type, sensorData),
-  //           setValue: sensorSet?.value != null ? parseFloat(sensorSet.value) : null,
-  //           unit: this.getUnit(paramKey),
-  //           timeDiff: this.getTimeDiff(sensorData.lastUpdate),
-  //           roomTitle: room.title,
-  //           roomId: room.id,
-  //           roomKey: roomKey
-  //         };
-  //       });
-  //   },
-
-      updateView() {
+  updateView() {
       try {
-        console.groupCollapsed('[MainBody] Обновление отображения');
+        //console.groupCollapsed('[MainBody] Обновление отображения');
         const config = this.getConfig(this.dID);
         if (!config) {
           console.warn('Конфигурация не доступна');
@@ -331,30 +223,36 @@ watch: {
     });
   },
   
-  getSortedParams(config, paramKey) {
-    return Object.entries(config)
-      .filter(([, room]) => room.sensors?.[paramKey])
-      .map(([roomKey, room]) => {
-        const sensorData = room.sensors[paramKey];
-        const sensorSet = room.setpoints?.[paramKey];
-        return {
-          sortType: 'params',
-          paramTitle: this.getSensorTitle(paramKey),
-          paramType: sensorData?.type != null ? sensorData.type : null,
-          paramKey,
-          value: this.getSensorValue(sensorData?.type, sensorData),
-          setValue: sensorSet?.value != null ? parseFloat(sensorSet.value) : null,
-          unit: this.getUnit(paramKey),
-          timeDiff: this.getTimeDiff(sensorData.lastUpdate),
-          roomTitle: room.title,
-          roomId: room.id,
-          roomKey
-        };
+  getSortedParams(config, paramPrefix) {
+    // Получаем все ключи сенсоров, которые начинаются с этого префикса
+    const sensors = [];
+    
+    Object.entries(config).forEach(([roomKey, room]) => {
+      if (!room.sensors) return;
+      
+      Object.entries(room.sensors).forEach(([sensorKey, sensorData]) => {
+        // Проверяем, что ключ сенсора начинается с нужного префикса
+        if (sensorKey.startsWith(paramPrefix)) {
+          const sensorSet = room.setpoints?.[sensorKey];
+          sensors.push({
+            sortType: 'params',
+            paramTitle: this.getSensorTitle(paramPrefix), // Название типа параметра
+            paramType: sensorData?.type,
+            paramKey: sensorKey, // Полный ключ сенсора
+            value: this.getSensorValue(sensorData?.type, sensorData),
+            setValue: sensorSet?.value ? parseFloat(sensorSet.value) : null,
+            unit: this.getUnit(paramPrefix),
+            timeDiff: this.getTimeDiff(sensorData.lastUpdate),
+            roomTitle: room.title,
+            roomId: room.id,
+            roomKey
+          });
+        }
       });
+    });
+    console.log('[MainBody] - getSortedParams - Получен список сенсоров:', sensors);
+    return sensors;
   },
-
-
-
 
 
     getTimeDiff(timestamp) {

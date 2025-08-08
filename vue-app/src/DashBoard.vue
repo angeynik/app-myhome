@@ -109,7 +109,8 @@ export default {
       'getRoomKey',
       'getParamKey',
       'getRoomTitle',
-      'getParamTitle'
+      'getParamTitle',
+      'getSensorTitle',
     ]),
     userLevel() {
       return this.level || 0;
@@ -122,19 +123,9 @@ export default {
       if (this.selectedComponent === 'MainBody') {
         return this.currentSortType === 'rooms' 
           ? "Сортировка по комнатам - " + this.getRoomTitle
-          : "Сортировка по параметрам - " + this.humanParamTitle;
+          : "Сортировка по параметрам - " + this.getSensorTitle(this.getParamKey);
       }
       return "Dashboard";
-    },
-    humanParamTitle() {
-      const baseKey = this.getParamKey.replace(/\d+/g, '');
-      const mappings = {
-        'dHum': 'Влажность',
-        'dTemp': 'Температура',
-        'dPress': 'Давление',
-        'dPower': 'Потребление',
-      };
-      return mappings[baseKey] || this.getParamKey;
     },
   },
   mounted() {
@@ -179,9 +170,9 @@ watch: {
     async initApp() {
       console.log('[DashBoard] initApp');
       try {
-        this.initSortParams();
-        await this.initialize();
         this.updateNavigationData();
+        this.initSortParams();
+        await this.initialize();  
       } catch (error) {
         console.error('Ошибка инициализации:', error);
       }
@@ -210,7 +201,7 @@ watch: {
       this.isMobile = /Mobi|Android/i.test(navigator.userAgent);
     },
     sortingBack() {
-      console.groupCollapsed('[DashBoard] Переключение на предыдущий элемент');
+      //console.groupCollapsed('[DashBoard] - sortingBack - Переключение на предыдущий элемент');
       if (this.currentSortType === 'rooms') {
         console.log('Тип: комнаты');
         this.switchToPrevRoom();
@@ -222,7 +213,7 @@ watch: {
     },
     
     sortingForvard() {
-      console.groupCollapsed('[DashBoard] Переключение на следующий элемент');
+      //console.groupCollapsed('[DashBoard] - sortingForvard - Переключение на следующий элемент');
       if (this.currentSortType === 'rooms') {
         console.log('Тип: комнаты');
         this.switchToNextRoom();

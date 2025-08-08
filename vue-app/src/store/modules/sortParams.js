@@ -1,5 +1,6 @@
 function getSensorTitle(key) {
-  const baseKey = key.replace(/\d+/g, '');
+  const baseKey = key.replace(/\d+$/, '');
+  //console.log('[sortParams] - getSensorTitle - baseKey = ', baseKey);
   const mappings = {
     'dHum': 'Влажность',
     'dTemp': 'Температура',
@@ -11,19 +12,28 @@ function getSensorTitle(key) {
   };
   return mappings[baseKey] || key;
 }
+function getUnit(key) {
+        if (key.includes('Temp')) return '°C';
+        if (key.includes('Hum')) return '%';
+        if (key.includes('Press')) return 'hPa';
+        if (key.includes('Power')) return 'W';
+        return '';
+}
+
+
 export default {
   namespaced: true,
   state: () => ({
     sortType: 'rooms',
-    roomId: 1,
-    roomKey: 'room01',
-    paramKey: 'Temp',
-    roomTitle: 'Главная комната',
-    paramTitle: 'Температура',
+    roomId: 0,
+    roomKey: null,
+    paramKey: null,
+    roomTitle: 'Не выбрано',
+    paramTitle: 'Не выбрано',
     allRooms: [],
     allParams: []
   }),
-  
+
   mutations: {
     SET_ALL_ROOMS(state, rooms) {
       state.allRooms = rooms;
@@ -75,6 +85,7 @@ export default {
   
   actions: {
     initSortParams({ commit }) {
+      this.updateNavigationData();
       commit('UPDATE_STATE', {
         sortType: 'rooms',
         roomTitle: 'Главная комната',
@@ -101,6 +112,7 @@ export default {
       });
     },
     updateNavigationData({ commit, rootGetters, state }) {
+      console.warn('[sortParams]- updateNavigationData Начинаем обновление');
       const dID = rootGetters['dID'];
       const config = rootGetters['config/getConfig'](dID);
       if (!config) {
@@ -115,38 +127,43 @@ export default {
       commit('SET_ALL_ROOMS', rooms);
 
       // Обновляем список параметров
-      const paramsSet = new Set();
-      Object.values(config).forEach(room => {
-        if (room.sensors) {
-          Object.keys(room.sensors).forEach(k => paramsSet.add(k));
-        }
-      });
-      const allParams = Array.from(paramsSet);
-      commit('SET_ALL_PARAMS', allParams);
-
-            // Автокоррекция текущей комнаты если она стала невалидной
-      if (state.roomKey && !rooms.includes(state.roomKey)) {
-        const newRoomKey = rooms.length > 0 ? rooms[0] : '';
-        console.warn(`[sortParams] Текущая комната ${state.roomKey} недоступна, устанавливаем ${newRoomKey}`);
+    const prefixSet = new Set();
+    Object.values(config).forEach(room => {
+      if (room.sensors) {
+        Object.keys(room.sensors).forEach(k => {
+          // Извлекаем префикс (часть до цифр)
+          const prefix = k.replace(/\d+$/, '');
+          prefixSet.add(prefix);
+        });
+      }
+    });
+    const allParamPrefixes = Array.from(prefixSet);
+    
+    commit('SET_ALL_PARAMS', allParamPrefixes);
+    
+    // Автокоррекция текущего параметра
+    if (state.paramKey && !allParamPrefixes.some(prefix => state.paramKey.startsWith(prefix))) {
+      const newParamPrefix = allParamPrefixes.length > 0 ? allParamPrefixes[0] : '';
+      if (newParamPrefix) {
+        // Находим первый сенсор с таким префиксом для установки полного ключа
+        let fullKey = '';
+        Object.values(config).some(room => {
+          if (room.sensors) {
+            const key = Object.keys(room.sensors).find(k => k.startsWith(newParamPrefix));
+            if (key) {
+              fullKey = key;
+              return true;
+            }
+          }
+          return false;
+        });
         
-        if (newRoomKey) {
-          const newRoom = config[newRoomKey];
-          commit('SET_ROOM_KEY', newRoomKey);
-          commit('SET_ROOM_ID', newRoom?.id || 0);
-          commit('SET_ROOM_TITLE', newRoom?.title || newRoomKey);
+        if (fullKey) {
+          commit('SET_PARAM_KEY', fullKey);
+          commit('SET_PARAM_TITLE', getSensorTitle(newParamPrefix));
         }
       }
-
-      // Автокоррекция текущего параметра если он стал невалидным
-      if (state.paramKey && !allParams.includes(state.paramKey)) {
-        const newParamKey = allParams.length > 0 ? allParams[0] : '';
-        console.warn(`[sortParams] Текущий параметр ${state.paramKey} недоступен, устанавливаем ${newParamKey}`);
-        
-        if (newParamKey) {
-          commit('SET_PARAM_KEY', newParamKey);
-          commit('SET_PARAM_TITLE', getSensorTitle(newParamKey));
-        }
-      }
+    }
     },
     
     switchToPrevRoom({ commit, state, rootGetters}) {
@@ -169,7 +186,7 @@ export default {
       commit('SET_ROOM_TITLE', newRoom?.title || newRoomKey);
     },
     
-switchToNextRoom({ commit, state, rootGetters }) {
+    switchToNextRoom({ commit, state, rootGetters }) {
       if (state.allRooms.length === 0) {
         console.warn('[sortParams] Нет доступных комнат для переключения');
         return;
@@ -229,5 +246,7 @@ switchToNextRoom({ commit, state, rootGetters }) {
     getRoomTitle: state => state.roomTitle,
     getParamKey: state => state.paramKey,
     getParamTitle: state => state.paramTitle,
+    getSensorTitle: () => (key) => getSensorTitle(key),
+    getUnit: () => (key) => getUnit(key),
   }
 };
