@@ -36,6 +36,8 @@ const store = createStore({
     user: (state) => state.auth.user.username || '',
     level: (state) => state.auth.level || 0,
     dID: (state) => state.auth.dID || null,
+    roomKey: (state) => state.sortParams.roomKey || localStorage.getItem('roomKey') || null,
+    paramKey: (state) => state.sortParams.paramKey || localStorage.getItem('paramKey') || null,
     // getConfig: state => name => state.configs[name] || {},
     // isLoading: state => state.loading,
   }

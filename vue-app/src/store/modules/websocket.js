@@ -83,11 +83,15 @@ export default {
       }
     },
 
-    async send({ state, commit }, message) {
+    async send({ state, commit, dispatch}, message) {
       if (!state.socket || state.socket.readyState !== WebSocket.OPEN) {
     // Попытаемся переподключиться перед ошибкой
       try {
-        await this.dispatch('connect');
+        await dispatch('connect');
+      // Проверка после подключения
+      if (!state.socket || state.socket.readyState !== WebSocket.OPEN) {
+        throw new Error('WebSocket connection failed');
+      }
       } catch (err) {
         throw new Error('WebSocket connection not established');
       }

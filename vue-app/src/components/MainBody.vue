@@ -32,6 +32,16 @@ export default {
     return {
       selectedItem: null,
       viewArray: [],
+      initializationError: null
+    }
+  },
+  async created() {
+    try {
+      await this.updateView();
+      this.SET_SORT_TYPE(this.initialSortType);
+    } catch (error) {
+      console.error('Ошибка инициализации MainBody:', error);
+      this.initializationError = 'Не удалось загрузить данные';
     }
   },
   props: {
@@ -39,9 +49,6 @@ export default {
     type: String,
     default: 'rooms'
   }
-},
-created() {
-  this.SET_SORT_TYPE(this.initialSortType);
 },
   computed: {
     ...mapGetters('config', ['isLoading', 'error', 'getConfig']),
@@ -158,7 +165,7 @@ watch: {
         this.$store.commit('sortParams/SET_ROOM_TITLE', item.roomTitle);
       }
     },
-  updateView() {
+  async updateView() {
       try {
         //console.groupCollapsed('[MainBody] Обновление отображения');
         const config = this.getConfig(this.dID);
@@ -182,23 +189,7 @@ watch: {
         console.error('[MainBody] Ошибка обновления:', error);
         this.viewArray = [];
       }
-    // updateView() {
-    // try {
-    //   const config = this.getConfig(this.dID);
-    //   if (!config) {
-    //     this.viewArray = [];
-    //     return;
-    //   }
 
-    //   if (this.currentSortType === 'rooms') {
-    //     this.viewArray = this.getSortedRooms(config, this.getRoomKey);
-    //   } else {
-    //     this.viewArray = this.getSortedParams(config, this.getParamKey);
-    //   }
-    // } catch (error) {
-    //   console.error('[MainBody] Ошибка обновления вида:', error);
-    //   this.viewArray = [];
-    // }
   },
   
   getSortedRooms(config, roomKey) {
