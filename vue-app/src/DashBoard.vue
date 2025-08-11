@@ -126,18 +126,6 @@ export default {
     userLevel() {
       return this.level || 0;
     },
-    // headerTitle() {
-    //   if (!this.selectedComponent) {
-    //     return "Главное меню";
-    //   }
-      
-    //   if (this.selectedComponent === 'MainBody') {
-    //     return this.currentSortType === 'rooms' 
-    //       ? "Сортировка по комнатам - " + this.getRoomTitle
-    //       : "Сортировка по параметрам - " + this.getSensorTitle(this.getParamKey);
-    //   }
-    //   return "Dashboard";
-    // },
     headerTitle() {
       if (!this.selectedComponent) {
         return "Главное меню";
@@ -165,19 +153,6 @@ watch: {
         await this.handleRouteChange(newRoute);
       }
     },
-  // '$route.name'(newRoute) {
-  //   if (newRoute === 'DashBoard') {
-  //     this.selectedComponent = null;
-  //     this.showHeaderArrow = false;
-  //   } else if (newRoute === 'DashboardRooms') {
-  //     this.$store.commit('sortParams/SET_SORT_TYPE', 'rooms');
-  //     this.selectedComponent = 'MainBody';
-  //   } else if (newRoute === 'DashboardParams') {
-  //     this.$store.commit('sortParams/SET_SORT_TYPE', 'params');
-  //     this.selectedComponent = 'MainBody';
-  //   }
-  //   this.showHeaderArrow = ['DashboardRooms', 'DashboardParams'].includes(newRoute) && !this.isMobile;
-  // },
     getConfig: {
       handler(newConfig) {
         if (newConfig) {
@@ -198,10 +173,10 @@ watch: {
     ...mapActions('config', ['initialize']),
     
     async initApp() {
-      console.log('[DashBoard] - initApp - Инициализация приложения');
+      //console.log('[DashBoard] - initApp - Инициализация приложения');
       try {
         // Сначала инициализируем конфиг
-        await this.initialize();
+        //await this.initialize();
         
         // Обновляем маршрут если нужно
         await this.handleRouteChange(this.$route.name);
@@ -242,16 +217,6 @@ watch: {
       }
     },
     async selectComponent(component) {
-      // const componentToRouteMap = {
-      //   'rooms': 'DashboardRooms',
-      //   'params': 'DashboardParams',
-      //   'common': 'DashboardCommon',
-      //   'settings': 'DashboardSettings'
-      // };
-
-      // if (componentToRouteMap[component]) {
-      //   this.$router.push({ name: componentToRouteMap[component] });
-      // }
       // Устанавливаем тип сортировки
     await this.$store.dispatch('sortParams/setSortType', component);
     
@@ -266,21 +231,6 @@ watch: {
       await this.$store.dispatch('sortParams/updateNavigationData');
     }
     },
-    // selectComponent(component) {
-    //   if (component === 'rooms') {
-    //     this.$router.push({ name: 'DashboardRooms' });
-    //   } else if (component === 'params') {
-    //     this.$router.push({ name: 'DashboardParams' });
-    //   } else if (component === 'common') {
-    //     this.$router.push({ name: 'DashboardCommon' });
-    //   } else if (component === 'settings') {
-    //     this.$router.push({ name: 'DashboardSettings' });
-    //   }
-      
-    //   // Для основного состояния (DashboardMain) ничего не делаем
-    //   this.selectedComponent = ['rooms', 'params', 'common', 'settings'].includes(component) ? 'MainBody' : null;
-    //   this.showHeaderArrow = ['rooms', 'params', 'common', 'settings'].includes(component) && !this.isMobile;
-    // },
     resetSelection() {
       this.selectedComponent = null;
       this.showHeaderArrow = false;
