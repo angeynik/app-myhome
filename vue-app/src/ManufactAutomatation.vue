@@ -1,4 +1,5 @@
 <template>
+  <div>
     <div>
       <nav>
               <router-link to="/login">Login</router-link> |
@@ -16,6 +17,7 @@
       <h1>Manufact Automation</h1>
       <p>Welcome to the Manufact Automation page!</p>
     </div>
+  </div>
   </template>
  
   <script>
@@ -32,6 +34,4 @@
   };
   </script>
  
-  <style scoped>
-  /* Стили для ManufactAutomatation */
-  </style>
+<style lang="css" src="@/assets/mainStyle.css"></style>

@@ -67,7 +67,7 @@ export default {
 }
 </script>
 
-<style>
+<style lang="css" src="../assets/mainStyle.css">
 .selected { 
     border: 3px solid var(--light_font); /* Пример изменения обводки */ 
     }

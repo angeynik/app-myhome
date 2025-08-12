@@ -157,7 +157,7 @@ watch: {
       handler(newConfig) {
         if (newConfig) {
           console.log('[DashBoard] Конфигурация изменена, обновляем навигацию');
-          this.updateNavigationData();
+          // this.updateNavigationData();
         }
       },
       deep: true
@@ -165,7 +165,7 @@ watch: {
 },
   methods: {
     ...mapActions('sortParams', [
-      'updateNavigationData', 
+      // 'updateNavigationData', 
       'switchToPrevRoom', 
       'switchToNextRoom', 
       'switchToPrevParam', 
@@ -205,16 +205,14 @@ watch: {
 
       if (config.sortType) {
         this.$store.commit('sortParams/SET_SORT_TYPE', config.sortType);
-        // Автоматически выбираем первую доступную комнату/параметр
-        await this.$store.dispatch('sortParams/updateNavigationData');
       }
     },
     async forceSortUpdate(type) {
       await this.$store.dispatch('sortParams/setSortType', type);
       // Принудительное обновление если уже на этом маршруте
-      if (this.$route.name === `Dashboard${type.charAt(0).toUpperCase() + type.slice(1)}`) {
-        await this.$store.dispatch('sortParams/updateNavigationData');
-      }
+      // if (this.$route.name === `Dashboard${type.charAt(0).toUpperCase() + type.slice(1)}`) {
+      //   await this.$store.dispatch('sortParams/updateNavigationData');
+      // }
     },
     async selectComponent(component) {
       // Устанавливаем тип сортировки
@@ -226,10 +224,11 @@ watch: {
     // Проверяем, не находимся ли мы уже на этом маршруте
     if (this.$route.name !== routeName) {
       await this.$router.push({ name: routeName });
-    } else {
-      // Принудительное обновление если уже на этом маршруте
-      await this.$store.dispatch('sortParams/updateNavigationData');
-    }
+    } 
+    // else {
+    //   // Принудительное обновление если уже на этом маршруте
+    //   await this.$store.dispatch('sortParams/updateNavigationData');
+    // }
     },
     resetSelection() {
       this.selectedComponent = null;
@@ -267,4 +266,4 @@ watch: {
 };
 </script>
 
-<style lang="css" src="./assets/mainStyle.css"></style>
+<style lang="css" src="@/assets/mainStyle.css"></style>

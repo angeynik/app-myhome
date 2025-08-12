@@ -1,4 +1,5 @@
 <template>
+  <div>
     <div class="header-bottom">
       <nav>
               <router-link to="/login">Login</router-link> |
@@ -16,6 +17,7 @@
       <h1>Smart Home</h1>
       <p>Welcome to the Smart Home page!</p>
     </div>
+  </div>
   </template>
 
   <script>
@@ -32,6 +34,4 @@
   };
   </script>
   
-  <style scoped>
-  /* Стили для SmartHome */
-  </style>
+<style lang="css" src="@/assets/mainStyle.css"></style>
