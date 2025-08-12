@@ -114,7 +114,7 @@ export default {
     },
    
     async handleConfigResponse({ commit, dispatch }, response) {
-      //console.log('[Config] - handleConfigResponse - Обработка ответа от Server - Конфигурация');
+      console.log('[Config] - handleConfigResponse - Обработка ответа от Server - Конфигурация', response);
       try {
         const dID = response.name;
         const config = response.payload;

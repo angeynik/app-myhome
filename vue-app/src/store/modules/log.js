@@ -38,8 +38,8 @@ export default {
         if (rootState.websocket.socket?.readyState === WebSocket.OPEN) {
           await rootState.websocket.socket.send(
             JSON.stringify({
-              type: 'log',
-              request: 'add',
+              type: type,
+              request: 'error',
               payload: { type, message }
             })
           );
@@ -61,7 +61,7 @@ export default {
     ADD_ERROR(state, error) {
       state.errors.push({
         message: error.message || error.toString(),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toString()
       });
     }
   },
