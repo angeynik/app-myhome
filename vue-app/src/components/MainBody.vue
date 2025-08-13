@@ -124,11 +124,33 @@ watch: {
     },
     
     selectItem(item) {
-      console.log(`[MainBody] Выбран параметр: ${item.paramTitle}`);
-      console.log('[MainBody] selectItem called with:', item);
-      console.log('[MainBody] Emitting "show" event');
-      this.$emit('eventsMainBody', 'show');
-      this.selectedItem = item;
+      console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
+
+       if (this.selectedItem === item) {
+            // Если клик на уже выбранный элемент, то снимаем выделение
+            this.selectedItem = null;
+            // Отправляем событие, что нужно скрыть MainSetpoint
+            this.$emit('eventsMainBody', { 
+              action: 'hide' 
+            });
+            console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
+          } else {
+            this.selectedItem = item;
+
+          // Отправляем событие с данными в DashBoard
+          this.$emit('eventsMainBody', {
+            action: 'show',
+            data: {
+              value: item.value,
+              setValue: item.setValue,
+              unit: item.unit,
+              paramKey: item.paramKey,
+              roomKey: item.roomKey,
+              sortType: item.sortType
+            }
+          });
+          console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
+          }
     },
     
     toggleSorting(item) {

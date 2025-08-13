@@ -65,7 +65,7 @@
         :is="selectedComponent" 
         :propsTitle="propsTitle"
         :changeSorting="changeSorting" 
-        @eventsMainBody="handleComponentEvent" 
+        @eventsMainBody="handleMainBodyEvent" 
       />
     </div>
   </div>
@@ -80,7 +80,7 @@
       :highLimit="limHigh" 
       :lowLimit="limLow"
       :step="limStep"
-      @eventsMainSetpoint="handleComponentEvent"
+      @eventsMainSetpoint="handleSetpointEvent"
     />
   </footer>
   </div>
@@ -273,34 +273,24 @@ watch: {
     },
 
     // Работа с Setpoint
-    // handleComponentEvent(event) {
-    //   if (event === 'show') {
-    //     console.log('[DashBoard] - showSetpoint - Показываем Setpoint в Footer');
-    //     this.showSetpoint = true;
-    //   } else if (event === 'hide') {
-    //     console.log('[DashBoard] - showSetpoint - Скрываем Setpoint в Footer');
-    //     this.showSetpoint = false;
-    //   }
-    //   console.log('[DashBoard] - showSetpoint - showSetpoint - ', this.showSetpoint);
-    // },
-        handleComponentEvent(event) {
-      console.log('[DashBoard] handleComponentEvent received:', event);
+    handleMainBodyEvent(event) {
+      console.log('[DashBoard] handleMainBodyEvent received:', event.action);
       
-      if (event === 'show') {
-        console.log('[DashBoard] Setting showSetpoint to true',event);
+      if (event.action === 'show') {
+        this.selectedItemData = event.data;
+        this.setpoint = event.data.setValue;
         this.showSetpoint = true;
-        
-        // Проверка через $nextTick
-        this.$nextTick(() => {
-          console.log('[DashBoard] After showSetpoint change');
-          this.checkSetpointVisibility();
-        });
       } 
-      else if (event === 'hide') {
-        console.log('[DashBoard] Setting showSetpoint to false');
+      else if (event.action === 'hide') {
+
         this.showSetpoint = false;
+        this.selectedItemData = null;
       }
     },
+   handleSetpointEvent(event, data) {
+     console.log('[DashBoard] handleSetpointEvent event:', event);
+      console.log('[DashBoard] handleSetpointEvent data :', data);
+   },
     
     checkSetpointVisibility() {
       const setpointEl = document.querySelector('.setpointBlock');
