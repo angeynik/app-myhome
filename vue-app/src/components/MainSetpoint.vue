@@ -1,3 +1,4 @@
+
 <template>
   
     <div class="setpointBlock" 
@@ -124,7 +125,9 @@
         </svg>
 
       <div class="setpointValue_number"> 
-      <h1> {{ newSetPointValue }} </h1>
+      <!-- <h1> {{ newSetPointValue }} </h1> -->
+       <h1 v-if="newSetPointValue !== null">{{ newSetPointValue }}</h1>
+    <h1 v-else> NONE </h1>
       </div>
 
         <svg class="setpointValue_icon"
@@ -173,7 +176,7 @@
     sendEmitMessage(event, name, message) {
       if (!event || !name || !message) return console.error('sendEmitMessage - event', event,'name - ', name, 'message - ', message, ' не переданы');
       console.log('Функция sendEmitMessage (MainSetpoint) формирует сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
-                this.$emit('eventsComponent',{
+                this.$emit('eventsMainSetpoint',{
                     [event]: {
                         type: name,
                         message: message

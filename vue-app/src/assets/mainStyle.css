@@ -93,7 +93,7 @@
   transition: transform 0.6s; /* Плавное изменение размера */
 }
 .app-place_module:hover {
-  transform: scale(1.08); /* Небольшое увеличение при наведении */
+  transform: scale(1.1); /* Небольшое увеличение при наведении */
 }
 .app-place_module_h1 {
   height: 40px;
@@ -410,6 +410,67 @@ form button:active {
     display: flex; 
     align-items: center; 
     justify-content: center;
+}
+/* setpointBlock */
+.setpointBlock {
+  display: flex;
+  flex-direction: column;
+  align-content: space-around;
+  align-items: stretch;
+  width: 100%;
+  background-color: var(--background_color);
+  box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
+  margin: 0;
+  box-shadow: 0vw -3vw 6vw rgba(225, 225, 225, 0.2), 0vw 2vw 3vw rgba(225, 225, 225, 0.2),inset 12vw 0 8vw -6vw rgba(0, 0, 0, 0.8), inset -12vw 0 8vw -6vw rgba(0, 0, 0, 0.8);
+}
+.setpointValue {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  height: inherit;
+  box-sizing: border-box;
+  padding: 1vw 1.5vw 0 1.5vw;
+}
+
+.setpointValue_number {
+  min-width: 64px;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-self: center;
+  color: var(--light_font);
+}
+.setpointValue_icon {
+  height: 6vh;
+  width: 38vw;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box; 
+}
+
+.setpointValue h1 {
+  /* align-items: center; */
+  font-size: 2.4rem;
+  font-weight: 500;
+  letter-spacing: 0.3rem;
+  margin: 0;
+  padding: 0;
+}
+
+.setpointLimits {
+  display: flex;
+  height: 3vw;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0 4vw;
+}
+.setpointLimits h4 {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.07rem;
+  color: var(--light_font_color);
+  font-weight: 500;
 }
 
 

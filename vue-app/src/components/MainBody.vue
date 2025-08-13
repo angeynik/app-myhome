@@ -98,26 +98,6 @@ watch: {
   methods: {
     ...mapMutations('sortParams', ['SET_SORT_TYPE', 'SET_ROOM_ID', 'SET_ROOM_KEY', 'SET_PARAM_KEY', 'SET_ROOM_TITLE', 'SET_PARAM_TITLE']),
     
-    // getUnit(key) {
-    //     if (key.includes('Temp')) return '°C';
-    //     if (key.includes('Hum')) return '%';
-    //     if (key.includes('Press')) return 'hPa';
-    //     if (key.includes('Power')) return 'W';
-    //     return '';
-    // },
-    // getSensorTitle(key) {
-    //   const baseKey = key.replace(/\d+/g, '');
-    //   const mappings = {
-    //     'dHum': 'Влажность',
-    //     'dTemp': 'Температура',
-    //     'dPress': 'Давление',
-    //     'dPower': 'Потребление',
-    //     'dMove': 'Движение',
-    //     'dFire': 'Контроль возгорания',
-    //     'dLeak': 'Контроль утечек',
-    //   };
-    //   return mappings[baseKey] || key;
-    // },
 
     getSensorValue(key, data) {
       switch (key) {
@@ -144,13 +124,11 @@ watch: {
     },
     
     selectItem(item) {
-      if (this.selectedItem && 
-          this.selectedItem.roomId === item.roomId && 
-          this.selectedItem.paramKey === item.paramKey) {
-        this.selectedItem = null;
-      } else {
-        this.selectedItem = { ...item };
-      }
+      console.log(`[MainBody] Выбран параметр: ${item.paramTitle}`);
+      console.log('[MainBody] selectItem called with:', item);
+      console.log('[MainBody] Emitting "show" event');
+      this.$emit('eventsMainBody', 'show');
+      this.selectedItem = item;
     },
     
     toggleSorting(item) {

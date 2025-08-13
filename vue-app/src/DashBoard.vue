@@ -65,22 +65,24 @@
         :is="selectedComponent" 
         :propsTitle="propsTitle"
         :changeSorting="changeSorting" 
-        @eventsComponent="handleComponentEvent" 
+        @eventsMainBody="handleComponentEvent" 
       />
     </div>
   </div>
 
-    <footer class="footer"> 
-      <MainFooter v-show="!showSetpoint"/>
-      <MainSetpoint
-        v-if="showSetpoint"
-        :setPoint="setpoint" 
-        :highLimit="limHigh" 
-        :lowLimit="limLow"
-        :step="limStep"
-        @eventsComponent="handleComponentEvent"
-      />
-    </footer>
+  <footer class="footer"> 
+    
+    <MainFooter v-show="!showSetpoint"/>
+    
+    <MainSetpoint
+      v-if="showSetpoint"
+      :setPoint="setpoint" 
+      :highLimit="limHigh" 
+      :lowLimit="limLow"
+      :step="limStep"
+      @eventsMainSetpoint="handleComponentEvent"
+    />
+  </footer>
   </div>
 </template>
 
@@ -90,6 +92,7 @@ import AppPlace from './components/AppPlace.vue';
 import MainHeader from './components/MainHeader.vue';
 import MainFooter from './components/MainFooter.vue';
 import MainBody from './components/MainBody.vue';
+import MainSetpoint from './components/MainSetpoint.vue';
 
 export default { 
   name: 'DashBoard',
@@ -98,7 +101,8 @@ export default {
     AppPlace,
     MainBody,
     MainHeader,
-    MainFooter
+    MainFooter,
+    MainSetpoint
   }, 
 
   data() { 
@@ -106,6 +110,11 @@ export default {
       isMobile: false,
       showHeaderArrow: false,
       selectedComponent: null,
+      showSetpoint: false,
+      setpoint: 20,
+      limHigh: 30,
+      limLow: 10,
+      limStep: 1,
     }; 
   },
   async created() {
@@ -193,8 +202,8 @@ watch: {
       const routeToComponentMap = {
         'DashboardRooms': { component: 'MainBody', sortType: 'rooms' },
         'DashboardParams': { component: 'MainBody', sortType: 'params' },
-        'DashboardCommon': { component: 'DashboardCommon', sortType: null },
-        'DashboardSettings': { component: 'DashboardSettings', sortType: null }
+        'DashboardCommon': { component: 'MainBody', sortType: 'common' },
+        'DashboardSettings': { component: 'DashboardSettings', sortType: 'settings' }
       };
 
       const config = routeToComponentMap[routeName];
@@ -262,6 +271,50 @@ watch: {
       }
       console.groupEnd();
     },
+
+    // Работа с Setpoint
+    // handleComponentEvent(event) {
+    //   if (event === 'show') {
+    //     console.log('[DashBoard] - showSetpoint - Показываем Setpoint в Footer');
+    //     this.showSetpoint = true;
+    //   } else if (event === 'hide') {
+    //     console.log('[DashBoard] - showSetpoint - Скрываем Setpoint в Footer');
+    //     this.showSetpoint = false;
+    //   }
+    //   console.log('[DashBoard] - showSetpoint - showSetpoint - ', this.showSetpoint);
+    // },
+        handleComponentEvent(event) {
+      console.log('[DashBoard] handleComponentEvent received:', event);
+      
+      if (event === 'show') {
+        console.log('[DashBoard] Setting showSetpoint to true',event);
+        this.showSetpoint = true;
+        
+        // Проверка через $nextTick
+        this.$nextTick(() => {
+          console.log('[DashBoard] After showSetpoint change');
+          this.checkSetpointVisibility();
+        });
+      } 
+      else if (event === 'hide') {
+        console.log('[DashBoard] Setting showSetpoint to false');
+        this.showSetpoint = false;
+      }
+    },
+    
+    checkSetpointVisibility() {
+      const setpointEl = document.querySelector('.setpointBlock');
+      const tempEl = document.querySelector('.temp-setpoint');
+      
+      console.log('showSetpoint value:', this.showSetpoint);
+      console.log('MainSetpoint element exists:', !!setpointEl);
+      console.log('Temp element exists:', !!tempEl);
+      
+      if (setpointEl) {
+        console.log('MainSetpoint visibility:', 
+          window.getComputedStyle(setpointEl).display !== 'none');
+      }
+    }
   }
 };
 </script>
