@@ -8,25 +8,33 @@
     @touchend="customerTouchEnd"
   >
     <div v-if="sortType === 'rooms'" class="sensor-header">
-    <span class="room">{{ paramTitle }}</span>
+      <span class="room">{{ paramTitle }}</span>
     </div>
-        <div v-else class="sensor-header">
+    <div v-else class="sensor-header">
       <span class="room">{{ roomTitle }}</span>
     </div>
 
-    <div class="sensor-value">
+    <!-- Основное значение - меняем стиль только если есть setValue и плашка выбрана -->
+    <div :class="getValueClass()">
       {{ formattedValue(value) }}
       <span v-if="unit" class="unit">{{ unit }}</span>
     </div>
-       <div v-if="setValue != null || undefined" class="sensor-SetValue">
+
+    <!-- Уставка - показывается всегда если есть значение, меняет стиль при выборе -->
+    <div v-if="setValue != null" :class="isSelected ? 'sensor-SetValue selected-setvalue' : 'sensor-SetValue'">
       {{ formattedValue(setValue) }}
       <span v-if="unit" class="unit">{{ unit }}</span>
     </div>
+
     <div class="sensor-footer">
       <time>{{ formattedTime }}</time>
     </div>
   </div>
 </template>
+
+
+
+
 
 <script>
 export default {
@@ -59,6 +67,14 @@ export default {
     }
   },
   methods: {
+      getValueClass() {
+        // Если setValue не определен, всегда используем обычный стиль
+        if (this.setValue == null) {
+          return 'sensor-value';
+        }
+        // Если setValue определен, меняем стиль при выборе
+        return this.isSelected ? 'sensor-value selected-value' : 'sensor-value';
+      },
         formattedValue(value) {
       if (typeof value === 'number') {
         return value.toFixed(1)
@@ -117,6 +133,6 @@ export default {
 
 <style lang="css" src="../assets/mainStyle.css">
 .selected { 
-    border: 3px solid var(--light_font); /* Пример изменения обводки */ 
+    border: 10px solid var(--orange);
     }
 </style>

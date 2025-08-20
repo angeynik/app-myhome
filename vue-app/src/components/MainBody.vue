@@ -197,14 +197,29 @@ watch: {
     if (!room?.sensors) return [];
     
     return Object.entries(room.sensors).map(([sensorKey, sensorData]) => {
-      const sensorSet = room.setpoints?.[sensorKey];
+      //const sensorSet = room.setpoints?.[sensorKey];
+      // Ищем соответствующую уставку
+    let setValue = null;
+    if (room.setpoints) {
+    // Ищем ключ уставки, который соответствует префиксу сенсора
+      const setpointKey = Object.keys(room.setpoints).find(setKey => 
+        sensorKey.includes(setKey) || setKey.includes(sensorKey)
+      );
+      
+      if (setpointKey) {
+        setValue = room.setpoints[setpointKey]?.value != null 
+          ? parseFloat(room.setpoints[setpointKey].value) 
+          : null;
+      }
+    }
+
       return {         
         sortType: 'rooms',
         paramTitle: this.getSensorTitle(sensorKey),
         paramType: sensorData?.type != null ? sensorData.type : null,
         paramKey: sensorKey,
         value: this.getSensorValue(sensorData?.type, sensorData),
-        setValue: sensorSet?.value != null ? parseFloat(sensorSet.value) : null,
+        setValue: setValue,
         unit: this.getUnit(sensorKey),
         timeDiff: this.getTimeDiff(sensorData.lastUpdate),
         roomTitle: room.title,
@@ -224,14 +239,28 @@ watch: {
       Object.entries(room.sensors).forEach(([sensorKey, sensorData]) => {
         // Проверяем, что ключ сенсора начинается с нужного префикса
         if (sensorKey.startsWith(paramPrefix)) {
-          const sensorSet = room.setpoints?.[sensorKey];
+          //const sensorSet = room.setpoints?.[sensorKey];
+                  let setValue = null;
+        if (room.setpoints) {
+          // Ищем ключ уставки, который соответствует префиксу сенсора
+          const setpointKey = Object.keys(room.setpoints).find(setKey => 
+            sensorKey.includes(setKey) || setKey.includes(sensorKey)
+          );
+          
+          if (setpointKey) {
+            setValue = room.setpoints[setpointKey]?.value != null 
+              ? parseFloat(room.setpoints[setpointKey].value) 
+              : null;
+          }
+        }
+          
           sensors.push({
             sortType: 'params',
             paramTitle: this.getSensorTitle(paramPrefix), // Название типа параметра
             paramType: sensorData?.type,
             paramKey: sensorKey, // Полный ключ сенсора
             value: this.getSensorValue(sensorData?.type, sensorData),
-            setValue: sensorSet?.value ? parseFloat(sensorSet.value) : null,
+            setValue: setValue,
             unit: this.getUnit(paramPrefix),
             timeDiff: this.getTimeDiff(sensorData.lastUpdate),
             roomTitle: room.title,

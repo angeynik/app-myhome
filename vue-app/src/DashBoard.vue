@@ -72,10 +72,10 @@
 
   <footer class="footer"> 
     
-    <MainFooter v-show="!showSetpoint"/>
+    <MainFooter v-show="!showFooterSetpoint"/>
     
     <MainSetpoint
-      v-if="showSetpoint"
+      v-if="showFooterSetpoint"
       :setPoint="setpoint" 
       :highLimit="limHigh" 
       :lowLimit="limLow"
@@ -153,6 +153,9 @@ export default {
       }
       return "Dashboard";
     },
+    showFooterSetpoint() {
+      return this.showSetpoint && this.setpoint !== null && this.setpoint !== undefined;
+    }
   },
 
 watch: {
@@ -285,6 +288,7 @@ watch: {
 
         this.showSetpoint = false;
         this.selectedItemData = null;
+        this.setpoint = null;
       }
     },
    handleSetpointEvent(event, data) {
