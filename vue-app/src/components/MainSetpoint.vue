@@ -126,8 +126,9 @@
 
       <div class="setpointValue_number"> 
       <!-- <h1> {{ newSetPointValue }} </h1> -->
-       <h1 v-if="newSetPointValue !== null">{{ newSetPointValue }}</h1>
-    <h1 v-else> NONE </h1>
+        <h1 v-if="newSetPointValue !== null">{{ newSetPointValue }}</h1>
+        <h1 v-else> NONE </h1>
+        <span v-if="unit && newSetPointValue !== null" class="unit">{{ unit }}</span>
       </div>
 
         <svg class="setpointValue_icon"
@@ -159,12 +160,12 @@
       setPoint(newSetPoint) {
         // console.log('Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
         this.newSetPointValue = parseFloat(newSetPoint).toFixed(1);
-        // console.log('Обновили newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
+        console.log('[MainSetpoint] - setPoint - Обновили newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
       },
     },
     created() {
       this.debouncedCalculateSetpoint = this.debounce(this.calculateSetpoint, 16);
-      this.debouncedUpdatePermitions = this.debounce(this.sendEmitMessage, 800);
+      //this.debouncedUpdatePermitions = this.debounce(this.sendEmitMessage, 2000);
       },
     props: {   // Переменные полученные в компонент
       setPoint: Number,
@@ -175,13 +176,14 @@
       methods: {
     sendEmitMessage(event, name, message) {
       if (!event || !name || !message) return console.error('sendEmitMessage - event', event,'name - ', name, 'message - ', message, ' не переданы');
-      console.log('Функция sendEmitMessage (MainSetpoint) формирует сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
-                this.$emit('eventsMainSetpoint',{
-                    [event]: {
-                        type: name,
-                        message: message
-                    }
-                });
+      console.log('[MainSetpoint] - sendEmitMessage  Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
+        this.$emit('eventsMainSetpoint',{
+          [event]: {
+            type: name,
+            message: message
+          }
+        });
+        //eventsMainSetpoint - событие которое слушает DashBoard и передает его в функцию handleSetpointEvent 
     },
     handleTouchStart(event) {
         // console.log('Компонент bodySetpointBlock событие - handleTouchStart', event.touches[0].clientX, event.touches[0].clientY);
@@ -194,11 +196,7 @@
         // console.log('Разрешаем изменять значение для Компонента setpointBlock');
         const currentTime = new Date().getTime();
         this.lastTouchTime = currentTime;
-        this.debouncedUpdatePermitions('updatePermission', 'permission', true);
-        // this.$emit('updateState', { 
-        //   type: 'updatePermission',
-        //   value: true 
-        // }); // Разрешаем обновление Уставки
+        //this.debouncedUpdatePermitions('updatePermission', 'permission', true); // Разрешаем обновление Уставки
         return;
       } else {
         return;
@@ -217,12 +215,12 @@
         }
     },
     calculateSetpoint(value, step, min, max) {
-        // console.log('BodySetpointBlock Функция calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
+        console.log('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
         let newValue, currentSetPoint;
         if (this.setPoint === null || this.setPoint === undefined) {
-          currentSetPoint = min;
+          currentSetPoint = parseFloat(min);
         } else {
-          currentSetPoint = this.setPoint;
+          currentSetPoint = parseFloat(this.setPoint);
         }
         try {
           if (value > 5 && value < 120) {
@@ -238,47 +236,43 @@
           newValue = currentSetPoint - (step*10);
           // console.log('Уменьшили SetPoint:', newSetPointValue);
         }
+          try {
+              if (newValue > max) {
+              newValue = max;
+              console.log('[MainSetpoint] - calculateSetpoint  Ограничиваем Верхняю границу Уставки', newValue);
+            } else if (newValue < min) {
+              newValue = min;
+              console.log('[MainSetpoint] - calculateSetpoint  Ограничиваем Нижнюю границу Уставки', newValue);
+            }
+
+            newValue = parseFloat(newValue);
+            this.sendEmitMessage('updateState', 'newSetPoint', newValue);
+            // event = 'updateState'
+            // name = 'newSetPoint'
+            // message = newValue
+            
+            } catch (error) {
+              console.error('[MainSetpoint] - calculateSetpoint  Ошибка проверки ограничений диапазона Уставки', error);
+              //this.sendEmitMessage('error', '[MainSetpoint] - calculateSetpoint Ошибка проверки ограничений диапазона Уставки', error); // отправка логов на сервер для сохранения в файл
+            }
         } catch (error) {
-          console.error('BodySetpointBlock Функция calculateSetpoint Ошибка вычисления изменения Уставки', error);
-          this.sendEmitMessage('error', 'BodySetpointBlock Функция calculateSetpoint Ошибка вычисления изменения Уставки', error); // отправка логов на сервер для сохранения в файл
+          console.error('[MainSetpoint] - calculateSetpoint Ошибка вычисления изменения Уставки', error);
+          //this.sendEmitMessage('error', '[MainSetpoint] - calculateSetpoint Ошибка вычисления изменения Уставки', error); // отправка логов на сервер для сохранения в файл
         }
-  
-       this.sendSetPoint(newValue, min, max);
+        console.log(' -- 260 -- [MainSetpoint] - calculateSetpoint Расчет, проверка и отправка обновленного значения выполнена успешно')
+
+
+
+
+
+       //this.sendSetPoint(newValue, min, max);
     },
     clickChangeSetpoint(value) {
+      console.log('[MainSetpoint] - clickChangeSetpoint value:', value);
       this.calculateSetpoint(value, this.step, this.lowLimit, this.highLimit);
-      this.debouncedUpdatePermitions('updatePermission', 'permission', true);
+      //this.debouncedUpdatePermitions('updatePermission', 'permission', true);
     },
-    sendSetPoint(setPoint, min, max) {
-        if (setPoint === undefined || setPoint === null || min === undefined || max === undefined) {
-          console.error('BodySetpointBlock Функция sendSetPoint Попытка проверки с неопределенными значениями setPoint', setPoint, 'min', min, 'max', max);
-          this.sendEmitMessage('error', 'BodySetpointBlock Функция sendSetPoint Попытка проверки с неопределенными значениями setPoint: ', setPoint); 
-        } else {
-          //const paramKey = localStorage.getItem('param_key');
-            try {
-              if (setPoint > max) {
-              setPoint = max;
-              // this.$emit('updateState', { newSetPoint: setPoint });
-              // console.log(' BodySetpointBlock Функция sendSetPoint Ограничиваем Верхняю границу Уставки');
-            } else if (setPoint < min) {
-              setPoint = min;
-              // console.log(' BodySetpointBlock Функция sendSetPoint Ограничиваем Нижнюю границу Уставки');
-              // this.$emit('updateState', { newSetPoint: setPoint });
-            } else {
-              // console.log(' BodySetpointBlock Функция sendSetPoint Отправляем Уставку без изменений');
-              this.sendEmitMessage('newSetPoint', 'setpoint', setPoint);
-              //this.sendEmitMessage('updateState', 'newSetPoint', setPoint);
-              // this.$emit('updateState', { 
-              //   type: 'newSetPoint',
-              //   value: setPoint 
-              //   }); 
-            }
-            } catch (error) {
-              console.error('BodySetpointBlock Функция sendSetPoint Ошибка проверки ограничений диапазона Уставки', error);
-              this.sendEmitMessage('error', 'BodySetpointBlock Функция sendSetPoint Ошибка проверки ограничений диапазона Уставки', error); // отправка логов на сервер для сохранения в файл
-            }
-         }
-    },
+
     debounce(func, wait) {
         // console.log('Активирована задержка выполнения функции', func, 'в', wait, 'мсек');
       let timeout;

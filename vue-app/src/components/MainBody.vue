@@ -137,6 +137,10 @@ watch: {
           } else {
             this.selectedItem = item;
 
+        // Обновляем ключи в хранилище
+          this.SET_ROOM_KEY(item.roomKey);
+          this.SET_PARAM_KEY(item.paramKey);
+
           // Отправляем событие с данными в DashBoard
           this.$emit('eventsMainBody', {
             action: 'show',

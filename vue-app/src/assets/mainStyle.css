@@ -449,7 +449,7 @@ form button:active {
   background-color: var(--background_color);
   box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
   margin: 0;
-  box-shadow: 0vw -3vw 6vw rgba(225, 225, 225, 0.2), 0vw 2vw 3vw rgba(225, 225, 225, 0.2),inset 12vw 0 8vw -6vw rgba(0, 0, 0, 0.8), inset -12vw 0 8vw -6vw rgba(0, 0, 0, 0.8);
+  box-shadow: 0vw -3vw 6vw rgba(225, 225, 225, 0.15), 0vw 2vw 3vw rgba(225, 225, 225, 0.15),inset 12vw 0 8vw -6vw rgba(0, 0, 0, 0.8), inset -12vw 0 8vw -6vw rgba(0, 0, 0, 0.8);
 }
 .setpointValue {
   display: flex;

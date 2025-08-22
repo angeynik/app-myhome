@@ -115,6 +115,7 @@ export default {
       limHigh: 30,
       limLow: 10,
       limStep: 1,
+      setpointUpdateTimer: null,
     }; 
   },
   async created() {
@@ -157,6 +158,11 @@ export default {
       return this.showSetpoint && this.setpoint !== null && this.setpoint !== undefined;
     }
   },
+  beforeUnmount() {
+  if (this.setpointUpdateTimer) {
+    clearTimeout(this.setpointUpdateTimer);
+  }
+},
 
 watch: {
     '$route.name': {
@@ -291,11 +297,66 @@ watch: {
         this.setpoint = null;
       }
     },
-   handleSetpointEvent(event, data) {
-     console.log('[DashBoard] handleSetpointEvent event:', event);
-      console.log('[DashBoard] handleSetpointEvent data :', data);
-   },
-    
+
+    handleSetpointEvent(eventData) {
+      console.log('[DashBoard] - handleSetpointEvent - eventData:', eventData);
+
+      if (eventData.updateState && eventData.updateState.type === 'newSetPoint') {//Обработка изменения уставки
+        console.log(' - 299 -- [DashBoard] - handleSetpointEvent Обновление состояния - updateState', eventData.updateState.message);
+        this.setpoint = eventData.updateState.message;
+        // Обновляем конфигурацию
+        this.updateConfigSetpoint(eventData.updateState.message);
+
+      }  else if (eventData.error) {
+        console.error('[DashBoard] - handleSetpointEvent - Ошибка из MainSetpoint:', eventData.error);
+      }
+    },
+    async updateConfigSetpoint(newValue) {
+      console.log('[DashBoard] - updateConfigSetpoint - Начинаем обновление конфигурации');
+      const oldValue = newValue; 
+      try {
+        const roomKey = this.getRoomKey;
+        const paramKey = this.getParamKey;
+        if (!roomKey || !paramKey) {
+          console.error('Не выбрана комната или параметр для обновления уставки');
+          return;
+        }
+        console.log('[DashBoard] - updateConfigSetpoint - roomKey -', roomKey, ' paramKey -', paramKey, ' newValue -', newValue);
+
+        // Обновляем значение в хранилище
+          await this.$store.dispatch('config/updateSetpointLocal', {
+            roomKey: roomKey,
+            paramKey: paramKey,
+            value: newValue
+          });
+          // Очистка предыдущего таймера
+          if (this.setpointUpdateTimer) {
+            clearTimeout(this.setpointUpdateTimer);
+          }
+          // Установка нового таймера для отправки на сервер
+            this.setpointUpdateTimer = setTimeout(async () => {
+              try {
+                await this.$store.dispatch('config/updateSetpointServer', {
+                  roomKey: roomKey,
+                  paramKey: paramKey,
+                  value: oldValue
+                });
+                console.log('Уставка успешно отправлена на сервер после задержки');
+              } catch (error) {
+                console.error('Ошибка при отправке уставки на сервер:', error);
+                // Откат значения при ошибке
+                this.setpoint = oldValue;
+              }
+            }, 1500);
+
+        // Запускаем повторную сортировку
+        if (this.$refs.mainBody) {
+          this.$refs.mainBody.updateView();
+        }
+      } catch (error) {
+        console.error('Ошибка обновления уставки:', error);
+      }
+    },
     checkSetpointVisibility() {
       const setpointEl = document.querySelector('.setpointBlock');
       const tempEl = document.querySelector('.temp-setpoint');
@@ -314,3 +375,4 @@ watch: {
 </script>
 
 <style lang="css" src="@/assets/mainStyle.css"></style>
+

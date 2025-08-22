@@ -75,7 +75,12 @@ export default {
       //await dispatch('ensureSortingKeys'); 
       }
     },
-
+    clearKey(context, { key }) {
+      const withoutPrefix = key.slice(1);
+      const clearKey = withoutPrefix.replace(/\d+$/, '');
+      console.log(`[config] - clearKey - key: ${clearKey}`);
+      return clearKey;
+    },
 
 
     async checkConfigInState({ commit, dispatch, rootGetters, state }) {
@@ -309,7 +314,124 @@ export default {
       if (paramKey) {
         await dispatch('sortParams/updateParamsKey', paramKey, { root: true });
       }
-    }
+    },
+      // async updateSetpoint({ commit, state, rootGetters}, { roomKey, paramKey, value }) {
+      //   console.log('[config] - updateSetpoint - Обновляем уставку', roomKey, paramKey, value);
+      //   // return new Promise((resolve) => {
+      //   //   // Обновляем значение уставки в состоянии
+      //   //   const newConfig = JSON.parse(JSON.stringify(state.config));
+      //   //   if (newConfig[roomKey] && newConfig[roomKey].setpoints) {
+      //   //     newConfig[roomKey].setpoints[paramKey] = {
+      //   //       ...newConfig[roomKey].setpoints[paramKey],
+      //   //       value: value
+      //   //     };
+            
+      //   //     commit('SET_CONFIG', newConfig);
+      //   //     console.log('Уставка обновлена в хранилище');
+      //   //   }
+      //   //   resolve();
+      //   // });
+
+      //       try {
+      //         const dID = rootGetters.dID;
+      //         if (!dID) {
+      //           throw new Error('dID не определен');
+      //         }
+              
+      //         // Получаем текущий конфиг
+      //         const config = JSON.parse(JSON.stringify(state.config));
+      //         console.log('[Config] - updateSetpoint - config', config);
+             
+      //         if (!config[roomKey] || !config[roomKey].setpoints) {
+      //           throw new Error(`Комната ${roomKey} или её уставки не найдены`);
+      //         }
+              
+      //         // Ищем точный ключ уставки
+      //         const baseParamKey = paramKey.replace(/\d+$/, '');
+      //         let setpointKey = Object.keys(config[roomKey].setpoints).find(
+      //           key => key === baseParamKey
+      //         );
+             
+      //        if (!setpointKey) {
+      //           setpointKey = baseParamKey;
+      //           if (!config[roomKey].setpoints) {
+      //             config[roomKey].setpoints = {};
+      //           }
+      //           config[roomKey].setpoints[setpointKey] = { value: 0 };
+      //         }
+              
+      //         // Обновляем значение
+      //        config[roomKey].setpoints[setpointKey].value = parseFloat(value);
+              
+      //         // Сохраняем обновленный конфиг
+      //         commit('SET_CONFIG', { name: dID, config });
+              
+      //         // Отправляем на сервер
+      //         await this.dispatch('websocket/send', {
+      //           type: 'post',
+      //           request: 'setpoint',
+      //           name: dID,
+      //           payload: {
+      //             room: roomKey,
+      //             param: setpointKey,
+      //             value: value
+      //           }
+      //         }, { root: true });
+              
+      //         console.log('Уставка обновлена и отправлена на сервер');
+      //       } catch (error) {
+      //         console.error('Ошибка обновления уставки:', error);
+      //         throw error;
+      //       }
+
+      // },
+
+      async updateSetpointLocal ({ commit, state, rootGetters, dispatch }, { roomKey, paramKey, value }) {
+        
+
+        const dID = rootGetters.dID;
+        if (!dID) throw new Error('dID не определен');
+
+        // 1. Глубоким клонированием создаём рабочую копию
+        const safeBase = state.configs[dID] || {};
+        const config = JSON.parse(JSON.stringify(safeBase));
+        console.log('[config] - updateSetpoint - исходный state.config:', config);
+
+        if (!config[roomKey]?.setpoints) {
+          throw new Error(`Комната ${roomKey} или её уставки не найдены`);
+        }
+
+        // 2. Ищем точный ключ уставки
+        const baseParamKey = await dispatch('clearKey', { key: paramKey });
+        let setpointKey = Object.keys(config[roomKey].setpoints).find(k => k === baseParamKey);
+
+        if (!setpointKey) {
+          config[roomKey].setpoints[baseParamKey] = { value: 0 };
+          setpointKey = baseParamKey;
+        }
+
+        config[roomKey].setpoints[setpointKey].value = parseFloat(value);
+
+        // 3. Сохраняем в Vuex
+        commit('SET_CONFIG', { name: dID, config });
+
+      },
+      async updateSetpointServer( {rootGetters, dispatch}, { roomKey, paramKey, value }) {
+        const baseParamKey = await dispatch('clearKey', { key: paramKey });
+        const dID = rootGetters.dID;
+        if (!dID) throw new Error('dID не определен');
+
+        await this.dispatch('websocket/send', {
+          type: 'post',
+          request: 'setpoint',
+          name: dID,
+          payload: { room: roomKey, param: baseParamKey, value }
+        }, { root: true });
+
+        console.log('[config] - updateSetpointServer - Уставка обновлена и отправлена на сервер');
+      },
+
+
   },
   
   getters: {
