@@ -124,7 +124,7 @@ watch: {
     },
     
     selectItem(item) {
-      console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
+      //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
 
        if (this.selectedItem === item) {
             // Если клик на уже выбранный элемент, то снимаем выделение
@@ -133,7 +133,7 @@ watch: {
             this.$emit('eventsMainBody', { 
               action: 'hide' 
             });
-            console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
+            //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
           } else {
             this.selectedItem = item;
 
@@ -153,7 +153,7 @@ watch: {
               sortType: item.sortType
             }
           });
-          console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
+          //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
           }
     },
     
@@ -180,14 +180,14 @@ watch: {
         }
 
         if (this.currentSortType === 'rooms') {
-          console.log(`Режим: комнаты (${this.getRoomKey})`);
+          //console.log(`Режим: комнаты (${this.getRoomKey})`);
           this.viewArray = this.getSortedRooms(config, this.getRoomKey);
         } else {
-          console.log(`Режим: параметры (${this.getParamKey})`);
+          //console.log(`Режим: параметры (${this.getParamKey})`);
           this.viewArray = this.getSortedParams(config, this.getParamKey);
         }
         
-        console.log('Отображаемые элементы:', this.viewArray);
+        //console.log('Отображаемые элементы:', this.viewArray);
         console.groupEnd();
       } catch (error) {
         console.error('[MainBody] Ошибка обновления:', error);
@@ -274,7 +274,7 @@ watch: {
         }
       });
     });
-    console.log('[MainBody] - getSortedParams - Получен список сенсоров:', sensors);
+    //console.log('[MainBody] - getSortedParams - Получен список сенсоров:', sensors);
     return sensors;
   },
 

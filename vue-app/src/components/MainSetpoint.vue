@@ -160,7 +160,7 @@
       setPoint(newSetPoint) {
         // console.log('Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
         this.newSetPointValue = parseFloat(newSetPoint).toFixed(1);
-        console.log('[MainSetpoint] - setPoint - Обновили newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
+        //console.log('[MainSetpoint] - setPoint - Обновили newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
       },
     },
     created() {
@@ -176,7 +176,7 @@
       methods: {
     sendEmitMessage(event, name, message) {
       if (!event || !name || !message) return console.error('sendEmitMessage - event', event,'name - ', name, 'message - ', message, ' не переданы');
-      console.log('[MainSetpoint] - sendEmitMessage  Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
+      //console.log('[MainSetpoint] - sendEmitMessage  Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
         this.$emit('eventsMainSetpoint',{
           [event]: {
             type: name,
@@ -268,7 +268,7 @@
        //this.sendSetPoint(newValue, min, max);
     },
     clickChangeSetpoint(value) {
-      console.log('[MainSetpoint] - clickChangeSetpoint value:', value);
+      //console.log('[MainSetpoint] - clickChangeSetpoint value:', value);
       this.calculateSetpoint(value, this.step, this.lowLimit, this.highLimit);
       //this.debouncedUpdatePermitions('updatePermission', 'permission', true);
     },

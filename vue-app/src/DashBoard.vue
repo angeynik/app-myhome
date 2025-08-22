@@ -65,7 +65,8 @@
         :is="selectedComponent" 
         :propsTitle="propsTitle"
         :changeSorting="changeSorting" 
-        @eventsMainBody="handleMainBodyEvent" 
+        @eventsMainBody="handleMainBodyEvent"
+        ref="mainBody" 
       />
     </div>
   </div>
@@ -144,11 +145,11 @@ export default {
       if (this.selectedComponent === 'MainBody') {
         if (this.currentSortType === 'rooms') {
           return this.getRoomKey 
-            ? `Сортировка по комнатам - ${this.getRoomTitle}` 
+            ? `${this.getRoomTitle}` 
             : "Сортировка по комнатам";
         } else {
           return this.getParamKey 
-            ? `Сортировка по параметрам - ${this.getSensorTitle(this.getParamKey)}` 
+            ? `${this.getSensorTitle(this.getParamKey)}` 
             : "Сортировка по параметрам";
         }
       }
@@ -260,10 +261,10 @@ watch: {
     sortingBack() {
       //console.groupCollapsed('[DashBoard] - sortingBack - Переключение на предыдущий элемент');
       if (this.currentSortType === 'rooms') {
-        console.log('Тип: комнаты');
+        //console.log('Тип: комнаты');
         this.switchToPrevRoom();
       } else if (this.currentSortType === 'params') {
-        console.log('Тип: параметры');
+        //console.log('Тип: параметры');
         this.switchToPrevParam();
       }
       console.groupEnd();
@@ -272,10 +273,10 @@ watch: {
     sortingForvard() {
       //console.groupCollapsed('[DashBoard] - sortingForvard - Переключение на следующий элемент');
       if (this.currentSortType === 'rooms') {
-        console.log('Тип: комнаты');
+        //console.log('Тип: комнаты');
         this.switchToNextRoom();
       } else if (this.currentSortType === 'params') {
-        console.log('Тип: параметры');
+        //console.log('Тип: параметры');
         this.switchToNextParam();
       }
       console.groupEnd();
@@ -283,7 +284,7 @@ watch: {
 
     // Работа с Setpoint
     handleMainBodyEvent(event) {
-      console.log('[DashBoard] handleMainBodyEvent received:', event.action);
+      //console.log('[DashBoard] handleMainBodyEvent received:', event.action);
       
       if (event.action === 'show') {
         this.selectedItemData = event.data;
@@ -299,10 +300,10 @@ watch: {
     },
 
     handleSetpointEvent(eventData) {
-      console.log('[DashBoard] - handleSetpointEvent - eventData:', eventData);
+      //console.log('[DashBoard] - handleSetpointEvent - eventData:', eventData);
 
       if (eventData.updateState && eventData.updateState.type === 'newSetPoint') {//Обработка изменения уставки
-        console.log(' - 299 -- [DashBoard] - handleSetpointEvent Обновление состояния - updateState', eventData.updateState.message);
+        //console.log('[DashBoard] - handleSetpointEvent Обновление состояния - updateState', eventData.updateState.message);
         this.setpoint = eventData.updateState.message;
         // Обновляем конфигурацию
         this.updateConfigSetpoint(eventData.updateState.message);
@@ -312,7 +313,7 @@ watch: {
       }
     },
     async updateConfigSetpoint(newValue) {
-      console.log('[DashBoard] - updateConfigSetpoint - Начинаем обновление конфигурации');
+      //console.log('[DashBoard] - updateConfigSetpoint - Начинаем обновление конфигурации');
       const oldValue = newValue; 
       try {
         const roomKey = this.getRoomKey;
@@ -321,7 +322,7 @@ watch: {
           console.error('Не выбрана комната или параметр для обновления уставки');
           return;
         }
-        console.log('[DashBoard] - updateConfigSetpoint - roomKey -', roomKey, ' paramKey -', paramKey, ' newValue -', newValue);
+        //console.log('[DashBoard] - updateConfigSetpoint - roomKey -', roomKey, ' paramKey -', paramKey, ' newValue -', newValue);
 
         // Обновляем значение в хранилище
           await this.$store.dispatch('config/updateSetpointLocal', {
@@ -341,7 +342,7 @@ watch: {
                   paramKey: paramKey,
                   value: oldValue
                 });
-                console.log('Уставка успешно отправлена на сервер после задержки');
+                //console.log('Уставка успешно отправлена на сервер после задержки');
               } catch (error) {
                 console.error('Ошибка при отправке уставки на сервер:', error);
                 // Откат значения при ошибке
@@ -361,8 +362,8 @@ watch: {
       const setpointEl = document.querySelector('.setpointBlock');
       const tempEl = document.querySelector('.temp-setpoint');
       
-      console.log('showSetpoint value:', this.showSetpoint);
-      console.log('MainSetpoint element exists:', !!setpointEl);
+      //console.log('showSetpoint value:', this.showSetpoint);
+      //console.log('MainSetpoint element exists:', !!setpointEl);
       console.log('Temp element exists:', !!tempEl);
       
       if (setpointEl) {
