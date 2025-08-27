@@ -2,7 +2,9 @@
 
     <div v-if="isLoading" class="loading">Загрузка...</div>
     <div v-else-if="error" class="error">{{ error }}</div>
-    <div v-else id="app_mainBody" class="mainBody">
+    <div v-else id="app_mainBody" class="mainBody"
+     @touchstart.passive="handleTouchStart" 
+    @touchend.passive="handleTouchEnd">
       <MainBodyValue 
         v-for="(item, index) in viewArray"
         :key="`${index}-${item.paramKey}-${item.roomKey}`"
@@ -16,6 +18,7 @@
         :isSelected="isSelected(item)"
         @click="selectItem(item)"
         @dblclick="toggleSorting(item)"
+        @touchstart.passive="selectItem(item)"
       /> 
     </div>
 
@@ -32,7 +35,10 @@ export default {
     return {
       selectedItem: null,
       viewArray: [],
-      initializationError: null
+      initializationError: null,
+      touchStartX: 0,
+      isSwiping: false,
+      swipeThreshold: 50, // минимальное расстояние для определения свайпа
     }
   },
   async created() {
@@ -124,7 +130,7 @@ watch: {
     },
     
     selectItem(item) {
-      //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
+      console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
 
        if (this.selectedItem === item) {
             // Если клик на уже выбранный элемент, то снимаем выделение
@@ -158,6 +164,7 @@ watch: {
     },
   
     toggleSorting(item) {
+      console.log(`[MainBody] - toggleSorting - Выбран параметр: ${JSON.stringify(item)}`);
       const newSortType = this.currentSortType === 'rooms' ? 'params' : 'rooms';
       this.SET_SORT_TYPE(newSortType);
       
@@ -188,114 +195,114 @@ watch: {
       //   this.$store.commit('sortParams/SET_ROOM_TITLE', item.roomTitle);
       // }
     },
-  async updateView() {
-      try {
-        //console.groupCollapsed('[MainBody] Обновление отображения');
-        const config = this.getConfig(this.dID);
-        if (!config) {
-          console.warn('Конфигурация не доступна');
-          this.viewArray = [];
-          return;
-        }
-
-        if (this.currentSortType === 'rooms') {
-          //console.log(`Режим: комнаты (${this.getRoomKey})`);
-          this.viewArray = this.getSortedRooms(config, this.getRoomKey);
-        } else {
-          //console.log(`Режим: параметры (${this.getParamKey})`);
-          this.viewArray = this.getSortedParams(config, this.getParamKey);
-        }
-        
-        //console.log('Отображаемые элементы:', this.viewArray);
-        console.groupEnd();
-      } catch (error) {
-        console.error('[MainBody] Ошибка обновления:', error);
-        this.viewArray = [];
-      }
-
-  },
-  
-  getSortedRooms(config, roomKey) {
-    const room = config[roomKey];
-    if (!room?.sensors) return [];
-    
-    return Object.entries(room.sensors).map(([sensorKey, sensorData]) => {
-      //const sensorSet = room.setpoints?.[sensorKey];
-      // Ищем соответствующую уставку
-    let setValue = null;
-    if (room.setpoints) {
-    // Ищем ключ уставки, который соответствует префиксу сенсора
-      const setpointKey = Object.keys(room.setpoints).find(setKey => 
-        sensorKey.includes(setKey) || setKey.includes(sensorKey)
-      );
-      
-      if (setpointKey) {
-        setValue = room.setpoints[setpointKey]?.value != null 
-          ? parseFloat(room.setpoints[setpointKey].value) 
-          : null;
-      }
-    }
-
-      return {         
-        sortType: 'rooms',
-        paramTitle: this.getSensorTitle(sensorKey),
-        paramType: sensorData?.type != null ? sensorData.type : null,
-        paramKey: sensorKey,
-        value: this.getSensorValue(sensorData?.type, sensorData),
-        setValue: setValue,
-        unit: this.getUnit(sensorKey),
-        timeDiff: this.getTimeDiff(sensorData.lastUpdate),
-        roomTitle: room.title,
-        roomId: room.id,
-        roomKey
-      };
-    });
-  },
-  
-  getSortedParams(config, paramPrefix) {
-    // Получаем все ключи сенсоров, которые начинаются с этого префикса
-    const sensors = [];
-    
-    Object.entries(config).forEach(([roomKey, room]) => {
-      if (!room.sensors) return;
-      
-      Object.entries(room.sensors).forEach(([sensorKey, sensorData]) => {
-        // Проверяем, что ключ сенсора начинается с нужного префикса
-        if (sensorKey.startsWith(paramPrefix)) {
-          //const sensorSet = room.setpoints?.[sensorKey];
-                  let setValue = null;
-        if (room.setpoints) {
-          // Ищем ключ уставки, который соответствует префиксу сенсора
-          const setpointKey = Object.keys(room.setpoints).find(setKey => 
-            sensorKey.includes(setKey) || setKey.includes(sensorKey)
-          );
-          
-          if (setpointKey) {
-            setValue = room.setpoints[setpointKey]?.value != null 
-              ? parseFloat(room.setpoints[setpointKey].value) 
-              : null;
+    async updateView() {
+        try {
+          //console.groupCollapsed('[MainBody] Обновление отображения');
+          const config = this.getConfig(this.dID);
+          if (!config) {
+            console.warn('Конфигурация не доступна');
+            this.viewArray = [];
+            return;
           }
-        }
+
+          if (this.currentSortType === 'rooms') {
+            //console.log(`Режим: комнаты (${this.getRoomKey})`);
+            this.viewArray = this.getSortedRooms(config, this.getRoomKey);
+          } else {
+            //console.log(`Режим: параметры (${this.getParamKey})`);
+            this.viewArray = this.getSortedParams(config, this.getParamKey);
+          }
           
-          sensors.push({
-            sortType: 'params',
-            paramTitle: this.getSensorTitle(paramPrefix), // Название типа параметра
-            paramType: sensorData?.type,
-            paramKey: sensorKey, // Полный ключ сенсора
-            value: this.getSensorValue(sensorData?.type, sensorData),
-            setValue: setValue,
-            unit: this.getUnit(paramPrefix),
-            timeDiff: this.getTimeDiff(sensorData.lastUpdate),
-            roomTitle: room.title,
-            roomId: room.id,
-            roomKey
-          });
+          //console.log('Отображаемые элементы:', this.viewArray);
+          console.groupEnd();
+        } catch (error) {
+          console.error('[MainBody] Ошибка обновления:', error);
+          this.viewArray = [];
         }
+
+    },
+    
+    getSortedRooms(config, roomKey) {
+      const room = config[roomKey];
+      if (!room?.sensors) return [];
+      
+      return Object.entries(room.sensors).map(([sensorKey, sensorData]) => {
+        //const sensorSet = room.setpoints?.[sensorKey];
+        // Ищем соответствующую уставку
+      let setValue = null;
+      if (room.setpoints) {
+      // Ищем ключ уставки, который соответствует префиксу сенсора
+        const setpointKey = Object.keys(room.setpoints).find(setKey => 
+          sensorKey.includes(setKey) || setKey.includes(sensorKey)
+        );
+        
+        if (setpointKey) {
+          setValue = room.setpoints[setpointKey]?.value != null 
+            ? parseFloat(room.setpoints[setpointKey].value) 
+            : null;
+        }
+      }
+
+        return {         
+          sortType: 'rooms',
+          paramTitle: this.getSensorTitle(sensorKey),
+          paramType: sensorData?.type != null ? sensorData.type : null,
+          paramKey: sensorKey,
+          value: this.getSensorValue(sensorData?.type, sensorData),
+          setValue: setValue,
+          unit: this.getUnit(sensorKey),
+          timeDiff: this.getTimeDiff(sensorData.lastUpdate),
+          roomTitle: room.title,
+          roomId: room.id,
+          roomKey
+        };
       });
-    });
-    //console.log('[MainBody] - getSortedParams - Получен список сенсоров:', sensors);
-    return sensors;
-  },
+    },
+    
+    getSortedParams(config, paramPrefix) {
+      // Получаем все ключи сенсоров, которые начинаются с этого префикса
+      const sensors = [];
+      
+      Object.entries(config).forEach(([roomKey, room]) => {
+        if (!room.sensors) return;
+        
+        Object.entries(room.sensors).forEach(([sensorKey, sensorData]) => {
+          // Проверяем, что ключ сенсора начинается с нужного префикса
+          if (sensorKey.startsWith(paramPrefix)) {
+            //const sensorSet = room.setpoints?.[sensorKey];
+                    let setValue = null;
+          if (room.setpoints) {
+            // Ищем ключ уставки, который соответствует префиксу сенсора
+            const setpointKey = Object.keys(room.setpoints).find(setKey => 
+              sensorKey.includes(setKey) || setKey.includes(sensorKey)
+            );
+            
+            if (setpointKey) {
+              setValue = room.setpoints[setpointKey]?.value != null 
+                ? parseFloat(room.setpoints[setpointKey].value) 
+                : null;
+            }
+          }
+            
+            sensors.push({
+              sortType: 'params',
+              paramTitle: this.getSensorTitle(paramPrefix), // Название типа параметра
+              paramType: sensorData?.type,
+              paramKey: sensorKey, // Полный ключ сенсора
+              value: this.getSensorValue(sensorData?.type, sensorData),
+              setValue: setValue,
+              unit: this.getUnit(paramPrefix),
+              timeDiff: this.getTimeDiff(sensorData.lastUpdate),
+              roomTitle: room.title,
+              roomId: room.id,
+              roomKey
+            });
+          }
+        });
+      });
+      //console.log('[MainBody] - getSortedParams - Получен список сенсоров:', sensors);
+      return sensors;
+    },
 
 
     getTimeDiff(timestamp) {
@@ -314,7 +321,45 @@ watch: {
       } catch (e) {
         return 'Неизвестно';
       }
-    }
+    },
+
+    handleTouchStart(event) {
+      //console.log('[MainBody] - handleTouchStart ', event.touches[0].clientX, event.touches[0].clientY);
+      this.touchStartX = event.touches[0].clientX;
+      this.isSwiping = true;
+    },
+    handleTouchMove(event) {
+      if (!this.isSwiping) return;
+      
+      const touchX = event.touches[0].clientX;
+      const diffX = touchX - this.touchStartX;
+      console.log('[MainBody] - handleTouchMove Смещение по Х', diffX);
+    },
+
+    handleTouchEnd(event) {
+
+      if (!this.isSwiping ) return;
+      this.isSwiping = false;
+      
+      const touchEndX = event.changedTouches[0].clientX;
+      const diffX = touchEndX - this.touchStartX;
+      console.log('[MainBody] - handleTouchEnd Смещение по Х', diffX);
+      // Определяем минимальную длину свайпа для активации
+      
+      if (Math.abs(diffX) > this.swipeThreshold) {
+        if (diffX > 0) {
+          console.log('Свайп вправо');
+          // Свайп вправо - назад
+          this.$emit('swipe-back', '');
+        } else {
+          console.log('Свайп влево');
+          // Свайп влево - вперед
+          this.$emit('swipe-forward', '');
+        }
+      }
+    },
+
+
   }
 }
 </script>

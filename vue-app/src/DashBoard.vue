@@ -49,9 +49,10 @@
       </div>
     </header>
 
-  <div class="body"
+  <!-- <div class="body"
     @touchstart.passive="handleTouchStart" 
-    @touchend.passive="handleTouchEnd">
+    @touchend.passive="handleTouchEnd"> -->
+  <div class="body" >
 
     <div class="app-place_body" v-if="!selectedComponent" id="app_place">
       <AppPlace class="app-place_module" title="Комнаты" @select="selectComponent('rooms')" />
@@ -60,13 +61,15 @@
       <AppPlace class="app-place_module" title="Настройки" @select="selectComponent('settings')" />
     </div>
     
-    <div v-else id="app_component">
+    <div v-else id="app_component" style="height: 100%;">
       <component
         :is="selectedComponent" 
         :propsTitle="propsTitle"
         :changeSorting="changeSorting" 
         @eventsMainBody="handleMainBodyEvent"
         @sorting-changed="selectComponent"
+        @swipe-forward="sortingForvard"
+        @swipe-back="sortingBack"
         ref="mainBody" 
       />
     </div>
@@ -231,6 +234,7 @@ watch: {
       // }
     },
     async selectComponent(component) {
+      //console.log('[DashBoard] - selectComponent - Выбран компонент - ', component);
       // Устанавливаем тип сортировки
     await this.$store.dispatch('sortParams/setSortType', component);
     
