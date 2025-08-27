@@ -37,6 +37,9 @@ export default {
     getParamTitle: state => state.paramTitle,
     getSensorTitle: () => (key) => getSensorTitle(key),
     getUnit: () => (key) => getUnit(key),
+    limHigh: state => state.limHigh,
+    limLow: state => state.limLow,
+    limStep: state => state.limStep,
   },
   state: () => ({
     sortType: 'rooms',
@@ -45,6 +48,9 @@ export default {
     paramKey: localStorage.getItem('paramKey') || null, // ключ параметра по которому выполняется сортировка
     roomTitle: 'Не выбрано',
     paramTitle: 'Не выбрано',
+    limHigh: 32,
+    limLow: 10,
+    limStep: 1,
   }),
 
   mutations: {
@@ -89,7 +95,14 @@ export default {
         }
       });
       console.log('[sortParams] - UPDATE_STATE Выполнено обновление состояния');
-    }
+    },
+    UPDATE_LIMITS(state, limits) {
+      console.log('[sortParams] - UPDATE_LIMITS ', limits);
+      if (limits.limHigh) state.limHigh = limits.limHigh;
+      if (limits.limLow) state.limLow = limits.limLow;
+      if (limits.limStep) state.limStep = limits.limStep;
+      console.log('[sortParams] - UPDATE_LIMITS Выполнено обновление состояния лимитов');
+    },
   },
   
   actions: {
@@ -139,12 +152,71 @@ export default {
         roomTitle: room.title
       });
     },
-    
+   
     setParam({ commit }, param) {
       commit('UPDATE_STATE', {
         paramKey: param.key,
         paramTitle: param.title
       });
+    },
+    // setLimits({rootGetters, commit}, param) {
+    //   console.log('[sortParams] - setLimits - Параметр -', param);
+    //   // Получаем данные лимитов из конфига
+    //   const dID = rootGetters['dID'];
+    //   const config = rootGetters['config/getConfig'](dID);
+    //   let limits = config?.init?.limits?.[param] || config?.init?.limits?.Default;
+    //   if (!limits) {
+    //     console.log('[sortParams] - setLimits - Не удалось получить лимиты - Устанавливаем по умолчанию');
+    //     limits = {
+    //       low: 10,
+    //       high: 32,
+    //       step: 0.5
+    //     };
+    //   }
+    //   console.log('[sortParams] - setLimits Получены лимиты', limits);
+    //   commit('UPDATE_LIMITS', {
+    //     limHigh: limits.high,
+    //     limLow: limits.low,
+    //     limStep: limits.step
+    //   });
+    // },
+    setLimits({ rootGetters, commit, dispatch }, param) {
+      console.log('[sortParams] - setLimits - Параметр -', param);
+      
+      // Используем clearKey из модуля config для очистки параметра
+      dispatch('config/clearKey', { key: param }, { root: true })
+        .then(cleanedKey => {
+          console.log('[sortParams] - setLimits - Очищенный параметр -', cleanedKey);
+          
+          // Получаем данные лимитов из конфига
+          const dID = rootGetters['dID'];
+          const config = rootGetters['config/getConfig'](dID);
+          let limits = config?.init?.limits?.[cleanedKey] || config?.init?.limits?.Default;
+          
+          if (!limits) {
+            console.log('[sortParams] - setLimits - Не удалось получить лимиты - Устанавливаем по умолчанию');
+            limits = {
+              low: 10,
+              high: 32,
+              step: 0.5
+            };
+          }
+          console.log('[sortParams] - setLimits Получены лимиты', limits);
+          commit('UPDATE_LIMITS', {
+            limHigh: limits.high,
+            limLow: limits.low,
+            limStep: limits.step
+          });
+        })
+        .catch(error => {
+          console.error('[sortParams] - setLimits - Ошибка при очистке параметра:', error);
+          // В случае ошибки используем значения по умолчанию
+          commit('UPDATE_LIMITS', {
+            limHigh: 32,
+            limLow: 10,
+            limStep: 1
+          });
+        });
     },
   switchToPrevRoom({ dispatch, state, rootGetters }) {
     console.log('[sortParams] - switchToPrevRoom - Предыдущая комната');

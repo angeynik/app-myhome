@@ -78,9 +78,6 @@
     <MainSetpoint
       v-if="showFooterSetpoint"
       :setPoint="setpoint" 
-      :highLimit="limHigh" 
-      :lowLimit="limLow"
-      :step="limStep"
       @eventsMainSetpoint="handleSetpointEvent"
     />
   </footer>
@@ -188,7 +185,9 @@ watch: {
       'switchToPrevRoom', 
       'switchToNextRoom', 
       'switchToPrevParam', 
-      'switchToNextParam']),
+      'switchToNextParam',
+      'setLimits'
+    ]),
     ...mapActions('config', ['initialize']),
     
     async initApp() {
@@ -284,18 +283,21 @@ watch: {
 
     // Работа с Setpoint
     handleMainBodyEvent(event) {
-      //console.log('[DashBoard] handleMainBodyEvent received:', event.action);
+      console.log('[DashBoard] - handleMainBodyEvent received:', event);
       
       if (event.action === 'show') {
         this.selectedItemData = event.data;
         this.setpoint = event.data.setValue;
         this.showSetpoint = true;
+        this.setLimits(event.data.paramKey);
       } 
       else if (event.action === 'hide') {
-
         this.showSetpoint = false;
         this.selectedItemData = null;
         this.setpoint = null;
+        this.limHigh = null;
+        this.limLow = null;
+        this.limStep = null;
       }
     },
 

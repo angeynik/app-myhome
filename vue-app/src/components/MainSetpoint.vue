@@ -139,15 +139,16 @@
 
     </div>
     <div class="setpointLimits">
-      <h4> {{ lowLimit }} </h4>
-      <h4> {{ highLimit }} </h4>
+      <h4> {{ limLow }} </h4>
+      <h4> {{ limHigh }} </h4>
     </div>
   
   
     </div>
   </template>
-  
+ 
   <script>
+  import { mapGetters } from 'vuex';
   export default {
     data() {
       return {
@@ -163,15 +164,23 @@
         //console.log('[MainSetpoint] - setPoint - Обновили newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
       },
     },
+    computed: {
+      ...mapGetters('sortParams', [
+        'limHigh',
+        'limLow', 
+        'limStep'
+      ]),
+    },
     created() {
       this.debouncedCalculateSetpoint = this.debounce(this.calculateSetpoint, 16);
       //this.debouncedUpdatePermitions = this.debounce(this.sendEmitMessage, 2000);
       },
+      
     props: {   // Переменные полученные в компонент
       setPoint: Number,
-      highLimit: Number,
-      lowLimit: Number,
-      step: Number,
+      // highLimit: Number,
+      // lowLimit: Number,
+      // step: Number,
     },
       methods: {
     sendEmitMessage(event, name, message) {
@@ -210,8 +219,8 @@
         if (deltaX < 8 && deltaX > - 8) {
           console.log('Недостаточное смещение контролла');
         } else {
-          // console.log('Достаточное смещение контролла. Вызываем функцию calculateSetpoint. Смещение - ', deltaX, ' Шаг - ', this.step, ' Минимум - ', this.lowLimit, ' Максимум - ', this.highLimit);
-          this.debouncedCalculateSetpoint(deltaX, this.step, this.lowLimit, this.highLimit);
+          // console.log('Достаточное смещение контролла. Вызываем функцию calculateSetpoint. Смещение - ', deltaX, ' Шаг - ', this.limStep, ' Минимум - ', this.lowLimit, ' Максимум - ', this.highLimit);
+          this.debouncedCalculateSetpoint(deltaX, this.limStep, this.limLow, this.limHigh);
         }
     },
     calculateSetpoint(value, step, min, max) {
@@ -269,7 +278,7 @@
     },
     clickChangeSetpoint(value) {
       //console.log('[MainSetpoint] - clickChangeSetpoint value:', value);
-      this.calculateSetpoint(value, this.step, this.lowLimit, this.highLimit);
+      this.calculateSetpoint(value, this.limStep, this.limLow, this.limHigh);
       //this.debouncedUpdatePermitions('updatePermission', 'permission', true);
     },
 

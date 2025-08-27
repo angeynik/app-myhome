@@ -156,7 +156,7 @@ watch: {
           //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
           }
     },
-    
+   
     toggleSorting(item) {
       if (this.currentSortType === 'rooms') {
         this.SET_SORT_TYPE('params');
