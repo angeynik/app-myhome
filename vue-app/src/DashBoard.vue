@@ -66,6 +66,7 @@
         :propsTitle="propsTitle"
         :changeSorting="changeSorting" 
         @eventsMainBody="handleMainBodyEvent"
+        @sorting-changed="selectComponent"
         ref="mainBody" 
       />
     </div>
