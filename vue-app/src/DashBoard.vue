@@ -18,7 +18,7 @@
           <use href="#arrowLeft"></use>
         </svg>
         <div style="display: flex; justify-content: center; width: 86%;">
-          <MainHeader :title="headerTitle" :mobile="isMobile" />
+          <MainHeader :title="headerTitle" :mobile="getMobile" />
         </div>
         
         <svg class="header_arrow" v-show="showHeaderArrow" @click="sortingForvard">
@@ -106,20 +106,16 @@ export default {
 
   data() { 
     return {
-      isMobile: false,
+      // isMobile: false,
       showHeaderArrow: false,
       selectedComponent: null,
       showSetpoint: false,
-      setpoint: 20,
-      limHigh: 30,
-      limLow: 10,
-      limStep: 1,
       setpointUpdateTimer: null,
     }; 
   },
   async created() {
     await this.initApp();
-    await this.detectDevice();
+    // await this.detectDevice();
   },
   computed: {
     ...mapGetters(['level', 'dID']),
@@ -132,6 +128,7 @@ export default {
       'getParamTitle',
       'getSensorTitle',
     ]),
+       ...mapGetters('config', ['getMobile', 'getDeviceType']),
     userLevel() {
       return this.level || 0;
     },
@@ -220,7 +217,7 @@ watch: {
       if (!config) return;
 
       this.selectedComponent = config.component;
-      this.showHeaderArrow = ['DashboardRooms', 'DashboardParams'].includes(routeName) && !this.isMobile;
+      this.showHeaderArrow = ['DashboardRooms', 'DashboardParams'].includes(routeName) && !this.getMobile;
 
       if (config.sortType) {
         this.$store.commit('sortParams/SET_SORT_TYPE', config.sortType);
@@ -254,10 +251,10 @@ watch: {
       this.showHeaderArrow = false;
     },
 
-    detectDevice() {
-      this.isMobile = /Mobi|Android/i.test(navigator.userAgent);
-      console.log('[DashBoard] - detectDevice - Работаем с мобильным устройством - ', this.isMobile);
-    },
+    // detectDevice() {
+    //   this.isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    //   console.log('[DashBoard] - detectDevice - Работаем с мобильным устройством - ', this.isMobile);
+    // },
     sortingBack() {
       //console.groupCollapsed('[DashBoard] - sortingBack - Переключение на предыдущий элемент');
       if (this.currentSortType === 'rooms') {

@@ -7,7 +7,9 @@ export default {
     allRooms: [],
     allParams: [],
     loading: false,
-    error: null
+    error: null,
+    mobile: false,
+    deviceType: 'desktop' // 'desktop', 'tablet', 'phone'
   }),
  
   mutations: {
@@ -44,11 +46,18 @@ export default {
     },
     SET_ERROR(state, error) {
       state.error = error;
-    }
+    },
+    SET_MOBILE(state, value) {
+      state.mobile = value;
+    },
+     SET_DEVICE_TYPE(state, deviceType) {
+      state.deviceType = deviceType;
+    },
   },
   
   actions: {
     async initialize({ dispatch, rootGetters, state }) {
+      await dispatch('detectDevice'); 
       //console.log('[config] - initialize - Начинаем Инициализацию конфига');
       const checkRoomKey = rootGetters['roomKey'];
       const checkParamsKey = rootGetters['paramKey'];
@@ -81,7 +90,24 @@ export default {
       console.log(`[config] - clearKey - key: ${clearKey}`);
       return clearKey;
     },
+    detectDevice({commit}) {
+      const mobile = /Mobi|Android/i.test(navigator.userAgent);
+      console.log('[config] - detectDevice - Работаем с мобильным устройством - ', mobile);
+      commit('SET_MOBILE', mobile);
 
+      let deviceType = 'desktop';
+      if (mobile) {
+        // Проверяем на планшет
+        if (navigator.userAgent.match(/Tablet|iPad/i) || 
+            (window.innerWidth >= 1024 && window.innerHeight >= 900)) {
+          deviceType = 'tablet';
+        } else {
+          deviceType = 'phone';
+        }
+      }
+      commit('SET_DEVICE_TYPE', deviceType);
+      console.log('[config] - initialize - Тип устройства - ', deviceType);
+    },
 
     async checkConfigInState({ commit, dispatch, rootGetters, state }) {
       commit('SET_LOADING', true);
@@ -224,69 +250,6 @@ export default {
       return await dispatch('requestConfig', dID);
 
     },
-    // async ensureSortingKeys({ state, dispatch, rootGetters }) {
-    //   console.log('[config] - ensureSortingKeys - Проверяем наличие ключей сортировки ');
-    //   const room_Key = rootGetters['roomKey'] ?? localStorage.getItem('roomKey');
-    //   if (!room_Key) {
-    //     if (state.allRooms.length > 0) {
-    //       const roomKey = state.allRooms[0];
-    //       await dispatch('sortParams/updateRoomsKey', roomKey, { root: true });
-    //     }
-    //   }
-    //   const param_Key = rootGetters['paramKey'] ?? localStorage.getItem('paramKey');
-    //   if (!param_Key) {
-    //     if (state.allRooms.length > 0) {
-    //       const paramKey = state.allParams[0];
-    //       await dispatch('sortParams/updateParamsKey', paramKey, { root: true });
-    //     }
-    //   }
-    //   await dispatch('sortParams/updateRoomsKey', room_Key, { root: true });
-    //   await dispatch('sortParams/updateParamsKey', param_Key, { root: true });
-
-    //   //let roomKey = localStorage.getItem('roomKey');
-    //   //Проверяем наличие roomKey и paramKey в localStorage
-
-    //   // Обработка комнат
-    //   //let roomKey = JSON.parse(localStorage.getItem('roomKey'));
-    // //   let roomKey = localStorage.getItem('roomKey');
-    // //   console.log('[config] - ensureSortingKeys - roomKey из localStorage: ', roomKey);
-
-    // // if (roomKey === null || roomKey === 'null') {
-    // //   if (state.allRooms.length > 0) {
-    // //     roomKey = state.allRooms[0];
-    // //     //localStorage.setItem('roomKey', JSON.stringify(roomKey));
-    // //     localStorage.setItem('roomKey', roomKey);
-    // //     console.log('[config] - ensureSortingKeys - Устанавливаем первую комнату:', roomKey);
-    // //   } else {
-    // //     console.warn('[config] - ensureSortingKeys - Нет доступных комнат');
-    // //     roomKey = null;
-    // //   }
-    // // }
-    // // if (roomKey !== null && roomKey !== 'null') {
-    // //   await dispatch('sortParams/updateRoomsKey', roomKey, { root: true });
-    // // }
-      
-    // // // Обработка параметров
-    // // //let paramKey = JSON.parse(localStorage.getItem('paramKey'));
-    // // let paramKey = localStorage.getItem('paramKey');
-    // // console.log('[config] - ensureSortingKeys - paramKey из localStorage:', paramKey);
-    
-    // // if (paramKey === null || paramKey === 'null') {
-    // //   if (state.allParams.length > 0) {
-    // //     paramKey = state.allParams[0];
-    // //     //localStorage.setItem('paramKey', JSON.stringify(paramKey));
-    // //     localStorage.setItem('paramKey', paramKey);
-    // //     console.log('[config] - ensureSortingKeys - Устанавливаем первый параметр:', paramKey);
-    // //   } else {
-    // //     console.warn('[config] - ensureSortingKeys - Нет доступных параметров');
-    // //     paramKey = null;
-    // //   }
-    // // }
-    
-    // // if (paramKey !== null && paramKey !== 'null') {
-    // //   await dispatch('sortParams/updateParamsKey', paramKey, { root: true });
-    // // }
-    // },
     async ensureSortingKeys({ state, dispatch, rootGetters }) {
       console.log('[config] - ensureSortingKeys - Проверяем наличие ключей сортировки');
       
@@ -315,76 +278,6 @@ export default {
         await dispatch('sortParams/updateParamsKey', paramKey, { root: true });
       }
     },
-      // async updateSetpoint({ commit, state, rootGetters}, { roomKey, paramKey, value }) {
-      //   console.log('[config] - updateSetpoint - Обновляем уставку', roomKey, paramKey, value);
-      //   // return new Promise((resolve) => {
-      //   //   // Обновляем значение уставки в состоянии
-      //   //   const newConfig = JSON.parse(JSON.stringify(state.config));
-      //   //   if (newConfig[roomKey] && newConfig[roomKey].setpoints) {
-      //   //     newConfig[roomKey].setpoints[paramKey] = {
-      //   //       ...newConfig[roomKey].setpoints[paramKey],
-      //   //       value: value
-      //   //     };
-            
-      //   //     commit('SET_CONFIG', newConfig);
-      //   //     console.log('Уставка обновлена в хранилище');
-      //   //   }
-      //   //   resolve();
-      //   // });
-
-      //       try {
-      //         const dID = rootGetters.dID;
-      //         if (!dID) {
-      //           throw new Error('dID не определен');
-      //         }
-              
-      //         // Получаем текущий конфиг
-      //         const config = JSON.parse(JSON.stringify(state.config));
-      //         console.log('[Config] - updateSetpoint - config', config);
-             
-      //         if (!config[roomKey] || !config[roomKey].setpoints) {
-      //           throw new Error(`Комната ${roomKey} или её уставки не найдены`);
-      //         }
-              
-      //         // Ищем точный ключ уставки
-      //         const baseParamKey = paramKey.replace(/\d+$/, '');
-      //         let setpointKey = Object.keys(config[roomKey].setpoints).find(
-      //           key => key === baseParamKey
-      //         );
-             
-      //        if (!setpointKey) {
-      //           setpointKey = baseParamKey;
-      //           if (!config[roomKey].setpoints) {
-      //             config[roomKey].setpoints = {};
-      //           }
-      //           config[roomKey].setpoints[setpointKey] = { value: 0 };
-      //         }
-              
-      //         // Обновляем значение
-      //        config[roomKey].setpoints[setpointKey].value = parseFloat(value);
-              
-      //         // Сохраняем обновленный конфиг
-      //         commit('SET_CONFIG', { name: dID, config });
-              
-      //         // Отправляем на сервер
-      //         await this.dispatch('websocket/send', {
-      //           type: 'post',
-      //           request: 'setpoint',
-      //           name: dID,
-      //           payload: {
-      //             room: roomKey,
-      //             param: setpointKey,
-      //             value: value
-      //           }
-      //         }, { root: true });
-              
-      //         console.log('Уставка обновлена и отправлена на сервер');
-      //       } catch (error) {
-      //         console.error('Ошибка обновления уставки:', error);
-      //         throw error;
-      //       }
-
-      // },
 
       async updateSetpointLocal ({ commit, state, rootGetters, dispatch }, { roomKey, paramKey, value }) {
         
@@ -441,6 +334,7 @@ export default {
     getCommonConfig: (state) => (dID) => state.configs[dID] || null,
     allRooms: state => state.allRooms,
     allParams: state => state.allParams,
-
+    getMobile: state => state.mobile,
+    getDeviceType: state => state.deviceType
   }
 };
