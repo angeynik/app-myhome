@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import SmartHome from '@/components/SmartHome.vue';
+import SmartHome from '@/SmartHome.vue';
 
 describe('SmartHome.vue', () => {
   it('matches the snapshot', () => {

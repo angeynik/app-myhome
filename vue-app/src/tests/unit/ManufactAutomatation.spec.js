@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import ManufactAutomatation from '@/components/ManufactAutomatation.vue';
+import ManufactAutomatation from '@/ManufactAutomatation.vue';
 
 describe('ManufactAutomatation.vue', () => {
   it('matches the snapshot', () => {

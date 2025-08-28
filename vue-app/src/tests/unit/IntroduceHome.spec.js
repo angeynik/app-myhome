@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import IntroduceHome from '@/components/IntroduceHome.vue';
+import IntroduceHome from '@/IntroduceHome.vue';
 
 describe('IntroduceHome.vue', () => {
   it('matches the snapshot', () => {

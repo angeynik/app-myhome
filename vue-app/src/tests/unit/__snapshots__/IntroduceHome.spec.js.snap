@@ -1,0 +1,25 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`IntroduceHome.vue matches the snapshot 1`] = `
+"<div>
+  <nav class="header-bottom">
+    <router-link-stub to="/login"></router-link-stub> | <router-link-stub to="/dashboard"></router-link-stub> | <router-link-stub to="/smart-home"></router-link-stub> | <router-link-stub to="/manufact-automatation"></router-link-stub> |
+    <!-- Profile (доступна для level 2 и 3) -->
+    <!--v-if-->
+    <!-- Users (доступна для level 3) -->
+    <!--v-if-->
+  </nav>
+  <p style="width: 100%; height: 1px;"></p>
+  <div style="align-items: center;">
+    <h1>Добро пожаловать!</h1>
+    <!-- <h2 style="width: 80%; align-content: flex-start;">
+      Наша компания предлагает решения в сфере управления и автоматизации как для вашего дома, так и для вашего бизнеса.
+    </h2>
+    <h2 style="width: 80%; align-content: flex-end;">
+      Вы можете выбрать один из разделов и узнать больше о типовых решениях или заказать индивидуальную разработку.
+    </h2> -->
+    <p>Выберите раздел:</p>
+    <div class="introduce-place"><button class="introduce-button color_dark dash"><span class="button-text">Dashboard</span></button><button class="introduce-button color-light home"><span class="button-text">Smart Home</span></button><button class="introduce-button color-light manuft"><span class="button-text">Manufact Automation</span></button></div>
+  </div>
+</div>"
+`;

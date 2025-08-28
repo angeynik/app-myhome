@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import Dashboard from '@/components/Dashboard.vue';
+import Dashboard from '@/DashBoard.vue';
 
 describe('Dashboard.vue', () => {
   it('matches the snapshot', () => {
