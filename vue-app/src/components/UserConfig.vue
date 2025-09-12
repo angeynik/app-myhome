@@ -168,9 +168,15 @@ export default {
           });
           alert('✅ Пользователь успешно создан');
           successMessage.value = 'Пользователь успешно создан';
-          isUsersLoading.value = false;
-          isDataLoading.value = false;
+          // isUsersLoading.value = false;
+          // isDataLoading.value = false;
           //fetchUsers();
+                    newUser.value = {
+            username: '',
+            password: '',
+            dataSource: '',
+            permissionLevel: '1',
+          };
         } catch (error) {
           console.error('Ошибка:', error);
           successMessage.value = 'Ошибка при создании пользователя';
@@ -225,46 +231,6 @@ export default {
   }
 };
 
-  //   const fetchUsers = async () => {
-  // if (isUsersLoaded) return;
-  // console.log('Список пользователей не загружен - ', isUsersLoaded);
-  // try {
-  //   console.log ('Формируем запрос на сервер', {
-  //     type: 'get',
-  //     request: 'fetchUsers',
-  //     name: dID.value,
-  //   })
-  //   const response = await store.dispatch('websocket/send', {
-  //     type: 'get',
-  //     request: 'fetchUsers',
-  //     name: dID.value,
-  //   });
-
-  //   console.log('Ответ от сервера (fetchUsers):', response);
-
-  //   // Преобразуем данные в нужный формат
-  //   if (Array.isArray(response.payload.users)) {
-  //     usersDB.value = response.payload.users.map(user => ({
-  //       id: user.id,
-  //       username: user.username,
-  //     }));
-  //     console.log('Обновленный usersDB.value:', usersDB.value);
-  //       if (!isDataSourcesLoaded) {
-  //         // console.log('fetchDataSources()');
-  //         fetchDataSources();
-  //       }
-  //   } else {
-  //     console.error('Ошибка: response.users не является массивом.', response.users);
-  //   }
-  //   isUsersLoaded = true;
-  //   console.log('Список пользователей (usersDB):', usersDB.value); // Лог для проверки
-  //   if (isUsersLoaded) return;
-  // } catch (error) {
-  //   console.error('Ошибка:', error);
-  //   successMessage.value = 'Ошибка при загрузке списка пользователей';
-  // }
-  //   };
-
   const fetchUsers = async () => {
       try {
         const response = await store.dispatch('websocket/send', {
@@ -295,30 +261,6 @@ export default {
         successMessage.value = 'Ошибка при загрузке списка пользователей';
       }
     };
-// const fetchDataSources = async () => {
-//   console.log('isDataSourcesLoaded - ', isDataSourcesLoaded);
-//   if (isDataSourcesLoaded) return;
-
-//   try {
-//     const response = await store.dispatch('websocket/send', {
-//       type: 'get',
-//       request: 'fetchDataSources',
-//       name: dID.value,
-//     });
-
-//     console.log('Ответ от сервера (fetchDataSources):', response);
-
-//     // Преобразуем данные в нужный формат
-//     dataSources.value = response.payload.sources.map(dataSource => ({
-//       id: dataSource.id,
-//       did: dataSource.did, // Используем did вместо name
-//     }));
-//     isDataSourcesLoaded = true;
-//   } catch (error) {
-//     console.error('Ошибка:', error);
-//     successMessage.value = 'Ошибка при загрузке списка источников данных';
-//   }
-// };
 
 const fetchDataSources = async () => {
       try {

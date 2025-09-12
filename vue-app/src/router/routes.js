@@ -90,33 +90,35 @@ const routes = [
 ];
 export const routesArray = routes;
 
+export const navigationGuard = (to, from, next) => {
+  const isAuthenticated = !!store.getters.isAuthenticated;
+  const userLevel = store.getters.level || 0;
+
+  if (to.matched.some(record => record.meta.public)) {
+    return next();
+  }
+  
+  // Находим первую запись с requiresAuth
+  const authRecord = to.matched.find(record => record.meta.requiresAuth);
+  if (authRecord) {
+    if (!isAuthenticated) {
+      localStorage.setItem('redirectPath', to.fullPath);
+      next('/login');
+    } else if (authRecord.meta.requiredLevel && userLevel < authRecord.meta.requiredLevel) {
+      next('/access-denied');
+    } else {
+      next();
+    }
+  } else {
+    next();
+  }
+};
+
 const router = createRouter({
   history: createWebHistory(),
   routes,
 });
 
-router.beforeEach((to, from, next) => {
-  const isAuthenticated = !!store.getters.isAuthenticated; // Используем геттер из Vuex
-  const userLevel = store.getters.level || 0; // Получаем уровень доступа пользователя из Vuex
-
-    // Пропускаем публичные маршруты
-    if (to.matched.some(record => record.meta.public)) {
-      return next();
-    }
-  if (to.matched.some((record) => record.meta.requiresAuth)) {
-    if (!isAuthenticated) {
-      // Сохраняем запрашиваемый маршрут для перенаправления после входа
-      localStorage.setItem('redirectPath', to.fullPath);
-      next('/login'); // Перенаправляем на страницу логина
-    } else if (to.meta.requiredLevel && userLevel < to.meta.requiredLevel) {
-      // Если у пользователя недостаточно прав
-      next('/access-denied'); // Перенаправляем на страницу с ошибкой доступа
-    } else {
-      next(); // Продолжаем навигацию
-    }
-  } else {
-    next(); // Продолжаем навигацию
-  }
-});
+router.beforeEach(navigationGuard);
 
 export default router;
