@@ -9,7 +9,7 @@ export default {
   name: 'App',
   data() {
     return {
-      msg: 'Welcome to Your Vue.js App',
+      msg: 'Welcome to Your SmartHome App',
       host: process.env.VUE_APP_HOST,
       port: 9202,
       serverPort: process.env.VUE_APP_SERVER_PORT,

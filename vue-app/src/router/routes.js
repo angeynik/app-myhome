@@ -88,6 +88,7 @@ const routes = [
     redirect: '/', // Перенаправляем на главную страницу
   },
 ];
+export const routesArray = routes;
 
 const router = createRouter({
   history: createWebHistory(),

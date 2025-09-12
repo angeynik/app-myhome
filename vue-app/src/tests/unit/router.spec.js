@@ -1,152 +1,142 @@
-import { mount } from '@vue/test-utils';
-import { createRouter, createWebHistory } from 'vue-router';
-import App from '@/App.vue';
+// src/tests/unit/router.spec.js
+import router from '@/router/routes';
 
-// Импортируем компоненты из корневой директории
-import IntroduceHome from '@/IntroduceHome.vue';
-import DashBoard from '@/DashBoard.vue';
-import SmartHome from '@/SmartHome.vue';
-import ManufactAutomatation from '@/ManufactAutomatation.vue';
-
-// Моки для остальных компонентов
-const Login = { template: '<div>Login</div>' };
-const Profile = { template: '<div>Profile</div>' };
-const Users = { template: '<div>Users</div>' };
-const AccessDenied = { template: '<div>AccessDenied</div>' };
-
-const routes = [
-  { path: '/', component: IntroduceHome, name: 'IntroduceHome' },
-  { path: '/dashboard', component: DashBoard, name: 'DashBoard' },
-  { path: '/smart-home', component: SmartHome, name: 'SmartHome' },
-  { path: '/manufact-automatation', component: ManufactAutomatation, name: 'ManufactAutomatation' },
-  { path: '/login', component: Login, name: 'Login' },
-  { path: '/profile', component: Profile, name: 'Profile' },
-  { path: '/users', component: Users, name: 'Users' },
-  { path: '/access-denied', component: AccessDenied, name: 'AccessDenied' }
-];
-
-describe('Router', () => {
-  let router;
-  
-  beforeEach(async () => {
-    router = createRouter({
-      history: createWebHistory(),
-      routes,
-    });
-  });
-
-  it('navigates to the home page', async () => {
-    router.push('/');
-    await router.isReady();
-    
-    const wrapper = mount(App, {
-      global: {
-        plugins: [router]
-      }
-    });
-    
-    expect(wrapper.text()).toContain('Home');
-  });
-
-  // Добавьте остальные тесты аналогичным образом
+// Мокаем хранилище Vuex
+jest.mock('@/store', () => {
+  const storeMock = {
+    getters: {
+      isAuthenticated: jest.fn(),
+      level: jest.fn()
+    }
+  };
+  return storeMock;
 });
 
-// import { mount } from '@vue/test-utils';
-// import { createRouter, createWebHistory } from 'vue-router';
-// import App from '@/App.vue';
-// import routes from '@/router/routes';
+// Мокаем localStorage
+const localStorageMock = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  clear: jest.fn()
+};
+global.localStorage = localStorageMock;
 
-// const router = createRouter({
-//   history: createWebHistory(),
-//   routes,
-// });
+describe('Router Configuration', () => {
+  beforeEach(() => {
+    localStorageMock.setItem.mockClear();
+  });
 
-// describe('Router', () => {
-//   it('navigates to the home page', async () => {
-//     router.push('/');
-//     await router.isReady();
-//     const wrapper = mount(App, {
-//       global: {
-//         plugins: [router],
-//       },
-//     });
-//     expect(wrapper.findComponent({ name: 'IntroduceHome' }).exists()).toBe(true);
-//   });
+  test('имеет корректные маршруты', () => {
+    const routeNames = router.getRoutes().map(route => route.name).filter(Boolean);
+    expect(routeNames).toEqual(expect.arrayContaining([
+      'Intro',
+      'DashBoard',
+      'SmartHome',
+      'ManufactAutomatation',
+      'Login',
+      'AppProfile',
+      'Users',
+      'AccessDenied'
+    ]));
+  });
 
-//   it('navigates to the dashboard page', async () => {
-//     router.push('/dashboard');
-//     await router.isReady();
-//     const wrapper = mount(App, {
-//       global: {
-//         plugins: [router],
-//       },
-//     });
-//     expect(wrapper.findComponent({ name: 'DashBoard' }).exists()).toBe(true);
-//   });
+  test('корневой маршрут ведет к Intro', () => {
+    const route = router.resolve('/');
+    expect(route.name).toBe('Intro');
+  });
+});
 
-//   it('navigates to the smart home page', async () => {
-//     router.push('/smart-home');
-//     await router.isReady();
-//     const wrapper = mount(App, {
-//       global: {
-//         plugins: [router],
-//       },
-//     });
-//     expect(wrapper.findComponent({ name: 'SmartHome' }).exists()).toBe(true);
-//   });
+describe('Navigation Guards', () => {
+  let storeMock;
 
-//   it('navigates to the manufact automation page', async () => {
-//     router.push('/manufact-automatation');
-//     await router.isReady();
-//     const wrapper = mount(App, {
-//       global: {
-//         plugins: [router],
-//       },
-//     });
-//     expect(wrapper.findComponent({ name: 'ManufactAutomatation' }).exists()).toBe(true);
-//   });
+  beforeEach(() => {
+    localStorageMock.setItem.mockClear();
+    
+    // Получаем мок хранилища
+    storeMock = require('@/store');
+    
+    // Сбрасываем моки
+    storeMock.getters.isAuthenticated.mockReset();
+    storeMock.getters.level.mockReset();
+  });
 
-//   it('navigates to the login page', async () => {
-//     router.push('/login');
-//     await router.isReady();
-//     const wrapper = mount(App, {
-//       global: {
-//         plugins: [router],
-//       },
-//     });
-//     expect(wrapper.findComponent({ name: 'Login' }).exists()).toBe(true);
-//   });
+  describe('Публичные маршруты', () => {
+    test('позволяет доступ к /login без аутентификации', async () => {
+      storeMock.getters.isAuthenticated.mockReturnValue(false);
+      storeMock.getters.level.mockReturnValue(0);
+      
+      const to = {
+        path: '/login',
+        matched: [{ meta: { public: true } }],
+        fullPath: '/login'
+      };
+      const next = jest.fn();
+      
+      await router.beforeEach(to, {}, next);
+      expect(next).toHaveBeenCalledWith();
+    });
+  });
 
-//   it('navigates to the profile page', async () => {
-//     router.push('/profile');
-//     await router.isReady();
-//     const wrapper = mount(App, {
-//       global: {
-//         plugins: [router],
-//       },
-//     });
-//     expect(wrapper.findComponent({ name: 'Profile' }).exists()).toBe(true);
-//   });
+  describe('Защищенные маршруты', () => {
+    test('перенаправляет на /login при отсутствии аутентификации', async () => {
+      storeMock.getters.isAuthenticated.mockReturnValue(false);
+      storeMock.getters.level.mockReturnValue(0);
+      
+      const to = {
+        path: '/dashboard',
+        matched: [{ meta: { requiresAuth: true } }],
+        fullPath: '/dashboard'
+      };
+      const next = jest.fn();
+      
+      await router.beforeEach(to, {}, next);
+      expect(localStorage.setItem).toHaveBeenCalledWith('redirectPath', '/dashboard');
+      expect(next).toHaveBeenCalledWith('/login');
+    });
 
-//   it('navigates to the users page', async () => {
-//     router.push('/users');
-//     await router.isReady();
-//     const wrapper = mount(App, {
-//       global: {
-//         plugins: [router],
-//       },
-//     });
-//     expect(wrapper.findComponent({ name: 'Users' }).exists()).toBe(true);
-//   });
+    test('перенаправляет на /access-denied при недостаточном уровне доступа', async () => {
+      storeMock.getters.isAuthenticated.mockReturnValue(true);
+      storeMock.getters.level.mockReturnValue(1);
+      
+      const to = {
+        path: '/users',
+        matched: [{ meta: { requiresAuth: true, requiredLevel: 3 } }],
+        fullPath: '/users'
+      };
+      const next = jest.fn();
+      
+      await router.beforeEach(to, {}, next);
+      expect(next).toHaveBeenCalledWith('/access-denied');
+    });
 
-//   it('navigates to the access denied page', async () => {
-//     router.push('/access-denied');
-//     await router.isReady();
-//     const wrapper = mount(App, {
-//       global: {
-//         plugins: [router],
-//       },
-//     });
-//     expect(wrapper.findComponent({ name: 'AccessDenied' }).exists()).toBe(true);
-//   });
-// });
+    test('позволяет доступ при достаточном уровне доступа', async () => {
+      storeMock.getters.isAuthenticated.mockReturnValue(true);
+      storeMock.getters.level.mockReturnValue(3);
+      
+      const to = {
+        path: '/users',
+        matched: [{ meta: { requiresAuth: true, requiredLevel: 3 } }],
+        fullPath: '/users'
+      };
+      const next = jest.fn();
+      
+      await router.beforeEach(to, {}, next);
+      expect(next).toHaveBeenCalledWith();
+    });
+  });
+
+  describe('Дочерние маршруты Dashboard', () => {
+    test('имеет дочерние маршруты', () => {
+      const dashboardRoute = router.getRoutes().find(r => r.name === 'DashBoard');
+      expect(dashboardRoute.children).toHaveLength(5);
+      expect(dashboardRoute.children.map(ch => ch.name)).toEqual(
+        expect.arrayContaining([
+          'Dashboad',
+          'DashboardRooms',
+          'DashboardParams',
+          'DashboardCommon',
+          'DashboardSettings'
+        ])
+      );
+    });
+  });
+});
