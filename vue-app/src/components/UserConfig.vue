@@ -239,7 +239,7 @@ export default {
           name: dID.value,
         });
 
-        if (Array.isArray(response.payload.users)) {
+        if (Array.isArray(response?.payload?.users)) {
           usersDB.value = response.payload.users.map(user => ({
             id: user.id,
             username: user.username,
@@ -270,7 +270,7 @@ const fetchDataSources = async () => {
           name: dID.value,
         });
 
-        dataSources.value = response.payload.sources.map(dataSource => ({
+        dataSources.value = response?.payload?.sources.map(dataSource => ({
           id: dataSource.id,
           did: dataSource.did,
         }));
