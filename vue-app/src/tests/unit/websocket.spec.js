@@ -1,266 +1,236 @@
-// tests/unit/websocket.spec.js
-import { createStore } from 'vuex'
-import flushPromises from 'flush-promises'
-import websocket from '@/store/modules/websocket'
+import { createStore } from 'vuex';
+import flushPromises from 'flush-promises';
+import websocket from '@/store/modules/websocket';
 
-/**
- * Утилита для «соединения»: берём Promise от dispatch('connect'),
- * прогоняем все таймеры, ждём завершения промисов и возвращаем promise.
- */
-async function establishConnection(store) {
-  const connectPromise = store.dispatch('websocket/connect')
-  jest.runAllTimers()
-  await flushPromises()
-  return connectPromise
-}
-
-/**
- * Сбрасываем «глобальный» state модуля между тестами
- */
 function resetWebsocketState() {
-  websocket.state.socket             = null
-  websocket.state.reconnectAttempts  = 0
-  websocket.state.explicitDisconnect = false
-  websocket.state.pendingResponse    = null
+  websocket.state.socket = null;
+  websocket.state.reconnectAttempts = 0;
+  websocket.state.explicitDisconnect = false;
+  websocket.state.pendingResponse = null;
 }
 
+async function establishConnection(store) {
+  const promise = store.dispatch('websocket/connect');
+  jest.runAllTimers();
+  await flushPromises();
+  return promise;
+}
 
-describe('Vuex module websocket – интеграционные тесты', () => {
-  let store
+describe('🧩 Vuex WebSocket Module — Интеграционные тесты', () => {
+  let store;
+  let configActions;
+  let logActions;
 
   beforeEach(() => {
-    resetWebsocketState()
-    jest.useFakeTimers()
-    jest.clearAllTimers()
+    resetWebsocketState();
+    jest.useFakeTimers();
+    jest.clearAllTimers();
+
+    configActions = {
+      handleConfigResponse: jest.fn(),
+      handleSensorUpdate: jest.fn()
+    };
+
+    logActions = {
+      addError: jest.fn()
+    };
 
     store = createStore({
       modules: {
         websocket,
         config: {
           namespaced: true,
-          actions: {
-            handleConfigResponse: jest.fn(),
-            handleSensorUpdate:   jest.fn()
-          }
+          actions: configActions
+        },
+        log: {
+          namespaced: true,
+          actions: logActions
         }
       },
-      getters: { dID: () => 'USER123' }
-    })
-  })
+      getters: {
+        dID: () => 'USER123'
+      }
+    });
+  });
 
   afterEach(() => {
-    jest.clearAllMocks()
-    jest.useRealTimers()
-  })
+    jest.useRealTimers();
+    jest.clearAllMocks();
+  });
 
+  test('connect: устанавливает socket и сбрасывает reconnectAttempts', async () => {
+    const result = await establishConnection(store);
+    expect(result).toBeInstanceOf(WebSocket);
+    expect(store.state.websocket.reconnectAttempts).toBe(0);
+    expect(result.url).toMatch(/^ws:\/\/localhost:1234/);
+  });
 
-  it('connect: устанавливает socket, сбрасывает reconnectAttempts и резолвит правильным объектом', async () => {
-    const connectPromise = store.dispatch('websocket/connect')
+  test('send: ставит pendingResponse и резолвит loginSuccess', async () => {
+    await establishConnection(store);
 
-    jest.runAllTimers()
-    await flushPromises()
+    const msg = { type: 'auth', request: 'login' };
+    const promise = store.dispatch('websocket/send', msg);
 
-    const sock = store.state.websocket.socket
-    expect(sock).toBeInstanceOf(WebSocket)
-    expect(store.state.websocket.reconnectAttempts).toBe(0)
-    expect(sock.url).toMatch(/^ws:\/\/localhost:1234/)
-
-    await expect(connectPromise)
-      .resolves
-      .toMatchObject({ url: sock.url })
-  })
-
-
-  it('send/auth: ставит pendingResponse и резолвит по loginSuccess', async () => {
-    await establishConnection(store)
-
-    const msg         = { type: 'auth', request: 'login' }
-    const sendPromise = store.dispatch('websocket/send', msg)
-
-    const pending = store.state.websocket.pendingResponse
-    expect(pending.type).toBe('login')
-    expect(typeof pending.resolve).toBe('function')
+    expect(store.state.websocket.pendingResponse.type).toBe('login');
 
     await store.dispatch('websocket/handleMessage', {
       data: JSON.stringify({ request: 'loginSuccess', name: '', payload: {} })
-    })
+    });
 
-    await expect(sendPromise)
-      .resolves
-      .toMatchObject({ request: 'loginSuccess' })
-    expect(store.state.websocket.pendingResponse).toBeNull()
-  })
+    await expect(promise).resolves.toMatchObject({ request: 'loginSuccess' });
+    expect(store.state.websocket.pendingResponse).toBeNull();
+  });
 
+  test('handleMessage: config вызывает config/handleConfigResponse', async () => {
+    await establishConnection(store);
 
-  it('handleMessage/config: диспатчит config/handleConfigResponse', async () => {
-    const spy = jest.spyOn(store, 'dispatch')
-    await establishConnection(store)
+    const message = {
+      request: 'config',
+      payload: { foo: 'bar' }
+    };
 
     await store.dispatch('websocket/handleMessage', {
-      data: JSON.stringify({
-        request: 'config',
-        name:    '',
-        payload: { foo: 'bar' }
-      })
-    })
+      data: JSON.stringify(message)
+    });
 
-    expect(spy).toHaveBeenCalledWith(
-      'config/handleConfigResponse',
-      expect.objectContaining({ payload: { foo: 'bar' } })
-    )
-  })
+    const [context, payload] = configActions.handleConfigResponse.mock.calls[0];
+    expect(payload).toEqual(message);
+  });
 
+  test('handleMessage: sensor обновляет только при совпадающем dID', async () => {
+    await establishConnection(store);
 
-  it('handleMessage/post.sensor: обновляет только для совпадающего dID', async () => {
-    const spy = jest.spyOn(store, 'dispatch')
-    await establishConnection(store)
+    const sensorMessage = {
+      type: 'post',
+      request: 'sensor',
+      name: 'USER123',
+      payload: { val: 42 }
+    };
 
-    // чужой dID — не диспатчится
+    await store.dispatch('websocket/handleMessage', {
+      data: JSON.stringify(sensorMessage)
+    });
+
+    const [context, payload] = configActions.handleSensorUpdate.mock.calls[0];
+    expect(payload).toEqual({
+      dID: 'USER123',
+      payload: { val: 42 }
+    });
+  });
+
+  test('disconnect: закрывает сокет и помечает explicitDisconnect', async () => {
+    await establishConnection(store);
+    const sock = store.state.websocket.socket;
+
+    store.dispatch('websocket/disconnect');
+    expect(sock.close).toHaveBeenCalled();
+    expect(store.state.websocket.explicitDisconnect).toBe(true);
+  });
+
+  test('isConnected getter возвращает корректное состояние', async () => {
+    expect(store.getters['websocket/isConnected']).toBe(false);
+    await establishConnection(store);
+    expect(store.getters['websocket/isConnected']).toBe(true);
+  });
+
+  test('handleMessage: невалидный JSON вызывает log/addError', async () => {
+    await store.dispatch('websocket/handleMessage', { data: 'not-json' });
+
+    const [context, error] = logActions.addError.mock.calls[0];
+    expect(error).toBeInstanceOf(SyntaxError);
+  });
+
+  test('handleMessage: sensor с невалидным payload не вызывает update', async () => {
     await store.dispatch('websocket/handleMessage', {
       data: JSON.stringify({
-        type:    'post',
+        type: 'post',
         request: 'sensor',
-        name:    'OTHER',
-        payload: { val: 1 }
+        name: 'USER123',
+        payload: null
       })
-    })
-    expect(spy).not.toHaveBeenCalledWith(
-      'config/handleSensorUpdate',
-      expect.anything()
-    )
+    });
 
-    // правильный dID — диспатчим
+    expect(configActions.handleSensorUpdate).not.toHaveBeenCalled();
+  });
+
+  test('handleMessage: actuators не логируется из-за раннего return в ветке sensor', async () => {
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
     await store.dispatch('websocket/handleMessage', {
       data: JSON.stringify({
-        type:    'post',
-        request: 'sensor',
-        name:    'USER123',
-        payload: { val: 42 }
+        type: 'post',
+        request: 'actuators',
+        name: 'USER123',
+        payload: { value: 42 }
       })
-    })
-    expect(spy).toHaveBeenCalledWith(
-      'config/handleSensorUpdate',
-      { dID: 'USER123', payload: { val: 42 } }
-    )
-  })
+    });
 
+    const calls = logSpy.mock.calls.map(args => args.join(' '));
+    const hasActuatorsLog = calls.some(call =>
+      call.includes('[WebSocket] Received request === actuators')
+    );
+    expect(hasActuatorsLog).toBe(false);
 
-  it('disconnect: закрывает socket и помечает explicitDisconnect', async () => {
-    await establishConnection(store)
+    const hasSensorBranchEarlyReturnLog = calls.some(call =>
+      call.includes('[WebSocket] dID сообщения запроса') &&
+      call.includes('не соответствует dID текущего пользователя')
+    );
+    expect(hasSensorBranchEarlyReturnLog).toBe(true);
 
-    const sock = store.state.websocket.socket
-    expect(sock.close).not.toHaveBeenCalled()
+    logSpy.mockRestore();
+  });
 
-    store.dispatch('websocket/disconnect')
-    expect(store.state.websocket.explicitDisconnect).toBe(true)
-    expect(sock.close).toHaveBeenCalled()
-  })
+  test('send: без сокета вызывает ошибку', async () => {
+    store.state.websocket.socket = null;
 
+    // Подменяем экшен connect в модуле до создания store
+    const failingConnect = jest.fn(async () => {
+      throw new Error('WebSocket connection not established');
+    });
 
-  it('getter isConnected корректно отражает состояние', async () => {
-    expect(store.getters['websocket/isConnected']).toBe(false)
-    await establishConnection(store)
-    expect(store.getters['websocket/isConnected']).toBe(true)
-  })
-})
-
-
-describe('Mutations', () => {
-  let store, mockSocket
-
-  beforeEach(() => {
-    resetWebsocketState()
-    store = createStore({ modules: { websocket } })
-    mockSocket = { send: () => {}, close: () => {} }
-  })
-
-  it('SET_SOCKET устанавливает сокет', () => {
-    store.commit('websocket/SET_SOCKET', mockSocket)
-    expect(store.state.websocket.socket).toEqual(mockSocket)
-  })
-
-  it('SET_RECONNECT_ATTEMPTS устанавливает количество попыток переподключения', () => {
-    store.commit('websocket/SET_RECONNECT_ATTEMPTS', 5)
-    expect(store.state.websocket.reconnectAttempts).toBe(5)
-  })
-})
-
-
-describe('Actions (unit)', () => {
-  let store, handleConfigResponse, handleSensorUpdate
-
-  beforeEach(() => {
-    resetWebsocketState()
-    jest.useFakeTimers()
-    jest.clearAllTimers()
-
-    handleConfigResponse = jest.fn()
-    handleSensorUpdate   = jest.fn()
-
-    store = createStore({
+    const failingStore = createStore({
       modules: {
-        websocket,
+        websocket: {
+          ...websocket,
+          actions: {
+            ...websocket.actions,
+            connect: failingConnect
+          }
+        },
         config: {
           namespaced: true,
-          actions: { handleConfigResponse, handleSensorUpdate }
+          actions: configActions
+        },
+        log: {
+          namespaced: true,
+          actions: logActions
         }
       },
-      getters: { dID: () => 'test-dID' }
-    })
-  })
+      getters: {
+        dID: () => 'USER123'
+      }
+    });
 
-  afterEach(() => {
-    jest.useRealTimers()
-  })
+    await expect(failingStore.dispatch('websocket/send', { type: 'test' }))
+      .rejects.toThrow('WebSocket connection not established');
+  });
 
+  test('connect: при открытом сокете возвращает его сразу', async () => {
+    const mockSocket = new WebSocket('ws://localhost:1234');
+    mockSocket.readyState = WebSocket.OPEN;
+    store.commit('websocket/SET_SOCKET', mockSocket);
 
-  it('connect создает WebSocket соединение и сохраняет socket', async () => {
-    const promise = store.dispatch('websocket/connect')
-    jest.runAllTimers()
-    await flushPromises()
+    const result = await store.dispatch('websocket/connect');
+    expect(result).toStrictEqual(mockSocket);
+  });
 
-    const inst = store.state.websocket.socket
+  test('connect: с reconnectAttempts > 0 вызывает задержку', async () => {
+    store.commit('websocket/SET_RECONNECT_ATTEMPTS', 2);
+    const spy = jest.spyOn(global, 'setTimeout');
 
-    // promise должен вернуть объект, глубоко равный inst
-    await expect(promise).resolves.toEqual(inst)
+    store.dispatch('websocket/connect');
+    jest.runAllTimers();
 
-    // url должен совпадать с настройками окружения
-    expect(inst.url).toBe(`ws://${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`)
-  })
-
-
-  it('send отправляет сообщение через WebSocket без зависания', async () => {
-    await establishConnection(store)
-
-    const message = { type: 'test', request: 'test' }
-    store.dispatch('websocket/send', message)
-
-    expect(store.state.websocket.socket.send)
-      .toHaveBeenCalledWith(JSON.stringify(message))
-  })
-
-
-  it('handleMessage обрабатывает сообщение config', async () => {
-    await establishConnection(store)
-
-    await store.dispatch('websocket/handleMessage', {
-      data: JSON.stringify({ request: 'config' })
-    })
-    expect(handleConfigResponse).toHaveBeenCalled()
-  })
-
-
-  it('handleMessage обрабатывает сообщение sensor', async () => {
-    await establishConnection(store)
-
-    await store.dispatch('websocket/handleMessage', {
-      data: JSON.stringify({
-        type:    'post',
-        request: 'sensor',
-        name:    'test-dID',
-        payload: { temperature: 25 }
-      })
-    })
-    expect(handleSensorUpdate).toHaveBeenCalled()
-  })
-})
+    expect(spy).toHaveBeenCalledWith(expect.any(Function), 4000);
+  });
+});

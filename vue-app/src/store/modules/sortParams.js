@@ -159,27 +159,7 @@ export default {
         paramTitle: param.title
       });
     },
-    // setLimits({rootGetters, commit}, param) {
-    //   console.log('[sortParams] - setLimits - Параметр -', param);
-    //   // Получаем данные лимитов из конфига
-    //   const dID = rootGetters['dID'];
-    //   const config = rootGetters['config/getConfig'](dID);
-    //   let limits = config?.init?.limits?.[param] || config?.init?.limits?.Default;
-    //   if (!limits) {
-    //     console.log('[sortParams] - setLimits - Не удалось получить лимиты - Устанавливаем по умолчанию');
-    //     limits = {
-    //       low: 10,
-    //       high: 32,
-    //       step: 0.5
-    //     };
-    //   }
-    //   console.log('[sortParams] - setLimits Получены лимиты', limits);
-    //   commit('UPDATE_LIMITS', {
-    //     limHigh: limits.high,
-    //     limLow: limits.low,
-    //     limStep: limits.step
-    //   });
-    // },
+
     setLimits({ rootGetters, commit, dispatch }, param) {
       console.log('[sortParams] - setLimits - Параметр -', param);
       
