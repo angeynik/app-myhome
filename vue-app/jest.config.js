@@ -2,7 +2,8 @@ const path = require('path');
 
 module.exports = {
   collectCoverage: true,
-  coverageReporters: ['lcov', 'text'],
+  coverageDirectory: './coverage',
+  coverageReporters: ['html', 'text-summary', 'lcov', 'text'],
   moduleFileExtensions: ['js', 'json', 'vue'],
   transform: {
     '^.+\\.js$': 'babel-jest',
