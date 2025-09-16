@@ -36,6 +36,7 @@ export default {
       state.token = '';
       state.user = {};
       state.dID = null;
+      state.level = 0;
     }
   },
   
