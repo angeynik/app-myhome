@@ -30,25 +30,25 @@ describe('Vuex config module', () => {
       expect(state.configs['device123']).toEqual(payload.config);
     });
 
-    it('UPDATE_SENSOR_VALUE updates sensor value and timestamp', () => {
-      state.configs['device123'] = {
-        room1: {
-          sensors: {
-            temp1: { value: 20, lastUpdate: null }
-          }
-        }
-      };
-      const payload = {
-        dID: 'device123',
-        room: 'room1',
-        sensor: 'temp1',
-        value: 25,
-        timestamp: '2025-09-16T19:00:00Z'
-      };
-      configModule.mutations.UPDATE_SENSOR_VALUE(state, payload);
-      expect(state.configs['device123'].room1.sensors.temp1.value).toBe(25);
-      expect(state.configs['device123'].room1.sensors.temp1.lastUpdate).toBe(payload.timestamp);
-    });
+    // it('UPDATE_SENSOR_VALUE updates sensor value and timestamp', () => {
+    //   state.configs['device123'] = {
+    //     room1: {
+    //       sensors: {
+    //         temp1: { value: 20, lastUpdate: null }
+    //       }
+    //     }
+    //   };
+    //   const payload = {
+    //     dID: 'device123',
+    //     room: 'room1',
+    //     sensor: 'temp1',
+    //     value: 25,
+    //     timestamp: '2025-09-16T19:00:00Z'
+    //   };
+    //   configModule.mutations.UPDATE_SENSOR_VALUE(state, payload);
+    //   expect(state.configs['device123'].room1.sensors.temp1.value).toBe(25);
+    //   expect(state.configs['device123'].room1.sensors.temp1.lastUpdate).toBe(payload.timestamp);
+    // });
 
     it('SET_LOADING updates loading', () => {
       configModule.mutations.SET_LOADING(state, true);
@@ -70,6 +70,82 @@ describe('Vuex config module', () => {
       configModule.mutations.SET_DEVICE_TYPE(state, 'tablet');
       expect(state.deviceType).toBe('tablet');
     });
+      it('UPDATE_CONFIG_VALUE updates existing sensor', () => {
+    state.configs['device123'] = {
+      room1: {
+        sensors: {
+          temp1: { value: 20, lastUpdate: null }
+        }
+      }
+    };
+
+    const payload = {
+      dID: 'device123',
+      room: 'room1',
+      type: 'sensors',
+      name: 'temp1',
+      value: 25,
+      timestamp: '2025-09-16T19:00:00Z'
+    };
+
+    configModule.mutations.UPDATE_CONFIG_VALUE(state, payload);
+
+    expect(state.configs['device123'].room1.sensors.temp1.value).toBe(25);
+    expect(state.configs['device123'].room1.sensors.temp1.lastUpdate).toBe(payload.timestamp);
+  });
+
+  it('UPDATE_CONFIG_VALUE creates missing type and sensor', () => {
+    state.configs['device123'] = {
+      room1: {}
+    };
+
+    const payload = {
+      dID: 'device123',
+      room: 'room1',
+      type: 'actuators',
+      name: 'a1',
+      value: 1.5,
+      timestamp: '2025-09-17T10:00:00Z'
+    };
+
+    configModule.mutations.UPDATE_CONFIG_VALUE(state, payload);
+
+    expect(state.configs['device123'].room1.actuators.a1.value).toBe(1.5);
+    expect(state.configs['device123'].room1.actuators.a1.lastUpdate).toBe(payload.timestamp);
+  });
+
+  it('UPDATE_CONFIG_VALUE skips update if dID is missing', () => {
+    const payload = {
+      dID: 'unknown',
+      room: 'room1',
+      type: 'sensors',
+      name: 'temp1',
+      value: 42,
+      timestamp: '2025-09-16T19:00:00Z'
+    };
+
+    configModule.mutations.UPDATE_CONFIG_VALUE(state, payload);
+
+    expect(state.configs['unknown']).toBeUndefined();
+  });
+
+  it('UPDATE_CONFIG_VALUE skips update if room is missing', () => {
+    state.configs['device123'] = {};
+
+    const payload = {
+      dID: 'device123',
+      room: 'roomX',
+      type: 'sensors',
+      name: 'temp1',
+      value: 42,
+      timestamp: '2025-09-16T19:00:00Z'
+    };
+
+    configModule.mutations.UPDATE_CONFIG_VALUE(state, payload);
+
+    expect(state.configs['device123']['roomX']).toBeUndefined();
+  });
+
   });
 
   // ✅ GETTERS
@@ -252,36 +328,6 @@ describe('Vuex config module', () => {
       expect(context.dispatch).toHaveBeenCalledWith('handleConfigResponse', mockResponse);
     });
 
-    it('handleSensorUpdate commits sensor update', async () => {
-      context.state.configs['device123'] = {
-        room1: {
-          sensors: {
-            temp1: { value: 0, lastUpdate: null }
-          }
-        }
-      };
-
-      const payload = {
-        room: 'room1',
-        item_name: 'temp1',
-        item_value: 42,
-        time: '2025-09-16T19:00:00Z'
-      };
-
-      await configModule.actions.handleSensorUpdate(context, {
-        dID: 'device123',
-        payload
-      });
-
-      expect(context.commit).toHaveBeenCalledWith('UPDATE_SENSOR_VALUE', {
-        dID: 'device123',
-        room: 'room1',
-        sensor: 'temp1',
-        value: 42,
-        timestamp: new Date('2025-09-16T19:00:00Z').toString()
-      });
-    });
-
     it('updateSetpointLocal updates config and commits SET_CONFIG', async () => {
       context.state.configs['device123'] = {
         room1: {
@@ -319,5 +365,112 @@ describe('Vuex config module', () => {
         })).rejects.toThrow('Комната room1 или её уставки не найдены');
         });
 
+          it('handleSensorUpdate commits UPDATE_CONFIG_VALUE with correct payload', async () => {
+    context.state.configs['device123'] = {
+      room1: {
+        sensors: {
+          temp1: { value: 0 }
+        }
+      }
+    };
+
+    const payload = {
+      room: 'room1',
+      item_name: 'temp1',
+      item_value: 42,
+      time: '2025-09-16T19:00:00Z'
+    };
+
+    await configModule.actions.handleSensorUpdate(context, {
+      dID: 'device123',
+      payload,
+      type: 'sensors'
+    });
+
+    expect(context.commit).toHaveBeenCalledWith('UPDATE_CONFIG_VALUE', {
+      dID: 'device123',
+      room: 'room1',
+      type: 'sensors',
+      name: 'temp1',
+      value: 42,
+      timestamp: new Date('2025-09-16T19:00:00Z').toString()
+    });
   });
+
+  it('handleSensorUpdate creates missing type and sensor', async () => {
+    context.state.configs['device123'] = {
+      room1: {}
+    };
+
+    const payload = {
+      room: 'room1',
+      item_name: 'a1',
+      item_value: 1.5,
+      time: '2025-09-17T10:00:00Z'
+    };
+
+    await configModule.actions.handleSensorUpdate(context, {
+      dID: 'device123',
+      payload,
+      type: 'actuators'
+    });
+
+    expect(context.commit).toHaveBeenCalledWith('UPDATE_CONFIG_VALUE', {
+      dID: 'device123',
+      room: 'room1',
+      type: 'actuators',
+      name: 'a1',
+      value: 1.5,
+      timestamp: new Date('2025-09-17T10:00:00Z').toString()
+    });
+  });
+
+  it('handleSensorUpdate skips commit if payload is incomplete', async () => {
+    const payload = {
+      room: null,
+      item_name: 'temp1',
+      item_value: 42
+    };
+
+    await configModule.actions.handleSensorUpdate(context, {
+      dID: 'device123',
+      payload,
+      type: 'sensors'
+    });
+
+    expect(context.commit).not.toHaveBeenCalled();
+  });
+
+  it('handleSensorUpdate uses current timestamp if time is missing', async () => {
+    context.state.configs['device123'] = {
+      room1: {
+        controller: {
+          ctrl1: { value: 0 }
+        }
+      }
+    };
+
+    const payload = {
+      room: 'room1',
+      item_name: 'ctrl1',
+      item_value: 1.5
+    };
+
+    await configModule.actions.handleSensorUpdate(context, {
+      dID: 'device123',
+      payload,
+      type: 'controller'
+    });
+
+    expect(context.commit).toHaveBeenCalledWith(
+      'UPDATE_CONFIG_VALUE',
+      expect.objectContaining({
+        timestamp: expect.stringMatching(/GMT/)
+      })
+    );
+  });
+
+  });
+
+
 });

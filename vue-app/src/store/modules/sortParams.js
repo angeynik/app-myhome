@@ -198,108 +198,108 @@ export default {
           });
         });
     },
-  switchToPrevRoom({ dispatch, state, rootGetters }) {
-    console.log('[sortParams] - switchToPrevRoom - Предыдущая комната');
-  try {
-      const allRooms = rootGetters['config/allRooms'] || [];
-      console.log('[sortParams] - switchToPrevRoom - allRooms - ', allRooms);
-      if (allRooms.length === 0) {
-        console.warn('[sortParams] - switchToPrevRoom - Нет доступных комнат');
-        return;
-      }
-
-      const currentRoomKey = state.roomKey || allRooms[0];
-      const currentIndex = allRooms.indexOf(currentRoomKey);
-      //console.log('[sortParams] - switchToPrevRoom - Актуальные RoomKey', currentRoomKey, ' currentIndex-', currentIndex);
-      if (currentIndex === -1) {
-        console.warn(`[sortParams] - switchToPrevRoom - Комната ${currentRoomKey} не найдена`);
-        return;
-      }
-
-      const newIndex = (currentIndex - 1 + allRooms.length) % allRooms.length;
-      const newRoomKey = allRooms[newIndex];
-      dispatch ('updateRoomsKey', newRoomKey);
-      //console.log('[sortParams] - switchToPrevRoom - Обновленные RoomKey', newRoomKey, ' currentIndex-', newIndex);
-
-      console.log(`[sortParams] - switchToPrevRoom - Переключение: ${currentRoomKey} -> ${newRoomKey}`);
-    } catch (error) {
-      console.error('[sortParams] - switchToPrevRoom - Ошибка:', error);
-    }
-  },
-  switchToNextRoom({ dispatch, state, rootGetters }) {
-    console.log('[sortParams] - switchToNextRoom - Следующая комната');
+    switchToPrevRoom({ dispatch, state, rootGetters }) {
+      console.log('[sortParams] - switchToPrevRoom - Предыдущая комната');
     try {
-      const allRooms = rootGetters['config/allRooms'] || [];
-      if (allRooms.length === 0) {
-        console.warn('[sortParams] - switchToNextRoom - Нет доступных комнат');
-        return;
+        const allRooms = rootGetters['config/allRooms'] || [];
+        console.log('[sortParams] - switchToPrevRoom - allRooms - ', allRooms);
+        if (allRooms.length === 0) {
+          console.warn('[sortParams] - switchToPrevRoom - Нет доступных комнат');
+          return;
+        }
+
+        const currentRoomKey = state.roomKey || allRooms[0];
+        const currentIndex = allRooms.indexOf(currentRoomKey);
+        //console.log('[sortParams] - switchToPrevRoom - Актуальные RoomKey', currentRoomKey, ' currentIndex-', currentIndex);
+        if (currentIndex === -1) {
+          console.warn(`[sortParams] - switchToPrevRoom - Комната ${currentRoomKey} не найдена`);
+          return;
+        }
+
+        const newIndex = (currentIndex - 1 + allRooms.length) % allRooms.length;
+        const newRoomKey = allRooms[newIndex];
+        dispatch ('updateRoomsKey', newRoomKey);
+        //console.log('[sortParams] - switchToPrevRoom - Обновленные RoomKey', newRoomKey, ' currentIndex-', newIndex);
+
+        console.log(`[sortParams] - switchToPrevRoom - Переключение: ${currentRoomKey} -> ${newRoomKey}`);
+      } catch (error) {
+        console.error('[sortParams] - switchToPrevRoom - Ошибка:', error);
       }
+    },
+    switchToNextRoom({ dispatch, state, rootGetters }) {
+      console.log('[sortParams] - switchToNextRoom - Следующая комната');
+      try {
+        const allRooms = rootGetters['config/allRooms'] || [];
+        if (allRooms.length === 0) {
+          console.warn('[sortParams] - switchToNextRoom - Нет доступных комнат');
+          return;
+        }
 
-      const currentRoomKey = state.roomKey || allRooms[0];
-      const currentIndex = allRooms.indexOf(currentRoomKey);
-      if (currentIndex === -1) {
-        console.warn(`[sortParams] - switchToNextRoom - Комната ${currentRoomKey} не найдена`);
-        return;
+        const currentRoomKey = state.roomKey || allRooms[0];
+        const currentIndex = allRooms.indexOf(currentRoomKey);
+        if (currentIndex === -1) {
+          console.warn(`[sortParams] - switchToNextRoom - Комната ${currentRoomKey} не найдена`);
+          return;
+        }
+
+        const newIndex = (currentIndex + 1) % allRooms.length;
+        const newRoomKey = allRooms[newIndex];
+        dispatch ('updateRoomsKey', newRoomKey);
+
+        console.log(`[sortParams] - switchToNextRoom - Переключение: ${currentRoomKey} -> ${newRoomKey}`);
+      } catch (error) {
+        console.error('[sortParams] - switchToNextRoom - Ошибка:', error);
       }
+    },
+    switchToPrevParam({ dispatch, state, rootGetters }) {
+      console.log('[sortParams] - switchToPrevParam - Предыдущий параметр');
+      try {
+        const allParams = rootGetters['config/allParams'] || [];
+        if (allParams.length === 0) {
+          console.warn('[sortParams] - switchToPrevParam - Нет доступных параметров');
+          return;
+        }
 
-      const newIndex = (currentIndex + 1) % allRooms.length;
-      const newRoomKey = allRooms[newIndex];
-      dispatch ('updateRoomsKey', newRoomKey);
+        const currentParamKey = state.paramKey || allParams[0];
+        const currentIndex = allParams.indexOf(currentParamKey);
+        console.log(`[sortParams] - switchToPrevParam - Переключение: ${currentParamKey} -> ${currentIndex}`);
+        if (currentIndex === -1) {
+          console.warn(`[sortParams] - switchToPrevParam - Параметр ${currentParamKey} не найден`);
+          return;
+        }
 
-      console.log(`[sortParams] - switchToNextRoom - Переключение: ${currentRoomKey} -> ${newRoomKey}`);
-    } catch (error) {
-      console.error('[sortParams] - switchToNextRoom - Ошибка:', error);
-    }
-  },
-  switchToPrevParam({ dispatch, state, rootGetters }) {
-    console.log('[sortParams] - switchToPrevParam - Предыдущий параметр');
-    try {
-      const allParams = rootGetters['config/allParams'] || [];
-      if (allParams.length === 0) {
-        console.warn('[sortParams] - switchToPrevParam - Нет доступных параметров');
-        return;
+        const newIndex = (currentIndex - 1 + allParams.length) % allParams.length;
+        const newParamKey = allParams[newIndex];
+        dispatch ('updateParamsKey', newParamKey);
+
+        console.log(`[sortParams] - switchToPrevParam - Переключение: ${currentParamKey} -> ${newParamKey}`);
+      } catch (error) {
+        console.error('[sortParams] - switchToPrevParam - Ошибка:', error);
       }
+    },
+    switchToNextParam({ dispatch, state, rootGetters }) {
+      console.log('[sortParams] - switchToNextParam - Следующий параметр');
+      try {
+        const allParams = rootGetters['config/allParams'] || [];
+        if (allParams.length === 0) {
+          console.warn('[sortParams] - switchToNextParam - Нет доступных параметров');
+          return;
+        }
 
-      const currentParamKey = state.paramKey || allParams[0];
-      const currentIndex = allParams.indexOf(currentParamKey);
-      console.log(`[sortParams] - switchToPrevParam - Переключение: ${currentParamKey} -> ${currentIndex}`);
-      if (currentIndex === -1) {
-        console.warn(`[sortParams] - switchToPrevParam - Параметр ${currentParamKey} не найден`);
-        return;
+        const currentParamKey = state.paramKey || allParams[0];
+        const currentIndex = allParams.indexOf(currentParamKey);
+        if (currentIndex === -1) {
+          console.warn(`[sortParams] - switchToNextParam - Параметр ${currentParamKey} не найден`);
+          return;
+        }
+        const newIndex = (currentIndex + 1) % allParams.length;
+        const newParamKey = allParams[newIndex];
+        dispatch ('updateParamsKey', newParamKey);
+        console.log(`[sortParams] - switchToNextParam - Переключение: ${currentParamKey} -> ${newParamKey}`);
+      } catch (error) {
+        console.error('[sortParams] - switchToNextParam - Ошибка:', error);
       }
-
-      const newIndex = (currentIndex - 1 + allParams.length) % allParams.length;
-      const newParamKey = allParams[newIndex];
-      dispatch ('updateParamsKey', newParamKey);
-
-      console.log(`[sortParams] - switchToPrevParam - Переключение: ${currentParamKey} -> ${newParamKey}`);
-    } catch (error) {
-      console.error('[sortParams] - switchToPrevParam - Ошибка:', error);
-    }
-  },
-  switchToNextParam({ dispatch, state, rootGetters }) {
-    console.log('[sortParams] - switchToNextParam - Следующий параметр');
-    try {
-      const allParams = rootGetters['config/allParams'] || [];
-      if (allParams.length === 0) {
-        console.warn('[sortParams] - switchToNextParam - Нет доступных параметров');
-        return;
-      }
-
-      const currentParamKey = state.paramKey || allParams[0];
-      const currentIndex = allParams.indexOf(currentParamKey);
-      if (currentIndex === -1) {
-        console.warn(`[sortParams] - switchToNextParam - Параметр ${currentParamKey} не найден`);
-        return;
-      }
-      const newIndex = (currentIndex + 1) % allParams.length;
-      const newParamKey = allParams[newIndex];
-      dispatch ('updateParamsKey', newParamKey);
-      console.log(`[sortParams] - switchToNextParam - Переключение: ${currentParamKey} -> ${newParamKey}`);
-    } catch (error) {
-      console.error('[sortParams] - switchToNextParam - Ошибка:', error);
-    }
-  },
+    },
 
   },
   

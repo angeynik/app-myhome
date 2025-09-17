@@ -2,7 +2,7 @@ const path = require('path');
 
 module.exports = {
   collectCoverage: true,
-  coverageDirectory: './coverage',
+  // coverageDirectory: './coverage',
   coverageReporters: ['html', 'text-summary', 'lcov', 'text'],
   moduleFileExtensions: ['js', 'json', 'vue'],
   transform: {
@@ -23,5 +23,8 @@ module.exports = {
   testMatch: [
     '<rootDir>/src/tests/unit/**/*.spec.js'
   ],
-  setupFilesAfterEnv: ['<rootDir>/src/tests/unit/setup.js']
+  setupFilesAfterEnv: ['<rootDir>/src/tests/unit/setup.js'],
+  clearMocks: true,
+  resetMocks: true,
+  resetModules: true,
 };

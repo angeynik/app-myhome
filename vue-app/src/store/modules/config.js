@@ -25,22 +25,39 @@ export default {
       state.allParams = params;
       console.log('[sortParams] - SET_ALL_PARAMS Обновлен список доступных параметров: ', params);
     },
-    UPDATE_SENSOR_VALUE(state, { dID, room, sensor, value, timestamp}) {
+    UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value, timestamp }) {
       const config = state.configs[dID];
-      //console.log(`[Config] - UPDATE_SENSOR_VALUE - state.configs[${dID}] ${JSON.stringify(config, null, 2)}`);
-      // const updatedRoom = config[room];
-      // console.log(`[Config] - UPDATE_SENSOR_VALUE - state.configs[${dID}] Обновляем комнату ${room} - ${JSON.stringify(updatedRoom, null, 2)}`);
-      if (!config) return;
+      if (!config) {
+        console.warn(`[Config] - dID ${dID} не найден в конфигурации`);
+        return;
+      }
 
       const roomObj = config[room];
-      if (!roomObj || !roomObj.sensors) return;
-
-      const sensorObj = roomObj.sensors[sensor];
-      if (sensorObj) {
-        sensorObj.value = value;
-        sensorObj.lastUpdate = timestamp || new Date().toString();
+      if (!roomObj) {
+        console.warn(`[Config] - Комната ${room} не найдена в конфигурации`);
+        return;
       }
+
+      // Автоматически создаём контейнер типа, если он отсутствует
+      if (!roomObj[type]) {
+        console.warn(`[Config] - Тип ${type} не найден в комнате ${room}, создаём...`);
+        roomObj[type] = {};
+      }
+
+      // Автоматически создаём сенсор/уставку/элемент, если он отсутствует
+      if (!roomObj[type][name]) {
+        roomObj[type][name] = {};
+      }
+
+      roomObj[type][name].value = value;
+      roomObj[type][name].lastUpdate = timestamp || new Date().toString();
+
+      //console.log(`[Config] - Обновлено значение ${type}.${name} в комнате ${room}:`, roomObj[type][name]);
+      // console.log(`[Config] - UPDATE_CONFIG_VALUE - state.configs[${dID}] ${JSON.stringify(config, null, 2)}`);
+      // const updatedRoom = config[room];
+      // console.log(`[Config] - UPDATE_CONFIG_VALUE - state.configs[${dID}] Обновляем комнату ${room} - ${JSON.stringify(updatedRoom, null, 2)}`);
     },
+
     SET_LOADING(state, value) {
       state.loading = value;
     },
@@ -233,54 +250,30 @@ export default {
         throw error;
       }
     },
-    handleSensorUpdate({ commit }, { dID, payload }) {
+
+    handleSensorUpdate({ commit }, { dID, payload, type }) {
+      console.log('[Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
+
       try {
         const { room, item_name, item_value, time } = payload;
         if (!dID || !room || !item_name || item_value === undefined) return;
-        
-        let timestamp;
-        try {
-          timestamp = time ? new Date(time).toString() : new Date().toString();
-        } catch (e) {
-          timestamp = new Date().toString();
-        }
 
-        commit('UPDATE_SENSOR_VALUE', {
+        const timestamp = time ? new Date(time).toString() : new Date().toString();
+
+
+        commit('UPDATE_CONFIG_VALUE', {
           dID,
           room,
-          sensor: item_name,
+          type: type,
+          name: item_name,
           value: item_value,
           timestamp
         });
-        //console.log('[Config] Обновлено значение датчика Параметры запроса:', { dID, room, sensor: item_name, value: item_value, timestamp });
-        //const updatedConfig = state.configs[dID];
-        //console.log(`[Config] - UPDATE_SENSOR_VALUE - state.configs[${dID}] ${JSON.stringify(updatedConfig, null, 2)}`);
-        // const updatedRoom = updatedConfig[room];
-        // console.log(`[Config] - Результат обновления комнаты ${room} - ${JSON.stringify(updatedRoom, null, 2)}`);
-     
+
       } catch (error) {
         console.error('[Config] Ошибка обработки данных сенсора:', error);
       }
     },
-
-    // async ensureConfig({ state, dispatch }, dID) {
-    //   //console.log('[config] - ensureConfig - Проверяем наличие конфигурации по dID - ', dID);
-    //   if (!dID) throw new Error('dID не определен');
-    //   let config = state.configs[dID];
-    //   // Если конфиг уже есть, просто возвращаем его
-    //   if (config) {
-    //     console.log('[config] - ensureConfig - Конфига найден по dID - ', dID);
-    //     // Обновляем список комнат
-    //     await dispatch('handleRoomsSet', config);
-    //   // Обновляем список параметров
-    //     await dispatch('handleParamsSet', config);
-    //     return config;
-
-    //   } 
-    //   //console.log('[config] - ensureConfig - Конфига нет, запрашиваем');
-    //   return await dispatch('requestConfig', dID);
-
-    // },
     async ensureConfig({ state, dispatch }, dID) {
       if (!dID) throw new Error('dID не определен');
       let config = state.configs[dID];

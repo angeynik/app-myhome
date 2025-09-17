@@ -131,26 +131,21 @@ export default {
        
         if (response.type === 'post') {
           //console.log('[WebSocket] Обрабатываем сообщение type = post');
-          //console.log('dID сообщения - ', dID, ' dID активного пользователя - ', auth_dID);
-          // Обновляем значение датчика
-            if (response.request === 'sensor' && dID === auth_dID) {
-              //console.log('[WebSocket] Обрабатываем сообщение request = sensor');
-              
+          console.log('dID сообщения - ', dID, ' dID активного пользователя - ', auth_dID, 'request - ', response.request);
 
-              // Валидация payload
+            // Валидация payload
               if (!response.payload || typeof response.payload !== 'object') {
                 console.warn('[WebSocket] Невалидный payload сенсора');
                 return;
               }
-              await dispatch('config/handleSensorUpdate', {dID, payload: response.payload}, { root: true });
-            } else {
+
+          // Обновляем значение
+            if (dID === auth_dID) {
+              console.log('[WebSocket] Обрабатываем сообщение request-', response.request);
+              await dispatch('config/handleSensorUpdate', {dID, payload: response.payload, type: response.request}, { root: true });
+            }  else {
                 console.log('[WebSocket] dID сообщения запроса', dID, ' не соответствует dID текущего пользователя - ', auth_dID);
                 return;
-            }
-
-            if (response.request === 'actuators') {
-              console.log('[WebSocket] Received request === actuators', response);
-              //await dispatch('config/updateSensorValue', response, { root: true });
             }
 
         }

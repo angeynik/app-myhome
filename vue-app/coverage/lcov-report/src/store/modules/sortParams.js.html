@@ -412,7 +412,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">17x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -875,108 +875,108 @@ export default {
           });
         });
     },
-  switchToPrevRoom({ dispatch, state, rootGetters }) {
-    console.log('[sortParams] - switchToPrevRoom - Предыдущая комната');
-  try {
-      const allRooms = rootGetters['config/allRooms'] || <span class="branch-1 cbranch-no" title="branch not covered" >[];</span>
-      console.log('[sortParams] - switchToPrevRoom - allRooms - ', allRooms);
-      <span class="missing-if-branch" title="if path not taken" >I</span>if (allRooms.length === 0) {
-<span class="cstat-no" title="statement not covered" >        console.warn('[sortParams] - switchToPrevRoom - Нет доступных комнат');</span>
-<span class="cstat-no" title="statement not covered" >        return;</span>
-      }
-&nbsp;
-      const currentRoomKey = state.roomKey || <span class="branch-1 cbranch-no" title="branch not covered" >allRooms[0];</span>
-      const currentIndex = allRooms.indexOf(currentRoomKey);
-      //console.log('[sortParams] - switchToPrevRoom - Актуальные RoomKey', currentRoomKey, ' currentIndex-', currentIndex);
-      <span class="missing-if-branch" title="if path not taken" >I</span>if (currentIndex === -1) {
-<span class="cstat-no" title="statement not covered" >        console.warn(`[sortParams] - switchToPrevRoom - Комната ${currentRoomKey} не найдена`);</span>
-<span class="cstat-no" title="statement not covered" >        return;</span>
-      }
-&nbsp;
-      const newIndex = (currentIndex - 1 + allRooms.length) % allRooms.length;
-      const newRoomKey = allRooms[newIndex];
-      dispatch ('updateRoomsKey', newRoomKey);
-      //console.log('[sortParams] - switchToPrevRoom - Обновленные RoomKey', newRoomKey, ' currentIndex-', newIndex);
-&nbsp;
-      console.log(`[sortParams] - switchToPrevRoom - Переключение: ${currentRoomKey} -&gt; ${newRoomKey}`);
-    } catch (error) {
-<span class="cstat-no" title="statement not covered" >      console.error('[sortParams] - switchToPrevRoom - Ошибка:', error);</span>
-    }
-  },
-  switchToNextRoom({ dispatch, state, rootGetters }) {
-    console.log('[sortParams] - switchToNextRoom - Следующая комната');
+    switchToPrevRoom({ dispatch, state, rootGetters }) {
+      console.log('[sortParams] - switchToPrevRoom - Предыдущая комната');
     try {
-      const allRooms = rootGetters['config/allRooms'] || <span class="branch-1 cbranch-no" title="branch not covered" >[];</span>
-      <span class="missing-if-branch" title="if path not taken" >I</span>if (allRooms.length === 0) {
-<span class="cstat-no" title="statement not covered" >        console.warn('[sortParams] - switchToNextRoom - Нет доступных комнат');</span>
-<span class="cstat-no" title="statement not covered" >        return;</span>
+        const allRooms = rootGetters['config/allRooms'] || <span class="branch-1 cbranch-no" title="branch not covered" >[];</span>
+        console.log('[sortParams] - switchToPrevRoom - allRooms - ', allRooms);
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (allRooms.length === 0) {
+<span class="cstat-no" title="statement not covered" >          console.warn('[sortParams] - switchToPrevRoom - Нет доступных комнат');</span>
+<span class="cstat-no" title="statement not covered" >          return;</span>
+        }
+&nbsp;
+        const currentRoomKey = state.roomKey || <span class="branch-1 cbranch-no" title="branch not covered" >allRooms[0];</span>
+        const currentIndex = allRooms.indexOf(currentRoomKey);
+        //console.log('[sortParams] - switchToPrevRoom - Актуальные RoomKey', currentRoomKey, ' currentIndex-', currentIndex);
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (currentIndex === -1) {
+<span class="cstat-no" title="statement not covered" >          console.warn(`[sortParams] - switchToPrevRoom - Комната ${currentRoomKey} не найдена`);</span>
+<span class="cstat-no" title="statement not covered" >          return;</span>
+        }
+&nbsp;
+        const newIndex = (currentIndex - 1 + allRooms.length) % allRooms.length;
+        const newRoomKey = allRooms[newIndex];
+        dispatch ('updateRoomsKey', newRoomKey);
+        //console.log('[sortParams] - switchToPrevRoom - Обновленные RoomKey', newRoomKey, ' currentIndex-', newIndex);
+&nbsp;
+        console.log(`[sortParams] - switchToPrevRoom - Переключение: ${currentRoomKey} -&gt; ${newRoomKey}`);
+      } catch (error) {
+<span class="cstat-no" title="statement not covered" >        console.error('[sortParams] - switchToPrevRoom - Ошибка:', error);</span>
       }
+    },
+    switchToNextRoom({ dispatch, state, rootGetters }) {
+      console.log('[sortParams] - switchToNextRoom - Следующая комната');
+      try {
+        const allRooms = rootGetters['config/allRooms'] || <span class="branch-1 cbranch-no" title="branch not covered" >[];</span>
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (allRooms.length === 0) {
+<span class="cstat-no" title="statement not covered" >          console.warn('[sortParams] - switchToNextRoom - Нет доступных комнат');</span>
+<span class="cstat-no" title="statement not covered" >          return;</span>
+        }
 &nbsp;
-      const currentRoomKey = state.roomKey || <span class="branch-1 cbranch-no" title="branch not covered" >allRooms[0];</span>
-      const currentIndex = allRooms.indexOf(currentRoomKey);
-      <span class="missing-if-branch" title="if path not taken" >I</span>if (currentIndex === -1) {
-<span class="cstat-no" title="statement not covered" >        console.warn(`[sortParams] - switchToNextRoom - Комната ${currentRoomKey} не найдена`);</span>
-<span class="cstat-no" title="statement not covered" >        return;</span>
+        const currentRoomKey = state.roomKey || <span class="branch-1 cbranch-no" title="branch not covered" >allRooms[0];</span>
+        const currentIndex = allRooms.indexOf(currentRoomKey);
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (currentIndex === -1) {
+<span class="cstat-no" title="statement not covered" >          console.warn(`[sortParams] - switchToNextRoom - Комната ${currentRoomKey} не найдена`);</span>
+<span class="cstat-no" title="statement not covered" >          return;</span>
+        }
+&nbsp;
+        const newIndex = (currentIndex + 1) % allRooms.length;
+        const newRoomKey = allRooms[newIndex];
+        dispatch ('updateRoomsKey', newRoomKey);
+&nbsp;
+        console.log(`[sortParams] - switchToNextRoom - Переключение: ${currentRoomKey} -&gt; ${newRoomKey}`);
+      } catch (error) {
+<span class="cstat-no" title="statement not covered" >        console.error('[sortParams] - switchToNextRoom - Ошибка:', error);</span>
       }
+    },
+<span class="fstat-no" title="function not covered" >    sw</span>itchToPrevParam({ dispatch, state, rootGetters }) {
+<span class="cstat-no" title="statement not covered" >      console.log('[sortParams] - switchToPrevParam - Предыдущий параметр');</span>
+<span class="cstat-no" title="statement not covered" >      try {</span>
+        const allParams = <span class="cstat-no" title="statement not covered" >rootGetters['config/allParams'] || [];</span>
+<span class="cstat-no" title="statement not covered" >        if (allParams.length === 0) {</span>
+<span class="cstat-no" title="statement not covered" >          console.warn('[sortParams] - switchToPrevParam - Нет доступных параметров');</span>
+<span class="cstat-no" title="statement not covered" >          return;</span>
+        }
 &nbsp;
-      const newIndex = (currentIndex + 1) % allRooms.length;
-      const newRoomKey = allRooms[newIndex];
-      dispatch ('updateRoomsKey', newRoomKey);
+        const currentParamKey = <span class="cstat-no" title="statement not covered" >state.paramKey || allParams[0];</span>
+        const currentIndex = <span class="cstat-no" title="statement not covered" >allParams.indexOf(currentParamKey);</span>
+<span class="cstat-no" title="statement not covered" >        console.log(`[sortParams] - switchToPrevParam - Переключение: ${currentParamKey} -&gt; ${currentIndex}`);</span>
+<span class="cstat-no" title="statement not covered" >        if (currentIndex === -1) {</span>
+<span class="cstat-no" title="statement not covered" >          console.warn(`[sortParams] - switchToPrevParam - Параметр ${currentParamKey} не найден`);</span>
+<span class="cstat-no" title="statement not covered" >          return;</span>
+        }
 &nbsp;
-      console.log(`[sortParams] - switchToNextRoom - Переключение: ${currentRoomKey} -&gt; ${newRoomKey}`);
-    } catch (error) {
-<span class="cstat-no" title="statement not covered" >      console.error('[sortParams] - switchToNextRoom - Ошибка:', error);</span>
-    }
-  },
-<span class="fstat-no" title="function not covered" >  sw</span>itchToPrevParam({ dispatch, state, rootGetters }) {
-<span class="cstat-no" title="statement not covered" >    console.log('[sortParams] - switchToPrevParam - Предыдущий параметр');</span>
-<span class="cstat-no" title="statement not covered" >    try {</span>
-      const allParams = <span class="cstat-no" title="statement not covered" >rootGetters['config/allParams'] || [];</span>
-<span class="cstat-no" title="statement not covered" >      if (allParams.length === 0) {</span>
-<span class="cstat-no" title="statement not covered" >        console.warn('[sortParams] - switchToPrevParam - Нет доступных параметров');</span>
-<span class="cstat-no" title="statement not covered" >        return;</span>
+        const newIndex = <span class="cstat-no" title="statement not covered" >(currentIndex - 1 + allParams.length) % allParams.length;</span>
+        const newParamKey = <span class="cstat-no" title="statement not covered" >allParams[newIndex];</span>
+<span class="cstat-no" title="statement not covered" >        dispatch ('updateParamsKey', newParamKey);</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        console.log(`[sortParams] - switchToPrevParam - Переключение: ${currentParamKey} -&gt; ${newParamKey}`);</span>
+      } catch (error) {
+<span class="cstat-no" title="statement not covered" >        console.error('[sortParams] - switchToPrevParam - Ошибка:', error);</span>
       }
+    },
+<span class="fstat-no" title="function not covered" >    sw</span>itchToNextParam({ dispatch, state, rootGetters }) {
+<span class="cstat-no" title="statement not covered" >      console.log('[sortParams] - switchToNextParam - Следующий параметр');</span>
+<span class="cstat-no" title="statement not covered" >      try {</span>
+        const allParams = <span class="cstat-no" title="statement not covered" >rootGetters['config/allParams'] || [];</span>
+<span class="cstat-no" title="statement not covered" >        if (allParams.length === 0) {</span>
+<span class="cstat-no" title="statement not covered" >          console.warn('[sortParams] - switchToNextParam - Нет доступных параметров');</span>
+<span class="cstat-no" title="statement not covered" >          return;</span>
+        }
 &nbsp;
-      const currentParamKey = <span class="cstat-no" title="statement not covered" >state.paramKey || allParams[0];</span>
-      const currentIndex = <span class="cstat-no" title="statement not covered" >allParams.indexOf(currentParamKey);</span>
-<span class="cstat-no" title="statement not covered" >      console.log(`[sortParams] - switchToPrevParam - Переключение: ${currentParamKey} -&gt; ${currentIndex}`);</span>
-<span class="cstat-no" title="statement not covered" >      if (currentIndex === -1) {</span>
-<span class="cstat-no" title="statement not covered" >        console.warn(`[sortParams] - switchToPrevParam - Параметр ${currentParamKey} не найден`);</span>
-<span class="cstat-no" title="statement not covered" >        return;</span>
+        const currentParamKey = <span class="cstat-no" title="statement not covered" >state.paramKey || allParams[0];</span>
+        const currentIndex = <span class="cstat-no" title="statement not covered" >allParams.indexOf(currentParamKey);</span>
+<span class="cstat-no" title="statement not covered" >        if (currentIndex === -1) {</span>
+<span class="cstat-no" title="statement not covered" >          console.warn(`[sortParams] - switchToNextParam - Параметр ${currentParamKey} не найден`);</span>
+<span class="cstat-no" title="statement not covered" >          return;</span>
+        }
+        const newIndex = <span class="cstat-no" title="statement not covered" >(currentIndex + 1) % allParams.length;</span>
+        const newParamKey = <span class="cstat-no" title="statement not covered" >allParams[newIndex];</span>
+<span class="cstat-no" title="statement not covered" >        dispatch ('updateParamsKey', newParamKey);</span>
+<span class="cstat-no" title="statement not covered" >        console.log(`[sortParams] - switchToNextParam - Переключение: ${currentParamKey} -&gt; ${newParamKey}`);</span>
+      } catch (error) {
+<span class="cstat-no" title="statement not covered" >        console.error('[sortParams] - switchToNextParam - Ошибка:', error);</span>
       }
-&nbsp;
-      const newIndex = <span class="cstat-no" title="statement not covered" >(currentIndex - 1 + allParams.length) % allParams.length;</span>
-      const newParamKey = <span class="cstat-no" title="statement not covered" >allParams[newIndex];</span>
-<span class="cstat-no" title="statement not covered" >      dispatch ('updateParamsKey', newParamKey);</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >      console.log(`[sortParams] - switchToPrevParam - Переключение: ${currentParamKey} -&gt; ${newParamKey}`);</span>
-    } catch (error) {
-<span class="cstat-no" title="statement not covered" >      console.error('[sortParams] - switchToPrevParam - Ошибка:', error);</span>
-    }
-  },
-<span class="fstat-no" title="function not covered" >  sw</span>itchToNextParam({ dispatch, state, rootGetters }) {
-<span class="cstat-no" title="statement not covered" >    console.log('[sortParams] - switchToNextParam - Следующий параметр');</span>
-<span class="cstat-no" title="statement not covered" >    try {</span>
-      const allParams = <span class="cstat-no" title="statement not covered" >rootGetters['config/allParams'] || [];</span>
-<span class="cstat-no" title="statement not covered" >      if (allParams.length === 0) {</span>
-<span class="cstat-no" title="statement not covered" >        console.warn('[sortParams] - switchToNextParam - Нет доступных параметров');</span>
-<span class="cstat-no" title="statement not covered" >        return;</span>
-      }
-&nbsp;
-      const currentParamKey = <span class="cstat-no" title="statement not covered" >state.paramKey || allParams[0];</span>
-      const currentIndex = <span class="cstat-no" title="statement not covered" >allParams.indexOf(currentParamKey);</span>
-<span class="cstat-no" title="statement not covered" >      if (currentIndex === -1) {</span>
-<span class="cstat-no" title="statement not covered" >        console.warn(`[sortParams] - switchToNextParam - Параметр ${currentParamKey} не найден`);</span>
-<span class="cstat-no" title="statement not covered" >        return;</span>
-      }
-      const newIndex = <span class="cstat-no" title="statement not covered" >(currentIndex + 1) % allParams.length;</span>
-      const newParamKey = <span class="cstat-no" title="statement not covered" >allParams[newIndex];</span>
-<span class="cstat-no" title="statement not covered" >      dispatch ('updateParamsKey', newParamKey);</span>
-<span class="cstat-no" title="statement not covered" >      console.log(`[sortParams] - switchToNextParam - Переключение: ${currentParamKey} -&gt; ${newParamKey}`);</span>
-    } catch (error) {
-<span class="cstat-no" title="statement not covered" >      console.error('[sortParams] - switchToNextParam - Ошибка:', error);</span>
-    }
-  },
+    },
 &nbsp;
   },
   
@@ -988,7 +988,7 @@ export default {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-17T09:34:54.953Z
+                at 2025-09-17T11:28:05.214Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
