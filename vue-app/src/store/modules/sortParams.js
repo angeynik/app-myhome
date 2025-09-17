@@ -114,7 +114,7 @@ export default {
         commit('SET_ROOM_KEY', newRoomKey);
         localStorage.setItem('roomKey', newRoomKey);
         dispatch ('updateRoomsTitle', newRoomKey);
-        //console.log('[sortParams] - updateRoomsKey - Ключ обновлен', newRoomKey);
+        console.log('[sortParams] - updateRoomsKey - Ключ обновлен', newRoomKey);
     },
     updateRoomsTitle({ commit, rootGetters }, newRoomKey) {
       console.log('[sortParams] - updateRoomsTitle', newRoomKey);
@@ -139,7 +139,7 @@ export default {
       commit('SET_PARAM_TITLE', getSensorTitle(newParamKey));
       //localStorage.setItem('paramKey', JSON.stringify(newParamKey));
       localStorage.setItem('paramKey', newParamKey);
-        //console.log('[sortParams] - updateParamsKey - Ключ обновлен', newParamKey);
+      console.log('[sortParams] - updateParamsKey - Ключ обновлен', newParamKey);
     },
     async setSortType({ commit, state }, type) {
       if (state.sortType === type) return;

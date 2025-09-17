@@ -15,7 +15,7 @@ export default {
   mutations: {
     SET_CONFIG(state, { name, config }) {
       state.configs[name] = config;
-      console.log('[sortParams] - SET_CONFIG Обновлен конфиг: ', config);
+      console.log('[sortParams] - SET_CONFIG Обновлен конфиг[' + name + ']: ', config);
     },
     SET_ALL_ROOMS(state, rooms) {
       state.allRooms = rooms;
@@ -56,33 +56,64 @@ export default {
   },
   
   actions: {
+    // async initialize({ dispatch, rootGetters, state }) {
+    //   await dispatch('detectDevice'); 
+    //   console.log('[config] - initialize - Начинаем Инициализацию конфига');
+    //   const checkRoomKey = rootGetters['roomKey'];
+    //   const checkParamsKey = rootGetters['paramKey'];
+    //   console.log(`[config] - initialize - Исходные ключи сортировки  -  state.roomKey: ${checkRoomKey},  -  state.paramKey: ${checkParamsKey}`);
+    //   if (checkRoomKey === null || checkRoomKey === undefined) {
+    //     console.log('[config] - initialize - Ключи сортировки не найдены, инициализируем');
+    //     await dispatch('ensureSortingKeys');
+    //   }
+    //   // console.log(`[config] - initialize - Исходные ключи из localStorage roomsKey: ${localStorage.getItem('roomKey')}, paramsKey: ${localStorage.getItem('paramKey')}`);
+
+    //   const dID = rootGetters['dID'];
+    //   console.log('[config] - initialize - dID: ', dID, ', state.configs: ', state.configs);
+    //   console.log('[config] - initialize - state.configs[',dID,']: ', state.configs[dID]);
+    //   if (dID && !state.configs[dID]) {
+    //   await dispatch('ensureConfig', dID);
+    //   await new Promise((resolve) => {
+    //     const interval = setInterval(() => {
+    //       if (state.configs[dID]) {
+    //         console.log('[config] - initialize - ensureConfig Promise завершён', state.configs[dID]);
+    //         clearInterval(interval);
+    //         resolve();
+    //       }
+    //     }, 50);
+    //   });
+    //   console.log('[config] - initialize - Завершена ensureConfig');
+    //   //await dispatch('ensureSortingKeys'); 
+    //   }
+    // },
     async initialize({ dispatch, rootGetters, state }) {
       await dispatch('detectDevice'); 
-      //console.log('[config] - initialize - Начинаем Инициализацию конфига');
+      console.log('[config] - initialize - Начинаем Инициализацию конфига');
+
+      const dID = rootGetters['dID'];
+      console.log('[config] - initialize - dID: ', dID);
+      console.log('[config] - initialize - state.configs[dID] до ensureConfig: ', state.configs[dID]);
+      
+      if (dID && !state.configs[dID]) {
+        await dispatch('ensureConfig', dID);
+        // После ensureConfig проверяем, что конфиг действительно загружен
+        if (state.configs[dID]) {
+          console.log('[config] - initialize - ensureConfig завершен', state.configs[dID]);
+        } else {
+          console.error('[config] - initialize - Конфиг не был загружен');
+        }
+      }
+
       const checkRoomKey = rootGetters['roomKey'];
       const checkParamsKey = rootGetters['paramKey'];
       console.log(`[config] - initialize - Исходные ключи сортировки  -  state.roomKey: ${checkRoomKey},  -  state.paramKey: ${checkParamsKey}`);
+      
       if (checkRoomKey === null || checkRoomKey === undefined) {
         console.log('[config] - initialize - Ключи сортировки не найдены, инициализируем');
         await dispatch('ensureSortingKeys');
       }
-      // console.log(`[config] - initialize - Исходные ключи из localStorage roomsKey: ${localStorage.getItem('roomKey')}, paramsKey: ${localStorage.getItem('paramKey')}`);
 
-      const dID = rootGetters['dID'];
-      if (dID && !state.configs[dID]) {
-      await dispatch('ensureConfig', dID);
-      await new Promise((resolve) => {
-        const interval = setInterval(() => {
-          if (state.configs[dID]) {
-            console.log('[config] - initialize - ensureConfig Promise завершён', state.configs[dID]);
-            clearInterval(interval);
-            resolve();
-          }
-        }, 50);
-      });
-      console.log('[config] - initialize - Завершена ensureConfig');
-      //await dispatch('ensureSortingKeys'); 
-      }
+      console.log('[config] - initialize - Завершена инициализация');
     },
     clearKey(context, { key }) {
       const withoutPrefix = key.slice(1);
@@ -126,7 +157,7 @@ export default {
     },
    
     async requestConfig({ dispatch }, dID) {
-      //console.log('[config] - requestConfig - Запрос на получение конфигурации по dID - ', dID);
+      console.log('[config] - requestConfig - Запрос на получение конфигурации по dID - ', dID);
       try {
         const response = await dispatch('websocket/send', {
           type: 'get',
@@ -135,7 +166,7 @@ export default {
         }, { root: true });
         
         if (response?.payload) {
-          //console.log('[config] - requestConfig - от Server Конфигурация получена - ', response.payload);
+          console.log('[config] - requestConfig - от Server Конфигурация получена - ', response.payload);
           await dispatch('handleConfigResponse', response);
         }
       } catch (error) {
@@ -153,7 +184,7 @@ export default {
         if (!dID || !config) {
           throw new Error('Невалидный ответ конфигурации');
         }
-        
+        console.log('[Config] - handleConfigResponse - Обновляем Конфигурацию - ', dID);
         commit('SET_CONFIG', { name: dID, config });
         // Обновляем список комнат
         await dispatch('handleRoomsSet', config);
@@ -168,7 +199,7 @@ export default {
       }
     },
     handleRoomsSet ({ commit }, config ) {
-      //console.log('[Config] - handleConfigResponse - Обновляем список комнат');
+      console.log('[Config] - handleConfigResponse - Обновляем список комнат');
       try {
       // Обновляем список комнат
       const rooms = Object.keys(config).filter(key => 
@@ -182,7 +213,7 @@ export default {
       }
     },
     handleParamsSet ({ commit }, config) {
-      //console.log('[Config] - handleConfigResponse - Обновляем список параметров');
+      console.log('[Config] - handleConfigResponse - Обновляем список параметров');
       try {
       const paramsSet = new Set();
       Object.values(config).forEach(room => {
@@ -232,24 +263,37 @@ export default {
       }
     },
 
+    // async ensureConfig({ state, dispatch }, dID) {
+    //   //console.log('[config] - ensureConfig - Проверяем наличие конфигурации по dID - ', dID);
+    //   if (!dID) throw new Error('dID не определен');
+    //   let config = state.configs[dID];
+    //   // Если конфиг уже есть, просто возвращаем его
+    //   if (config) {
+    //     console.log('[config] - ensureConfig - Конфига найден по dID - ', dID);
+    //     // Обновляем список комнат
+    //     await dispatch('handleRoomsSet', config);
+    //   // Обновляем список параметров
+    //     await dispatch('handleParamsSet', config);
+    //     return config;
+
+    //   } 
+    //   //console.log('[config] - ensureConfig - Конфига нет, запрашиваем');
+    //   return await dispatch('requestConfig', dID);
+
+    // },
     async ensureConfig({ state, dispatch }, dID) {
-      //console.log('[config] - ensureConfig - Проверяем наличие конфигурации по dID - ', dID);
       if (!dID) throw new Error('dID не определен');
       let config = state.configs[dID];
-      // Если конфиг уже есть, просто возвращаем его
       if (config) {
-        console.log('[config] - ensureConfig - Конфига найден по dID - ', dID);
-        // Обновляем список комнат
+        console.log('[config] - ensureConfig - Конфиг найден по dID - ', dID);
         await dispatch('handleRoomsSet', config);
-      // Обновляем список параметров
         await dispatch('handleParamsSet', config);
         return config;
-
       } 
-      //console.log('[config] - ensureConfig - Конфига нет, запрашиваем');
+      console.log('[config] - ensureConfig - Конфига нет, запрашиваем');
       return await dispatch('requestConfig', dID);
-
     },
+
     async ensureSortingKeys({ state, dispatch, rootGetters }) {
       console.log('[config] - ensureSortingKeys - Проверяем наличие ключей сортировки');
       
@@ -259,11 +303,12 @@ export default {
       //if (!roomKey && state.allRooms.length > 0) {
       if (roomKey === null && state.allRooms.length > 0) {
         roomKey = state.allRooms[0];
+        console.log('[config] - Установлена первая комната:', roomKey);
       }
       
       if (roomKey) {
         await dispatch('sortParams/updateRoomsKey', roomKey, { root: true });
-        console.log('[config] - Установлена первая комната:', roomKey);
+        //console.log('[config] - Установлена первая комната:', roomKey);
       }
 
       // Обработка параметров

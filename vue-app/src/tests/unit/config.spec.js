@@ -133,6 +133,35 @@ describe('Vuex config module', () => {
       expect(context.dispatch).toHaveBeenCalledWith('ensureSortingKeys');
       expect(context.dispatch).toHaveBeenCalledWith('ensureConfig', 'device123');
     });
+    it('initialize skips ensureSortingKeys if roomKey and paramKey exist', async () => {
+      context.rootGetters = {
+        dID: 'device123',
+        roomKey: 'room01',
+        paramKey: 'dTemp'
+      };
+
+      context.state.configs['device123'] = { room1: {} };
+
+      await configModule.actions.initialize(context);
+
+      expect(context.dispatch).toHaveBeenCalledWith('detectDevice');
+      expect(context.dispatch).not.toHaveBeenCalledWith('ensureSortingKeys');
+    });
+
+
+    it('initialize calls ensureSortingKeys if roomKey is null', async () => {
+      context.rootGetters = {
+        dID: 'device123',
+        'sortParams/getRoomKey': null,
+        'sortParams/getParamKey': 'dTemp'
+      };
+
+      context.state.configs['device123'] = { room1: {} };
+
+      await configModule.actions.initialize(context);
+
+      expect(context.dispatch).toHaveBeenCalledWith('ensureSortingKeys');
+    });
 
     it('ensureConfig returns existing config', async () => {
       const config = { room1: {} };
