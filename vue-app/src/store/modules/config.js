@@ -77,36 +77,7 @@ export default {
   },
   
   actions: {
-    // async initialize({ dispatch, rootGetters, state }) {
-    //   await dispatch('detectDevice'); 
-    //   console.log('[config] - initialize - Начинаем Инициализацию конфига');
-    //   const checkRoomKey = rootGetters['roomKey'];
-    //   const checkParamsKey = rootGetters['paramKey'];
-    //   console.log(`[config] - initialize - Исходные ключи сортировки  -  state.roomKey: ${checkRoomKey},  -  state.paramKey: ${checkParamsKey}`);
-    //   if (checkRoomKey === null || checkRoomKey === undefined) {
-    //     console.log('[config] - initialize - Ключи сортировки не найдены, инициализируем');
-    //     await dispatch('ensureSortingKeys');
-    //   }
-    //   // console.log(`[config] - initialize - Исходные ключи из localStorage roomsKey: ${localStorage.getItem('roomKey')}, paramsKey: ${localStorage.getItem('paramKey')}`);
 
-    //   const dID = rootGetters['dID'];
-    //   console.log('[config] - initialize - dID: ', dID, ', state.configs: ', state.configs);
-    //   console.log('[config] - initialize - state.configs[',dID,']: ', state.configs[dID]);
-    //   if (dID && !state.configs[dID]) {
-    //   await dispatch('ensureConfig', dID);
-    //   await new Promise((resolve) => {
-    //     const interval = setInterval(() => {
-    //       if (state.configs[dID]) {
-    //         console.log('[config] - initialize - ensureConfig Promise завершён', state.configs[dID]);
-    //         clearInterval(interval);
-    //         resolve();
-    //       }
-    //     }, 50);
-    //   });
-    //   console.log('[config] - initialize - Завершена ensureConfig');
-    //   //await dispatch('ensureSortingKeys'); 
-    //   }
-    // },
     async initialize({ dispatch, rootGetters, state }) {
       await dispatch('detectDevice'); 
       console.log('[config] - initialize - Начинаем Инициализацию конфига');
@@ -358,7 +329,19 @@ export default {
       if (paramKey) {
         await dispatch('sortParams/updateParamsKey', paramKey, { root: true });
       }
-    },
+      // Обработка устройств
+      let deviceKey = rootGetters['deviceKey'] || localStorage.getItem('deviceKey');
+      if (!deviceKey && state.allDevices.length > 0) {
+          deviceKey = state.allDevices[0];
+          localStorage.setItem('deviceKey', deviceKey);
+          console.log('[config] - Установлено первое устройство:', deviceKey);
+        }
+        
+        if (deviceKey) {
+          await dispatch('sortParams/updateDevicesKey', deviceKey, { root: true });
+        }
+      },
+    
 
       async updateSetpointLocal ({ commit, state, rootGetters, dispatch }, { roomKey, paramKey, value }) {
         

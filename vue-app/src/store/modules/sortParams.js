@@ -30,6 +30,8 @@ export default {
   namespaced: true,
     getters: {
     currentSortType: state => state.sortType,
+    getDeviceKey: state => state.deviceKey,
+    getDeviceTitle: state => state.deviceTitle,
     getRoomId: state => state.roomId,
     getRoomKey: state => state.roomKey,
     getRoomTitle: state => state.roomTitle,
@@ -48,6 +50,8 @@ export default {
     paramKey: localStorage.getItem('paramKey') || null, // ключ параметра по которому выполняется сортировка
     roomTitle: 'Не выбрано',
     paramTitle: 'Не выбрано',
+    deviceKey: localStorage.getItem('deviceKey') || null,
+    deviceTitle: 'Не выбрано',
     limHigh: 32,
     limLow: 10,
     limStep: 1,
@@ -79,7 +83,15 @@ export default {
       }
       //console.log('[sortParams] - SET_ROOM_KEY - Ключ обновлен', key);
     },
-    
+    SET_DEVICE_KEY(state, key) {
+      if (typeof key === 'string' && state.deviceKey !== key && key != null) {
+        console.log(`[sortParams] MUTATION SET_DEVICE_KEY: ${state.deviceKey} -> ${key}`);
+        state.deviceKey = key;
+      }
+    },
+    SET_DEVICE_TITLE(state, title) {
+      state.deviceTitle = title || 'Устройство';
+    },
     SET_ROOM_TITLE(state, title) {
       state.roomTitle = title || 'Главная комната';
     },
@@ -140,6 +152,11 @@ export default {
       //localStorage.setItem('paramKey', JSON.stringify(newParamKey));
       localStorage.setItem('paramKey', newParamKey);
       console.log('[sortParams] - updateParamsKey - Ключ обновлен', newParamKey);
+    },
+    updateDevicesKey({ commit }, newDeviceKey) {
+      commit('SET_DEVICE_KEY', newDeviceKey);
+      localStorage.setItem('deviceKey', newDeviceKey);
+      console.log('[sortParams] - updateDevicesKey - Ключ обновлен', newDeviceKey);
     },
     async setSortType({ commit, state }, type) {
       if (state.sortType === type) return;
@@ -298,6 +315,53 @@ export default {
         console.log(`[sortParams] - switchToNextParam - Переключение: ${currentParamKey} -> ${newParamKey}`);
       } catch (error) {
         console.error('[sortParams] - switchToNextParam - Ошибка:', error);
+      }
+    },
+    switchToPrevDevice({ dispatch, state, rootGetters }) {
+      console.log('[sortParams] - switchToPrevDevice - Предыдущее устройство');
+      try {
+        const allDevices = rootGetters['config/allDevices'] || [];
+        if (allDevices.length === 0) {
+          console.warn('[sortParams] - switchToPrevDevice - Нет доступных устройств');
+          return;
+        }
+
+        const currentDeviceKey = state.deviceKey || allDevices[0];
+        const currentIndex = allDevices.indexOf(currentDeviceKey);
+        if (currentIndex === -1) {
+          console.warn(`[sortParams] - switchToPrevDevice - Устройство ${currentDeviceKey} не найдено`);
+          return;
+        }
+
+        const newIndex = (currentIndex - 1 + allDevices.length) % allDevices.length;
+        const newDeviceKey = allDevices[newIndex];
+        dispatch('updateDevicesKey', newDeviceKey);
+      } catch (error) {
+        console.error('[sortParams] - switchToPrevDevice - Ошибка:', error);
+      }
+    },
+    
+    switchToNextDevice({ dispatch, state, rootGetters }) {
+      console.log('[sortParams] - switchToNextDevice - Следующее устройство');
+      try {
+        const allDevices = rootGetters['config/allDevices'] || [];
+        if (allDevices.length === 0) {
+          console.warn('[sortParams] - switchToNextDevice - Нет доступных устройств');
+          return;
+        }
+
+        const currentDeviceKey = state.deviceKey || allDevices[0];
+        const currentIndex = allDevices.indexOf(currentDeviceKey);
+        if (currentIndex === -1) {
+          console.warn(`[sortParams] - switchToNextDevice - Устройство ${currentDeviceKey} не найдено`);
+          return;
+        }
+
+        const newIndex = (currentIndex + 1) % allDevices.length;
+        const newDeviceKey = allDevices[newIndex];
+        dispatch('updateDevicesKey', newDeviceKey);
+      } catch (error) {
+        console.error('[sortParams] - switchToNextDevice - Ошибка:', error);
       }
     },
 

@@ -38,6 +38,7 @@ const store = createStore({
     dID: (state) => state.auth.dID || null,
     roomKey: (state) => state.sortParams.roomKey,
     paramKey: (state) => state.sortParams.paramKey,
+    deviceKey: (state) => state.sortParams.deviceKey,
     // roomKey: (state) => state.sortParams.roomKey || localStorage.getItem('roomKey') || null,
     // paramKey: (state) => state.sortParams.paramKey || localStorage.getItem('paramKey') || null,
     // getConfig: state => name => state.configs[name] || {},

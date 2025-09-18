@@ -30,12 +30,12 @@
       <div class="header-bottom">
 
         <nav>
-          <router-link to="/"> main  </router-link>
-          <router-link :to="{ name: 'DashBoard' }"> dashboard</router-link>
-          <router-link :to="{ name: 'DashboardRooms' }" @click.prevent="forceSortUpdate('rooms')"> rooms </router-link>
-          <router-link :to="{ name: 'DashboardParams' }" @click.prevent="forceSortUpdate('params')"> params </router-link>
-          <router-link :to="{ name: 'DashboardCommon' }" @click.prevent="forceSortUpdate('common')">common</router-link>
-          <router-link :to="{ name: 'DashboardSettings' }">settings</router-link>
+          <router-link to="/"> Главная </router-link>
+          <!-- <router-link :to="{ name: 'DashBoard' }"> выбор сортировки </router-link> -->
+          <router-link :to="{ name: 'DashboardRooms' }" @click.prevent="forceSortUpdate('rooms')"> Комнаты </router-link>
+          <router-link :to="{ name: 'DashboardParams' }" @click.prevent="forceSortUpdate('params')"> Параметры </router-link>
+          <router-link :to="{ name: 'DashboardDevices' }" @click.prevent="forceSortUpdate('devices')">Устройства</router-link>
+          <router-link :to="{ name: 'DashboardSettings' }">Настройки</router-link>
         </nav>
 
       <!-- <nav>
@@ -131,7 +131,7 @@ export default {
       'getParamTitle',
       'getSensorTitle',
     ]),
-       ...mapGetters('config', ['getMobile', 'getDeviceType']),
+    ...mapGetters('config', ['getMobile', 'getDeviceType']),
     userLevel() {
       return this.level || 0;
     },
@@ -145,10 +145,14 @@ export default {
           return this.getRoomKey 
             ? `${this.getRoomTitle}` 
             : "Сортировка по комнатам";
-        } else {
+        } else if (this.currentSortType === 'params') {
           return this.getParamKey 
             ? `${this.getSensorTitle(this.getParamKey)}` 
             : "Сортировка по параметрам";
+        } else if (this.currentSortType === 'devices') {
+          return this.getDeviceKey 
+            ? `${this.getDeviceKey}` 
+            : "Сортировка по устройствам";
         }
       }
       return "Dashboard";
@@ -187,6 +191,8 @@ watch: {
       'switchToNextRoom', 
       'switchToPrevParam', 
       'switchToNextParam',
+      'switchToPrevDevice', 
+      'switchToNextDevice',
       'setLimits'
     ]),
     ...mapActions('config', ['initialize']),
@@ -220,7 +226,7 @@ watch: {
       if (!config) return;
 
       this.selectedComponent = config.component;
-      this.showHeaderArrow = ['DashboardRooms', 'DashboardParams'].includes(routeName) && !this.getMobile;
+      this.showHeaderArrow = ['DashboardRooms', 'DashboardParams', 'DashboardDevices'].includes(routeName) && !this.getMobile;
 
       if (config.sortType) {
         this.$store.commit('sortParams/SET_SORT_TYPE', config.sortType);
@@ -239,7 +245,15 @@ watch: {
     await this.$store.dispatch('sortParams/setSortType', component);
     
     // Навигация
-    const routeName = `Dashboard${component.charAt(0).toUpperCase() + component.slice(1)}`;
+    const routeMap = {
+      'rooms': 'DashboardRooms',
+      'params': 'DashboardParams',
+      'devices': 'DashboardDevices', // Используем новое имя маршрута
+      'settings': 'DashboardSettings'
+    };
+    
+    const routeName = routeMap[component];
+    // const routeName = `Dashboard${component.charAt(0).toUpperCase() + component.slice(1)}`;
     
     // Проверяем, не находимся ли мы уже на этом маршруте
     if (this.$route.name !== routeName) {
@@ -260,27 +274,23 @@ watch: {
     //   console.log('[DashBoard] - detectDevice - Работаем с мобильным устройством - ', this.isMobile);
     // },
     sortingBack() {
-      //console.groupCollapsed('[DashBoard] - sortingBack - Переключение на предыдущий элемент');
       if (this.currentSortType === 'rooms') {
-        //console.log('Тип: комнаты');
         this.switchToPrevRoom();
       } else if (this.currentSortType === 'params') {
-        //console.log('Тип: параметры');
         this.switchToPrevParam();
+      } else if (this.currentSortType === 'devices') {
+        this.switchToPrevDevice();
       }
-      console.groupEnd();
     },
     
     sortingForvard() {
-      //console.groupCollapsed('[DashBoard] - sortingForvard - Переключение на следующий элемент');
       if (this.currentSortType === 'rooms') {
-        //console.log('Тип: комнаты');
         this.switchToNextRoom();
       } else if (this.currentSortType === 'params') {
-        //console.log('Тип: параметры');
         this.switchToNextParam();
+      } else if (this.currentSortType === 'devices') {
+        this.switchToNextDevice();
       }
-      console.groupEnd();
     },
 
     // Работа с Setpoint

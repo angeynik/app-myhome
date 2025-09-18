@@ -38,8 +38,8 @@ const routes = [
     },
     {
       path: 'devices',
-      name: 'DashboardCommon',
-      component: () => import('@/components/DashboardCommon.vue')
+      name: 'DashboardDevices',
+      component: () => import('@/components/DashboardDevices.vue')
     },
     {
       path: 'settings',
