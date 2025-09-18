@@ -1,5 +1,5 @@
 <template>
-    <h1>DashboardCommon</h1>
+  <MainBody :initialSortType="'devices'" />
 </template>
 
 <script>

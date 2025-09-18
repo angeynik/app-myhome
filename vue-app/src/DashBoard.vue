@@ -57,7 +57,7 @@
     <div class="app-place_body" v-if="!selectedComponent" id="app_place">
       <AppPlace class="app-place_module" title="Комнаты" @select="selectComponent('rooms')" />
       <AppPlace class="app-place_module" title="Параметры" @select="selectComponent('params')" />
-      <AppPlace class="app-place_module" title="Основные" @select="selectComponent('common')" />
+      <AppPlace class="app-place_module" title="Устройства" @select="selectComponent('devices')" />
       <AppPlace class="app-place_module" title="Настройки" @select="selectComponent('settings')" />
     </div>
     
@@ -212,7 +212,7 @@ watch: {
       const routeToComponentMap = {
         'DashboardRooms': { component: 'MainBody', sortType: 'rooms' },
         'DashboardParams': { component: 'MainBody', sortType: 'params' },
-        'DashboardCommon': { component: 'MainBody', sortType: 'common' },
+        'DashboardCommon': { component: 'MainBody', sortType: 'devices' },
         'DashboardSettings': { component: 'DashboardSettings', sortType: 'settings' }
       };
 

@@ -25,6 +25,10 @@ export default {
       state.allParams = params;
       console.log('[sortParams] - SET_ALL_PARAMS Обновлен список доступных параметров: ', params);
     },
+    SET_ALL_DEVICES(state, devices) {
+      state.allDevices = devices;
+      console.log('[sortParams] - SET_ALL_DEVICES Обновлен список доступных устройств: ', devices);
+    },
     UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value, timestamp }) {
       const config = state.configs[dID];
       if (!config) {
@@ -207,6 +211,8 @@ export default {
         await dispatch('handleRoomsSet', config);
       // Обновляем список параметров
         await dispatch('handleParamsSet', config);
+      // Обновляем список устройств
+      await dispatch('handleDevicesSet', config);
         // Обновляем ключи сортировки
         await dispatch('ensureSortingKeys');
         console.log('[Config] - handleConfigResponse - Конфиг обновлен, данные для сортировки готовы');
@@ -250,6 +256,43 @@ export default {
         throw error;
       }
     },
+    handleDevicesSet({ commit }, config) {
+      console.log('[Config] - handleDevicesSet - Обновляем список устройств');
+      try {
+        const devicesSet = new Set();
+        
+        // Исключаемые поля (не устройства)
+        const excludedFields = ['init', 'id', 'group', 'title', 'setpoints'];
+        
+        // Проходим по всем комнатам
+        Object.values(config).forEach(room => {
+          // Проходим по всем свойствам комнаты
+          Object.keys(room).forEach(key => {
+            // Пропускаем исключаемые поля
+            if (excludedFields.includes(key)) return;
+            
+            // Если это объект с устройствами (sensors, actuators, switchs, etc.)
+            if (typeof room[key] === 'object' && room[key] !== null) {
+              // Получаем все ключи устройств в этом разделе
+              Object.keys(room[key]).forEach(deviceKey => {
+                // Отбрасываем первый символ и цифры в конце
+                const baseDevice = deviceKey.replace(/^[a-z]/, '').replace(/\d+$/, '');
+                if (baseDevice) {
+                  devicesSet.add(baseDevice);
+                }
+              });
+            }
+          });
+        });
+        
+        const devices = Array.from(devicesSet);
+        commit('SET_ALL_DEVICES', devices);
+        //console.log('[Config] - handleDevicesSet Обновлен список доступных устройств: ', devices);
+      } catch (error) {
+        console.error('[Config] - handleDevicesSet - Ошибка обновления списка устройств:', error);
+        throw error;
+      }
+    },
 
     handleSensorUpdate({ commit }, { dID, payload, type }) {
       console.log('[Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
@@ -281,6 +324,7 @@ export default {
         console.log('[config] - ensureConfig - Конфиг найден по dID - ', dID);
         await dispatch('handleRoomsSet', config);
         await dispatch('handleParamsSet', config);
+        await dispatch('handleDevicesSet', config);
         return config;
       } 
       console.log('[config] - ensureConfig - Конфига нет, запрашиваем');
@@ -297,8 +341,7 @@ export default {
       if (roomKey === null && state.allRooms.length > 0) {
         roomKey = state.allRooms[0];
         console.log('[config] - Установлена первая комната:', roomKey);
-      }
-      
+      }      
       if (roomKey) {
         await dispatch('sortParams/updateRoomsKey', roomKey, { root: true });
         //console.log('[config] - Установлена первая комната:', roomKey);

@@ -37,7 +37,7 @@ const routes = [
       component: () => import('@/components/DashboardParams.vue')
     },
     {
-      path: 'common',
+      path: 'devices',
       name: 'DashboardCommon',
       component: () => import('@/components/DashboardCommon.vue')
     },
