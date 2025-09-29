@@ -105,18 +105,6 @@ export default {
         }
       }
       await dispatch('ensureSortingKeys');
-      //console.log('[config] - initialize - После ensureSortingKeys');
-
-      // const checkRoomKey = rootGetters['roomKey'];
-      // const checkParamsKey = rootGetters['paramKey'];
-      // const checkDeviceKey = rootGetters['deviceKey'];
-      // const checkSetpointKey = rootGetters['setpointKey'];
-      // console.log(`-- 111 - - - - [config] - initialize - Исходные ключи сортировки  -  state.roomKey: ${checkRoomKey},  -  state.paramKey: ${checkParamsKey}, -  state.deviceKey: ${checkDeviceKey}, -  state.setpointKey: ${checkSetpointKey}`);
-      
-      // if (checkRoomKey === null || checkRoomKey === undefined) {
-      //   console.log('[config] - initialize - Ключи сортировки не найдены, инициализируем');
-      //   await dispatch('ensureSortingKeys');
-      // }
 
       console.log('[config] - initialize - Завершена инициализация');
     },
@@ -402,6 +390,12 @@ export default {
       // Обработка параметров
       let paramKey = rootGetters['paramKey'] || localStorage.getItem('paramKey');
       //console.log('[config] - ensureSortingKeys - paramKey ', paramKey);
+
+      if (paramKey && !state.allParams.includes(paramKey)) {
+        console.warn('[config] - ensureSortingKeys - paramKey невалиден, сбрасываем');
+        paramKey = null;
+        localStorage.removeItem('paramKey');
+      }
       if (!paramKey && state.allParams.length > 0) {
         paramKey = state.allParams[0];
         localStorage.setItem('paramKey', paramKey);
@@ -415,6 +409,13 @@ export default {
       // Обработка устройств
       let deviceKey = rootGetters['deviceKey'] || localStorage.getItem('deviceKey');
       //console.log('[config] - ensureSortingKeys - deviceKey ', deviceKey);
+
+      if (deviceKey && !state.allDevices.includes(deviceKey)) {
+        console.warn('[config] - ensureSortingKeys - deviceKey невалиден, сбрасываем');
+        deviceKey = null;
+        localStorage.removeItem('deviceKey');
+      }
+
       if (!deviceKey && state.allDevices.length > 0) {
           deviceKey = state.allDevices[0];
           localStorage.setItem('deviceKey', deviceKey);
@@ -428,6 +429,13 @@ export default {
       // Обработка Setpoints
       let setpointKey = rootGetters['setpointKey'] || localStorage.getItem('setpointKey');
       //console.log('[config] - ensureSortingKeys - setpointKey ', setpointKey);
+
+      if (setpointKey && !state.allSetpoints.includes(setpointKey)) {
+        console.warn('[config] - ensureSortingKeys - setpointKey невалиден, сбрасываем');
+        setpointKey = null;
+        localStorage.removeItem('setpointKey');
+      }
+
       if (!setpointKey && state.allSetpoints.length > 0) {
           setpointKey = state.allSetpoints[0];
           localStorage.setItem('setpointKey', setpointKey);
@@ -439,37 +447,6 @@ export default {
         }
       },
     
-
-      // async updateSetpointLocal ({ commit, state, rootGetters, dispatch }, { roomKey, paramKey, value }) {
-        
-
-      //   const dID = rootGetters.dID;
-      //   if (!dID) throw new Error('dID не определен');
-
-      //   // 1. Глубоким клонированием создаём рабочую копию
-      //   const safeBase = state.configs[dID] || {};
-      //   const config = JSON.parse(JSON.stringify(safeBase));
-      //   console.log('[config] - updateSetpoint - исходный state.config:', config);
-
-      //   if (!config[roomKey]?.setpoints) {
-      //     throw new Error(`Комната ${roomKey} или её уставки не найдены`);
-      //   }
-
-      //   // 2. Ищем точный ключ уставки
-      //   const baseParamKey = await dispatch('clearKey', { key: paramKey });
-      //   let setpointKey = Object.keys(config[roomKey].setpoints).find(k => k === baseParamKey);
-
-      //   if (!setpointKey) {
-      //     config[roomKey].setpoints[baseParamKey] = { value: 0 };
-      //     setpointKey = baseParamKey;
-      //   }
-
-      //   config[roomKey].setpoints[setpointKey].value = parseFloat(value);
-
-      //   // 3. Сохраняем в Vuex
-      //   commit('SET_CONFIG', { name: dID, config });
-
-      // },
       async updateSetpointServer( {rootGetters, dispatch}, { roomKey, paramKey, value }) {
         const baseParamKey = await dispatch('clearKey', { key: paramKey });
         const dID = rootGetters.dID;

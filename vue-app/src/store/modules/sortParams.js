@@ -194,7 +194,7 @@ export default {
     },
     updateSetpointsKey({ commit }, newSetpointKey) {
       commit('SET_SETPOINT_KEY', newSetpointKey);
-      localStorage.setItem('deviceKey', newSetpointKey);
+      localStorage.setItem('setpointKey', newSetpointKey);
       console.log('[sortParams] - updateSetpointsKey - Ключ setpointKey обновлен', newSetpointKey);
     },
 

@@ -109,9 +109,9 @@ watch: {
   },
 
 },
-  mounted() {
-    this.updateView();
-  },
+  // mounted() {
+  //   this.updateView();
+  // },
   methods: {
     ...mapMutations('sortParams', ['SET_SORT_TYPE', 'SET_ROOM_ID', 'SET_ROOM_KEY', 'SET_PARAM_KEY', 'SET_ROOM_TITLE', 'SET_PARAM_TITLE', 'SET_SETPOINT_KEY', 'SET_DEVICE_KEY', 'SET_DEVICE_TITLE', 'SET_SETPOINT_TITLE']),
     
@@ -197,7 +197,7 @@ watch: {
     async updateView() {
         try {
           //console.groupCollapsed('[MainBody] Обновление отображения');
-          console.log('Шаг 4 - [MainBody] updateView started');
+          //console.log('Шаг 4 - [MainBody] updateView started');
           const config = this.getConfig(this.dID);
           if (!config) {
             console.warn('Конфигурация не доступна');
@@ -218,7 +218,7 @@ watch: {
         }
           
           console.log('Шаг 6 - [MainBody] updateView  Отображаемые элементы:', this.viewArray);
-          console.log('[MainBody] View array length:', this.viewArray.length);
+          //console.log('[MainBody] View array length:', this.viewArray.length);
           console.groupEnd();
         } catch (error) {
           console.error('[MainBody] Ошибка обновления:', error);
@@ -226,90 +226,53 @@ watch: {
         }
 
     },
-    // Формируем массив для отображения сортировки по комнатам
-    // getSortedRooms(config, roomKey) {
-    //   const room = config[roomKey];
-    //   if (!room?.sensors) return [];
-      
-    //   return Object.entries(room.sensors).map(([sensorKey, sensorData]) => {
-    //     //const sensorSet = room.setpoints?.[sensorKey];
-    //     // Ищем соответствующую уставку
-    //   let setValue = null;
-    //   if (room.setpoints) {
-    //   // Ищем ключ уставки, который соответствует префиксу сенсора
-    //     const setpointKey = Object.keys(room.setpoints).find(setKey => 
-    //       sensorKey.includes(setKey) || setKey.includes(sensorKey)
-    //     );
-        
-    //     if (setpointKey) {
-    //       setValue = room.setpoints[setpointKey]?.value != null 
-    //         ? parseFloat(room.setpoints[setpointKey].value) 
-    //         : null;
-    //     }
-    //   }
-
-    //     return {         
-    //       sortType: 'rooms',
-    //       paramTitle: this.getSensorTitle(sensorKey),
-    //       paramType: sensorData?.type != null ? sensorData.type : null,
-    //       paramKey: sensorKey,
-    //       value: this.getSensorValue(sensorData?.type, sensorData),
-    //       setValue: setValue,
-    //       unit: this.getUnit(sensorKey),
-    //       timeDiff: this.getTimeDiff(sensorData.lastUpdate),
-    //       roomTitle: room.title,
-    //       roomId: room.id,
-    //       roomKey
-    //     };
-    //   });
-    // },
 
     getSortedRooms(config, roomKey) {
-  const room = config[roomKey];
-  if (!room) return [];
-  
-  const devicesArray = [];
-  const excludedSections = ['init', 'id', 'group', 'title', 'setpoints'];
+      const room = config[roomKey];
+      if (!room) return [];
+      
+      const devicesArray = [];
+      const excludedSections = ['init', 'id', 'group', 'title', 'setpoints'];
 
-  // Проходим по всем разделам комнаты кроме исключенных
-  Object.entries(room).forEach(([sectionKey, sectionData]) => {
-    if (excludedSections.includes(sectionKey)) return;
-    
-    if (sectionData && typeof sectionData === 'object') {
-      Object.entries(sectionData).forEach(([itemKey, itemData]) => {
-        // Для каждого устройства ищем уставку
-        let setValue = null;
-        if (room.setpoints) {
-          const setpointKey = Object.keys(room.setpoints).find(setKey => 
-            itemKey.includes(setKey) || setKey.includes(itemKey)
-          );
-          
-          if (setpointKey) {
-            setValue = room.setpoints[setpointKey]?.value != null 
-              ? parseFloat(room.setpoints[setpointKey].value) 
-              : null;
-          }
+      // Проходим по всем разделам комнаты кроме исключенных
+      Object.entries(room).forEach(([sectionKey, sectionData]) => {
+        if (excludedSections.includes(sectionKey)) return;
+        
+        if (sectionData && typeof sectionData === 'object') {
+          Object.entries(sectionData).forEach(([itemKey, itemData]) => {
+            // Для каждого устройства ищем уставку
+            let setValue = null;
+            if (room.setpoints) {
+              const setpointKey = Object.keys(room.setpoints).find(setKey => 
+                itemKey.includes(setKey) || setKey.includes(itemKey)
+              );
+              
+              if (setpointKey) {
+                setValue = room.setpoints[setpointKey]?.value != null 
+                  ? parseFloat(room.setpoints[setpointKey].value) 
+                  : null;
+              }
+            }
+
+            devicesArray.push({
+              sortType: 'rooms',
+              paramTitle: this.getSensorTitle(itemKey),
+              paramType: itemData?.type,
+              paramKey: itemKey,
+              value: this.getSensorValue(itemData?.type, itemData),
+              setValue: setValue,
+              unit: this.getUnit(itemKey),
+              timeDiff: this.getTimeDiff(itemData.lastUpdate),
+              roomTitle: room.title,
+              roomId: room.id,
+              roomKey
+            });
+          });
         }
-
-        devicesArray.push({
-          sortType: 'rooms',
-          paramTitle: this.getSensorTitle(itemKey),
-          paramType: itemData?.type,
-          paramKey: itemKey,
-          value: this.getSensorValue(itemData?.type, itemData),
-          setValue: setValue,
-          unit: this.getUnit(itemKey),
-          timeDiff: this.getTimeDiff(itemData.lastUpdate),
-          roomTitle: room.title,
-          roomId: room.id,
-          roomKey
-        });
       });
-    }
-  });
 
-  console.log(`[MainBody] - getSortedRooms - Найдено устройств в комнате ${roomKey}:`, devicesArray.length);
-  return devicesArray;
+      console.log(`[MainBody] - getSortedRooms - Найдено устройств в комнате ${roomKey}:`, devicesArray.length);
+      return devicesArray;
 },
 
     // Формируем массив для отображения сортировки по параметрам
@@ -360,118 +323,68 @@ watch: {
 
     // Формируем массив для отображения сортировки по устройствам
     getSortedDevices(config, deviceKey) {
-      console.log('ШАГ 0 - [MainBody] getSortedDevices Выполняем сортировку по deviceKey:', deviceKey);
-  const devicesArray = [];
- 
-  Object.entries(config).forEach(([roomKey, room]) => {
-    if (!room || typeof room !== 'object') {
-      console.log('[MainBody] getSortedDevices  Room is not an object:', room);
-      return
+      console.log('ШАГ 7 - [MainBody] getSortedDevices Выполняем сортировку по deviceKey:', deviceKey);
+      const devicesArray = [];
+    
+      Object.entries(config).forEach(([roomKey, room]) => {
+        if (!room || typeof room !== 'object') {
+          console.log('[MainBody] getSortedDevices  Room is not an object:', room);
+          return
 
-    }
+        }
 
-    console.log('Шаг 6 - [MainBody] getSortedDevices - Работаем с комнатой:', roomKey);
-    // Ищем во всех разделах комнаты кроме исключенных
-    Object.entries(room).forEach(([sectionKey, sectionData]) => {
-      const excludedSections = ['init', 'id', 'group', 'title', 'setpoints'];
-      if (excludedSections.includes(sectionKey)) return;
-      
-      if (sectionData && typeof sectionData === 'object') {
-        console.log('Шаг 7 - [MainBody] getSortedDevices - Processing section:', sectionKey);
-        Object.entries(sectionData).forEach(([itemKey, itemData]) => {
-          // Более гибкое сравнение ключей устройств
-          const baseItemKey = itemKey.replace(/^[a-z]/, '').replace(/\d+$/, '');
-          console.log('Шаг 8 - [MainBody] getSortedDevices - Item:', itemKey, 'Base item key:', baseItemKey);
+        console.log('Шаг 6 - [MainBody] getSortedDevices - Работаем с комнатой:', roomKey);
+        // Ищем во всех разделах комнаты кроме исключенных
+        Object.entries(room).forEach(([sectionKey, sectionData]) => {
+          const excludedSections = ['init', 'id', 'group', 'title', 'setpoints'];
+          if (excludedSections.includes(sectionKey)) return;
           
-          if (baseItemKey === deviceKey) {
-            console.log('Шаг 9 - [MainBody] getSortedDevices - Ищем совподение с утройством:', itemKey);
-            let setValue = null;
-            
-            // Поиск уставки
-            if (room.setpoints) {
-              const setpointKey = Object.keys(room.setpoints).find(setKey => 
-                itemKey.includes(setKey) || setKey.includes(itemKey)
-              );
+          if (sectionData && typeof sectionData === 'object') {
+            console.log('Шаг 7 - [MainBody] getSortedDevices - Processing section:', sectionKey);
+            Object.entries(sectionData).forEach(([itemKey, itemData]) => {
+              // Более гибкое сравнение ключей устройств
+              const baseItemKey = itemKey.replace(/^[a-z]/, '').replace(/\d+$/, '');
+              console.log('Шаг 8 - [MainBody] getSortedDevices - Item:', itemKey, 'Base item key:', baseItemKey);
               
-              if (setpointKey) {
-                setValue = room.setpoints[setpointKey]?.value != null 
-                  ? parseFloat(room.setpoints[setpointKey].value) 
-                  : null;
+              if (baseItemKey === deviceKey) {
+                console.log('Шаг 9 - [MainBody] getSortedDevices - Ищем совподение с утройством:', itemKey);
+                let setValue = null;
+                
+                // Поиск уставки
+                if (room.setpoints) {
+                  const setpointKey = Object.keys(room.setpoints).find(setKey => 
+                    itemKey.includes(setKey) || setKey.includes(itemKey)
+                  );
+                  
+                  if (setpointKey) {
+                    setValue = room.setpoints[setpointKey]?.value != null 
+                      ? parseFloat(room.setpoints[setpointKey].value) 
+                      : null;
+                  }
+                }
+                
+                devicesArray.push({
+                  sortType: 'devices',
+                  paramTitle: this.getSensorTitle(itemKey),
+                  paramType: itemData?.type,
+                  paramKey: itemKey,
+                  value: this.getSensorValue(itemData?.type, itemData),
+                  setValue: setValue,
+                  unit: this.getUnit(itemKey),
+                  timeDiff: this.getTimeDiff(itemData.lastUpdate),
+                  roomTitle: room.title,
+                  roomId: room.id,
+                  roomKey
+                });
               }
-            }
-            
-            devicesArray.push({
-              sortType: 'devices',
-              paramTitle: this.getSensorTitle(itemKey),
-              paramType: itemData?.type,
-              paramKey: itemKey,
-              value: this.getSensorValue(itemData?.type, itemData),
-              setValue: setValue,
-              unit: this.getUnit(itemKey),
-              timeDiff: this.getTimeDiff(itemData.lastUpdate),
-              roomTitle: room.title,
-              roomId: room.id,
-              roomKey
             });
           }
         });
-      }
-    });
-  });
-  
-  console.log('Devices found:', devicesArray.length);
-  return devicesArray;
-},
-    // getSortedDevices(config, deviceKey) {
-    //   const devicesArray = [];
+      });
       
-    //   Object.entries(config).forEach(([roomKey, room]) => {
-    //     // Ищем устройство во всех разделах комнаты
-    //     Object.keys(room).forEach(sectionKey => {
-    //       if (sectionKey === 'init' || sectionKey === 'id' || sectionKey === 'group' || sectionKey === 'title') return;
-          
-    //       if (room[sectionKey] && typeof room[sectionKey] === 'object') {
-    //         Object.entries(room[sectionKey]).forEach(([itemKey, itemData]) => {
-    //           // Проверяем, соответствует ли устройство искомому
-    //           const baseItemKey = itemKey.replace(/^[a-z]/, '').replace(/\d+$/, '');
-    //           if (baseItemKey === deviceKey) {
-    //             let setValue = null;
-                
-    //             // Ищем уставку для этого устройства
-    //             if (room.setpoints) {
-    //               const setpointKey = Object.keys(room.setpoints).find(setKey => 
-    //                 itemKey.includes(setKey) || setKey.includes(itemKey)
-    //               );
-                  
-    //               if (setpointKey) {
-    //                 setValue = room.setpoints[setpointKey]?.value != null 
-    //                   ? parseFloat(room.setpoints[setpointKey].value) 
-    //                   : null;
-    //               }
-    //             }
-                
-    //             devicesArray.push({
-    //               sortType: 'devices',
-    //               paramTitle: this.getSensorTitle(itemKey),
-    //               paramType: itemData?.type,
-    //               paramKey: itemKey,
-    //               value: this.getSensorValue(itemData?.type, itemData),
-    //               setValue: setValue,
-    //               unit: this.getUnit(itemKey),
-    //               timeDiff: this.getTimeDiff(itemData.lastUpdate),
-    //               roomTitle: room.title,
-    //               roomId: room.id,
-    //               roomKey
-    //             });
-    //           }
-    //         });
-    //       }
-    //     });
-    //   });
-      
-    //   console.log('[MainBody] - getSorted Devices found:', devicesArray.length);
-    //   return devicesArray;
-    // },
+      console.log('Devices found:', devicesArray.length);
+      return devicesArray;
+    },
 
     getTimeDiff(timestamp) {
       if (!timestamp) return 'Неизвестно';

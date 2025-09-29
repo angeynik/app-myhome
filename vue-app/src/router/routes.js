@@ -42,9 +42,9 @@ const routes = [
       component: () => import('@/components/DashboardDevices.vue')
     },
     {
-      path: 'settings',
-      name: 'DashboardSettings',
-      component: () => import('@/components/DashboardSettings.vue')
+      path: 'setpoints',
+      name: 'DashboardSetpoints',
+      component: () => import('@/components/DashboardSetpoints.vue')
     }
   ]
 },

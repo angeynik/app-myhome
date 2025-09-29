@@ -32,10 +32,10 @@
         <nav>
           <router-link to="/"> Главная </router-link>
           <!-- <router-link :to="{ name: 'DashBoard' }"> выбор сортировки </router-link> -->
-          <router-link :to="{ name: 'DashboardRooms' }" @click.prevent="forceSortUpdate('rooms')" @select="selectComponent('rooms')"> Комнаты </router-link>
-          <router-link :to="{ name: 'DashboardParams' }" @click.prevent="forceSortUpdate('params')" @select="selectComponent('params')"> Датчики </router-link>
-          <router-link :to="{ name: 'DashboardDevices' }" @click.prevent="forceSortUpdate('devices')" @select="selectComponent('devices')">Устройства</router-link>
-          <router-link :to="{ name: 'DashboardSettings' }">Уставки</router-link>
+          <router-link :to="{ name: 'DashboardRooms' }" @click.prevent="selectComponent('rooms')" @select="selectComponent('rooms')"> Комнаты </router-link>
+          <router-link :to="{ name: 'DashboardParams' }" @click.prevent="selectComponent('params')" @select="selectComponent('params')"> Датчики </router-link>
+          <router-link :to="{ name: 'DashboardDevices' }" @click.prevent="selectComponent('devices')" @select="selectComponent('devices')">Устройства</router-link>
+          <router-link :to="{ name: 'DashboardSetpoints' }" @click.prevent="selectComponent('setpoints')" @select="selectComponent('setpoints')">Уставки</router-link>
         </nav>
 
       <!-- <nav>
@@ -58,7 +58,7 @@
       <AppPlace class="app-place_module" title="Комнаты" @select="selectComponent('rooms')" />
       <AppPlace class="app-place_module" title="Датчики" @select="selectComponent('params')" />
       <AppPlace class="app-place_module" title="Устройства" @select="selectComponent('devices')" />
-      <AppPlace class="app-place_module" title="Уставки" @select="selectComponent('settings')" />
+      <AppPlace class="app-place_module" title="Уставки" @select="selectComponent('setpoints')" />
     </div>
     
     <div v-else id="app_component" style="height: 100%;">
@@ -225,7 +225,7 @@ watch: {
         'DashboardRooms': { component: 'MainBody', sortType: 'rooms' },
         'DashboardParams': { component: 'MainBody', sortType: 'params' },
         'DashboardCommon': { component: 'MainBody', sortType: 'devices' },
-        'DashboardSettings': { component: 'DashboardSettings', sortType: 'settings' }
+        'DashboardSetpoints': { component: 'MainBody', sortType: 'setpoints' }
       };
 
       const config = routeToComponentMap[routeName];
@@ -238,14 +238,14 @@ watch: {
         this.$store.commit('sortParams/SET_SORT_TYPE', config.sortType);
       }
     },
-    async forceSortUpdate(type) {
-      console.log('Шаг 3 - [DashBoard] forceSortUpdate called with:', type);
-      await this.$store.dispatch('sortParams/setSortType', type);
-      // Принудительное обновление если уже на этом маршруте
-      // if (this.$route.name === `Dashboard${type.charAt(0).toUpperCase() + type.slice(1)}`) {
-      //   await this.$store.dispatch('sortParams/updateNavigationData');
-      // }
-    },
+    // async forceSortUpdate(type) {
+    //   console.log('Шаг 3 - [DashBoard] forceSortUpdate called with:', type);
+    //   await this.$store.dispatch('sortParams/setSortType', type);
+    //   // Принудительное обновление если уже на этом маршруте
+    //   if (this.$route.name === `Dashboard${type.charAt(0).toUpperCase() + type.slice(1)}`) {
+    //     await this.$store.dispatch('sortParams/updateNavigationData');
+    //   }
+    // },
     async selectComponent(component) {
       console.log('Шаг 1 - [DashBoard] - selectComponent - Выбран компонент - ', component);
       // Устанавливаем тип сортировки
@@ -256,7 +256,7 @@ watch: {
       'rooms': 'DashboardRooms',
       'params': 'DashboardParams',
       'devices': 'DashboardDevices',
-      'settings': 'DashboardSettings'
+      'setpoints': 'DashboardSetpoints'
     };
     
     const routeName = routeMap[component];
