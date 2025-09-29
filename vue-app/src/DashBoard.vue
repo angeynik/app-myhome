@@ -28,63 +28,44 @@
       </div>
       <p style="width: 100%; height: 1px; background-color: var(--orange);"></p>
       <div class="header-bottom">
-
         <nav>
-          <router-link to="/"> Главная </router-link>
-          <!-- <router-link :to="{ name: 'DashBoard' }"> выбор сортировки </router-link> -->
-          <router-link :to="{ name: 'DashboardRooms' }" @click.prevent="selectComponent('rooms')" @select="selectComponent('rooms')"> Комнаты </router-link>
-          <router-link :to="{ name: 'DashboardParams' }" @click.prevent="selectComponent('params')" @select="selectComponent('params')"> Датчики </router-link>
-          <router-link :to="{ name: 'DashboardDevices' }" @click.prevent="selectComponent('devices')" @select="selectComponent('devices')">Устройства</router-link>
-          <router-link :to="{ name: 'DashboardSetpoints' }" @click.prevent="selectComponent('setpoints')" @select="selectComponent('setpoints')">Уставки</router-link>
+          <router-link to="/">Главная</router-link>
+          <router-link :to="{ name: 'DashboardSort', params: { sortType: 'rooms' } }">Комнаты</router-link>
+          <router-link :to="{ name: 'DashboardSort', params: { sortType: 'params' } }">Датчики</router-link>
+          <router-link :to="{ name: 'DashboardSort', params: { sortType: 'devices' } }">Устройства</router-link>
+          <router-link :to="{ name: 'DashboardSort', params: { sortType: 'setpoints' } }">Уставки</router-link>
         </nav>
-
-      <!-- <nav>
-        <router-link to="/">main  </router-link>
-        <router-link :to="{ name: 'DashBoard' }"> dashboard </router-link>
-        <router-link :to="{ name: 'DashboardRooms' }">rooms</router-link>
-        <router-link :to="{ name: 'DashboardParams' }">params</router-link>
-        <router-link :to="{ name: 'DashboardCommon' }">common</router-link>
-        <router-link :to="{ name: 'DashboardSettings' }">settings</router-link>
-      </nav> -->
       </div>
     </header>
 
-  <!-- <div class="body"
-    @touchstart.passive="handleTouchStart" 
-    @touchend.passive="handleTouchEnd"> -->
-  <div class="body" >
+    <div class="body">
+      <!-- Главное меню -->
+      <div class="app-place_body" v-if="!$route.params.sortType" id="app_place">
+        <AppPlace class="app-place_module" title="Комнаты" @select="selectComponent('rooms')" />
+        <AppPlace class="app-place_module" title="Датчики" @select="selectComponent('params')" />
+        <AppPlace class="app-place_module" title="Устройства" @select="selectComponent('devices')" />
+        <AppPlace class="app-place_module" title="Уставки" @select="selectComponent('setpoints')" />
+      </div>
 
-    <div class="app-place_body" v-if="!selectedComponent" id="app_place">
-      <AppPlace class="app-place_module" title="Комнаты" @select="selectComponent('rooms')" />
-      <AppPlace class="app-place_module" title="Датчики" @select="selectComponent('params')" />
-      <AppPlace class="app-place_module" title="Устройства" @select="selectComponent('devices')" />
-      <AppPlace class="app-place_module" title="Уставки" @select="selectComponent('setpoints')" />
-    </div>
-    
-    <div v-else id="app_component" style="height: 100%;">
-      <component
-        :is="selectedComponent" 
-        :propsTitle="propsTitle"
-        :changeSorting="changeSorting" 
+      <!-- Динамический компонент для всех типов сортировки -->
+      <router-view 
+        v-else
+        :key="$route.params.sortType"
         @eventsMainBody="handleMainBodyEvent"
-        @sorting-changed="selectComponent"
         @swipe-forward="sortingForvard"
         @swipe-back="sortingBack"
-        ref="mainBody" 
+        ref="mainBody"
       />
     </div>
-  </div>
 
-  <footer class="footer"> 
-    
-    <MainFooter v-show="!showFooterSetpoint"/>
-    
-    <MainSetpoint
-      v-if="showFooterSetpoint"
-      :setPoint="setpoint" 
-      @eventsMainSetpoint="handleSetpointEvent"
-    />
-  </footer>
+    <footer class="footer"> 
+      <MainFooter v-show="!showFooterSetpoint"/>
+      <MainSetpoint
+        v-if="showFooterSetpoint"
+        :setPoint="setpoint" 
+        @eventsMainSetpoint="handleSetpointEvent"
+      />
+    </footer>
   </div>
 </template>
 
@@ -93,32 +74,27 @@ import { mapGetters, mapActions } from 'vuex';
 import AppPlace from './components/AppPlace.vue';
 import MainHeader from './components/MainHeader.vue';
 import MainFooter from './components/MainFooter.vue';
-import MainBody from './components/MainBody.vue';
 import MainSetpoint from './components/MainSetpoint.vue';
 
 export default { 
   name: 'DashBoard',
-
   components: { 
     AppPlace,
-    MainBody,
     MainHeader,
     MainFooter,
     MainSetpoint
   }, 
-
   data() { 
     return {
-      // isMobile: false,
       showHeaderArrow: false,
-      selectedComponent: null,
       showSetpoint: false,
       setpointUpdateTimer: null,
+      setpoint: null,
+      selectedItemData: null
     }; 
   },
   async created() {
     await this.initApp();
-    // await this.detectDevice();
   },
   computed: {
     ...mapGetters(['level', 'dID']),
@@ -134,32 +110,22 @@ export default {
       'getSetpointKey'
     ]),
     ...mapGetters('config', ['getMobile', 'getDeviceType']),
-    userLevel() {
-      return this.level || 0;
-    },
+    
     headerTitle() {
-      if (!this.selectedComponent) {
+      const sortType = this.$route.params.sortType;
+      
+      if (!sortType) {
         return "Главное меню";
       }
       
-      if (this.selectedComponent === 'MainBody') {
-        if (this.currentSortType === 'rooms') {
-          return this.getRoomKey 
-            ? `${this.getRoomTitle}` 
-            : "Сортировка по комнатам";
-        } else if (this.currentSortType === 'params') {
-          return this.getParamKey 
-            ? `${this.getSensorTitle(this.getParamKey)}` 
-            : "Сортировка по параметрам";
-        } else if (this.currentSortType === 'devices') {
-          return this.getDeviceKey 
-            ? `${this.getDeviceKey}` 
-            : "Сортировка по устройствам";
-        } else if (this.currentSortType === 'setpoints') {
-          return this.getSetpointKey 
-            ? `${this.getSetpointKey}` 
-            : "Сортировка по Уставкам";
-        }
+      if (sortType === 'rooms') {
+        return this.getRoomKey ? `${this.getRoomTitle}` : "Сортировка по комнатам";
+      } else if (sortType === 'params') {
+        return this.getParamKey ? `${this.getSensorTitle(this.getParamKey)}` : "Сортировка по параметрам";
+      } else if (sortType === 'devices') {
+        return this.getDeviceKey ? `${this.getDeviceKey}` : "Сортировка по устройствам";
+      } else if (sortType === 'setpoints') {
+        return this.getSetpointKey ? `${this.getSetpointKey}` : "Сортировка по Уставкам";
       }
       return "Dashboard";
     },
@@ -168,31 +134,28 @@ export default {
     }
   },
   beforeUnmount() {
-  if (this.setpointUpdateTimer) {
-    clearTimeout(this.setpointUpdateTimer);
-  }
-},
-
-watch: {
-    '$route.name': {
+    if (this.setpointUpdateTimer) {
+      clearTimeout(this.setpointUpdateTimer);
+    }
+  },
+  watch: {
+    '$route.params.sortType': {
       immediate: true,
-      async handler(newRoute) {
-        await this.handleRouteChange(newRoute);
+      handler(newSortType) {
+        this.handleSortTypeChange(newSortType);
       }
     },
     getConfig: {
       handler(newConfig) {
         if (newConfig) {
           console.log('[DashBoard] Конфигурация изменена, обновляем навигацию');
-          // this.updateNavigationData();
         }
       },
       deep: true
     }
-},
+  },
   methods: {
     ...mapActions('sortParams', [
-      // 'updateNavigationData', 
       'switchToPrevRoom', 
       'switchToNextRoom', 
       'switchToPrevParam', 
@@ -204,98 +167,53 @@ watch: {
     ...mapActions('config', ['initialize']),
     
     async initApp() {
-      //console.log('[DashBoard] - initApp - Инициализация приложения');
       try {
-        // Сначала инициализируем конфиг
-        //await this.initialize();
-        
-        // Обновляем маршрут если нужно
-        await this.handleRouteChange(this.$route.name);
+        console.log('[DashBoard] - initApp - Инициализация приложения');
       } catch (error) {
         console.error('Ошибка инициализации:', error);
       }
     },
-     async handleRouteChange(routeName) {
-      if (routeName === 'DashBoard') {
-        this.resetSelection();
-        return;
-      }
-
-      const routeToComponentMap = {
-        'DashboardRooms': { component: 'MainBody', sortType: 'rooms' },
-        'DashboardParams': { component: 'MainBody', sortType: 'params' },
-        'DashboardCommon': { component: 'MainBody', sortType: 'devices' },
-        'DashboardSetpoints': { component: 'MainBody', sortType: 'setpoints' }
-      };
-
-      const config = routeToComponentMap[routeName];
-      if (!config) return;
-
-      this.selectedComponent = config.component;
-      this.showHeaderArrow = ['DashboardRooms', 'DashboardParams', 'DashboardDevices'].includes(routeName) && !this.getMobile;
-
-      if (config.sortType) {
-        this.$store.commit('sortParams/SET_SORT_TYPE', config.sortType);
+    
+    handleSortTypeChange(sortType) {
+      if (sortType) {
+        // Устанавливаем тип сортировки в store
+        this.$store.commit('sortParams/SET_SORT_TYPE', sortType);
+        // Показываем стрелки для навигации (кроме уставок и на мобильных)
+        this.showHeaderArrow = ['rooms', 'params', 'devices'].includes(sortType) && !this.getMobile;
+      } else {
+        this.showHeaderArrow = false;
       }
     },
-    // async forceSortUpdate(type) {
-    //   console.log('Шаг 3 - [DashBoard] forceSortUpdate called with:', type);
-    //   await this.$store.dispatch('sortParams/setSortType', type);
-    //   // Принудительное обновление если уже на этом маршруте
-    //   if (this.$route.name === `Dashboard${type.charAt(0).toUpperCase() + type.slice(1)}`) {
-    //     await this.$store.dispatch('sortParams/updateNavigationData');
-    //   }
-    // },
-    async selectComponent(component) {
-      console.log('Шаг 1 - [DashBoard] - selectComponent - Выбран компонент - ', component);
-      // Устанавливаем тип сортировки
-    await this.$store.dispatch('sortParams/setSortType', component);
     
-    // Навигация
-    const routeMap = {
-      'rooms': 'DashboardRooms',
-      'params': 'DashboardParams',
-      'devices': 'DashboardDevices',
-      'setpoints': 'DashboardSetpoints'
-    };
-    
-    const routeName = routeMap[component];
-     console.log('Шаг 2 - [DashBoard] Navigating to route:', routeName);
-    
-    // Проверяем, не находимся ли мы уже на этом маршруте
-    if (this.$route.name !== routeName) {
-      await this.$router.push({ name: routeName });
-    } 
-    // else {
-    //   // Принудительное обновление если уже на этом маршруте
-    //   await this.$store.dispatch('sortParams/updateNavigationData');
-    // }
+    selectComponent(sortType) {
+      this.$router.push({ 
+        name: 'DashboardSort', 
+        params: { sortType } 
+      });
     },
+    
     resetSelection() {
-      this.selectedComponent = null;
-      this.showHeaderArrow = false;
+      this.$router.push({ name: 'DashboardMain' });
     },
-
-    // detectDevice() {
-    //   this.isMobile = /Mobi|Android/i.test(navigator.userAgent);
-    //   console.log('[DashBoard] - detectDevice - Работаем с мобильным устройством - ', this.isMobile);
-    // },
+    
     sortingBack() {
-      if (this.currentSortType === 'rooms') {
+      const sortType = this.$route.params.sortType;
+      if (sortType === 'rooms') {
         this.switchToPrevRoom();
-      } else if (this.currentSortType === 'params') {
+      } else if (sortType === 'params') {
         this.switchToPrevParam();
-      } else if (this.currentSortType === 'devices') {
+      } else if (sortType === 'devices') {
         this.switchToPrevDevice();
       }
     },
     
     sortingForvard() {
-      if (this.currentSortType === 'rooms') {
+      const sortType = this.$route.params.sortType;
+      if (sortType === 'rooms') {
         this.switchToNextRoom();
-      } else if (this.currentSortType === 'params') {
+      } else if (sortType === 'params') {
         this.switchToNextParam();
-      } else if (this.currentSortType === 'devices') {
+      } else if (sortType === 'devices') {
         this.switchToNextDevice();
       }
     },
@@ -309,69 +227,55 @@ watch: {
         this.setpoint = event.data.setValue;
         this.showSetpoint = true;
         this.setLimits(event.data.paramKey);
-      } 
-      else if (event.action === 'hide') {
+      } else if (event.action === 'hide') {
         this.showSetpoint = false;
         this.selectedItemData = null;
         this.setpoint = null;
-        this.limHigh = null;
-        this.limLow = null;
-        this.limStep = null;
       }
     },
 
-    handleSetpointEvent(eventData) { //Функция получает новое значение от Footer сохраняет его локально и отправляет на сервер 
-      //console.log('[DashBoard] - handleSetpointEvent - eventData:', eventData);
-
-      if (eventData.updateState && eventData.updateState.type === 'newSetPoint') {//Обработка изменения уставки
-        //console.log('[DashBoard] - handleSetpointEvent Обновление состояния - updateState', eventData.updateState.message);
+    handleSetpointEvent(eventData) {
+      if (eventData.updateState && eventData.updateState.type === 'newSetPoint') {
         this.setpoint = eventData.updateState.message;
-        // Обновляем конфигурацию
         this.updateConfigSetpoint(eventData.updateState.message);
-
-      }  else if (eventData.error) {
-        console.error('[DashBoard] - handleSetpointEvent - Ошибка из MainSetpoint:', eventData.error);
+      } else if (eventData.error) {
+        console.error('[DashBoard] - handleSetpointEvent - Ошибка:', eventData.error);
       }
     },
+    
     async updateConfigSetpoint(newValue) {
-      //console.log('[DashBoard] - updateConfigSetpoint - Начинаем обновление конфигурации');
       const oldValue = newValue; 
       try {
         const roomKey = this.getRoomKey;
         const paramKey = this.getParamKey;
         const deviceKey = this.getDeviceKey;
         const setpointKey = this.getSetpointKey;
+        
         if (!roomKey || !paramKey || !deviceKey || !setpointKey) {
           console.error('Не выбрана комната или параметр для обновления уставки');
           return;
         }
-        //console.log('[DashBoard] - updateConfigSetpoint - roomKey -', roomKey, ' paramKey -', paramKey, ' newValue -', newValue);
 
-        // Обновляем значение в хранилище
-          // await this.$store.dispatch('config/updateSetpointLocal', {
-          //   roomKey: roomKey,
-          //   paramKey: paramKey,
-          //   value: newValue
-          // });
-          // Очистка предыдущего таймера
-          if (this.setpointUpdateTimer) {
-            clearTimeout(this.setpointUpdateTimer);
+        // Очистка предыдущего таймера
+        if (this.setpointUpdateTimer) {
+          clearTimeout(this.setpointUpdateTimer);
+        }
+        
+        // Установка нового таймера для отправки на сервер
+        this.setpointUpdateTimer = setTimeout(async () => {
+          try {
+            await this.$store.dispatch('config/updateSetpointServer', {
+              roomKey: roomKey,
+              paramKey: paramKey,
+              value: oldValue
+            });
+            console.log('Уставка успешно отправлена на сервер после задержки');
+          } catch (error) {
+            console.error('Ошибка при отправке уставки на сервер:', error);
+            // Откат значения при ошибке
+            this.setpoint = oldValue;
           }
-          // Установка нового таймера для отправки на сервер
-            this.setpointUpdateTimer = setTimeout(async () => {
-              try {
-                await this.$store.dispatch('config/updateSetpointServer', {
-                  roomKey: roomKey,
-                  paramKey: paramKey,
-                  value: oldValue
-                });
-                //console.log('Уставка успешно отправлена на сервер после задержки');
-              } catch (error) {
-                console.error('Ошибка при отправке уставки на сервер:', error);
-                // Откат значения при ошибке
-                this.setpoint = oldValue;
-              }
-            }, 1500);
+        }, 1500);
 
         // Запускаем повторную сортировку
         if (this.$refs.mainBody) {
@@ -380,23 +284,9 @@ watch: {
       } catch (error) {
         console.error('Ошибка обновления уставки:', error);
       }
-    },
-    checkSetpointVisibility() {
-      const setpointEl = document.querySelector('.setpointBlock');
-      const tempEl = document.querySelector('.temp-setpoint');
-      
-      //console.log('showSetpoint value:', this.showSetpoint);
-      //console.log('MainSetpoint element exists:', !!setpointEl);
-      console.log('Temp element exists:', !!tempEl);
-      
-      if (setpointEl) {
-        console.log('MainSetpoint visibility:', 
-          window.getComputedStyle(setpointEl).display !== 'none');
-      }
     }
   }
 };
 </script>
 
 <style lang="css" src="@/assets/mainStyle.css"></style>
-

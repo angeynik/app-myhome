@@ -49,11 +49,16 @@ export default {
       console.error('Ошибка инициализации MainBody:', error);
       this.initializationError = 'Не удалось загрузить данные';
     }
+    this.$store.commit('sortParams/SET_SORT_TYPE', this.sortType);
   },
   props: {
   initialSortType: {
     type: String,
     default: 'rooms'
+  },
+  sortType: {
+    type: String,
+    required: true
   }
 },
   computed: {
@@ -80,35 +85,40 @@ export default {
     return this.currentSortType === 'rooms';
   },
   },
-watch: {
-  initialSortType(newVal) {
-    this.SET_SORT_TYPE(newVal);
-    this.updateView();
-    },
-  currentSortType(newVal, oldVal) {
-    console.log(`[MainBody] Изменен тип сортировки: ${oldVal} -> ${newVal}`);
-    this.updateView();
-  },
-  getRoomKey(newVal, oldVal) {
-    console.log(`[MainBody] Изменен ключ комнаты: ${oldVal} -> ${newVal}`);
-    if (this.currentSortType === 'rooms') this.updateView();
-  },
-  getParamKey(newVal, oldVal) {
-    console.log(`[MainBody] Изменен ключ параметра: ${oldVal} -> ${newVal}`);
-    if (this.currentSortType === 'params') this.updateView();
-  },
-  getDeviceKey(newVal, oldVal) {
-      console.log(`[MainBody] Изменен ключ устройства: ${oldVal} -> ${newVal}`);
-      if (this.currentSortType === 'devices') this.updateView();
-  },
-  getConfig: {
-    handler(newVal) {
-      if (newVal) this.updateView();
-    },
-    deep: true
-  },
 
-},
+  watch: {
+    initialSortType(newVal) {
+      this.SET_SORT_TYPE(newVal);
+      this.updateView();
+      },
+    currentSortType(newVal, oldVal) {
+      console.log(`[MainBody] Изменен тип сортировки: ${oldVal} -> ${newVal}`);
+      this.updateView();
+    },
+    getRoomKey(newVal, oldVal) {
+      console.log(`[MainBody] Изменен ключ комнаты: ${oldVal} -> ${newVal}`);
+      if (this.currentSortType === 'rooms') this.updateView();
+    },
+    getParamKey(newVal, oldVal) {
+      console.log(`[MainBody] Изменен ключ параметра: ${oldVal} -> ${newVal}`);
+      if (this.currentSortType === 'params') this.updateView();
+    },
+    getDeviceKey(newVal, oldVal) {
+        console.log(`[MainBody] Изменен ключ устройства: ${oldVal} -> ${newVal}`);
+        if (this.currentSortType === 'devices') this.updateView();
+    },
+    getConfig: {
+      handler(newVal) {
+        if (newVal) this.updateView();
+      },
+      deep: true
+    },
+    sortType(newSortType) {
+    // Реагируем на изменение sortType извне
+    this.$store.commit('sortParams/SET_SORT_TYPE', newSortType);
+    this.initializeComponent();
+  }
+  },
   // mounted() {
   //   this.updateView();
   // },

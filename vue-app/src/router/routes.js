@@ -6,8 +6,8 @@ import IntroduceHome from '../IntroduceHome.vue';
 import Login from '../components/AppLogin.vue';
 import Profile from '../components/AppProfile.vue';
 import UserConfig from '../components/UserConfig.vue';
-import AccessDenied from '../components/AccessDenied.vue'; // Компонент для ошибки доступа
-import store from '@/store'; // Импортируем хранилище Vuex
+import AccessDenied from '../components/AccessDenied.vue';
+import store from '@/store';
 
 const routes = [
   {
@@ -15,68 +15,54 @@ const routes = [
     name: 'Intro',
     component: IntroduceHome,
   },
-{
-  path: '/dashboard',
-  name: 'DashBoard',
-  component: Dashboard,
-  meta: { requiresAuth: true, requiredLevel: 1 },
-  children: [
-        {
-      path: '', // Пустой путь для основного состояния
-      name: 'Dashboad',
-      component: null // Явно указываем, что компонент не нужен
-    },
-    {
-      path: 'rooms',
-      name: 'DashboardRooms',
-      component: () => import('@/components/DashboardRooms.vue')
-    },
-    {
-      path: 'params',
-      name: 'DashboardParams',
-      component: () => import('@/components/DashboardParams.vue')
-    },
-    {
-      path: 'devices',
-      name: 'DashboardDevices',
-      component: () => import('@/components/DashboardDevices.vue')
-    },
-    {
-      path: 'setpoints',
-      name: 'DashboardSetpoints',
-      component: () => import('@/components/DashboardSetpoints.vue')
-    }
-  ]
-},
+  {
+    path: '/dashboard',
+    name: 'DashBoard',
+    component: Dashboard,
+    meta: { requiresAuth: true, requiredLevel: 1 },
+    children: [
+      {
+        path: '', // Главное меню с AppPlace
+        name: 'DashboardMain',
+        component: null
+      },
+      {
+        path: ':sortType', // Динамический параметр для типа сортировки
+        name: 'DashboardSort',
+        component: () => import('@/components/MainBody.vue'),
+        props: true // Передаем параметры как props
+      }
+    ]
+  },
   {
     path: '/smart-home',
     name: 'SmartHome',
     component: SmartHome,
-    meta: { requiresAuth: true, requiredLevel: 1 }, // Добавляем проверку аутентификации
+    meta: { requiresAuth: true, requiredLevel: 1 },
   },
   {
     path: '/manufact-automatation',
     name: 'ManufactAutomatation',
     component: ManufactAutomatation,
-    meta: { requiresAuth: true, requiredLevel: 1 }, // Добавляем проверку аутентификации
+    meta: { requiresAuth: true, requiredLevel: 1 },
   },
   {
     path: '/login',
     name: 'Login',
     component: Login,
-    meta: { public: true } // Публичный маршрут
+    meta: { public: true }
   },
   {
     path: '/profile',
     name: 'AppProfile',
     component: Profile,
-    meta: { requiresAuth: true, requiredLevel: 2 }, // Уровень доступа 2
+    meta: { requiresAuth: true, requiredLevel: 2 },
   },
   {
     path: '/users',
     name: 'Users',
     component: UserConfig,
-    meta: { requiresAuth: true, requiredLevel: 3 }, // Уровень доступа 3
+    meta: { requiresAuth: true, requiredLevel: 3 },
   },
   {
     path: '/access-denied',
@@ -84,10 +70,11 @@ const routes = [
     component: AccessDenied,
   },
   {
-    path: '/:pathMatch(.*)*', // Ловим все несуществующие маршруты
-    redirect: '/', // Перенаправляем на главную страницу
+    path: '/:pathMatch(.*)*',
+    redirect: '/',
   },
 ];
+
 export const routesArray = routes;
 
 export const navigationGuard = (to, from, next) => {
@@ -98,7 +85,6 @@ export const navigationGuard = (to, from, next) => {
     return next();
   }
   
-  // Находим первую запись с requiresAuth
   const authRecord = to.matched.find(record => record.meta.requiresAuth);
   if (authRecord) {
     if (!isAuthenticated) {
