@@ -55,6 +55,8 @@ export default {
     getRoomTitle: state => state.roomTitle,
     getParamKey: state => state.paramKey,
     getParamTitle: state => state.paramTitle,
+    getSetpointKey: state => state.setpointKey,
+    getSetpointTitle: state => state.setpointTitle,
     getSensorTitle: () => (key) => getSensorTitle(key),
     getUnit: () => (key) => getUnit(key),
     limHigh: state => state.limHigh,
@@ -66,10 +68,12 @@ export default {
     roomId: 0,
     roomKey: localStorage.getItem('roomKey') ||  null, // ключ комнаты по которому выполняется сортировка
     paramKey: localStorage.getItem('paramKey') || null, // ключ параметра по которому выполняется сортировка
-    roomTitle: 'Не выбрано',
-    paramTitle: 'Не выбрано',
+    roomTitle: '',
+    paramTitle: '',
     deviceKey: localStorage.getItem('deviceKey') || null,
-    deviceTitle: 'Не выбрано',
+    deviceTitle: '',
+    setpointKey: localStorage.getItem('setpointKey') || null,
+    setpointTitle: '',
     limHigh: 32,
     limLow: 10,
     limStep: 1,
@@ -77,7 +81,7 @@ export default {
 
   mutations: {
     SET_SORT_TYPE(state, type) {
-      if (['rooms', 'params', 'devices'].includes(type)) {
+      if (['rooms', 'params', 'devices', 'setpoints'].includes(type)) {
         state.sortType = type;
       }
     },
@@ -107,8 +111,20 @@ export default {
         state.deviceKey = key;
       }
     },
+    SET_SETPOINT_KEY(state, key) {
+      if (typeof key === 'string' && state.setpointKey !== key && key != null) {
+        console.log(`[sortParams] MUTATION SET_SETPOINT_KEY: ${state.setpointKey} -> ${key}`);
+        state.setpointKey = key;
+      }
+    },
+
+
+
     SET_DEVICE_TITLE(state, title) {
-      state.deviceTitle = title || 'Устройство';
+      state.deviceTitle = title || '';
+    },
+    SET_SETPOINT_TITLE(state, title) {
+      state.setpointTitle = title || '';
     },
     SET_ROOM_TITLE(state, title) {
       state.roomTitle = title || 'Главная комната';
@@ -169,13 +185,22 @@ export default {
       commit('SET_PARAM_TITLE', getSensorTitle(newParamKey));
       //localStorage.setItem('paramKey', JSON.stringify(newParamKey));
       localStorage.setItem('paramKey', newParamKey);
-      console.log('[sortParams] - updateParamsKey - Ключ обновлен', newParamKey);
+      console.log('[sortParams] - updateParamsKey - Ключ paramKey обновлен', newParamKey);
     },
     updateDevicesKey({ commit }, newDeviceKey) {
       commit('SET_DEVICE_KEY', newDeviceKey);
       localStorage.setItem('deviceKey', newDeviceKey);
-      console.log('[sortParams] - updateDevicesKey - Ключ обновлен', newDeviceKey);
+      console.log('[sortParams] - updateDevicesKey - Ключ deviceKey обновлен', newDeviceKey);
     },
+    updateSetpointsKey({ commit }, newSetpointKey) {
+      commit('SET_SETPOINT_KEY', newSetpointKey);
+      localStorage.setItem('deviceKey', newSetpointKey);
+      console.log('[sortParams] - updateSetpointsKey - Ключ setpointKey обновлен', newSetpointKey);
+    },
+
+
+
+
     async setSortType({ commit, state }, type) {
       if (state.sortType === type) return;
       commit('SET_SORT_TYPE', type);

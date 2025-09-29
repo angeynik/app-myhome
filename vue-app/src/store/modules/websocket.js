@@ -131,7 +131,7 @@ export default {
        
         if (response.type === 'post') {
           //console.log('[WebSocket] Обрабатываем сообщение type = post');
-          console.log('dID сообщения - ', dID, ' dID активного пользователя - ', auth_dID, 'request - ', response.request);
+          //console.log('dID сообщения - ', dID, ' dID активного пользователя - ', auth_dID, 'request - ', response.request);
 
             // Валидация payload
               if (!response.payload || typeof response.payload !== 'object') {
@@ -141,7 +141,7 @@ export default {
 
           // Обновляем значение
             if (dID === auth_dID) {
-              console.log('[WebSocket] Обрабатываем сообщение request-', response.request);
+              //console.log('[WebSocket] Обрабатываем сообщение request-', response.request);
               await dispatch('config/handleSensorUpdate', {dID, payload: response.payload, type: response.request}, { root: true });
             }  else {
                 console.log('[WebSocket] dID сообщения запроса', dID, ' не соответствует dID текущего пользователя - ', auth_dID);

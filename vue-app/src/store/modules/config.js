@@ -31,9 +31,9 @@ export default {
       state.allDevices = devices;
       console.log('[sortParams] - SET_ALL_DEVICES Обновлен список доступных устройств: ', devices);
     },
-    SET_ALL_SETPOINTS(state, devices) {
-      state.allSetpoints = devices;
-      console.log('[sortParams] - SET_ALL_SETPOINTS Обновлен список уставок: ', devices);
+    SET_ALL_SETPOINTS(state, setpoints) {
+      state.allSetpoints = setpoints;
+      console.log('[sortParams] - SET_ALL_SETPOINTS Обновлен список уставок: ', setpoints);
     },
     UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value, timestamp }) {
       const config = state.configs[dID];
@@ -85,31 +85,38 @@ export default {
   actions: {
 
     async initialize({ dispatch, rootGetters, state }) {
-      await dispatch('detectDevice'); 
-      console.log('[config] - initialize - Начинаем Инициализацию конфига');
+      dispatch('detectDevice'); 
+      //console.log('[config] - initialize - Начинаем Инициализацию конфига');
 
       const dID = rootGetters['dID'];
-      console.log('[config] - initialize - dID: ', dID);
-      console.log('[config] - initialize - state.configs[dID] до ensureConfig: ', state.configs[dID]);
+      //console.log('[config] - initialize - dID: ', dID);
+      //console.log('[config] - initialize - state.configs[dID] до ensureConfig: ', state.configs[dID]);
       
       if (dID && !state.configs[dID]) {
+        console.log('[config] - initialize - Конфиг для dID -', dID, ' не был загружен -',state.configs[dID], ' инициализируем' );
+
         await dispatch('ensureConfig', dID);
-        // После ensureConfig проверяем, что конфиг действительно загружен
+
+        //После ensureConfig проверяем, что конфиг действительно загружен
         if (state.configs[dID]) {
           console.log('[config] - initialize - ensureConfig завершен', state.configs[dID]);
         } else {
           console.error('[config] - initialize - Конфиг не был загружен');
         }
       }
+      await dispatch('ensureSortingKeys');
+      //console.log('[config] - initialize - После ensureSortingKeys');
 
-      const checkRoomKey = rootGetters['roomKey'];
-      const checkParamsKey = rootGetters['paramKey'];
-      console.log(`[config] - initialize - Исходные ключи сортировки  -  state.roomKey: ${checkRoomKey},  -  state.paramKey: ${checkParamsKey}`);
+      // const checkRoomKey = rootGetters['roomKey'];
+      // const checkParamsKey = rootGetters['paramKey'];
+      // const checkDeviceKey = rootGetters['deviceKey'];
+      // const checkSetpointKey = rootGetters['setpointKey'];
+      // console.log(`-- 111 - - - - [config] - initialize - Исходные ключи сортировки  -  state.roomKey: ${checkRoomKey},  -  state.paramKey: ${checkParamsKey}, -  state.deviceKey: ${checkDeviceKey}, -  state.setpointKey: ${checkSetpointKey}`);
       
-      if (checkRoomKey === null || checkRoomKey === undefined) {
-        console.log('[config] - initialize - Ключи сортировки не найдены, инициализируем');
-        await dispatch('ensureSortingKeys');
-      }
+      // if (checkRoomKey === null || checkRoomKey === undefined) {
+      //   console.log('[config] - initialize - Ключи сортировки не найдены, инициализируем');
+      //   await dispatch('ensureSortingKeys');
+      // }
 
       console.log('[config] - initialize - Завершена инициализация');
     },
@@ -153,28 +160,48 @@ export default {
         commit('SET_LOADING', false);
       }
     },
-   
-    async requestConfig({ dispatch }, dID) {
-      console.log('[config] - requestConfig - Запрос на получение конфигурации по dID - ', dID);
+  
+    async requestConfig({ dispatch, state }, dID) {
+      //console.log('[config] - requestConfig - Формируем Запрос на Сервер для получение конфигурации по dID - ', dID);
+      
       try {
-        const response = await dispatch('websocket/send', {
+        // 1. Отправляем запрос (не ждем ответа через возврат)
+         dispatch('websocket/send', {
           type: 'get',
           request: 'config',
           name: dID
-        }, { root: true });
+        }, { root: true }).then(() => {
+          console.log('[config] - requestConfig - Запрос отправлен (then)');
+        }).catch(error => {
+          console.error('[config] - requestConfig - Ошибка отправки запроса:', error);
+        });
         
-        if (response?.payload) {
-          console.log('[config] - requestConfig - от Server Конфигурация получена - ', response.payload);
-          await dispatch('handleConfigResponse', response);
+        //console.log('[config] - requestConfig - Запрос отправлен, ждем появления конфига в state...');
+        
+        // 2. Ждем пока конфиг появится в state (максимум 10 секунд)
+        const timeout = 10000;
+        const startTime = Date.now();
+        
+        while (!state.configs[dID]) {
+          // Проверяем не превышен ли таймаут
+          if (Date.now() - startTime > timeout) {
+            throw new Error(`Timeout: Конфиг для ${dID} не был получен за ${timeout}мс`);
+          }
+          // Ждем 100мс перед следующей проверкой
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
+        
+        console.log('[config] - requestConfig - Конфиг появился в state:');
+        return state.configs[dID];
+        
       } catch (error) {
         console.error(`[Config] Ошибка запроса конфигурации ${dID}:`, error);
         throw error;
       }
     },
-   
+
     async handleConfigResponse({ commit, dispatch }, response) {
-      console.log('[Config] - handleConfigResponse - Обработка ответа от Server - Конфигурация', response);
+      console.log('[Config] - handleConfigResponse - Обработка ответа от Server - Конфигурация', response.payload);
       try {
         const dID = response.name;
         const config = response.payload;
@@ -185,39 +212,31 @@ export default {
         console.log('[Config] - handleConfigResponse - Обновляем Конфигурацию - ', dID);
         commit('SET_CONFIG', { name: dID, config });
         // Обновляем список комнат
+        console.log('[Config] - handleConfigResponse - Обновляем список комнат');
         await dispatch('handleRoomsSet', config);
       // Обновляем список параметров
+      console.log('[Config] - handleConfigResponse - Обновляем список параметров');
         await dispatch('handleParamsSet', config);
       // Обновляем список устройств
+      console.log('[Config] - handleConfigResponse - Обновляем список устройств');
       await dispatch('handleDevicesSet', config);
       // Обновляем уставки
+      console.log('[Config] - handleConfigResponse - Обновляем уставки');
       await dispatch('handleSetpointsSet', config);
-      // Обновляем ключи сортировки
-      await dispatch('ensureSortingKeys');
 
         console.log('[Config] - handleConfigResponse - Конфиг обновлен, данные для сортировки готовы');
+        return 'success';
       } catch (error) {
         console.error('[Config] - handleConfigResponse - Ошибка обработки ответа:', error);
         throw error;
       }
     },
-    // handleRoomsSet ({ commit }, config ) {
-    //   console.log('[Config] - handleRoomsSet - Обновляем список комнат');
-    //   try {
-    //   // Обновляем список комнат
-    //   const rooms = Object.keys(config).filter(key => 
-    //     config[key]?.sensors && Object.keys(config[key].sensors).length > 0
-    //   );
-    //   commit('SET_ALL_ROOMS', rooms);
-    //   //console.log('[Config] - handleRoomsSet Обновлен список доступных комнат rooms: ', rooms);
-    //   } catch (error) {
-    //     console.error('[Config] - handleRoomsSet - Ошибка обновления списка комнат:', error);
-    //     throw error;
-    //   }
-    // },
+
+
+
 
     handleRoomsSet({ commit }, config) {
-      console.log('[Config] - handleRoomsSet - Обновляем список комнат');
+      //console.log('[Config] - handleRoomsSet - Обновляем список комнат');
       try {
         const rooms = Object.keys(config).filter(key => {
 
@@ -243,7 +262,7 @@ export default {
       }
     },
     handleParamsSet ({ commit }, config) {
-      console.log('[Config] - handleConfigResponse - Обновляем список параметров');
+      //console.log('[Config] - handleParamsSet - Обновляем список параметров');
       try {
       const paramsSet = new Set();
       Object.values(config).forEach(room => {
@@ -257,15 +276,14 @@ export default {
       });
       const params = Array.from(paramsSet);
       commit('SET_ALL_PARAMS', params);
-      //console.log('[Config] - handleConfigResponse Обновлен список доступных комнат rooms: ', params);
+      //console.log('[Config] - handleParamsSet Обновлен список доступных комнат rooms: ', params);
       } catch (error) {
-        console.error('[Config] - handleConfigResponse - Ошибка обновления списка параметров:', error);
+        console.error('[Config] - handleParamsSet - Ошибка обновления списка параметров:', error);
         throw error;
       }
     },
-
     handleSetpointsSet ({ commit }, config) {
-      console.log('[Config] - handleSetpointsSet - Обновляем список параметров');
+      //console.log('[Config] - handleSetpointsSet - Обновляем список параметров');
       try {
       const paramsSet = new Set();
       Object.values(config).forEach(room => {
@@ -285,88 +303,51 @@ export default {
         throw error;
       }
     },
-
-    // handleDevicesSet({ commit }, config) {
-    //   console.log('[Config] - handleDevicesSet - Обновляем список устройств');
-    //   try {
-    //     const devicesSet = new Set();
+    handleDevicesSet({ commit }, config) {
+      //console.log('[Config] - handleDevicesSet - Обновляем список устройств');
+      try {
+        const devicesSet = new Set();
         
-    //     // Исключаемые поля (не устройства)
-    //     const excludedFields = ['init', 'id', 'group', 'title', 'setpoints'];
+        // Исключаемые разделы (включая sensors и служебные)
+        const excludedSections = ['id', 'group', 'title', 'setpoints', 'sensors'];
         
-    //     // Проходим по всем комнатам
-    //     Object.values(config).forEach(room => {
-    //       // Проходим по всем свойствам комнаты
-    //       Object.keys(room).forEach(key => {
-    //         // Пропускаем исключаемые поля
-    //         if (excludedFields.includes(key)) return;
+        // Проходим по всем комнатам, исключая init
+        Object.entries(config).forEach(([roomKey, room]) => {
+          // Исключаем комнату init
+          if (roomKey === 'init') return;
+          
+          // Проходим по всем свойствам комнаты
+          Object.keys(room).forEach(sectionKey => {
+            // Пропускаем исключаемые разделы
+            if (excludedSections.includes(sectionKey)) return;
             
-    //         // Если это объект с устройствами (sensors, actuators, switchs, etc.)
-    //         if (typeof room[key] === 'object' && room[key] !== null) {
-    //           // Получаем все ключи устройств в этом разделе
-    //           Object.keys(room[key]).forEach(deviceKey => {
-    //             // Отбрасываем первый символ и цифры в конце
-    //             const baseDevice = deviceKey.replace(/^[a-z]/, '').replace(/\d+$/, '');
-    //             if (baseDevice) {
-    //               devicesSet.add(baseDevice);
-    //             }
-    //           });
-    //         }
-    //       });
-    //     });
-        
-    //     const devices = Array.from(devicesSet);
-    //     commit('SET_ALL_DEVICES', devices);
-    //     //console.log('[Config] - handleDevicesSet Обновлен список доступных устройств: ', devices);
-    //   } catch (error) {
-    //     console.error('[Config] - handleDevicesSet - Ошибка обновления списка устройств:', error);
-    //     throw error;
-    //   }
-    // },
-
-handleDevicesSet({ commit }, config) {
-  console.log('[Config] - handleDevicesSet - Обновляем список устройств');
-  try {
-    const devicesSet = new Set();
-    
-    // Исключаемые разделы (включая sensors и служебные)
-    const excludedSections = ['id', 'group', 'title', 'setpoints', 'sensors'];
-    
-    // Проходим по всем комнатам, исключая init
-    Object.entries(config).forEach(([roomKey, room]) => {
-      // Исключаем комнату init
-      if (roomKey === 'init') return;
-      
-      // Проходим по всем свойствам комнаты
-      Object.keys(room).forEach(sectionKey => {
-        // Пропускаем исключаемые разделы
-        if (excludedSections.includes(sectionKey)) return;
-        
-        // Если это объект с устройствами (actuators, switchs, etc.)
-        if (typeof room[sectionKey] === 'object' && room[sectionKey] !== null) {
-          // Получаем все ключи устройств в этом разделе
-          Object.keys(room[sectionKey]).forEach(deviceKey => {
-            // Извлекаем префикс (часть до цифр) - аналогично handleParamsSet
-            const prefix = deviceKey.replace(/\d+$/, '');
-            if (prefix) {
-              devicesSet.add(prefix);
+            // Если это объект с устройствами (actuators, switchs, etc.)
+            if (typeof room[sectionKey] === 'object' && room[sectionKey] !== null) {
+              // Получаем все ключи устройств в этом разделе
+              Object.keys(room[sectionKey]).forEach(deviceKey => {
+                // Извлекаем префикс (часть до цифр) - аналогично handleParamsSet
+                const prefix = deviceKey.replace(/\d+$/, '');
+                if (prefix) {
+                  devicesSet.add(prefix);
+                }
+              });
             }
           });
-        }
-      });
-    });
-    
-    const devices = Array.from(devicesSet);
-    commit('SET_ALL_DEVICES', devices);
-    //console.log('[Config] - handleDevicesSet Обновлен список доступных устройств: ', devices);
-  } catch (error) {
-    console.error('[Config] - handleDevicesSet - Ошибка обновления списка устройств:', error);
-    throw error;
-  }
-},
+        });
+        
+        const devices = Array.from(devicesSet);
+        commit('SET_ALL_DEVICES', devices);
+        //console.log('[Config] - handleDevicesSet Обновлен список доступных устройств: ', devices);
+      } catch (error) {
+        console.error('[Config] - handleDevicesSet - Ошибка обновления списка устройств:', error);
+        throw error;
+      }
+    },
+
+
 
     handleSensorUpdate({ commit }, { dID, payload, type }) {
-      console.log('[Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
+      //console.log('[Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
 
       try {
         const { room, item_name, item_value, time } = payload;
@@ -388,27 +369,26 @@ handleDevicesSet({ commit }, config) {
         console.error('[Config] Ошибка обработки данных сенсора:', error);
       }
     },
-    async ensureConfig({ state, dispatch }, dID) {
-      if (!dID) throw new Error('dID не определен');
-      let config = state.configs[dID];
-      if (config) {
-        console.log('[config] - ensureConfig - Конфиг найден по dID - ', dID);
-        await dispatch('handleRoomsSet', config);
-        await dispatch('handleParamsSet', config);
-        await dispatch('handleDevicesSet', config);
-        await dispatch('handleSetpointsSet', config);
-        return config;
-      } 
-      console.log('[config] - ensureConfig - Конфига нет, запрашиваем');
-      return await dispatch('requestConfig', dID);
-    },
 
+    async ensureConfig({ dispatch }, dID) {
+      if (!dID) throw new Error('dID не определен');
+      
+      try {
+        console.log('[config] - ensureConfig - Конфига нет, запрашиваем');
+        const result = await dispatch('requestConfig', dID);
+        //console.log('[config] - ensureConfig - Конфиг успешно загружен в state.configs');
+        return result;
+      } catch (error) {
+        console.error('[config] - ensureConfig - Ошибка загрузки конфига:', error);
+        throw error;
+      }
+    },
     async ensureSortingKeys({ state, dispatch, rootGetters }) {
       console.log('[config] - ensureSortingKeys - Проверяем наличие ключей сортировки');
       
       // Обработка комнат
       let roomKey = rootGetters['roomKey'] || localStorage.getItem('roomKey');
-      console.log('[config] - ensureSortingKeys - roomKey ', roomKey);
+      //console.log('[config] - ensureSortingKeys - roomKey ', roomKey);
       //if (!roomKey && state.allRooms.length > 0) {
       if (roomKey === null && state.allRooms.length > 0) {
         roomKey = state.allRooms[0];
@@ -421,6 +401,7 @@ handleDevicesSet({ commit }, config) {
 
       // Обработка параметров
       let paramKey = rootGetters['paramKey'] || localStorage.getItem('paramKey');
+      //console.log('[config] - ensureSortingKeys - paramKey ', paramKey);
       if (!paramKey && state.allParams.length > 0) {
         paramKey = state.allParams[0];
         localStorage.setItem('paramKey', paramKey);
@@ -430,50 +411,65 @@ handleDevicesSet({ commit }, config) {
       if (paramKey) {
         await dispatch('sortParams/updateParamsKey', paramKey, { root: true });
       }
+      
       // Обработка устройств
       let deviceKey = rootGetters['deviceKey'] || localStorage.getItem('deviceKey');
+      //console.log('[config] - ensureSortingKeys - deviceKey ', deviceKey);
       if (!deviceKey && state.allDevices.length > 0) {
           deviceKey = state.allDevices[0];
           localStorage.setItem('deviceKey', deviceKey);
-          console.log('[config] - Установлено первое устройство:', deviceKey);
+         console.log('[config] - Установлено первое устройство:', deviceKey);
         }
         
         if (deviceKey) {
           await dispatch('sortParams/updateDevicesKey', deviceKey, { root: true });
         }
+
+      // Обработка Setpoints
+      let setpointKey = rootGetters['setpointKey'] || localStorage.getItem('setpointKey');
+      //console.log('[config] - ensureSortingKeys - setpointKey ', setpointKey);
+      if (!setpointKey && state.allSetpoints.length > 0) {
+          setpointKey = state.allSetpoints[0];
+          localStorage.setItem('setpointKey', setpointKey);
+         console.log('[config] - Установлено первая Уставка:', setpointKey);
+        }
+        
+        if (setpointKey) {
+          await dispatch('sortParams/updateSetpointsKey', setpointKey, { root: true });
+        }
       },
     
 
-      async updateSetpointLocal ({ commit, state, rootGetters, dispatch }, { roomKey, paramKey, value }) {
+      // async updateSetpointLocal ({ commit, state, rootGetters, dispatch }, { roomKey, paramKey, value }) {
         
 
-        const dID = rootGetters.dID;
-        if (!dID) throw new Error('dID не определен');
+      //   const dID = rootGetters.dID;
+      //   if (!dID) throw new Error('dID не определен');
 
-        // 1. Глубоким клонированием создаём рабочую копию
-        const safeBase = state.configs[dID] || {};
-        const config = JSON.parse(JSON.stringify(safeBase));
-        console.log('[config] - updateSetpoint - исходный state.config:', config);
+      //   // 1. Глубоким клонированием создаём рабочую копию
+      //   const safeBase = state.configs[dID] || {};
+      //   const config = JSON.parse(JSON.stringify(safeBase));
+      //   console.log('[config] - updateSetpoint - исходный state.config:', config);
 
-        if (!config[roomKey]?.setpoints) {
-          throw new Error(`Комната ${roomKey} или её уставки не найдены`);
-        }
+      //   if (!config[roomKey]?.setpoints) {
+      //     throw new Error(`Комната ${roomKey} или её уставки не найдены`);
+      //   }
 
-        // 2. Ищем точный ключ уставки
-        const baseParamKey = await dispatch('clearKey', { key: paramKey });
-        let setpointKey = Object.keys(config[roomKey].setpoints).find(k => k === baseParamKey);
+      //   // 2. Ищем точный ключ уставки
+      //   const baseParamKey = await dispatch('clearKey', { key: paramKey });
+      //   let setpointKey = Object.keys(config[roomKey].setpoints).find(k => k === baseParamKey);
 
-        if (!setpointKey) {
-          config[roomKey].setpoints[baseParamKey] = { value: 0 };
-          setpointKey = baseParamKey;
-        }
+      //   if (!setpointKey) {
+      //     config[roomKey].setpoints[baseParamKey] = { value: 0 };
+      //     setpointKey = baseParamKey;
+      //   }
 
-        config[roomKey].setpoints[setpointKey].value = parseFloat(value);
+      //   config[roomKey].setpoints[setpointKey].value = parseFloat(value);
 
-        // 3. Сохраняем в Vuex
-        commit('SET_CONFIG', { name: dID, config });
+      //   // 3. Сохраняем в Vuex
+      //   commit('SET_CONFIG', { name: dID, config });
 
-      },
+      // },
       async updateSetpointServer( {rootGetters, dispatch}, { roomKey, paramKey, value }) {
         const baseParamKey = await dispatch('clearKey', { key: paramKey });
         const dID = rootGetters.dID;

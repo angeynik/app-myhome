@@ -113,7 +113,7 @@ watch: {
     this.updateView();
   },
   methods: {
-    ...mapMutations('sortParams', ['SET_SORT_TYPE', 'SET_ROOM_ID', 'SET_ROOM_KEY', 'SET_PARAM_KEY', 'SET_ROOM_TITLE', 'SET_PARAM_TITLE']),
+    ...mapMutations('sortParams', ['SET_SORT_TYPE', 'SET_ROOM_ID', 'SET_ROOM_KEY', 'SET_PARAM_KEY', 'SET_ROOM_TITLE', 'SET_PARAM_TITLE', 'SET_SETPOINT_KEY', 'SET_DEVICE_KEY', 'SET_DEVICE_TITLE', 'SET_SETPOINT_TITLE']),
     
 
     getSensorValue(key, data) {

@@ -130,6 +130,8 @@ export default {
       'getRoomTitle',
       'getParamTitle',
       'getSensorTitle',
+      'getDeviceKey',
+      'getSetpointKey'
     ]),
     ...mapGetters('config', ['getMobile', 'getDeviceType']),
     userLevel() {
@@ -153,6 +155,10 @@ export default {
           return this.getDeviceKey 
             ? `${this.getDeviceKey}` 
             : "Сортировка по устройствам";
+        } else if (this.currentSortType === 'setpoints') {
+          return this.getSetpointKey 
+            ? `${this.getSetpointKey}` 
+            : "Сортировка по Уставкам";
         }
       }
       return "Dashboard";
@@ -314,7 +320,7 @@ watch: {
       }
     },
 
-    handleSetpointEvent(eventData) {
+    handleSetpointEvent(eventData) { //Функция получает новое значение от Footer сохраняет его локально и отправляет на сервер 
       //console.log('[DashBoard] - handleSetpointEvent - eventData:', eventData);
 
       if (eventData.updateState && eventData.updateState.type === 'newSetPoint') {//Обработка изменения уставки
@@ -333,18 +339,20 @@ watch: {
       try {
         const roomKey = this.getRoomKey;
         const paramKey = this.getParamKey;
-        if (!roomKey || !paramKey) {
+        const deviceKey = this.getDeviceKey;
+        const setpointKey = this.getSetpointKey;
+        if (!roomKey || !paramKey || !deviceKey || !setpointKey) {
           console.error('Не выбрана комната или параметр для обновления уставки');
           return;
         }
         //console.log('[DashBoard] - updateConfigSetpoint - roomKey -', roomKey, ' paramKey -', paramKey, ' newValue -', newValue);
 
         // Обновляем значение в хранилище
-          await this.$store.dispatch('config/updateSetpointLocal', {
-            roomKey: roomKey,
-            paramKey: paramKey,
-            value: newValue
-          });
+          // await this.$store.dispatch('config/updateSetpointLocal', {
+          //   roomKey: roomKey,
+          //   paramKey: paramKey,
+          //   value: newValue
+          // });
           // Очистка предыдущего таймера
           if (this.setpointUpdateTimer) {
             clearTimeout(this.setpointUpdateTimer);
