@@ -12,6 +12,20 @@ function getSensorTitle(key) {
     'dMove': 'Движение',
     'dFire': 'Контроль возгорания',
     'dLeak': 'Контроль утечек',
+    'aLamp': 'Освещение',
+    'aFan': 'Вентиляция',
+    'aPump': 'Насос',
+    'aValve': 'Клапан',
+    'aRelay': 'Реле',
+    'dFrequency': 'Частота',
+    'dVoltage': 'Напряжение',
+    'dСurrent_a': 'Ток Фаза',
+    'dСurrent_b': 'Ток Ноль',
+    'dСurrent': 'Ток',
+    'aActuator': 'Актуатор',
+    'aSwitch': 'Переключатель',
+    'aController': 'Контроллер',
+    'dBat': 'Батарея',
   };
   return mappings[baseKey] || key;
 }
@@ -22,6 +36,10 @@ function getUnit(key) {
         if (key.includes('Hum')) return '%';
         if (key.includes('Press')) return 'hPa';
         if (key.includes('Power')) return 'W';
+        if (key.includes('Сurrent')) return 'A';
+        if (key.includes('Bat')) return '%';
+        if (key.includes('Voltage')) return 'V';
+        if (key.includes('Frequency')) return 'Hz';
         return '';
 }
 

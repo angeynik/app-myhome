@@ -7,6 +7,7 @@ export default {
     allRooms: [],
     allParams: [],
     allDevices: [],
+    allSetpoints:[],
     loading: false,
     error: null,
     mobile: false,
@@ -29,6 +30,10 @@ export default {
     SET_ALL_DEVICES(state, devices) {
       state.allDevices = devices;
       console.log('[sortParams] - SET_ALL_DEVICES Обновлен список доступных устройств: ', devices);
+    },
+    SET_ALL_SETPOINTS(state, devices) {
+      state.allSetpoints = devices;
+      console.log('[sortParams] - SET_ALL_SETPOINTS Обновлен список уставок: ', devices);
     },
     UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value, timestamp }) {
       const config = state.configs[dID];
@@ -185,30 +190,58 @@ export default {
         await dispatch('handleParamsSet', config);
       // Обновляем список устройств
       await dispatch('handleDevicesSet', config);
-        // Обновляем ключи сортировки
-        await dispatch('ensureSortingKeys');
+      // Обновляем уставки
+      await dispatch('handleSetpointsSet', config);
+      // Обновляем ключи сортировки
+      await dispatch('ensureSortingKeys');
+
         console.log('[Config] - handleConfigResponse - Конфиг обновлен, данные для сортировки готовы');
       } catch (error) {
         console.error('[Config] - handleConfigResponse - Ошибка обработки ответа:', error);
         throw error;
       }
     },
-    handleRoomsSet ({ commit }, config ) {
+    // handleRoomsSet ({ commit }, config ) {
+    //   console.log('[Config] - handleRoomsSet - Обновляем список комнат');
+    //   try {
+    //   // Обновляем список комнат
+    //   const rooms = Object.keys(config).filter(key => 
+    //     config[key]?.sensors && Object.keys(config[key].sensors).length > 0
+    //   );
+    //   commit('SET_ALL_ROOMS', rooms);
+    //   //console.log('[Config] - handleRoomsSet Обновлен список доступных комнат rooms: ', rooms);
+    //   } catch (error) {
+    //     console.error('[Config] - handleRoomsSet - Ошибка обновления списка комнат:', error);
+    //     throw error;
+    //   }
+    // },
+
+    handleRoomsSet({ commit }, config) {
       console.log('[Config] - handleRoomsSet - Обновляем список комнат');
       try {
-      // Обновляем список комнат
-      const rooms = Object.keys(config).filter(key => 
-        config[key]?.sensors && Object.keys(config[key].sensors).length > 0
-      );
-      commit('SET_ALL_ROOMS', rooms);
-      //console.log('[Config] - handleRoomsSet Обновлен список доступных комнат rooms: ', rooms);
+        const rooms = Object.keys(config).filter(key => {
+
+          if (key === 'init') return false;
+          const room = config[key];
+          // Проверяем, есть ли в комнате любые устройства (не только сенсоры)
+          const hasDevices = Object.keys(room).some(sectionKey => {
+            const excludedSections = ['init', 'id', 'group', 'title', 'setpoints'];
+            if (excludedSections.includes(sectionKey)) return false;
+            
+            // Если раздел существует и содержит устройства
+            return room[sectionKey] && 
+                  typeof room[sectionKey] === 'object' && 
+                  Object.keys(room[sectionKey]).length > 0;
+          });
+          return hasDevices;
+        });
+        commit('SET_ALL_ROOMS', rooms);
+        console.log('[Config] - handleRoomsSet Обновлен список доступных комнат: ', rooms);
       } catch (error) {
         console.error('[Config] - handleRoomsSet - Ошибка обновления списка комнат:', error);
         throw error;
       }
     },
-
-    
     handleParamsSet ({ commit }, config) {
       console.log('[Config] - handleConfigResponse - Обновляем список параметров');
       try {
@@ -230,43 +263,107 @@ export default {
         throw error;
       }
     },
-    handleDevicesSet({ commit }, config) {
-      console.log('[Config] - handleDevicesSet - Обновляем список устройств');
+
+    handleSetpointsSet ({ commit }, config) {
+      console.log('[Config] - handleSetpointsSet - Обновляем список параметров');
       try {
-        const devicesSet = new Set();
-        
-        // Исключаемые поля (не устройства)
-        const excludedFields = ['init', 'id', 'group', 'title', 'setpoints'];
-        
-        // Проходим по всем комнатам
-        Object.values(config).forEach(room => {
-          // Проходим по всем свойствам комнаты
-          Object.keys(room).forEach(key => {
-            // Пропускаем исключаемые поля
-            if (excludedFields.includes(key)) return;
-            
-            // Если это объект с устройствами (sensors, actuators, switchs, etc.)
-            if (typeof room[key] === 'object' && room[key] !== null) {
-              // Получаем все ключи устройств в этом разделе
-              Object.keys(room[key]).forEach(deviceKey => {
-                // Отбрасываем первый символ и цифры в конце
-                const baseDevice = deviceKey.replace(/^[a-z]/, '').replace(/\d+$/, '');
-                if (baseDevice) {
-                  devicesSet.add(baseDevice);
-                }
-              });
-            }
+      const paramsSet = new Set();
+      Object.values(config).forEach(room => {
+        if (room.setpoints) {
+          Object.keys(room.setpoints).forEach(k => {
+            // Извлекаем префикс (часть до цифр)
+            const prefix = k.replace(/\d+$/, '');
+            paramsSet.add(prefix);
           });
-        });
-        
-        const devices = Array.from(devicesSet);
-        commit('SET_ALL_DEVICES', devices);
-        //console.log('[Config] - handleDevicesSet Обновлен список доступных устройств: ', devices);
+        }
+      });
+      const params = Array.from(paramsSet);
+      commit('SET_ALL_SETPOINTS', params);
+      //console.log('[Config] - handleSetpointsSet Обновлен список доступных комнат rooms: ', params);
       } catch (error) {
-        console.error('[Config] - handleDevicesSet - Ошибка обновления списка устройств:', error);
+        console.error('[Config] - handleSetpointsSet - Ошибка обновления списка параметров:', error);
         throw error;
       }
     },
+
+    // handleDevicesSet({ commit }, config) {
+    //   console.log('[Config] - handleDevicesSet - Обновляем список устройств');
+    //   try {
+    //     const devicesSet = new Set();
+        
+    //     // Исключаемые поля (не устройства)
+    //     const excludedFields = ['init', 'id', 'group', 'title', 'setpoints'];
+        
+    //     // Проходим по всем комнатам
+    //     Object.values(config).forEach(room => {
+    //       // Проходим по всем свойствам комнаты
+    //       Object.keys(room).forEach(key => {
+    //         // Пропускаем исключаемые поля
+    //         if (excludedFields.includes(key)) return;
+            
+    //         // Если это объект с устройствами (sensors, actuators, switchs, etc.)
+    //         if (typeof room[key] === 'object' && room[key] !== null) {
+    //           // Получаем все ключи устройств в этом разделе
+    //           Object.keys(room[key]).forEach(deviceKey => {
+    //             // Отбрасываем первый символ и цифры в конце
+    //             const baseDevice = deviceKey.replace(/^[a-z]/, '').replace(/\d+$/, '');
+    //             if (baseDevice) {
+    //               devicesSet.add(baseDevice);
+    //             }
+    //           });
+    //         }
+    //       });
+    //     });
+        
+    //     const devices = Array.from(devicesSet);
+    //     commit('SET_ALL_DEVICES', devices);
+    //     //console.log('[Config] - handleDevicesSet Обновлен список доступных устройств: ', devices);
+    //   } catch (error) {
+    //     console.error('[Config] - handleDevicesSet - Ошибка обновления списка устройств:', error);
+    //     throw error;
+    //   }
+    // },
+
+handleDevicesSet({ commit }, config) {
+  console.log('[Config] - handleDevicesSet - Обновляем список устройств');
+  try {
+    const devicesSet = new Set();
+    
+    // Исключаемые разделы (включая sensors и служебные)
+    const excludedSections = ['id', 'group', 'title', 'setpoints', 'sensors'];
+    
+    // Проходим по всем комнатам, исключая init
+    Object.entries(config).forEach(([roomKey, room]) => {
+      // Исключаем комнату init
+      if (roomKey === 'init') return;
+      
+      // Проходим по всем свойствам комнаты
+      Object.keys(room).forEach(sectionKey => {
+        // Пропускаем исключаемые разделы
+        if (excludedSections.includes(sectionKey)) return;
+        
+        // Если это объект с устройствами (actuators, switchs, etc.)
+        if (typeof room[sectionKey] === 'object' && room[sectionKey] !== null) {
+          // Получаем все ключи устройств в этом разделе
+          Object.keys(room[sectionKey]).forEach(deviceKey => {
+            // Извлекаем префикс (часть до цифр) - аналогично handleParamsSet
+            const prefix = deviceKey.replace(/\d+$/, '');
+            if (prefix) {
+              devicesSet.add(prefix);
+            }
+          });
+        }
+      });
+    });
+    
+    const devices = Array.from(devicesSet);
+    commit('SET_ALL_DEVICES', devices);
+    //console.log('[Config] - handleDevicesSet Обновлен список доступных устройств: ', devices);
+  } catch (error) {
+    console.error('[Config] - handleDevicesSet - Ошибка обновления списка устройств:', error);
+    throw error;
+  }
+},
 
     handleSensorUpdate({ commit }, { dID, payload, type }) {
       console.log('[Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
@@ -299,6 +396,7 @@ export default {
         await dispatch('handleRoomsSet', config);
         await dispatch('handleParamsSet', config);
         await dispatch('handleDevicesSet', config);
+        await dispatch('handleSetpointsSet', config);
         return config;
       } 
       console.log('[config] - ensureConfig - Конфига нет, запрашиваем');
@@ -401,6 +499,8 @@ export default {
     getCommonConfig: (state) => (dID) => state.configs[dID] || null,
     allRooms: state => state.allRooms,
     allParams: state => state.allParams,
+    allDevices: state => state.allDevices,
+    allSetpoints: state => state.allSetpoints,
     getMobile: state => state.mobile,
     getDeviceType: state => state.deviceType
   }

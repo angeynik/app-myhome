@@ -33,9 +33,9 @@
           <router-link to="/"> Главная </router-link>
           <!-- <router-link :to="{ name: 'DashBoard' }"> выбор сортировки </router-link> -->
           <router-link :to="{ name: 'DashboardRooms' }" @click.prevent="forceSortUpdate('rooms')" @select="selectComponent('rooms')"> Комнаты </router-link>
-          <router-link :to="{ name: 'DashboardParams' }" @click.prevent="forceSortUpdate('params')" @select="selectComponent('params')"> Параметры </router-link>
+          <router-link :to="{ name: 'DashboardParams' }" @click.prevent="forceSortUpdate('params')" @select="selectComponent('params')"> Датчики </router-link>
           <router-link :to="{ name: 'DashboardDevices' }" @click.prevent="forceSortUpdate('devices')" @select="selectComponent('devices')">Устройства</router-link>
-          <router-link :to="{ name: 'DashboardSettings' }">Настройки</router-link>
+          <router-link :to="{ name: 'DashboardSettings' }">Уставки</router-link>
         </nav>
 
       <!-- <nav>
@@ -56,9 +56,9 @@
 
     <div class="app-place_body" v-if="!selectedComponent" id="app_place">
       <AppPlace class="app-place_module" title="Комнаты" @select="selectComponent('rooms')" />
-      <AppPlace class="app-place_module" title="Параметры" @select="selectComponent('params')" />
+      <AppPlace class="app-place_module" title="Датчики" @select="selectComponent('params')" />
       <AppPlace class="app-place_module" title="Устройства" @select="selectComponent('devices')" />
-      <AppPlace class="app-place_module" title="Настройки" @select="selectComponent('settings')" />
+      <AppPlace class="app-place_module" title="Уставки" @select="selectComponent('settings')" />
     </div>
     
     <div v-else id="app_component" style="height: 100%;">
