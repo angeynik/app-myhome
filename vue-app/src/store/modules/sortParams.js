@@ -59,7 +59,7 @@ export default {
 
   mutations: {
     SET_SORT_TYPE(state, type) {
-      if (['rooms', 'params'].includes(type)) {
+      if (['rooms', 'params', 'devices'].includes(type)) {
         state.sortType = type;
       }
     },

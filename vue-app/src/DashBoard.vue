@@ -32,9 +32,9 @@
         <nav>
           <router-link to="/"> Главная </router-link>
           <!-- <router-link :to="{ name: 'DashBoard' }"> выбор сортировки </router-link> -->
-          <router-link :to="{ name: 'DashboardRooms' }" @click.prevent="forceSortUpdate('rooms')"> Комнаты </router-link>
-          <router-link :to="{ name: 'DashboardParams' }" @click.prevent="forceSortUpdate('params')"> Параметры </router-link>
-          <router-link :to="{ name: 'DashboardDevices' }" @click.prevent="forceSortUpdate('devices')">Устройства</router-link>
+          <router-link :to="{ name: 'DashboardRooms' }" @click.prevent="forceSortUpdate('rooms')" @select="selectComponent('rooms')"> Комнаты </router-link>
+          <router-link :to="{ name: 'DashboardParams' }" @click.prevent="forceSortUpdate('params')" @select="selectComponent('params')"> Параметры </router-link>
+          <router-link :to="{ name: 'DashboardDevices' }" @click.prevent="forceSortUpdate('devices')" @select="selectComponent('devices')">Устройства</router-link>
           <router-link :to="{ name: 'DashboardSettings' }">Настройки</router-link>
         </nav>
 
@@ -233,6 +233,7 @@ watch: {
       }
     },
     async forceSortUpdate(type) {
+      console.log('Шаг 3 - [DashBoard] forceSortUpdate called with:', type);
       await this.$store.dispatch('sortParams/setSortType', type);
       // Принудительное обновление если уже на этом маршруте
       // if (this.$route.name === `Dashboard${type.charAt(0).toUpperCase() + type.slice(1)}`) {
@@ -240,7 +241,7 @@ watch: {
       // }
     },
     async selectComponent(component) {
-      //console.log('[DashBoard] - selectComponent - Выбран компонент - ', component);
+      console.log('Шаг 1 - [DashBoard] - selectComponent - Выбран компонент - ', component);
       // Устанавливаем тип сортировки
     await this.$store.dispatch('sortParams/setSortType', component);
     
@@ -248,12 +249,12 @@ watch: {
     const routeMap = {
       'rooms': 'DashboardRooms',
       'params': 'DashboardParams',
-      'devices': 'DashboardDevices', // Используем новое имя маршрута
+      'devices': 'DashboardDevices',
       'settings': 'DashboardSettings'
     };
     
     const routeName = routeMap[component];
-    // const routeName = `Dashboard${component.charAt(0).toUpperCase() + component.slice(1)}`;
+     console.log('Шаг 2 - [DashBoard] Navigating to route:', routeName);
     
     // Проверяем, не находимся ли мы уже на этом маршруте
     if (this.$route.name !== routeName) {

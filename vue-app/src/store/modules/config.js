@@ -6,6 +6,7 @@ export default {
     configs: {},
     allRooms: [],
     allParams: [],
+    allDevices: [],
     loading: false,
     error: null,
     mobile: false,
@@ -193,19 +194,21 @@ export default {
       }
     },
     handleRoomsSet ({ commit }, config ) {
-      console.log('[Config] - handleConfigResponse - Обновляем список комнат');
+      console.log('[Config] - handleRoomsSet - Обновляем список комнат');
       try {
       // Обновляем список комнат
       const rooms = Object.keys(config).filter(key => 
         config[key]?.sensors && Object.keys(config[key].sensors).length > 0
       );
       commit('SET_ALL_ROOMS', rooms);
-      //console.log('[Config] - handleConfigResponse Обновлен список доступных комнат rooms: ', rooms);
+      //console.log('[Config] - handleRoomsSet Обновлен список доступных комнат rooms: ', rooms);
       } catch (error) {
-        console.error('[Config] - handleConfigResponse - Ошибка обновления списка комнат:', error);
+        console.error('[Config] - handleRoomsSet - Ошибка обновления списка комнат:', error);
         throw error;
       }
     },
+
+    
     handleParamsSet ({ commit }, config) {
       console.log('[Config] - handleConfigResponse - Обновляем список параметров');
       try {
