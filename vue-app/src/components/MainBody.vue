@@ -53,7 +53,7 @@ export default {
   }
 },
   computed: {
-    ...mapGetters('config', ['isLoading', 'error', 'getConfig']),
+    ...mapGetters('config', ['isLoading', 'error', 'getConfig', 'clearKeySync']),
     ...mapGetters('sortParams', [
       'currentSortType', 
       'getRoomId', 
@@ -69,6 +69,7 @@ export default {
       'getUnit']),
     ...mapGetters(['dID']),
     
+   
     // sortingSubtitle() {
     //   return this.currentSortType === 'rooms' 
     //     ? `Комната: ${this.getRoomTitle}`
@@ -144,7 +145,6 @@ export default {
       'SET_DEVICE_TITLE', 
       'SET_SETPOINT_TITLE'
     ]),
-    
 
     getSensorValue(key, data) {
       switch (key) {
@@ -272,7 +272,7 @@ export default {
 
     getSortedRooms(config, roomKey) {
 
-      //console.groupCollapsed('[MainBody] - getSortedRooms');
+      console.groupCollapsed('[MainBody] - getSortedRooms');
       const room = config[roomKey];
       if (!room) return [];
      
@@ -285,11 +285,14 @@ export default {
         
         if (sectionData && typeof sectionData === 'object') {
           Object.entries(sectionData).forEach(([itemKey, itemData]) => {
+
+            const cleanKey = this.clearKeySync(itemKey);
+            console.log('[MainBody] getSortedRooms - Item:', cleanKey);
             // Для каждого устройства ищем уставку
             let setValue = null;
             if (room.setpoints) {
               const setpointKey = Object.keys(room.setpoints).find(setKey => 
-                itemKey.includes(setKey) || setKey.includes(itemKey)
+                cleanKey.includes(setKey) || setKey.includes(cleanKey)
               );
               
               if (setpointKey) {
@@ -331,11 +334,13 @@ export default {
         Object.entries(room.sensors).forEach(([sensorKey, sensorData]) => {
           // Проверяем, что ключ сенсора начинается с нужного префикса
           if (sensorKey.startsWith(paramPrefix)) {
+
+            const cleanKey = this.clearKeySync(sensorKey);
             let setValue = null;
           if (room.setpoints) {
             // Ищем ключ уставки, который соответствует префиксу сенсора
             const setpointKey = Object.keys(room.setpoints).find(setKey => 
-              sensorKey.includes(setKey) || setKey.includes(sensorKey)
+              cleanKey.includes(setKey) || setKey.includes(cleanKey)
             );
             
             if (setpointKey) {
@@ -388,16 +393,18 @@ export default {
             Object.entries(sectionData).forEach(([itemKey, itemData]) => {
 
               const baseItemKey = itemKey.replace(/\d+$/, '');
-              //console.log('Шаг 10 - [MainBody] getSortedDevices - Item:', itemKey, 'Base item key:', baseItemKey, 'Device key:', deviceKey);
+              console.log('Шаг 10 - [MainBody] getSortedDevices - Item:', itemKey, 'Base item key:', baseItemKey, 'Device key:', deviceKey);
               
               if (baseItemKey === deviceKey) {
-                //console.log('Шаг 11 - [MainBody] getSortedDevices - Ищем совподение с утройством:', itemKey);
+
+                const cleanKey = this.clearKeySync(itemKey);
+                console.log('Шаг 11 - [MainBody] getSortedDevices - Ищем совподение с утройством:', cleanKey);
                 let setValue = null;
                 
                 // Поиск уставки
                 if (room.setpoints) {
                   const setpointKey = Object.keys(room.setpoints).find(setKey => 
-                    itemKey.includes(setKey) || setKey.includes(itemKey)
+                    cleanKey.includes(setKey) || setKey.includes(cleanKey)
                   );
                   
                   if (setpointKey) {

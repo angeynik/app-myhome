@@ -450,6 +450,13 @@ export default {
     allDevices: state => state.allDevices,
     allSetpoints: state => state.allSetpoints,
     getMobile: state => state.mobile,
-    getDeviceType: state => state.deviceType
+    getDeviceType: state => state.deviceType,
+
+    clearKeySync: () => (key) => {
+    const withoutPrefix = key.slice(1);
+    const clearKey = withoutPrefix.replace(/\d+$/, '');
+    console.log(`[config] - clearKeySync - key: ${clearKey}`);
+    return clearKey;
+  }
   }
 };
