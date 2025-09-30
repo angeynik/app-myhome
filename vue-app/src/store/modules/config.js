@@ -85,8 +85,9 @@ export default {
   actions: {
 
     async initialize({ dispatch, rootGetters, state }) {
+      console.groupCollapsed('[config] - initialize');
       dispatch('detectDevice'); 
-      //console.log('[config] - initialize - Начинаем Инициализацию конфига');
+      console.log('[config] - initialize - Начинаем Инициализацию конфига');
 
       const dID = rootGetters['dID'];
       //console.log('[config] - initialize - dID: ', dID);
@@ -271,6 +272,7 @@ export default {
       }
     },
     handleSetpointsSet ({ commit }, config) {
+      console.groupCollapsed('[Config] - handleSetpointsSet');
       //console.log('[Config] - handleSetpointsSet - Обновляем список параметров');
       try {
       const paramsSet = new Set();
@@ -285,7 +287,7 @@ export default {
       });
       const params = Array.from(paramsSet);
       commit('SET_ALL_SETPOINTS', params);
-      //console.log('[Config] - handleSetpointsSet Обновлен список доступных комнат rooms: ', params);
+      console.log('[Config] - handleSetpointsSet Обновлен список доступных комнат rooms: ', params);
       } catch (error) {
         console.error('[Config] - handleSetpointsSet - Ошибка обновления списка параметров:', error);
         throw error;
@@ -325,7 +327,7 @@ export default {
         
         const devices = Array.from(devicesSet);
         commit('SET_ALL_DEVICES', devices);
-        //console.log('[Config] - handleDevicesSet Обновлен список доступных устройств: ', devices);
+        console.log('[Config] - handleDevicesSet Обновлен список доступных устройств: ', devices);
       } catch (error) {
         console.error('[Config] - handleDevicesSet - Ошибка обновления списка устройств:', error);
         throw error;
@@ -371,82 +373,57 @@ export default {
         throw error;
       }
     },
+   
     async ensureSortingKeys({ state, dispatch, rootGetters }) {
-      console.log('[config] - ensureSortingKeys - Проверяем наличие ключей сортировки');
+      console.groupCollapsed('[config] - ensureSortingKeys');
+      console.log('Проверяем наличие ключей сортировки');
       
-      // Обработка комнат
-      let roomKey = rootGetters['roomKey'] || localStorage.getItem('roomKey');
-      //console.log('[config] - ensureSortingKeys - roomKey ', roomKey);
-      //if (!roomKey && state.allRooms.length > 0) {
-      if (roomKey === null && state.allRooms.length > 0) {
-        roomKey = state.allRooms[0];
-        console.log('[config] - Установлена первая комната:', roomKey);
-      }      
-      if (roomKey) {
-        await dispatch('sortParams/updateRoomsKey', roomKey, { root: true });
-        //console.log('[config] - Установлена первая комната:', roomKey);
-      }
-
-      // Обработка параметров
-      let paramKey = rootGetters['paramKey'] || localStorage.getItem('paramKey');
-      //console.log('[config] - ensureSortingKeys - paramKey ', paramKey);
-
-      if (paramKey && !state.allParams.includes(paramKey)) {
-        console.warn('[config] - ensureSortingKeys - paramKey невалиден, сбрасываем');
-        paramKey = null;
-        localStorage.removeItem('paramKey');
-      }
-      if (!paramKey && state.allParams.length > 0) {
-        paramKey = state.allParams[0];
-        localStorage.setItem('paramKey', paramKey);
-        console.log('[config] - Установлен первый параметр:', paramKey);
-      }
-      
-      if (paramKey) {
-        await dispatch('sortParams/updateParamsKey', paramKey, { root: true });
-      }
-      
-      // Обработка устройств
-      let deviceKey = rootGetters['deviceKey'] || localStorage.getItem('deviceKey');
-      //console.log('[config] - ensureSortingKeys - deviceKey ', deviceKey);
-
-      if (deviceKey && !state.allDevices.includes(deviceKey)) {
-        console.warn('[config] - ensureSortingKeys - deviceKey невалиден, сбрасываем');
-        deviceKey = null;
-        localStorage.removeItem('deviceKey');
-      }
-
-      if (!deviceKey && state.allDevices.length > 0) {
-          deviceKey = state.allDevices[0];
-          localStorage.setItem('deviceKey', deviceKey);
-         console.log('[config] - Установлено первое устройство:', deviceKey);
+      const processKey = async (type, stateArrayName, getterName, storageKey) => {
+        const key = rootGetters[getterName] || localStorage.getItem(storageKey);
+        const arrayItems = state[stateArrayName];
+        
+        // Проверка валидности ключа
+        if (key && !arrayItems.includes(key)) {
+          console.warn(`[config] - ensureSortingKeys - ${storageKey} невалиден, сбрасываем`);
+          localStorage.removeItem(storageKey);
+          return null;
         }
         
-        if (deviceKey) {
-          await dispatch('sortParams/updateDevicesKey', deviceKey, { root: true });
-        }
-
-      // Обработка Setpoints
-      let setpointKey = rootGetters['setpointKey'] || localStorage.getItem('setpointKey');
-      //console.log('[config] - ensureSortingKeys - setpointKey ', setpointKey);
-
-      if (setpointKey && !state.allSetpoints.includes(setpointKey)) {
-        console.warn('[config] - ensureSortingKeys - setpointKey невалиден, сбрасываем');
-        setpointKey = null;
-        localStorage.removeItem('setpointKey');
-      }
-
-      if (!setpointKey && state.allSetpoints.length > 0) {
-          setpointKey = state.allSetpoints[0];
-          localStorage.setItem('setpointKey', setpointKey);
-         console.log('[config] - Установлено первая Уставка:', setpointKey);
+        // Установка первого элемента если ключа нет
+        if (!key && arrayItems.length > 0) {
+          const newKey = arrayItems[0];
+          localStorage.setItem(storageKey, newKey);
+          console.log(`[config] - Установлен первый ${type}:`, newKey);
+          return newKey;
         }
         
-        if (setpointKey) {
-          await dispatch('sortParams/updateSetpointsKey', setpointKey, { root: true });
+        return key;
+      };
+
+      // Обработка всех типов ключей
+      const keyConfigs = [
+        { type: 'rooms', stateArray: 'allRooms', getter: 'roomKey', storage: 'roomKey', specialAction: 'updateRoomsTitle' },
+        { type: 'params', stateArray: 'allParams', getter: 'paramKey', storage: 'paramKey' },
+        { type: 'devices', stateArray: 'allDevices', getter: 'deviceKey', storage: 'deviceKey' },
+        { type: 'setpoints', stateArray: 'allSetpoints', getter: 'setpointKey', storage: 'setpointKey' }
+      ];
+
+      for (const config of keyConfigs) {
+        const key = await processKey(config.type, config.stateArray, config.getter, config.storage);
+        
+        if (key) {
+          await dispatch('sortParams/updateSortKey', { 
+            type: config.type, 
+            newKey: key 
+          }, { root: true });
+          
+          // Специальное действие для комнат
+          if (config.specialAction) {
+            await dispatch(`sortParams/${config.specialAction}`, key, { root: true });
+          }
         }
-      },
-    
+      }
+    },
       async updateSetpointServer( {rootGetters, dispatch}, { roomKey, paramKey, value }) {
         const baseParamKey = await dispatch('clearKey', { key: paramKey });
         const dID = rootGetters.dID;
@@ -461,8 +438,6 @@ export default {
 
         console.log('[config] - updateSetpointServer - Уставка обновлена и отправлена на сервер');
       },
-
-
   },
   
   getters: {

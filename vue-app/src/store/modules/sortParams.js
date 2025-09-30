@@ -3,7 +3,7 @@ function getSensorTitle(key) {
   if (!key) return 'Неизвестный параметр';
 
   const baseKey = key.replace(/\d+$/, '');
-  console.log('[sortParams] - getSensorTitle - baseKey = ', baseKey);
+  //console.log('[sortParams] - getSensorTitle - baseKey = ', baseKey);
   const mappings = {
     'dHum': 'Влажность',
     'dTemp': 'Температура',
@@ -21,6 +21,8 @@ function getSensorTitle(key) {
     'dVoltage': 'Напряжение',
     'dСurrent_a': 'Ток Фаза',
     'dСurrent_b': 'Ток Ноль',
+    'dEnergy_a': 'Потребление Фаза',
+    'dEnergy_b': 'Потребление Ноль',
     'dСurrent': 'Ток',
     'aActuator': 'Актуатор',
     'aSwitch': 'Переключатель',
@@ -42,6 +44,7 @@ function getUnit(key) {
         if (key.includes('Bat')) return '%';
         if (key.includes('Voltage')) return 'V';
         if (key.includes('Frequency')) return 'Hz';
+        if (key.includes('Energy')) return 'kWh';
         return '';
 }
 
@@ -120,8 +123,6 @@ export default {
       }
     },
 
-
-
     SET_DEVICE_TITLE(state, title) {
       state.deviceTitle = title || '';
     },
@@ -154,7 +155,7 @@ export default {
   },
  
   actions: {
-    updateSortKey({ commit, dispatch, state }, { type, newKey }) {
+    updateSortKey({ commit, dispatch, state }, { type, newKey }) { //Обновленная функция для изменения ключа любого сортировки
       console.log(`[sortParams] - updateSortKey - Обновляем ключ для ${type}:`, newKey);
       
       // Проверка на валидность ключа
@@ -213,6 +214,7 @@ export default {
         
         // Дополнительное действие (для rooms)
         if (typeConfig.extraAction) {
+          console.log(`[sortParams] - updateSortKey - Выполняем дополнительное действие: ${typeConfig.extraAction}`);
           dispatch(typeConfig.extraAction, newKey);
         }
 
@@ -224,16 +226,16 @@ export default {
     },
 
 
-    updateRoomsKey({ commit, dispatch }, newRoomKey) {
-      //console.log('[sortParams] - updateRoomsKey - Обновляем ключ для сортировки комнат');
-      if (!newRoomKey || newRoomKey === this.state.roomKey) {
-        console.log('[sortParams] - updateRoomsKey - Ключ не определен', newRoomKey)
-      }
-        commit('SET_ROOM_KEY', newRoomKey);
-        localStorage.setItem('roomKey', newRoomKey);
-        dispatch ('updateRoomsTitle', newRoomKey);
-        console.log('[sortParams] - updateRoomsKey - Ключ обновлен', newRoomKey);
-    },
+    // updateRoomsKey({ commit, dispatch }, newRoomKey) {
+    //   //console.log('[sortParams] - updateRoomsKey - Обновляем ключ для сортировки комнат');
+    //   if (!newRoomKey || newRoomKey === this.state.roomKey) {
+    //     console.log('[sortParams] - updateRoomsKey - Ключ не определен', newRoomKey)
+    //   }
+    //     commit('SET_ROOM_KEY', newRoomKey);
+    //     localStorage.setItem('roomKey', newRoomKey);
+    //     dispatch ('updateRoomsTitle', newRoomKey);
+    //     console.log('[sortParams] - updateRoomsKey - Ключ обновлен', newRoomKey);
+    // },
     updateRoomsTitle({ commit, rootGetters }, newRoomKey) {
       console.log('[sortParams] - updateRoomsTitle', newRoomKey);
       if (!newRoomKey) {
@@ -248,49 +250,25 @@ export default {
       commit('SET_ROOM_TITLE', newRoom?.title || 'не определен');
       console.log('[sortParams] - updateRoomsTitle - Ключ roomTitle обновлен', newRoom?.title, 'новый roomID', newRoom?.id);
     },
-    updateParamsKey({ commit }, newParamKey) {
-      //console.log('[sortParams] - updateParamsKey - Обновляем ключ для сортировки параметров', newParamKey);
-      if (!newParamKey) {
-        console.log('[sortParams] - updateParamsKey - Ключ не определен', newParamKey);
-      }
-      commit('SET_PARAM_KEY', newParamKey);
-      commit('SET_PARAM_TITLE', getSensorTitle(newParamKey));
-      //localStorage.setItem('paramKey', JSON.stringify(newParamKey));
-      localStorage.setItem('paramKey', newParamKey);
-      console.log('[sortParams] - updateParamsKey - Ключ paramKey обновлен', newParamKey);
-    },
-    updateDevicesKey({ commit }, newDeviceKey) {
-      commit('SET_DEVICE_KEY', newDeviceKey);
-      localStorage.setItem('deviceKey', newDeviceKey);
-      console.log('[sortParams] - updateDevicesKey - Ключ deviceKey обновлен', newDeviceKey);
-    },
-    updateSetpointsKey({ commit }, newSetpointKey) {
-      commit('SET_SETPOINT_KEY', newSetpointKey);
-      localStorage.setItem('setpointKey', newSetpointKey);
-      console.log('[sortParams] - updateSetpointsKey - Ключ setpointKey обновлен', newSetpointKey);
-    },
-
-
-
 
     async setSortType({ commit, state }, type) {
       if (state.sortType === type) return;
       commit('SET_SORT_TYPE', type);
     },
-    setRoom({ commit }, room) {
-      commit('UPDATE_STATE', {
-        roomId: room.id,
-        roomKey: room.key,
-        roomTitle: room.title
-      });
-    },
+    // setRoom({ commit }, room) {
+    //   commit('UPDATE_STATE', {
+    //     roomId: room.id,
+    //     roomKey: room.key,
+    //     roomTitle: room.title
+    //   });
+    // },
    
-    setParam({ commit }, param) {
-      commit('UPDATE_STATE', {
-        paramKey: param.key,
-        paramTitle: param.title
-      });
-    },
+    // setParam({ commit }, param) {
+    //   commit('UPDATE_STATE', {
+    //     paramKey: param.key,
+    //     paramTitle: param.title
+    //   });
+    // },
 
     setLimits({ rootGetters, commit, dispatch }, param) {
       console.log('[sortParams] - setLimits - Параметр -', param);
@@ -390,215 +368,6 @@ export default {
       }
     },
 
-
-
-
-    switchToPrev({ dispatch, state, rootGetters }, sortingType) {
-      console.log(`[sortParams] - switchToPrev - Предыдущая [${sortingType}]`);
-
-      const config = {
-        rooms: {
-          array: rootGetters['config/allRooms'] || [],
-          currentKey: state.roomKey
-        },
-        params: {
-          array: rootGetters['config/allParams'] || [],
-          currentKey: state.paramKey
-        },
-        devices: {
-          array: rootGetters['config/allDevices'] || [],
-          currentKey: state.deviceKey
-        },
-        setpoints: {
-          array: rootGetters['config/allSetpoints'] || [],
-          currentKey: state.setpointKey
-        }
-      };
-
-      const typeConfig = config[sortingType];
-      if (!typeConfig) {
-        console.error(`[sortParams] - switchToPrev - Неизвестный тип сортировки: ${sortingType}`);
-        return;
-      }
-
-      const { array, currentKey } = typeConfig;
-      const key = currentKey || array[0];
-
-      try {
-        if (array.length === 0) {
-          console.warn(`[sortParams] - switchToPrev - Массив для ${sortingType} пуст`);
-          return;
-        }
-
-        const currentIndex = array.indexOf(key);
-        if (currentIndex === -1) {
-          console.warn(`[sortParams] - switchToPrev - Ключ ${key} для типа ${sortingType} не найден`);
-          return;
-        }
-
-        const newIndex = (currentIndex - 1 + array.length) % array.length;
-        const newKey = array[newIndex];
-        
-        dispatch('updateSortKey', { type: sortingType, newKey });
-        console.log(`[sortParams] - switchToPrev - Переключение: ${key} -> ${newKey}`);
-
-      } catch (error) {
-        console.error('[sortParams] - switchToPrev - Ошибка:', error);
-      }
-    },
-
-
-
-
-    switchToPrevRoom({ dispatch, state, rootGetters }) {
-      console.log('[sortParams] - switchToPrevRoom - Предыдущая комната');
-    try {
-        const allRooms = rootGetters['config/allRooms'] || [];
-        console.log('[sortParams] - switchToPrevRoom - allRooms - ', allRooms);
-        if (allRooms.length === 0) {
-          console.warn('[sortParams] - switchToPrevRoom - Нет доступных комнат');
-          return;
-        }
-
-        const currentRoomKey = state.roomKey || allRooms[0];
-        const currentIndex = allRooms.indexOf(currentRoomKey);
-        //console.log('[sortParams] - switchToPrevRoom - Актуальные RoomKey', currentRoomKey, ' currentIndex-', currentIndex);
-        if (currentIndex === -1) {
-          console.warn(`[sortParams] - switchToPrevRoom - Комната ${currentRoomKey} не найдена`);
-          return;
-        }
-
-        const newIndex = (currentIndex - 1 + allRooms.length) % allRooms.length;
-        const newRoomKey = allRooms[newIndex];
-        dispatch ('updateRoomsKey', newRoomKey);
-        //console.log('[sortParams] - switchToPrevRoom - Обновленные RoomKey', newRoomKey, ' currentIndex-', newIndex);
-
-        console.log(`[sortParams] - switchToPrevRoom - Переключение: ${currentRoomKey} -> ${newRoomKey}`);
-      } catch (error) {
-        console.error('[sortParams] - switchToPrevRoom - Ошибка:', error);
-      }
-    },
-    switchToNextRoom({ dispatch, state, rootGetters }) {
-      console.log('[sortParams] - switchToNextRoom - Следующая комната');
-      try {
-        const allRooms = rootGetters['config/allRooms'] || [];
-        if (allRooms.length === 0) {
-          console.warn('[sortParams] - switchToNextRoom - Нет доступных комнат');
-          return;
-        }
-
-        const currentRoomKey = state.roomKey || allRooms[0];
-        const currentIndex = allRooms.indexOf(currentRoomKey);
-        if (currentIndex === -1) {
-          console.warn(`[sortParams] - switchToNextRoom - Комната ${currentRoomKey} не найдена`);
-          return;
-        }
-
-        const newIndex = (currentIndex + 1) % allRooms.length;
-        const newRoomKey = allRooms[newIndex];
-        dispatch ('updateRoomsKey', newRoomKey);
-
-        console.log(`[sortParams] - switchToNextRoom - Переключение: ${currentRoomKey} -> ${newRoomKey}`);
-      } catch (error) {
-        console.error('[sortParams] - switchToNextRoom - Ошибка:', error);
-      }
-    },
-    switchToPrevParam({ dispatch, state, rootGetters }) {
-      console.log('[sortParams] - switchToPrevParam - Предыдущий параметр');
-      try {
-        const allParams = rootGetters['config/allParams'] || [];
-        if (allParams.length === 0) {
-          console.warn('[sortParams] - switchToPrevParam - Нет доступных параметров');
-          return;
-        }
-
-        const currentParamKey = state.paramKey || allParams[0];
-        const currentIndex = allParams.indexOf(currentParamKey);
-        console.log(`[sortParams] - switchToPrevParam - Переключение: ${currentParamKey} -> ${currentIndex}`);
-        if (currentIndex === -1) {
-          console.warn(`[sortParams] - switchToPrevParam - Параметр ${currentParamKey} не найден`);
-          return;
-        }
-
-        const newIndex = (currentIndex - 1 + allParams.length) % allParams.length;
-        const newParamKey = allParams[newIndex];
-        dispatch ('updateParamsKey', newParamKey);
-
-        console.log(`[sortParams] - switchToPrevParam - Переключение: ${currentParamKey} -> ${newParamKey}`);
-      } catch (error) {
-        console.error('[sortParams] - switchToPrevParam - Ошибка:', error);
-      }
-    },
-    switchToNextParam({ dispatch, state, rootGetters }) {
-      console.log('[sortParams] - switchToNextParam - Следующий параметр');
-      try {
-        const allParams = rootGetters['config/allParams'] || [];
-        if (allParams.length === 0) {
-          console.warn('[sortParams] - switchToNextParam - Нет доступных параметров');
-          return;
-        }
-
-        const currentParamKey = state.paramKey || allParams[0];
-        const currentIndex = allParams.indexOf(currentParamKey);
-        if (currentIndex === -1) {
-          console.warn(`[sortParams] - switchToNextParam - Параметр ${currentParamKey} не найден`);
-          return;
-        }
-        const newIndex = (currentIndex + 1) % allParams.length;
-        const newParamKey = allParams[newIndex];
-        dispatch ('updateParamsKey', newParamKey);
-        console.log(`[sortParams] - switchToNextParam - Переключение: ${currentParamKey} -> ${newParamKey}`);
-      } catch (error) {
-        console.error('[sortParams] - switchToNextParam - Ошибка:', error);
-      }
-    },
-    switchToPrevDevice({ dispatch, state, rootGetters }) {
-      console.log('[sortParams] - switchToPrevDevice - Предыдущее устройство');
-      try {
-        const allDevices = rootGetters['config/allDevices'] || [];
-        if (allDevices.length === 0) {
-          console.warn('[sortParams] - switchToPrevDevice - Нет доступных устройств');
-          return;
-        }
-
-        const currentDeviceKey = state.deviceKey || allDevices[0];
-        const currentIndex = allDevices.indexOf(currentDeviceKey);
-        if (currentIndex === -1) {
-          console.warn(`[sortParams] - switchToPrevDevice - Устройство ${currentDeviceKey} не найдено`);
-          return;
-        }
-
-        const newIndex = (currentIndex - 1 + allDevices.length) % allDevices.length;
-        const newDeviceKey = allDevices[newIndex];
-        dispatch('updateDevicesKey', newDeviceKey);
-      } catch (error) {
-        console.error('[sortParams] - switchToPrevDevice - Ошибка:', error);
-      }
-    },
-    
-    switchToNextDevice({ dispatch, state, rootGetters }) {
-      console.log('[sortParams] - switchToNextDevice - Следующее устройство');
-      try {
-        const allDevices = rootGetters['config/allDevices'] || [];
-        if (allDevices.length === 0) {
-          console.warn('[sortParams] - switchToNextDevice - Нет доступных устройств');
-          return;
-        }
-
-        const currentDeviceKey = state.deviceKey || allDevices[0];
-        const currentIndex = allDevices.indexOf(currentDeviceKey);
-        if (currentIndex === -1) {
-          console.warn(`[sortParams] - switchToNextDevice - Устройство ${currentDeviceKey} не найдено`);
-          return;
-        }
-
-        const newIndex = (currentIndex + 1) % allDevices.length;
-        const newDeviceKey = allDevices[newIndex];
-        dispatch('updateDevicesKey', newDeviceKey);
-      } catch (error) {
-        console.error('[sortParams] - switchToNextDevice - Ошибка:', error);
-      }
-    },
 
   },
   

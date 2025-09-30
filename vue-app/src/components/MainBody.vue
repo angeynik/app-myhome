@@ -41,16 +41,7 @@ export default {
       swipeThreshold: 50, // минимальное расстояние для определения свайпа
     }
   },
-  async created() {
-    try {
-      await this.updateView();
-      this.SET_SORT_TYPE(this.initialSortType);
-    } catch (error) {
-      console.error('Ошибка инициализации MainBody:', error);
-      this.initializationError = 'Не удалось загрузить данные';
-    }
-    this.$store.commit('sortParams/SET_SORT_TYPE', this.sortType);
-  },
+
   props: {
   initialSortType: {
     type: String,
@@ -89,6 +80,16 @@ export default {
   },
 
   watch: {
+    dID: {
+      handler(newVal) {
+        if (newVal) {
+          console.log('[MainBody] dID изменен:', newVal);
+          this.updateView();
+        }
+      },
+      immediate: true,
+      deep: true
+    },
     initialSortType(newVal) {
       this.SET_SORT_TYPE(newVal);
       this.updateView();
@@ -122,10 +123,12 @@ export default {
     sortType(newSortType) {
     // Реагируем на изменение sortType извне
     this.$store.commit('sortParams/SET_SORT_TYPE', newSortType);
-    this.initializeComponent();
+    // this.initializeComponent();
   }
   },
   // mounted() {
+  //   this.viewArray = localStorage.getItem('viewArray') ? JSON.parse(localStorage.getItem('viewArray')) : [];
+  //   console.log('[MainBody] - nounted - View array length:', this.viewArray.length);
   //   this.updateView();
   // },
   methods: {
@@ -170,8 +173,8 @@ export default {
     },
     
     selectItem(item) {
-      console.log(`__ !!!!!!!!!!!!!!!!!! ____ [MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
-
+      console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
+      
        if (this.selectedItem === item) {
             // Если клик на уже выбранный элемент, то снимаем выделение
             this.selectedItem = null;
@@ -230,7 +233,7 @@ export default {
     },
     async updateView() { // Формируем массив для отображения пользователю в соответствии с типом сортировки и текущим ключем
         try {
-          //console.groupCollapsed('[MainBody] Обновление отображения');
+          console.groupCollapsed('[MainBody] - updateView ');
           console.log('[MainBody] - updateView - started');
           const config = this.getConfig(this.dID);
           if (!config) {
@@ -238,7 +241,8 @@ export default {
             this.viewArray = [];
             return;
           }
-          //console.log('Шаг 5 - [MainBody] - updateView - Актуальный тип сортировки:', this.currentSortType);
+          console.log('Актуальный тип сортировки:', this.currentSortType);
+          console.log('для конфигурации', config);
 
           if (this.currentSortType === 'rooms') {
             console.log(`[MainBody] - updateView - Режим: комнаты -(${this.getRoomKey})`);
@@ -256,6 +260,7 @@ export default {
         
         
           console.log('Шаг 6 - [MainBody] updateView  Отображаемые элементы:', this.viewArray);
+          localStorage.setItem('viewArray', JSON.stringify(this.viewArray));
           //console.log('[MainBody] View array length:', this.viewArray.length);
           console.groupEnd();
         } catch (error) {
@@ -266,9 +271,11 @@ export default {
     },
 
     getSortedRooms(config, roomKey) {
+
+      //console.groupCollapsed('[MainBody] - getSortedRooms');
       const room = config[roomKey];
       if (!room) return [];
-      
+     
       const devicesArray = [];
       const excludedSections = ['init', 'id', 'group', 'title', 'setpoints'];
 

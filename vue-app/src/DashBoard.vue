@@ -158,14 +158,6 @@ export default {
   methods: {
     ...mapActions('sortParams', [
       'switchSortKey',
-      'switchToPrev',
-      'switchToNext',
-      'switchToPrevRoom', 
-      'switchToNextRoom', 
-      'switchToPrevParam', 
-      'switchToNextParam',
-      'switchToPrevDevice', 
-      'switchToNextDevice',
       'setLimits'
     ]),
     ...mapActions('config', ['initialize']),
@@ -205,34 +197,11 @@ export default {
       console.log('[DashBoard] - sortingBack - Сортировка назад');
       const sortType = this.$route.params.sortType;
       this.switchSortKey({ sortingType: sortType, direction: 'prev' });
-
-      //this.switchToPrev(sortType);
-      
-      // if (sortType === 'rooms') {
-      //   this.switchToPrevRoom();
-      // } else if (sortType === 'params') {
-      //   this.switchToPrevParam();
-      // } else if (sortType === 'devices') {
-      //   this.switchToPrevDevice();
-      // } else if (sortType === 'setpoints') {
-      //   this.switchToPrevSetpoints();
-      // }
     },
     
     sortingForvard() {
       const sortType = this.$route.params.sortType;
       this.switchSortKey({ sortingType: sortType, direction: 'next' });
-      //this.switchToNext(sortType);
-      
-      // if (sortType === 'rooms') {
-      //   this.switchToNextRoom();
-      // } else if (sortType === 'params') {
-      //   this.switchToNextParam();
-      // } else if (sortType === 'devices') {
-      //   this.switchToNextDevice();
-      // } else if (sortType === 'setpoints') {
-      //   this.switchToNextSetpoints();
-      // }
     },
 
     // Работа с Setpoint
