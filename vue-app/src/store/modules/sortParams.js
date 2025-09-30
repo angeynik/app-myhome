@@ -3,7 +3,7 @@ function getSensorTitle(key) {
   if (!key) return 'Неизвестный параметр';
 
   const baseKey = key.replace(/\d+$/, '');
-  //console.log('[sortParams] - getSensorTitle - baseKey = ', baseKey);
+  console.log('[sortParams] - getSensorTitle - baseKey = ', baseKey);
   const mappings = {
     'dHum': 'Влажность',
     'dTemp': 'Температура',
@@ -26,6 +26,8 @@ function getSensorTitle(key) {
     'aSwitch': 'Переключатель',
     'aController': 'Контроллер',
     'dBat': 'Батарея',
+    'sTemp': 'Уставка температуры',
+    'sHum': 'Уставка влажности',
   };
   return mappings[baseKey] || key;
 }

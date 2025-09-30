@@ -111,7 +111,8 @@ export default {
     ]),
     ...mapGetters('config', ['getMobile', 'getDeviceType']),
     
-    headerTitle() {
+    headerTitle() { // Формируем заголовок для Header по типу сортировки и ключу
+      console.log(' +++++++++++++++++ [DashBoard] - headerTitle - Выбор заголовка для:', this.$route.params.sortType);
       const sortType = this.$route.params.sortType;
       
       if (!sortType) {
@@ -123,9 +124,9 @@ export default {
       } else if (sortType === 'params') {
         return this.getParamKey ? `${this.getSensorTitle(this.getParamKey)}` : "Сортировка по параметрам";
       } else if (sortType === 'devices') {
-        return this.getDeviceKey ? `${this.getDeviceKey}` : "Сортировка по устройствам";
+        return this.getDeviceKey ? `${this.getSensorTitle(this.getDeviceKey)}` : "Сортировка по устройствам";
       } else if (sortType === 'setpoints') {
-        return this.getSetpointKey ? `${this.getSetpointKey}` : "Сортировка по Уставкам";
+        return this.getSetpointKey ? `${this.getSensorTitle(this.getSetpointKey)}` : "Сортировка по Уставкам";
       }
       return "Dashboard";
     },
@@ -186,6 +187,7 @@ export default {
     },
     
     selectComponent(sortType) {
+      console.log('[DashBoard] - selectComponent - Выбор компонента:', sortType);
       this.$router.push({ 
         name: 'DashboardSort', 
         params: { sortType } 
