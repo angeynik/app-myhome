@@ -152,8 +152,78 @@ export default {
       console.log('[sortParams] - UPDATE_LIMITS Выполнено обновление состояния лимитов');
     },
   },
-  
+ 
   actions: {
+    updateSortKey({ commit, dispatch, state }, { type, newKey }) {
+      console.log(`[sortParams] - updateSortKey - Обновляем ключ для ${type}:`, newKey);
+      
+      // Проверка на валидность ключа
+      if (!newKey) {
+        console.warn(`[sortParams] - updateSortKey - Ключ для ${type} не определен:`, newKey);
+        return;
+      }
+
+      // Проверка на изменение значения
+      const currentKey = state[`${type}Key`];
+      if (newKey === currentKey) {
+        console.log(`[sortParams] - updateSortKey - Ключ ${type} не изменился:`, newKey);
+        return;
+      }
+
+      try {
+        // Определяем мутации и действия для каждого типа
+        const config = {
+          rooms: {
+            mutation: 'SET_ROOM_KEY',
+            storageKey: 'roomKey',
+            extraAction: 'updateRoomsTitle'
+          },
+          params: {
+            mutation: 'SET_PARAM_KEY',
+            storageKey: 'paramKey',
+            extraMutation: 'SET_PARAM_TITLE',
+            extraValue: this.getSensorTitle?.(newKey) // Используем опциональную цепочку
+          },
+          devices: {
+            mutation: 'SET_DEVICE_KEY',
+            storageKey: 'deviceKey'
+          },
+          setpoints: {
+            mutation: 'SET_SETPOINT_KEY',
+            storageKey: 'setpointKey'
+          }
+        };
+
+        const typeConfig = config[type];
+        if (!typeConfig) {
+          console.error(`[sortParams] - updateSortKey - Неизвестный тип: ${type}`);
+          return;
+        }
+
+        // Основная мутация
+        commit(typeConfig.mutation, newKey);
+        
+        // Дополнительная мутация (для params)
+        if (typeConfig.extraMutation && typeConfig.extraValue !== undefined) {
+          commit(typeConfig.extraMutation, typeConfig.extraValue);
+        }
+        
+        // Сохранение в localStorage
+        localStorage.setItem(typeConfig.storageKey, newKey);
+        
+        // Дополнительное действие (для rooms)
+        if (typeConfig.extraAction) {
+          dispatch(typeConfig.extraAction, newKey);
+        }
+
+        console.log(`[sortParams] - updateSortKey - Ключ ${type} обновлен:`, newKey);
+
+      } catch (error) {
+        console.error(`[sortParams] - updateSortKey - Ошибка при обновлении ${type}:`, error);
+      }
+    },
+
+
     updateRoomsKey({ commit, dispatch }, newRoomKey) {
       //console.log('[sortParams] - updateRoomsKey - Обновляем ключ для сортировки комнат');
       if (!newRoomKey || newRoomKey === this.state.roomKey) {
@@ -260,6 +330,126 @@ export default {
           });
         });
     },
+
+    switchSortKey({ dispatch, state, rootGetters }, { sortingType, direction = 'prev' }) {
+      console.log(`[sortParams] - switchSortKey - Переключение ${direction} для [${sortingType}]`);
+
+      const config = {
+        rooms: {
+          array: rootGetters['config/allRooms'] || [],
+          currentKey: state.roomKey
+        },
+        params: {
+          array: rootGetters['config/allParams'] || [],
+          currentKey: state.paramKey
+        },
+        devices: {
+          array: rootGetters['config/allDevices'] || [],
+          currentKey: state.deviceKey
+        },
+        setpoints: {
+          array: rootGetters['config/allSetpoints'] || [],
+          currentKey: state.setpointKey
+        }
+      };
+
+      const typeConfig = config[sortingType];
+      if (!typeConfig) {
+        console.error(`[sortParams] - switchSortKey - Неизвестный тип сортировки: ${sortingType}`);
+        return;
+      }
+
+      const { array, currentKey } = typeConfig;
+      const key = currentKey || array[0];
+
+      try {
+        if (array.length === 0) {
+          console.warn(`[sortParams] - switchSortKey - Массив для ${sortingType} пуст`);
+          return;
+        }
+
+        const currentIndex = array.indexOf(key);
+        if (currentIndex === -1) {
+          console.warn(`[sortParams] - switchSortKey - Ключ ${key} для типа ${sortingType} не найден`);
+          return;
+        }
+
+        let newIndex;
+        if (direction === 'next') {
+          newIndex = (currentIndex + 1) % array.length;
+        } else { // 'prev'
+          newIndex = (currentIndex - 1 + array.length) % array.length;
+        }
+
+        const newKey = array[newIndex];
+        dispatch('updateSortKey', { type: sortingType, newKey });
+        console.log(`[sortParams] - switchSortKey - Переключение (${direction}): ${key} -> ${newKey}`);
+
+      } catch (error) {
+        console.error('[sortParams] - switchSortKey - Ошибка:', error);
+      }
+    },
+
+
+
+
+    switchToPrev({ dispatch, state, rootGetters }, sortingType) {
+      console.log(`[sortParams] - switchToPrev - Предыдущая [${sortingType}]`);
+
+      const config = {
+        rooms: {
+          array: rootGetters['config/allRooms'] || [],
+          currentKey: state.roomKey
+        },
+        params: {
+          array: rootGetters['config/allParams'] || [],
+          currentKey: state.paramKey
+        },
+        devices: {
+          array: rootGetters['config/allDevices'] || [],
+          currentKey: state.deviceKey
+        },
+        setpoints: {
+          array: rootGetters['config/allSetpoints'] || [],
+          currentKey: state.setpointKey
+        }
+      };
+
+      const typeConfig = config[sortingType];
+      if (!typeConfig) {
+        console.error(`[sortParams] - switchToPrev - Неизвестный тип сортировки: ${sortingType}`);
+        return;
+      }
+
+      const { array, currentKey } = typeConfig;
+      const key = currentKey || array[0];
+
+      try {
+        if (array.length === 0) {
+          console.warn(`[sortParams] - switchToPrev - Массив для ${sortingType} пуст`);
+          return;
+        }
+
+        const currentIndex = array.indexOf(key);
+        if (currentIndex === -1) {
+          console.warn(`[sortParams] - switchToPrev - Ключ ${key} для типа ${sortingType} не найден`);
+          return;
+        }
+
+        const newIndex = (currentIndex - 1 + array.length) % array.length;
+        const newKey = array[newIndex];
+        
+        dispatch('updateSortKey', { type: sortingType, newKey });
+        console.log(`[sortParams] - switchToPrev - Переключение: ${key} -> ${newKey}`);
+
+      } catch (error) {
+        console.error('[sortParams] - switchToPrev - Ошибка:', error);
+      }
+    },
+
+
+
+
     switchToPrevRoom({ dispatch, state, rootGetters }) {
       console.log('[sortParams] - switchToPrevRoom - Предыдущая комната');
     try {

@@ -157,6 +157,9 @@ export default {
   },
   methods: {
     ...mapActions('sortParams', [
+      'switchSortKey',
+      'switchToPrev',
+      'switchToNext',
       'switchToPrevRoom', 
       'switchToNextRoom', 
       'switchToPrevParam', 
@@ -180,7 +183,7 @@ export default {
         // Устанавливаем тип сортировки в store
         this.$store.commit('sortParams/SET_SORT_TYPE', sortType);
         // Показываем стрелки для навигации (кроме уставок и на мобильных)
-        this.showHeaderArrow = ['rooms', 'params', 'devices'].includes(sortType) && !this.getMobile;
+        this.showHeaderArrow = ['rooms', 'params', 'devices', 'setpoints'].includes(sortType) && !this.getMobile;
       } else {
         this.showHeaderArrow = false;
       }
@@ -197,27 +200,39 @@ export default {
     resetSelection() {
       this.$router.push({ name: 'DashboardMain' });
     },
-    
+  
     sortingBack() {
+      console.log('[DashBoard] - sortingBack - Сортировка назад');
       const sortType = this.$route.params.sortType;
-      if (sortType === 'rooms') {
-        this.switchToPrevRoom();
-      } else if (sortType === 'params') {
-        this.switchToPrevParam();
-      } else if (sortType === 'devices') {
-        this.switchToPrevDevice();
-      }
+      this.switchSortKey({ sortingType: sortType, direction: 'prev' });
+
+      //this.switchToPrev(sortType);
+      
+      // if (sortType === 'rooms') {
+      //   this.switchToPrevRoom();
+      // } else if (sortType === 'params') {
+      //   this.switchToPrevParam();
+      // } else if (sortType === 'devices') {
+      //   this.switchToPrevDevice();
+      // } else if (sortType === 'setpoints') {
+      //   this.switchToPrevSetpoints();
+      // }
     },
     
     sortingForvard() {
       const sortType = this.$route.params.sortType;
-      if (sortType === 'rooms') {
-        this.switchToNextRoom();
-      } else if (sortType === 'params') {
-        this.switchToNextParam();
-      } else if (sortType === 'devices') {
-        this.switchToNextDevice();
-      }
+      this.switchSortKey({ sortingType: sortType, direction: 'next' });
+      //this.switchToNext(sortType);
+      
+      // if (sortType === 'rooms') {
+      //   this.switchToNextRoom();
+      // } else if (sortType === 'params') {
+      //   this.switchToNextParam();
+      // } else if (sortType === 'devices') {
+      //   this.switchToNextDevice();
+      // } else if (sortType === 'setpoints') {
+      //   this.switchToNextSetpoints();
+      // }
     },
 
     // Работа с Setpoint
