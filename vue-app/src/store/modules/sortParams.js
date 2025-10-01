@@ -30,6 +30,7 @@ function getSensorTitle(key) {
     'dBat': 'Батарея',
     'sTemp': 'Уставка температуры',
     'sHum': 'Уставка влажности',
+    'sActuator': 'Уставка актуатор',
   };
   return mappings[baseKey] || key;
 }

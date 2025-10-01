@@ -230,6 +230,7 @@ export default {
     },
     
     async updateConfigSetpoint(newValue) {
+      console.log('[DashBoard] - updateConfigSetpoint - Начинаем обновление Уставки');
       const oldValue = newValue; 
       try {
         const roomKey = this.getRoomKey;

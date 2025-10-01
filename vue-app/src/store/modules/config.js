@@ -21,19 +21,19 @@ export default {
     },
     SET_ALL_ROOMS(state, rooms) {
       state.allRooms = rooms;
-      console.log('[sortParams] - SET_ALL_ROOMS Обновлен список доступных комнат: ', rooms);
+      //console.log('[sortParams] - SET_ALL_ROOMS Обновлен список доступных комнат: ', rooms);
     },
     SET_ALL_PARAMS(state, params) {
       state.allParams = params;
-      console.log('[sortParams] - SET_ALL_PARAMS Обновлен список доступных параметров: ', params);
+      //console.log('[sortParams] - SET_ALL_PARAMS Обновлен список доступных параметров: ', params);
     },
     SET_ALL_DEVICES(state, devices) {
       state.allDevices = devices;
-      console.log('[sortParams] - SET_ALL_DEVICES Обновлен список доступных устройств: ', devices);
+      //console.log('[sortParams] - SET_ALL_DEVICES Обновлен список доступных устройств: ', devices);
     },
     SET_ALL_SETPOINTS(state, setpoints) {
       state.allSetpoints = setpoints;
-      console.log('[sortParams] - SET_ALL_SETPOINTS Обновлен список уставок: ', setpoints);
+      //console.log('[sortParams] - SET_ALL_SETPOINTS Обновлен список уставок: ', setpoints);
     },
     UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value, timestamp }) {
       const config = state.configs[dID];
@@ -100,7 +100,7 @@ export default {
 
         //После ensureConfig проверяем, что конфиг действительно загружен
         if (state.configs[dID]) {
-          console.log('[config] - initialize - ensureConfig завершен', state.configs[dID]);
+          //console.log('[config] - initialize - ensureConfig завершен', state.configs[dID]);
         } else {
           console.error('[config] - initialize - Конфиг не был загружен');
         }
@@ -109,12 +109,12 @@ export default {
 
       console.log('[config] - initialize - Завершена инициализация');
     },
-    clearKey(context, { key }) {
-      const withoutPrefix = key.slice(1);
-      const clearKey = withoutPrefix.replace(/\d+$/, '');
-      console.log(`[config] - clearKey - key: ${clearKey}`);
-      return clearKey;
-    },
+    // clearKey(context, { key }) {
+    //   const withoutPrefix = key.slice(1);
+    //   const clearKey = withoutPrefix.replace(/\d+$/, '');
+    //   console.log(`[config] - clearKey - key: ${clearKey}`);
+    //   return clearKey;
+    // },
     detectDevice({commit}) {
       const mobile = /Mobi|Android/i.test(navigator.userAgent);
       console.log('[config] - detectDevice - Работаем с мобильным устройством - ', mobile);
@@ -190,7 +190,7 @@ export default {
     },
 
     async handleConfigResponse({ commit, dispatch }, response) {
-      console.log('[Config] - handleConfigResponse - Обработка ответа от Server - Конфигурация', response.payload);
+      //console.log('[Config] - handleConfigResponse - Обработка ответа от Server - Конфигурация', response.payload);
       try {
         const dID = response.name;
         const config = response.payload;
@@ -198,19 +198,19 @@ export default {
         if (!dID || !config) {
           throw new Error('Невалидный ответ конфигурации');
         }
-        console.log('[Config] - handleConfigResponse - Обновляем Конфигурацию - ', dID);
+        //console.log('[Config] - handleConfigResponse - Обновляем Конфигурацию - ', dID);
         commit('SET_CONFIG', { name: dID, config });
         // Обновляем список комнат
-        console.log('[Config] - handleConfigResponse - Обновляем список комнат');
+        //console.log('[Config] - handleConfigResponse - Обновляем список комнат');
         await dispatch('handleRoomsSet', config);
       // Обновляем список параметров
-      console.log('[Config] - handleConfigResponse - Обновляем список параметров');
+      //console.log('[Config] - handleConfigResponse - Обновляем список параметров');
         await dispatch('handleParamsSet', config);
       // Обновляем список устройств
-      console.log('[Config] - handleConfigResponse - Обновляем список устройств');
+      //console.log('[Config] - handleConfigResponse - Обновляем список устройств');
       await dispatch('handleDevicesSet', config);
       // Обновляем уставки
-      console.log('[Config] - handleConfigResponse - Обновляем уставки');
+      //console.log('[Config] - handleConfigResponse - Обновляем уставки');
       await dispatch('handleSetpointsSet', config);
 
         console.log('[Config] - handleConfigResponse - Конфиг обновлен, данные для сортировки готовы');
@@ -244,7 +244,7 @@ export default {
           return hasDevices;
         });
         commit('SET_ALL_ROOMS', rooms);
-        console.log('[Config] - handleRoomsSet Обновлен список доступных комнат: ', rooms);
+        //console.log('[Config] - handleRoomsSet Обновлен список доступных комнат: ', rooms);
       } catch (error) {
         console.error('[Config] - handleRoomsSet - Ошибка обновления списка комнат:', error);
         throw error;
@@ -287,7 +287,7 @@ export default {
       });
       const params = Array.from(paramsSet);
       commit('SET_ALL_SETPOINTS', params);
-      console.log('[Config] - handleSetpointsSet Обновлен список доступных комнат rooms: ', params);
+      //console.log('[Config] - handleSetpointsSet Обновлен список доступных параметров params: ', params);
       } catch (error) {
         console.error('[Config] - handleSetpointsSet - Ошибка обновления списка параметров:', error);
         throw error;
@@ -327,7 +327,7 @@ export default {
         
         const devices = Array.from(devicesSet);
         commit('SET_ALL_DEVICES', devices);
-        console.log('[Config] - handleDevicesSet Обновлен список доступных устройств: ', devices);
+        //console.log('[Config] - handleDevicesSet Обновлен список доступных устройств: ', devices);
       } catch (error) {
         console.error('[Config] - handleDevicesSet - Ошибка обновления списка устройств:', error);
         throw error;
@@ -375,8 +375,8 @@ export default {
     },
    
     async ensureSortingKeys({ state, dispatch, rootGetters }) {
-      console.groupCollapsed('[config] - ensureSortingKeys');
-      console.log('Проверяем наличие ключей сортировки');
+      //console.groupCollapsed('[config] - ensureSortingKeys');
+      //console.log('Проверяем наличие ключей сортировки');
       
       const processKey = async (type, stateArrayName, getterName, storageKey) => {
         const key = rootGetters[getterName] || localStorage.getItem(storageKey);
@@ -424,8 +424,10 @@ export default {
         }
       }
     },
-      async updateSetpointServer( {rootGetters, dispatch}, { roomKey, paramKey, value }) {
-        const baseParamKey = await dispatch('clearKey', { key: paramKey });
+      async updateSetpointServer( {rootGetters}, { roomKey, paramKey, value }) {
+        console.log('[config] - updateSetpointServer - Готовим уставку для отправки на сервер');
+        //const baseParamKey = await dispatch('clearKey', { key: paramKey });
+        const baseParamKey = this.clearKeySync(paramKey);
         const dID = rootGetters.dID;
         if (!dID) throw new Error('dID не определен');
 
@@ -453,10 +455,10 @@ export default {
     getDeviceType: state => state.deviceType,
 
     clearKeySync: () => (key) => {
-    const withoutPrefix = key.slice(1);
-    const clearKey = withoutPrefix.replace(/\d+$/, '');
-    console.log(`[config] - clearKeySync - key: ${clearKey}`);
-    return clearKey;
-  }
+      const withoutPrefix = key.slice(1);
+      const clearKey = withoutPrefix.replace(/\d+$/, '');
+      //console.log(`[config] - clearKeySync - key: ${clearKey}`);
+      return clearKey;
+    }
   }
 };
