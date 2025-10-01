@@ -81,40 +81,49 @@ export default {
   },
 
   watch: {
-    dID: {
-      handler(newVal) {
-        if (newVal) {
-          console.log('[MainBody] dID изменен:', newVal);
+    // dID: {
+    //   handler(newVal) {
+    //     if (newVal) {
+    //       console.log('[MainBody] dID изменен:', newVal);
+    //       this.updateView();
+    //     }
+    //   },
+    //   immediate: true,
+    //   deep: true
+    // },
+    '$store.state.sortParams.forceUpdate': {
+      handler(newTimestamp) {
+        if (newTimestamp) {
+          //console.log('[MainBody] - Принудительное обновление view');
           this.updateView();
         }
       },
-      immediate: true,
-      deep: true
+      immediate: true
     },
-    initialSortType(newVal) {
-      this.SET_SORT_TYPE(newVal);
-      this.updateView();
-      },
-    currentSortType(newVal, oldVal) {
-      console.log(`[MainBody] Изменен тип сортировки: ${oldVal} -> ${newVal}`);
-      this.updateView();
-    },
-    getRoomKey(newVal, oldVal) {
-      console.log(`[MainBody] Изменен ключ комнаты: ${oldVal} -> ${newVal}`);
-      if (this.currentSortType === 'rooms') this.updateView();
-    },
-    getParamKey(newVal, oldVal) {
-      console.log(`[MainBody] Изменен ключ параметра: ${oldVal} -> ${newVal}`);
-      if (this.currentSortType === 'params') this.updateView();
-    },
-    getDeviceKey(newVal, oldVal) {
-        console.log(`[MainBody] Изменен ключ устройства: ${oldVal} -> ${newVal}`);
-        if (this.currentSortType === 'devices') this.updateView();
-    },
-    getSetpointKey(newVal, oldVal) {
-        console.log(`[MainBody] Изменен ключ сортировки: ${oldVal} -> ${newVal}`);
-        if (this.currentSortType === 'setpoints') this.updateView();
-    },
+    // initialSortType(newVal) {
+    //   this.SET_SORT_TYPE(newVal);
+    //   this.updateView();
+    //   },
+    // currentSortType(newVal, oldVal) {
+    //   console.log(`[MainBody] Изменен тип сортировки: ${oldVal} -> ${newVal}`);
+    //   this.updateView();
+    // },
+    // getRoomKey(newVal, oldVal) {
+    //   console.log(`[MainBody] Изменен ключ комнаты: ${oldVal} -> ${newVal}`);
+    //   if (this.currentSortType === 'rooms') this.updateView();
+    // },
+    // getParamKey(newVal, oldVal) {
+    //   console.log(`[MainBody] Изменен ключ параметра: ${oldVal} -> ${newVal}`);
+    //   if (this.currentSortType === 'params') this.updateView();
+    // },
+    // getDeviceKey(newVal, oldVal) {
+    //     console.log(`[MainBody] Изменен ключ устройства: ${oldVal} -> ${newVal}`);
+    //     if (this.currentSortType === 'devices') this.updateView();
+    // },
+    // getSetpointKey(newVal, oldVal) {
+    //     console.log(`[MainBody] Изменен ключ сортировки: ${oldVal} -> ${newVal}`);
+    //     if (this.currentSortType === 'setpoints') this.updateView();
+    // },
     getConfig: {
       handler(newVal) {
         if (newVal) this.updateView();
@@ -233,28 +242,28 @@ export default {
     },
     async updateView() { // Формируем массив для отображения пользователю в соответствии с типом сортировки и текущим ключем
         try {
-          console.groupCollapsed('[MainBody] - updateView ');
-          console.log('[MainBody] - updateView - started');
+          //console.groupCollapsed('[MainBody] - updateView ');
+          //console.log('[MainBody] - updateView - started');
           const config = this.getConfig(this.dID);
           if (!config) {
             console.warn('[MainBody] - updateView - Конфигурация не доступна');
             this.viewArray = [];
             return;
           }
-          console.log('Актуальный тип сортировки:', this.currentSortType);
-          console.log('для конфигурации', config);
+          //console.log('Актуальный тип сортировки:', this.currentSortType);
+          //console.log('для конфигурации', config);
 
           if (this.currentSortType === 'rooms') {
-            console.log(`[MainBody] - updateView - Режим: комнаты -(${this.getRoomKey})`);
+            //console.log(`[MainBody] - updateView - Режим: комнаты -(${this.getRoomKey})`);
             this.viewArray = this.getSortedRooms(config, this.getRoomKey);
           } else if (this.currentSortType === 'params') {
-            console.log(`[MainBody] - updateView - Режим: параметров -(${this.getParamKey})`);
+            //console.log(`[MainBody] - updateView - Режим: параметров -(${this.getParamKey})`);
           this.viewArray = this.getSortedParams(config, this.getParamKey);
           } else if (this.currentSortType === 'devices') {
-            console.log(`[MainBody] - updateView - Режим: Устройств -(${this.getDeviceKey})`);
+            //console.log(`[MainBody] - updateView - Режим: Устройств -(${this.getDeviceKey})`);
             this.viewArray = this.getSortedDevices(config, this.getDeviceKey);
           } else if (this.currentSortType === 'setpoints') {
-            console.log(`[MainBody] - updateView - Режим: Уставки -(${this.getSetpointKey})`);
+            //console.log(`[MainBody] - updateView - Режим: Уставки -(${this.getSetpointKey})`);
             this.viewArray = this.getSortedSetpoints(config, this.getSetpointKey);
           }
         
@@ -272,7 +281,7 @@ export default {
 
     getSortedRooms(config, roomKey) {
 
-      console.groupCollapsed('[MainBody] - getSortedRooms');
+      //console.groupCollapsed('[MainBody] - getSortedRooms');
       const room = config[roomKey];
       if (!room) return [];
      
@@ -287,7 +296,7 @@ export default {
           Object.entries(sectionData).forEach(([itemKey, itemData]) => {
 
             const cleanKey = this.clearKeySync(itemKey);
-            console.log('[MainBody] getSortedRooms - Item:', cleanKey);
+            //console.log('[MainBody] getSortedRooms - Item:', cleanKey);
             // Для каждого устройства ищем уставку
             let setValue = null;
             if (room.setpoints) {

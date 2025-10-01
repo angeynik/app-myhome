@@ -85,7 +85,7 @@ export default {
   actions: {
 
     async initialize({ dispatch, rootGetters, state }) {
-      console.groupCollapsed('[config] - initialize');
+      //console.groupCollapsed('[config] - initialize');
       dispatch('detectDevice'); 
       console.log('[config] - initialize - Начинаем Инициализацию конфига');
 
@@ -109,12 +109,7 @@ export default {
 
       console.log('[config] - initialize - Завершена инициализация');
     },
-    // clearKey(context, { key }) {
-    //   const withoutPrefix = key.slice(1);
-    //   const clearKey = withoutPrefix.replace(/\d+$/, '');
-    //   console.log(`[config] - clearKey - key: ${clearKey}`);
-    //   return clearKey;
-    // },
+
     detectDevice({commit}) {
       const mobile = /Mobi|Android/i.test(navigator.userAgent);
       console.log('[config] - detectDevice - Работаем с мобильным устройством - ', mobile);
@@ -213,7 +208,7 @@ export default {
       //console.log('[Config] - handleConfigResponse - Обновляем уставки');
       await dispatch('handleSetpointsSet', config);
 
-        console.log('[Config] - handleConfigResponse - Конфиг обновлен, данные для сортировки готовы');
+        //console.log('[Config] - handleConfigResponse - Конфиг обновлен, данные для сортировки готовы');
         return 'success';
       } catch (error) {
         console.error('[Config] - handleConfigResponse - Ошибка обработки ответа:', error);
@@ -272,7 +267,7 @@ export default {
       }
     },
     handleSetpointsSet ({ commit }, config) {
-      console.groupCollapsed('[Config] - handleSetpointsSet');
+      //console.groupCollapsed('[Config] - handleSetpointsSet');
       //console.log('[Config] - handleSetpointsSet - Обновляем список параметров');
       try {
       const paramsSet = new Set();
@@ -338,6 +333,9 @@ export default {
 
     handleSensorUpdate({ commit }, { dID, payload, type }) {
       //console.log('[Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
+      if (type === 'setpoints') {
+        console.log(' ++++++++++++++++++++ [Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
+      }
 
       try {
         const { room, item_name, item_value, time } = payload;
@@ -424,12 +422,14 @@ export default {
         }
       }
     },
-      async updateSetpointServer( {rootGetters}, { roomKey, paramKey, value }) {
+      async updateSetpointServer( {rootGetters, dispatch}, { roomKey, paramKey, value }) {
         console.log('[config] - updateSetpointServer - Готовим уставку для отправки на сервер');
-        //const baseParamKey = await dispatch('clearKey', { key: paramKey });
-        const baseParamKey = this.clearKeySync(paramKey);
+        const baseParamKey = await dispatch('clearKey', { key: paramKey });
+        //const baseParamKey = this.clearKeySync(paramKey);
+        console.log('[config] - updateSetpointServer - Готовим уставку для отправки на сервер', baseParamKey);
         const dID = rootGetters.dID;
         if (!dID) throw new Error('dID не определен');
+        console.log('[config] - updateSetpointServer - Готовим уставку для dID:', dID, 'Key', baseParamKey, 'Value', value);
 
         await this.dispatch('websocket/send', {
           type: 'post',
@@ -440,9 +440,21 @@ export default {
 
         console.log('[config] - updateSetpointServer - Уставка обновлена и отправлена на сервер');
       },
+    clearKey(context, { key }) { // гетер clearKeySync используем для внешней очистки
+      const withoutPrefix = key.slice(1);
+      const clearKey = withoutPrefix.replace(/\d+$/, '');
+      console.log(`[config] - clearKey - key: ${clearKey}`);
+      return clearKey;
+    },
   },
   
   getters: {
+    clearKeySync: () => (key) => {
+      const withoutPrefix = key.slice(1);
+      const clearKey = withoutPrefix.replace(/\d+$/, '');
+      //console.log(`[config] - clearKeySync - key: ${clearKey}`);
+      return clearKey;
+    },
     getConfig: state => name => state.configs[name] || {},
     isLoading: state => state.loading,
     error: state => state.error,
@@ -454,11 +466,6 @@ export default {
     getMobile: state => state.mobile,
     getDeviceType: state => state.deviceType,
 
-    clearKeySync: () => (key) => {
-      const withoutPrefix = key.slice(1);
-      const clearKey = withoutPrefix.replace(/\d+$/, '');
-      //console.log(`[config] - clearKeySync - key: ${clearKey}`);
-      return clearKey;
-    }
+
   }
 };

@@ -83,27 +83,28 @@ export default {
     limHigh: 32,
     limLow: 10,
     limStep: 1,
+    forceUpdate: 0,
   }),
 
   mutations: {
     SET_SORT_TYPE(state, type) {
       if (['rooms', 'params', 'devices', 'setpoints'].includes(type)) {
         state.sortType = type;
+        state.forceUpdate = Date.now();
       }
     },
-    
     SET_ROOM_ID(state, id) {
       state.roomId = Number(id) || 0;
+      state.forceUpdate = Date.now();
     },
-    
     SET_PARAM_KEY(state, key) {
       if (typeof key === 'string' && state.paramKey !== key && key != null) {
         console.log(`[sortParams] MUTATION SET_PARAM_KEY: ${state.paramKey} -> ${key}`);
         state.paramKey = key;
+        state.forceUpdate = Date.now();
       }
       //console.log('[sortParams] - SET_PARAM_KEY - Ключ обновлен', key);
     },
-    
     SET_ROOM_KEY(state, key) {
       if (typeof key === 'string' && state.roomKey !== key && key != null) {
         console.log(`[sortParams] MUTATION SET_ROOM_KEY: ${state.roomKey} -> ${key}`);
@@ -115,15 +116,16 @@ export default {
       if (typeof key === 'string' && state.deviceKey !== key && key != null) {
         console.log(`[sortParams] MUTATION SET_DEVICE_KEY: ${state.deviceKey} -> ${key}`);
         state.deviceKey = key;
+        state.forceUpdate = Date.now();
       }
     },
     SET_SETPOINT_KEY(state, key) {
       if (typeof key === 'string' && state.setpointKey !== key && key != null) {
         console.log(`[sortParams] MUTATION SET_SETPOINT_KEY: ${state.setpointKey} -> ${key}`);
         state.setpointKey = key;
+        state.forceUpdate = Date.now();
       }
     },
-
     SET_DEVICE_TITLE(state, title) {
       state.deviceTitle = title || '';
     },
@@ -133,11 +135,9 @@ export default {
     SET_ROOM_TITLE(state, title) {
       state.roomTitle = title || 'Главная комната';
     },
-    
     SET_PARAM_TITLE(state, title) {
       state.paramTitle = title || 'Температура';
     },
-    
     UPDATE_STATE(state, payload) {
       Object.keys(payload).forEach(key => {
         if (key in state) {
@@ -153,11 +153,15 @@ export default {
       if (limits.limStep) state.limStep = limits.limStep;
       console.log('[sortParams] - UPDATE_LIMITS Выполнено обновление состояния лимитов');
     },
+    SET_FORCE_UPDATE(state, timestamp) {
+      console.log(' ------------!!!!!!!!!!----------- [sortParams] - SET_FORCE_UPDATE Выполнено обновление состояния');
+      state.forceUpdate = timestamp;
+    },
   },
  
   actions: {
     updateSortKey({ commit, dispatch, state }, { type, newKey }) { //Обновленная функция для изменения ключа любого сортировки
-      console.log(`[sortParams] - updateSortKey - Обновляем ключ для ${type}:`, newKey);
+      //console.log(`[sortParams] - updateSortKey - Обновляем ключ для ${type}:`, newKey);
       
       // Проверка на валидность ключа
       if (!newKey) {
@@ -215,11 +219,11 @@ export default {
         
         // Дополнительное действие (для rooms)
         if (typeConfig.extraAction) {
-          console.log(`[sortParams] - updateSortKey - Выполняем дополнительное действие: ${typeConfig.extraAction}`);
+          //console.log(`[sortParams] - updateSortKey - Выполняем дополнительное действие: ${typeConfig.extraAction}`);
           dispatch(typeConfig.extraAction, newKey);
         }
 
-        console.log(`[sortParams] - updateSortKey - Ключ ${type} обновлен:`, newKey);
+        //console.log(`[sortParams] - updateSortKey - Ключ ${type} обновлен:`, newKey);
 
       } catch (error) {
         console.error(`[sortParams] - updateSortKey - Ошибка при обновлении ${type}:`, error);
@@ -238,7 +242,7 @@ export default {
     //     console.log('[sortParams] - updateRoomsKey - Ключ обновлен', newRoomKey);
     // },
     updateRoomsTitle({ commit, rootGetters }, newRoomKey) {
-      console.log('[sortParams] - updateRoomsTitle', newRoomKey);
+      //console.log('[sortParams] - updateRoomsTitle', newRoomKey);
       if (!newRoomKey) {
         console.log('[sortParams] - updateRoomsTitle - Ключ не определен - ', newRoomKey);
       }
@@ -249,7 +253,7 @@ export default {
 
       commit('SET_ROOM_ID', newRoom?.id || 0);
       commit('SET_ROOM_TITLE', newRoom?.title || 'не определен');
-      console.log('[sortParams] - updateRoomsTitle - Ключ roomTitle обновлен', newRoom?.title, 'новый roomID', newRoom?.id);
+      //console.log('[sortParams] - updateRoomsTitle - Ключ roomTitle обновлен', newRoom?.title, 'новый roomID', newRoom?.id);
     },
 
     async setSortType({ commit, state }, type) {
@@ -277,7 +281,7 @@ export default {
       // Используем clearKey из модуля config для очистки параметра
       dispatch('config/clearKey', { key: param }, { root: true })
         .then(cleanedKey => {
-          console.log('[sortParams] - setLimits - Очищенный параметр -', cleanedKey);
+          //console.log('[sortParams] - setLimits - Очищенный параметр -', cleanedKey);
           
           // Получаем данные лимитов из конфига
           const dID = rootGetters['dID'];
