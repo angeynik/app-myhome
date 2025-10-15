@@ -422,10 +422,8 @@ export default {
         }
       }
     },
-      async updateSetpointServer( {rootGetters, dispatch}, { roomKey, paramKey, value }) {
+      async updateSetpointServer( {rootGetters}, { roomKey, paramKey, value }) {
         console.log('[config] - updateSetpointServer - Готовим уставку для отправки на сервер');
-        //const baseParamKey = await dispatch('clearKey', { key: paramKey });
-        //const baseParamKey = this.clearKeySync(paramKey);
         console.log('[config] - updateSetpointServer - Готовим уставку для отправки на сервер', paramKey);
         const dID = rootGetters.dID;
         if (!dID) throw new Error('dID не определен');
