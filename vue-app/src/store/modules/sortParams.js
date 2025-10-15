@@ -31,7 +31,8 @@ function getSensorTitle(key) {
     'sTemp': 'Уставка температуры',
     'sHum': 'Уставка влажности',
     'sActuator': 'Уставка актуатор',
-  };
+    'dCurSetpoint': 'Уставка Термостата',
+    };
   return mappings[baseKey] || key;
 }
 function getUnit(key) {

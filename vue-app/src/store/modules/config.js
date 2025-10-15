@@ -424,18 +424,18 @@ export default {
     },
       async updateSetpointServer( {rootGetters, dispatch}, { roomKey, paramKey, value }) {
         console.log('[config] - updateSetpointServer - Готовим уставку для отправки на сервер');
-        const baseParamKey = await dispatch('clearKey', { key: paramKey });
+        //const baseParamKey = await dispatch('clearKey', { key: paramKey });
         //const baseParamKey = this.clearKeySync(paramKey);
-        console.log('[config] - updateSetpointServer - Готовим уставку для отправки на сервер', baseParamKey);
+        console.log('[config] - updateSetpointServer - Готовим уставку для отправки на сервер', paramKey);
         const dID = rootGetters.dID;
         if (!dID) throw new Error('dID не определен');
-        console.log('[config] - updateSetpointServer - Готовим уставку для dID:', dID, 'Key', baseParamKey, 'Value', value);
+        console.log('[config] - updateSetpointServer - Готовим уставку для dID:', dID, 'Key', paramKey, 'Value', value);
 
         await this.dispatch('websocket/send', {
           type: 'post',
-          request: 'setpoint',
+          request: 'setpoints',
           name: dID,
-          payload: { room: roomKey, param: baseParamKey, value }
+          payload: { room: roomKey, param: paramKey, value }
         }, { root: true });
 
         console.log('[config] - updateSetpointServer - Уставка обновлена и отправлена на сервер');

@@ -461,20 +461,28 @@ export default {
           console.log('[MainBody] getSortedSetpoints Комната:', roomKey, ' не содержит setpoints');
           return;
         }
-
         Object.entries(room.setpoints).forEach(([setKey, setpointData]) => {
           // Проверяем, что ключ уставки начинается с нужного префикса
           if (setKey.includes(setpointKey)) {
-            console.log('[MainBody] getSortedSetpoints - Найдено совпадение с ключом Уставки:', setKey);
+            let newValue, newSet;
+            //console.log('[MainBody] getSortedSetpoints - Найдено совпадение с ключом Уставки:', setKey);
+            
+            if (setKey.startsWith('s')) {
+              newValue = this.getSensorValue(setpointData?.type, setpointData);
+              newSet = this.getSensorValue(setpointData?.type, setpointData);
+            } else if (setKey.startsWith('d')) { 
+              newValue = this.getSensorValue(setpointData?.type, setpointData);
+              newSet = null;
+            }
             
             setpointsArray.push({
               sortType: 'setpoints',
-              paramTitle: this.getSensorTitle(setKey), // Используем setKey вместо setpointKey
-              paramType: setpointData?.type,           // Используем setpointData вместо sensorData
-              paramKey: setKey,                        // Используем setKey вместо sensorKey
-              value: null,
-              setValue: this.getSensorValue(setpointData?.type, setpointData), // Передаем setpointData
-              unit: this.getUnit(setKey),              // Используем setKey
+              paramTitle: this.getSensorTitle(setKey),
+              paramType: setpointData?.type,
+              paramKey: setKey,
+              value: newValue,
+              setValue: newSet,
+              unit: this.getUnit(setKey),
               timeDiff: this.getTimeDiff(setpointData?.lastUpdate),
               roomTitle: room.title,
               roomId: room.id,
