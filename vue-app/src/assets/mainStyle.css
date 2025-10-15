@@ -314,11 +314,11 @@ form div {
   gap: 10px;
 }
     .sensor-card {
-      min-width: 180px;
-      width: 100%;
-      max-width: 56vw;
+      min-width: 190px;
+      width: 98%;
+      max-width: 54vw;
       min-height: 180px;
-      /* max-height: 180px; */
+      max-height: 230px;
       display: grid;
       grid-template-rows: 1fr 5fr 1fr;
       flex-direction: column;
