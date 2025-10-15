@@ -49,11 +49,13 @@
 
  /* Компонент AppPlace */
 .app-place_body {
+  width: 100vw;
   border: 0px;
   padding: 30px;
   display: grid; 
   gap: 30px;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 3fr));
+  align-content: stretch;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 3fr));
 }
 .triangle-container {
   position: relative;
@@ -97,14 +99,14 @@
 }
 .app-place_module_h1 {
   height: 40px;
-  font-size: 1rem;
+  font-size: clamp(1.1rem, 4vw, 1.4em);
   font-weight: 900;
   letter-spacing: 2px;
   text-transform: uppercase;
 }
 .app-place_module_icon {
   font-size: 2rem;
-  height: 140px;
+  height: 120px;
 }
 .paramPlace {
   padding: 0 1vh 0 1vh;
@@ -116,10 +118,10 @@
 
  .body {
   flex: 1 1 86%; 
-  /* overflow-y: auto; */
+  overflow-y: auto;
   margin: 1 !important;
   border: 0 !important;
-  /* display: flex !important; */
+  display: flex !important;
   box-sizing: border-box !important;
   background-color: var(--header_color);
   color: var(--light_font);
@@ -132,7 +134,7 @@
       height: 100%;
       width: 100%;
       justify-items: center;
-      align-content: space-evenly;
+      align-content: stretch;
       padding: 1.4rem; /* Отступы внутри контейнера */
       box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
       -webkit-user-select: none;
@@ -165,6 +167,7 @@
     /* height: 100%; */
     display: flex;
     justify-content: center;
+    white-space: nowrap;
     padding: 0;
     margin: 0;
     /* background-color: var(--light_font); */
@@ -214,19 +217,31 @@
   }
   .introduce-place {
     /* width: 100vw; */
+    gap: 1rem;
+    width: 100%;
+    max-width: 100%;
+    padding: 1rem;
+    box-sizing: border-box;
     align-content: center;
     border: 0px;
-    padding: 30px;
-    display: grid;
-    gap: 30px;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Исправлено на 1fr */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 120px);
+    /* padding: 30px; */
+    /* display: grid; */
+    /* gap: 30px; */
+    /* grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); */
     margin: 0 auto; 
   }
  
   .introduce-button {
-    width: 100%;
-    max-height: 260px;
-    min-height: 220px;
+    width: 90%;
+    max-width: 600px;
+    height: 22vh; 
+    max-height: 220px;
+    min-height: 140px;
     background-size: auto 70%;
     background-position: center; /* Центрируем изображение */
     background-repeat: no-repeat; /* Запрещаем повторение изображения */
@@ -239,6 +254,7 @@
     box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
     transition: transform 0.6s;
     overflow: hidden; /* Чтобы картинка не выходила за границы */
+    text-overflow: ellipsis;
   }
   
   .color_dark {
@@ -259,14 +275,17 @@
     background-image: url('@/assets/manufact.png');
   }
   .button-text {
-    height: 20%; /* Текст занимает 25% высоты кнопки */
+    height: 25%; /* Текст занимает 25% высоты кнопки */
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2em;
+    font-size: clamp(1.1rem, 4vw, 1.6rem);
     font-weight: bold;
     width: 100%; /* Ширина текстового блока */
     text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 .button-image {
   flex-grow: 1; /* Занимает оставшееся пространство */
@@ -298,8 +317,8 @@ form div {
       min-width: 180px;
       width: 100%;
       max-width: 56vw;
-      min-height: 160px;
-      max-height: 180px;
+      min-height: 180px;
+      /* max-height: 180px; */
       display: grid;
       grid-template-rows: 1fr 5fr 1fr;
       flex-direction: column;
@@ -356,7 +375,7 @@ form div {
       height: 2.4rem;
       align-content: center;
       align-items: center;
-      font-size: 1.2rem;
+      font-size: clamp(0.7rem, 4vw, 1.2rem);
       font-weight: 800;
       letter-spacing: 4px;
       text-transform: uppercase;
@@ -365,13 +384,14 @@ form div {
       height: 4rem;
       align-content: center;
       font-size: 2.6rem;
+      font-size: clamp(2rem, 4.2vw, 2.5rem);
       font-weight: 500;
       letter-spacing: 4px;
     }
     .sensor-value.selected-value {
       height: 2rem;
       align-content: center;
-      font-size: 1.2rem;
+      font-size: clamp(1.1rem, 1.5vw, 1.7rem);
       font-weight: 300;
       letter-spacing: 3px;
       color: var(--light_font);
@@ -381,14 +401,14 @@ form div {
       height: 2rem;
       align-content: center;
       color: var(--orange);
-      font-size: 1.2rem;
+      font-size: clamp(1.1rem, 1.5vw, 1.7rem);
       font-weight: 300;
       letter-spacing: 3px;
     }
     .sensor-SetValue.selected-setvalue {
       height: 4rem;
       color: var(--orange);
-      font-size: 2.6rem;
+      font-size: clamp(2rem, 4.2vw, 2.5rem);
       font-weight: 500;
       letter-spacing: 4px;
       opacity: 1;
@@ -511,24 +531,43 @@ form button:active {
   font-weight: 500;
 }
 
-
-/* Адаптация для узких экранов */
-@media (max-width: 780px) {
+/* Горизонтальная ориентация (ширина больше высоты) */
+@media (orientation: landscape) {
+    .mainBody {
+      align-content: stretch;
+    }
   .introduce-place {
-    grid-template-columns: 1fr; /* Одна колонка */
-    width: 80%;
-    justify-items: center; /* Центрирование по горизонтали */
-    padding: 15px;
+    width: 100vw;
+    display: flex;
+    flex-direction: row; /* Горизонтальное расположение */
+    flex-wrap: wrap; /* Перенос на следующую строку если не помещается */
+    justify-content: space-around;
+    align-items: stretch;
+    min-height: calc(80vh - 130px);
+  }
+  
+  .introduce-button {
+    width: 24%; /* Занимает примерно треть ширины */
+    min-width: 130px; /* Минимальная ширина */
+    height: 60vh; /* Большая высота в ландшафтном режиме */
+    max-height: 240px;
+    flex: 1 1 auto; /* Гибкое растягивание */
+    margin: 0.5rem;
+  }
+  
+  .button-text {
+    font-size: clamp(1.3rem, 3vw, 1.5rem);
   }
 }
-@media (max-width: 500px) {
-  .introduce-place {
-    grid-template-columns: 1fr; /* Одна колонка */
-    justify-items: center; /* Центрирование по горизонтали */
-    padding: 15px; /* Уменьшение отступов для узких экранов */
-  }
+/* Адаптация для узких экранов */
+@media (max-width: 800px) {
   .introduce-button {
-    max-width: 300px; /* Максимальная ширина кнопки */
+    max-width: 500px; /* Максимальная ширина кнопки */
+  }
+}
+@media (max-width: 600px) {
+  .introduce-button {
+    max-width: 380px; /* Максимальная ширина кнопки */
   }
   .error {
     color: red;
