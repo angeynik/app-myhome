@@ -2,12 +2,10 @@
 
 const RECONNECT_DELAY = 1000;
 const MAX_RECONNECT_ATTEMPTS = 8;
-const adr = process.env.VUE_APP_EXP;
-const port = process.env.VUE_APP_PORT;
 console.log('WebSocket connection details:', {
-  adr: adr,
-  port: port,
-  fullUrl: `ws://${adr}:${port}`
+  adr: process.env.VUE_APP_EXP,
+  port: process.env.VUE_APP_PORT,
+  fullUrl: `ws://${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`
 });
 
 export default {
@@ -50,12 +48,12 @@ export default {
       }
       
       return new Promise((resolve, reject) => {
-        //const socket = new WebSocket(`ws://${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`);
-        const socket = new WebSocket(`ws://${adr}:${port}`);
+        const socket = new WebSocket(`ws://${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`);
+        //const socket = new WebSocket(`ws://${adr}:${port}`);
         
         socket.onopen = () => {
-          //console.log(`WebSocket connected to ${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`);
-          console.log(`WebSocket connected to ${adr}:${port}`);
+          console.log(`WebSocket connected to ${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`);
+          //console.log(`WebSocket connected to ${adr}:${port}`);
           commit('SET_RECONNECT_ATTEMPTS', 0);
           socket.onmessage = (event) => dispatch('handleMessage', event);
           commit('SET_SOCKET', socket);

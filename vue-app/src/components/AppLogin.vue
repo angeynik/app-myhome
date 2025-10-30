@@ -1,4 +1,4 @@
-t <template>
+<template>
   <div>
     <div class="header-bottom">
       <nav>
@@ -32,92 +32,82 @@ t <template>
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
-import { useStore } from 'vuex';
-import { useRouter } from 'vue-router';
-
 export default {
   name: 'AppLogin',
-  setup() {
-    const store = useStore();
-    const router = useRouter();
-
-    const usernameInput = ref(null);
-    const passwordInput = ref(null);
-    const error = ref('');
-
-    // 1. Исправляем название переменных
-    const userLevel = computed(() => store.getters.level);
-    const dID = computed(() => store.getters.dID);
-
-    // 2. Исправляем логирование
-    //console.log('Уровень из геттера:', userLevel.value);
-    //console.log('dID из геттера:', dID.value);
-
-    const login = async () => {
-      error.value = '';
+  data() {
+    return {
+      error: '',
+      loading: false
+    };
+  },
+  computed: {
+    userLevel() {
+      return this.$store.getters.level;
+    },
+    dID() {
+      return this.$store.getters.dID;
+    }
+  },
+  mounted() {
+    this.$refs.usernameInput?.focus();
+  },
+  methods: {
+    async login() {
+      this.error = '';
+      this.loading = true;
+      
       try {
-        const username = usernameInput.value.value.toLowerCase();
-        const password = passwordInput.value.value;
+        const username = this.$refs.usernameInput.value.toLowerCase();
+        const password = this.$refs.passwordInput.value;
 
         if (!username || !password) {
           throw new Error('Имя пользователя и пароль обязательны');
         }
 
-        // 3. Добавляем обработку успешного логина
-        const userData = await store.dispatch('auth/login', { 
+        console.log('Попытка входа для пользователя:', username);
+        
+        // Проверяем состояние WebSocket
+        const isConnected = this.$store.getters.isConnected;
+        console.log('WebSocket connected:', isConnected);
+        
+        if (!isConnected) {
+          throw new Error('WebSocket не подключен');
+        }
+
+        const userData = await this.$store.dispatch('auth/login', { 
           username, 
           password 
         });
 
-        // 4. Добавляем проверку состояния после логина
-        console.log('Текущий уровень после логина:', store.getters.level);
-        console.log('Текущий dID после логина:', store.getters.dID);
-        // if (userData) {
-        // alert(`✅ Вход для Пользователя ${username} прошел успешно!\n Уровень доступа ${store.getters.level}`);
+        console.log('Текущий уровень после логина:', this.$store.getters.level);
+        console.log('Текущий dID после логина:', this.$store.getters.dID);
 
-        // const redirectPath = localStorage.getItem('redirectPath') || '/';
-        // localStorage.removeItem('redirectPath');
-        // router.push(redirectPath);
-
-
-          if (userData) {
+        if (userData) {
           // Добавляем проверку конфигурации
           try {
-            await store.dispatch('config/ensureConfig', dID.value);
+            await this.$store.dispatch('config/ensureConfig', this.dID);
           } catch (err) {
             console.error('Ошибка при загрузке конфигурации:', err);
             alert('⚠️ Конфигурация не загружена! Некоторые функции могут работать некорректно');
           }
 
-          alert(`✅ Вход для Пользователя ${username} прошел успешно!\n Уровень доступа ${store.getters.level}`);
+          alert(`✅ Вход для Пользователя ${username} прошел успешно!\n Уровень доступа ${this.$store.getters.level}`);
           
           const redirectPath = localStorage.getItem('redirectPath') || '/';
           localStorage.removeItem('redirectPath');
-          router.push(redirectPath);
+          this.$router.push(redirectPath);
         } else {
-          console.log(`❌ Проблемы авторизации в AppLogin.vue -- 83 --`);
+          console.log('❌ Проблемы авторизации в AppLogin.vue');
         }
       } catch (err) {
-        error.value = err.message || 'Ошибка авторизации';
-        alert(`✅ Ошибка авторизации Пользователя!`);
-        console.error('Ошибка входа:', err.value );
+        this.error = err.message || 'Ошибка авторизации';
+        alert('❌ Ошибка авторизации Пользователя!');
+        console.error('Ошибка входа:', err);
+      } finally {
+        this.loading = false;
       }
-    };
-
-      onMounted(() => {
-        usernameInput.value?.focus();
-      });
-
-    return {
-      usernameInput,
-      passwordInput,
-      error,
-      userLevel,
-      dID, // 6. Возвращаем dID в шаблон
-      login,
-    };
-  },
+    }
+  }
 };
 </script>
 

@@ -42,6 +42,7 @@ export default {
   
   actions: {
     async login({ commit, dispatch }, user) {
+      console.log('[auth] - login - Данные пользователя для подключения:', user);
       commit('AUTH_REQUEST');
       try {
         await dispatch('websocket/connect', null, { root: true });
