@@ -480,9 +480,12 @@ form button:active {
   background-color: var(--background_color);
   box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
   margin: 0;
-  padding-bottom: 5vh;
+  padding-bottom: 8vh;
   box-shadow: 0vw -3vw 6vw rgba(225, 225, 225, 0.15), 0vw 2vw 3vw rgba(225, 225, 225, 0.15),inset 12vw 0 8vw -6vw rgba(0, 0, 0, 0.8), inset -12vw 0 8vw -6vw rgba(0, 0, 0, 0.8);
 }
+/* .setpointBlock.mobile-padding {
+  padding-bottom: 8vh;
+} */
 .setpointValue {
   display: flex;
   flex-direction: row;

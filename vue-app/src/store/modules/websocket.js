@@ -46,14 +46,13 @@ export default {
         await new Promise(resolve => setTimeout(resolve, delay));
         return dispatch('connect');
       }
-      
+     
       return new Promise((resolve, reject) => {
         const socket = new WebSocket(`ws://${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`);
-        //const socket = new WebSocket(`ws://${adr}:${port}`);
+        //const socket = new WebSocket(`ws://192.168.1.94:${process.env.VUE_APP_PORT}`);
         
         socket.onopen = () => {
           console.log(`WebSocket connected to ${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`);
-          //console.log(`WebSocket connected to ${adr}:${port}`);
           commit('SET_RECONNECT_ATTEMPTS', 0);
           socket.onmessage = (event) => dispatch('handleMessage', event);
           commit('SET_SOCKET', socket);
