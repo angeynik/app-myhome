@@ -1,5 +1,5 @@
 <template>
-  <h1> Footer </h1>
+  <h1> </h1>
 </template>
 
 <script>
@@ -8,6 +8,4 @@ export default {
 }
 </script>
 
-<style>
-
-</style>
+<style lang="css" src="@/assets/mainStyle.css"></style>
