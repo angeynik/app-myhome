@@ -5,6 +5,7 @@ export default {
   state: () => ({
     token: '',
     user: {},
+    password: '',
     status: '',
     level: 0,
     dID: null
@@ -24,6 +25,7 @@ export default {
   RESTORE_AUTH(state, data) {
     state.token = data.token;
     state.user = data.user;
+    state.password = data.password;
     state.dID = data.dID;
     state.level = data.level;
     state.status = 'success';
@@ -35,6 +37,7 @@ export default {
       state.status = '';
       state.token = '';
       state.user = {};
+      state.password = '',
       state.dID = null;
       state.level = 0;
     }
@@ -61,6 +64,7 @@ export default {
         if (response?.request === 'loginSuccess') {
           const userData = {
             username: response.payload.username,
+            password: user.password,
             userlevel: response.payload.userlevel,
             dID: response.name
           };
