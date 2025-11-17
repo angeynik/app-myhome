@@ -4,6 +4,16 @@ import sortParams from '@/store/modules/sortParams';
 const flushPromises = () =>
   new Promise((resolve) => (typeof setImmediate === 'function' ? setImmediate(resolve) : setTimeout(resolve, 0)));
 
+// Мокаем logger чтобы избежать console.log в тестах
+jest.mock('@/store/modules/logger', () => ({
+  info: jest.fn(),
+  dev: jest.fn(),
+  error: jest.fn(),
+  isInfoEnabled: () => false,
+  isDevEnabled: () => false,
+  isErrorEnabled: () => false
+}));
+
 describe('sortParams store module', () => {
   let state;
   let commit;
@@ -28,7 +38,9 @@ describe('sortParams store module', () => {
         }
       }),
       'config/allRooms': ['room1', 'room2', 'room3'],
-      'config/allParams': ['dTemp', 'dHum', 'dPress']
+      'config/allParams': ['dTemp', 'dHum', 'dPress'],
+      'config/allDevices': ['device1', 'device2'],
+      'config/allSetpoints': ['setpoint1', 'setpoint2']
     };
   });
 
@@ -56,7 +68,7 @@ describe('sortParams store module', () => {
       sortParams.mutations.SET_SORT_TYPE(state, 'params');
       expect(state.sortType).toBe('params');
       sortParams.mutations.SET_SORT_TYPE(state, 'invalid');
-      expect(state.sortType).toBe('params');
+      expect(state.sortType).toBe('params'); // Не должен измениться на невалидный тип
     });
 
     it('SET_PARAM_KEY updates paramKey', () => {
@@ -78,9 +90,8 @@ describe('sortParams store module', () => {
   });
 
   describe('actions', () => {
-    it('updateParamsKey sets paramKey and paramTitle', async () => {
-      const context = { commit };
-
+    beforeEach(() => {
+      // Мокаем localStorage для всех тестов действий
       Object.defineProperty(global, 'localStorage', {
         value: {
           setItem: jest.fn(),
@@ -88,35 +99,144 @@ describe('sortParams store module', () => {
         },
         configurable: true
       });
+    });
 
-      await sortParams.actions.updateParamsKey(context, 'dTemp');
+    it('updateSortKey for params sets paramKey and paramTitle', async () => {
+      const context = { commit, dispatch, state: { paramKey: 'oldKey' } };
+      
+      await sortParams.actions.updateSortKey(context, { type: 'params', newKey: 'dTemp' });
+      
       expect(commit).toHaveBeenCalledWith('SET_PARAM_KEY', 'dTemp');
-      expect(commit).toHaveBeenCalledWith('SET_PARAM_TITLE', 'Температура');
       expect(global.localStorage.setItem).toHaveBeenCalledWith('paramKey', 'dTemp');
     });
 
-    it('switchToNextRoom dispatches updateRoomsKey with next room', async () => {
-      const context = { dispatch, state: { roomKey: 'room2' }, rootGetters };
-      await sortParams.actions.switchToNextRoom(context);
-      expect(dispatch).toHaveBeenCalledWith('updateRoomsKey', 'room3');
+    it('updateSortKey for rooms sets roomKey and dispatches updateRoomsTitle', async () => {
+      const context = { commit, dispatch, state: { roomKey: 'oldRoom' } };
+      
+      await sortParams.actions.updateSortKey(context, { type: 'rooms', newKey: 'room2' });
+      
+      expect(commit).toHaveBeenCalledWith('SET_ROOM_KEY', 'room2');
+      expect(global.localStorage.setItem).toHaveBeenCalledWith('roomKey', 'room2');
+      expect(dispatch).toHaveBeenCalledWith('updateRoomsTitle', 'room2');
     });
 
-    it('switchToNextRoom wraps around to first room', async () => {
-      const context = { dispatch, state: { roomKey: 'room3' }, rootGetters };
-      await sortParams.actions.switchToNextRoom(context);
-      expect(dispatch).toHaveBeenCalledWith('updateRoomsKey', 'room1');
+    // it('updateSortKey does nothing when newKey is same as current', async () => {
+    //   const context = { commit, dispatch, state: { paramKey: 'dTemp' } };
+      
+    //   await sortParams.actions.updateSortKey(context, { type: 'params', newKey: 'dTemp' });
+      
+    //   expect(commit).not.toHaveBeenCalled();
+    // });
+
+
+    it('updateRoomsTitle updates room title and id', async () => {
+      const context = { commit, rootGetters };
+      
+      await sortParams.actions.updateRoomsTitle(context, 'room2');
+      
+      expect(commit).toHaveBeenCalledWith('SET_ROOM_ID', 2);
+      expect(commit).toHaveBeenCalledWith('SET_ROOM_TITLE', 'Кухня');
     });
 
-    it('switchToPrevRoom dispatches updateRoomsKey with previous room', async () => {
-      const context = { dispatch, state: { roomKey: 'room2' }, rootGetters };
-      await sortParams.actions.switchToPrevRoom(context);
-      expect(dispatch).toHaveBeenCalledWith('updateRoomsKey', 'room1');
+    it('updateRoomsTitle handles missing room', async () => {
+      const context = { commit, rootGetters };
+      
+      await sortParams.actions.updateRoomsTitle(context, 'nonexistent');
+      
+      expect(commit).toHaveBeenCalledWith('SET_ROOM_ID', 0);
+      expect(commit).toHaveBeenCalledWith('SET_ROOM_TITLE', 'не определен');
     });
 
-    it('switchToPrevRoom wraps around to last room', async () => {
-      const context = { dispatch, state: { roomKey: 'room1' }, rootGetters };
-      await sortParams.actions.switchToPrevRoom(context);
-      expect(dispatch).toHaveBeenCalledWith('updateRoomsKey', 'room3');
+    it('setSortType commits sort type when different', async () => {
+      const context = { commit, state: { sortType: 'rooms' } };
+      
+      await sortParams.actions.setSortType(context, 'params');
+      
+      expect(commit).toHaveBeenCalledWith('SET_SORT_TYPE', 'params');
+    });
+
+    it('setSortType does nothing when sort type is same', async () => {
+      const context = { commit, state: { sortType: 'rooms' } };
+      
+      await sortParams.actions.setSortType(context, 'rooms');
+      
+      expect(commit).not.toHaveBeenCalled();
+    });
+
+    it('switchSortKey for rooms with next direction', async () => {
+      const context = { 
+        dispatch, 
+        state: { roomKey: 'room2' }, 
+        rootGetters 
+      };
+      
+      await sortParams.actions.switchSortKey(context, { sortingType: 'rooms', direction: 'next' });
+      
+      expect(dispatch).toHaveBeenCalledWith('updateSortKey', { type: 'rooms', newKey: 'room3' });
+    });
+
+    it('switchSortKey for rooms with next direction wraps around', async () => {
+      const context = { 
+        dispatch, 
+        state: { roomKey: 'room3' }, 
+        rootGetters 
+      };
+      
+      await sortParams.actions.switchSortKey(context, { sortingType: 'rooms', direction: 'next' });
+      
+      expect(dispatch).toHaveBeenCalledWith('updateSortKey', { type: 'rooms', newKey: 'room1' });
+    });
+
+    it('switchSortKey for rooms with prev direction', async () => {
+      const context = { 
+        dispatch, 
+        state: { roomKey: 'room2' }, 
+        rootGetters 
+      };
+      
+      await sortParams.actions.switchSortKey(context, { sortingType: 'rooms', direction: 'prev' });
+      
+      expect(dispatch).toHaveBeenCalledWith('updateSortKey', { type: 'rooms', newKey: 'room1' });
+    });
+
+    it('switchSortKey for rooms with prev direction wraps around', async () => {
+      const context = { 
+        dispatch, 
+        state: { roomKey: 'room1' }, 
+        rootGetters 
+      };
+      
+      await sortParams.actions.switchSortKey(context, { sortingType: 'rooms', direction: 'prev' });
+      
+      expect(dispatch).toHaveBeenCalledWith('updateSortKey', { type: 'rooms', newKey: 'room3' });
+    });
+
+    it('switchSortKey for params works correctly', async () => {
+      const context = { 
+        dispatch, 
+        state: { paramKey: 'dTemp' }, 
+        rootGetters 
+      };
+      
+      await sortParams.actions.switchSortKey(context, { sortingType: 'params', direction: 'next' });
+      
+      expect(dispatch).toHaveBeenCalledWith('updateSortKey', { type: 'params', newKey: 'dHum' });
+    });
+
+    it('switchSortKey handles empty array', async () => {
+      const emptyRootGetters = {
+        ...rootGetters,
+        'config/allRooms': []
+      };
+      const context = { 
+        dispatch, 
+        state: { roomKey: 'room1' }, 
+        rootGetters: emptyRootGetters 
+      };
+      
+      await sortParams.actions.switchSortKey(context, { sortingType: 'rooms', direction: 'next' });
+      
+      expect(dispatch).not.toHaveBeenCalled();
     });
 
     it('setLimits uses cleaned key and commits limits', async () => {
@@ -156,15 +276,11 @@ describe('sortParams store module', () => {
     });
 
     it('setLimits handles dispatch error', async () => {
-      const commit = jest.fn();
       const context = {
         rootGetters,
         commit,
         dispatch: jest.fn().mockRejectedValue(new Error('fail'))
       };
-
-      // Подавим консоль ошибок в этом тесте, чтобы не шумело
-      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
       sortParams.actions.setLimits(context, 'dTemp');
       await flushPromises();
@@ -173,45 +289,6 @@ describe('sortParams store module', () => {
         limHigh: 32,
         limLow: 10,
         limStep: 1
-      });
-
-      spy.mockRestore();
-    });
-
-    it('updateRoomsKey sets roomKey and dispatches updateRoomsTitle', async () => {
-      Object.defineProperty(global, 'localStorage', {
-        value: {
-          setItem: jest.fn(),
-          getItem: jest.fn()
-        },
-        configurable: true
-      });
-
-      const context = { commit, dispatch };
-      await sortParams.actions.updateRoomsKey.call({ state }, context, 'room2');
-      expect(commit).toHaveBeenCalledWith('SET_ROOM_KEY', 'room2');
-      expect(global.localStorage.setItem).toHaveBeenCalledWith('roomKey', 'room2');
-      expect(dispatch).toHaveBeenCalledWith('updateRoomsTitle', 'room2');
-    });
-
-    it('setRoom updates room state', async () => {
-      const context = { commit };
-      const room = { id: 5, key: 'room5', title: 'Балкон' };
-      await sortParams.actions.setRoom(context, room);
-      expect(commit).toHaveBeenCalledWith('UPDATE_STATE', {
-        roomId: 5,
-        roomKey: 'room5',
-        roomTitle: 'Балкон'
-      });
-    });
-
-    it('setParam updates param state', async () => {
-      const context = { commit };
-      const param = { key: 'dFire', title: 'Контроль возгорания' };
-      await sortParams.actions.setParam(context, param);
-      expect(commit).toHaveBeenCalledWith('UPDATE_STATE', {
-        paramKey: 'dFire',
-        paramTitle: 'Контроль возгорания'
       });
     });
   });

@@ -4,7 +4,8 @@ exports[`Login.vue matches the snapshot 1`] = `
 "<div>
   <div class="header-bottom">
     <nav>
-      <router-link-stub to="/login"></router-link-stub> | <router-link-stub to="/dashboard"></router-link-stub> | <router-link-stub to="/smart-home"></router-link-stub> | <router-link-stub to="/manufact-automatation"></router-link-stub> | <router-link-stub to="/profile"></router-link-stub>
+      <router-link-stub to="/login"></router-link-stub> | <router-link-stub to="/dashboard"></router-link-stub> | <router-link-stub to="/smart-home"></router-link-stub> | <router-link-stub to="/manufact-automatation"></router-link-stub> |
+      <!--v-if-->
       <!--v-if-->
     </nav>
   </div>
@@ -13,6 +14,13 @@ exports[`Login.vue matches the snapshot 1`] = `
     <h1>Авторизация</h1>
     <form><input type="text" placeholder="Имя пользователя" required="" autocomplete="username"><input type="password" placeholder="Пароль" required="" autocomplete="current-password"><button type="submit">Вход</button></form>
     <!--v-if-->
+  </div><!-- Компонент всплывающих сообщений -->
+  <div class="popup-overlay" style="display: none;">
+    <div class="popup-content popup-info">
+      <div class="popup-header"><span class="popup-title">Информация</span><button class="popup-close">×</button></div>
+      <div class="popup-message"></div>
+      <div class="popup-footer"><button class="popup-ok-button">OK</button></div>
+    </div>
   </div>
 </div>"
 `;

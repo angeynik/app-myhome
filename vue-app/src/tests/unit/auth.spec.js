@@ -68,39 +68,61 @@ describe('🛡️ Vuex Auth Module', () => {
   });
 
   test('login action successful', async () => {
-    const mockResponse = {
-      request: 'loginSuccess',
-      payload: {
-        token: 'test-token',
-        username: 'testuser',
-        userlevel: 1
-      },
-      name: 'test-did'
-    };
-
-    const websocket = require('@/store/modules/websocket');
-    websocket.actions.connect.mockResolvedValue();
-    websocket.actions.send.mockResolvedValue(mockResponse);
-
-    const userCredentials = {
+  const mockResponse = {
+    request: 'loginSuccess',
+    name: 'test-did',
+    payload: {
+      token: 'test-token',
       username: 'testuser',
-      password: 'testpass'
-    };
+      userlevel: 1
+    }
+  };
 
-    const result = await store.dispatch('auth/login', userCredentials);
+  // Получаем моковый модуль websocket
+  const websocket = require('@/store/modules/websocket');
+  // Настраиваем моки
+  websocket.actions.connect.mockResolvedValue({ readyState: WebSocket.OPEN });
+  websocket.actions.send.mockResolvedValue(mockResponse);
 
-    expect(result).toEqual({
+  // Создаем store после настройки моков
+  const localStore = createVuexStore();
+
+  const userCredentials = {
+    username: 'testuser',
+    password: 'testpass'
+  };
+
+  const result = await localStore.dispatch('auth/login', userCredentials);
+
+  expect(result).toEqual({
+    username: 'testuser',
+    password: 'testpass',
+    userlevel: 1,
+    dID: 'test-did'
+  });
+
+  // Проверяем, что состояние обновилось
+  expect(localStore.state.auth.status).toBe('success');
+  expect(localStore.state.auth.token).toBe('test-token');
+  expect(localStore.state.auth.user.username).toBe('testuser');
+  expect(localStore.state.auth.dID).toBe('test-did');
+  expect(localStore.state.auth.level).toBe(1);
+
+  // Проверяем localStorage
+  const authData = JSON.parse(localStorage.getItem('authData'));
+  expect(authData).toEqual({
+    token: 'test-token',
+    user: {
       username: 'testuser',
+      password: 'testpass',
       userlevel: 1,
       dID: 'test-did'
-    });
-
-    const saved = JSON.parse(localStorage.getItem('authData'));
-    expect(saved.token).toBe('test-token');
-    expect(saved.user.username).toBe('testuser');
-    expect(saved.level).toBe(1);
-    expect(saved.dID).toBe('test-did');
+    },
+    dID: 'test-did',
+    level: 1
   });
+});
+
 
   test('logout action clears state and storage', () => {
     store.commit('auth/AUTH_SUCCESS', {

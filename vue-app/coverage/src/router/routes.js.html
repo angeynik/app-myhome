@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">79.16% </span>
+                <span class="strong">90.47% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>19/24</span>
+                <span class='fraction'>19/21</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">42.85% </span>
+                <span class="strong">75% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/7</span>
+                <span class='fraction'>3/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">77.27% </span>
+                <span class="strong">89.47% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>17/22</span>
+                <span class='fraction'>17/19</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -172,21 +172,7 @@
 <a name='L107'></a><a href='#L107'>107</a>
 <a name='L108'></a><a href='#L108'>108</a>
 <a name='L109'></a><a href='#L109'>109</a>
-<a name='L110'></a><a href='#L110'>110</a>
-<a name='L111'></a><a href='#L111'>111</a>
-<a name='L112'></a><a href='#L112'>112</a>
-<a name='L113'></a><a href='#L113'>113</a>
-<a name='L114'></a><a href='#L114'>114</a>
-<a name='L115'></a><a href='#L115'>115</a>
-<a name='L116'></a><a href='#L116'>116</a>
-<a name='L117'></a><a href='#L117'>117</a>
-<a name='L118'></a><a href='#L118'>118</a>
-<a name='L119'></a><a href='#L119'>119</a>
-<a name='L120'></a><a href='#L120'>120</a>
-<a name='L121'></a><a href='#L121'>121</a>
-<a name='L122'></a><a href='#L122'>122</a>
-<a name='L123'></a><a href='#L123'>123</a>
-<a name='L124'></a><a href='#L124'>124</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L110'></a><a href='#L110'>110</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -220,19 +206,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -284,7 +257,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
@@ -317,8 +289,8 @@ import IntroduceHome from '../IntroduceHome.vue';
 import Login from '../components/AppLogin.vue';
 import Profile from '../components/AppProfile.vue';
 import UserConfig from '../components/UserConfig.vue';
-import AccessDenied from '../components/AccessDenied.vue'; // Компонент для ошибки доступа
-import store from '@/store'; // Импортируем хранилище Vuex
+import AccessDenied from '../components/AccessDenied.vue';
+import store from '@/store';
 &nbsp;
 const routes = [
   {
@@ -326,68 +298,54 @@ const routes = [
     name: 'Intro',
     component: IntroduceHome,
   },
-{
-  path: '/dashboard',
-  name: 'DashBoard',
-  component: Dashboard,
-  meta: { requiresAuth: true, requiredLevel: 1 },
-  children: [
-        {
-      path: '', // Пустой путь для основного состояния
-      name: 'Dashboad',
-      component: null // Явно указываем, что компонент не нужен
-    },
-    {
-      path: 'rooms',
-      name: 'DashboardRooms',
-      component: <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >import('@/components/DashboardRooms.vue')</span>
-    },
-    {
-      path: 'params',
-      name: 'DashboardParams',
-      component: <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >import('@/components/DashboardParams.vue')</span>
-    },
-    {
-      path: 'common',
-      name: 'DashboardCommon',
-      component: <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >import('@/components/DashboardCommon.vue')</span>
-    },
-    {
-      path: 'settings',
-      name: 'DashboardSettings',
-      component: <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >import('@/components/DashboardSettings.vue')</span>
-    }
-  ]
-},
+  {
+    path: '/dashboard',
+    name: 'DashBoard',
+    component: Dashboard,
+    meta: { requiresAuth: true, requiredLevel: 1 },
+    children: [
+      {
+        path: '', // Главное меню с AppPlace
+        name: 'DashboardMain',
+        component: null
+      },
+      {
+        path: ':sortType', // Динамический параметр для типа сортировки
+        name: 'DashboardSort',
+        component: <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >import('@/components/MainBody.vue'),</span>
+        props: true // Передаем параметры как props
+      }
+    ]
+  },
   {
     path: '/smart-home',
     name: 'SmartHome',
     component: SmartHome,
-    meta: { requiresAuth: true, requiredLevel: 1 }, // Добавляем проверку аутентификации
+    meta: { requiresAuth: true, requiredLevel: 1 },
   },
   {
     path: '/manufact-automatation',
     name: 'ManufactAutomatation',
     component: ManufactAutomatation,
-    meta: { requiresAuth: true, requiredLevel: 1 }, // Добавляем проверку аутентификации
+    meta: { requiresAuth: true, requiredLevel: 1 },
   },
   {
     path: '/login',
     name: 'Login',
     component: Login,
-    meta: { public: true } // Публичный маршрут
+    meta: { public: true }
   },
   {
     path: '/profile',
     name: 'AppProfile',
     component: Profile,
-    meta: { requiresAuth: true, requiredLevel: 2 }, // Уровень доступа 2
+    meta: { requiresAuth: true, requiredLevel: 2 },
   },
   {
     path: '/users',
     name: 'Users',
     component: UserConfig,
-    meta: { requiresAuth: true, requiredLevel: 3 }, // Уровень доступа 3
+    meta: { requiresAuth: true, requiredLevel: 3 },
   },
   {
     path: '/access-denied',
@@ -395,10 +353,11 @@ const routes = [
     component: AccessDenied,
   },
   {
-    path: '/:pathMatch(.*)*', // Ловим все несуществующие маршруты
-    redirect: '/', // Перенаправляем на главную страницу
+    path: '/:pathMatch(.*)*',
+    redirect: '/',
   },
 ];
+&nbsp;
 export const routesArray = routes;
 &nbsp;
 export const navigationGuard = (to, from, next) =&gt; {
@@ -409,7 +368,6 @@ export const navigationGuard = (to, from, next) =&gt; {
     return next();
   }
   
-  // Находим первую запись с requiresAuth
   const authRecord = to.matched.find(record =&gt; record.meta.requiresAuth);
   if (authRecord) {
     if (!isAuthenticated) {
@@ -439,7 +397,7 @@ export default router;</pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-17T11:28:05.191Z
+                at 2025-11-17T18:47:42.218Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
