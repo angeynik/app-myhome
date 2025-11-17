@@ -32,11 +32,9 @@
   </div>
 </template>
 
-
-
-
-
 <script>
+import logger from '../store/modules/logger.js';
+
 export default {
   name: 'ParamPlace', 
   props: {
@@ -82,6 +80,7 @@ export default {
       return value
     },
         customerClick() {
+          logger.dev(' [MainBodyValue] - customerClick - Пользователь выбрал параметр', this.paramKey, 'для комнаты', this.roomKey);
         //console.log(' --- 82 --- Функция customerClick(MainBodyValue) - Пользователь выбрал параметр', this.paramKey, 'для комнаты', this.roomKey);
         this.$emit('select', {
             type: 'select', 
@@ -94,7 +93,8 @@ export default {
         }); 
     }, 
     customerDoubleClick() {
-        //console.log('--- 87 ---Функция customerDoubleClick(MainBodyValue) - Пользователь начал двойной клик');
+      logger.dev(' [MainBodyValue] - customerDoubleClick - Пользователь начал двойной клик');
+        //console.log('customerDoubleClick(MainBodyValue) - Пользователь начал двойной клик');
         this.$emit('doubleclick', { 
                     roomKey: this.roomKey, 
                     paramKey: this.paramKey, 
@@ -102,7 +102,8 @@ export default {
                 });
     },
     customerTouchStart(event) {
-        //console.log('Функция handleTouchStart(MainBodyValue) - Пользователь сделал клик', event.touches[0].clientX, event.touches[0].clientY);
+      logger.dev(' [MainBodyValue] - customerTouchStart - Пользователь сделал клик', event.touches[0].clientX, event.touches[0].clientY);
+        //console.log('[MainBodyValue] - customerTouchStart -  Пользователь сделал клик', event.touches[0].clientX, event.touches[0].clientY);
         if (event.touches.length === 1) { 
             if (this.touchTimeout) {
                 clearTimeout(this.touchTimeout);
@@ -112,6 +113,7 @@ export default {
                     paramKey: this.paramKey, 
                     roomId: this.id,
                 });
+                console.dev('[MainBodyValue] - customerTouchStart - отправила в MainBody  - room_id', this.room_id, 'room_key', this.room_key, 'param_key', this.param_key);
                 //console.log('Функция customerDoubleClick(MainBodyValue) отправила в MainBody  - room_id', this.room_id, 'room_key', this.room_key, 'param_key', this.param_key);
             } else {
                 this.touchTimeout = setTimeout(() => { 
@@ -121,6 +123,7 @@ export default {
         }
     }, 
     customerTouchEnd() {
+      logger.dev(' [MainBodyValue] - customerTouchEnd - Пользователь завершил двойной клик', event.touches[0].clientX, event.touches[0].clientY);
         // console.log('Функция handleTouchStart(MainBodyValue) - Пользователь завершил двойной клик', event.touches[0].clientX, event.touches[0].clientY);
         if (this.touchTimeout) { 
             clearTimeout(this.touchTimeout); 

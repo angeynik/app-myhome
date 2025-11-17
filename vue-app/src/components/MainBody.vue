@@ -27,6 +27,7 @@
 <script>
 import { mapGetters, mapMutations } from 'vuex'
 import MainBodyValue from './MainBodyValue.vue'
+import logger from '../store/modules/logger.js';
 
 export default {
   name: 'MainBody',
@@ -69,61 +70,23 @@ export default {
       'getUnit']),
     ...mapGetters(['dID']),
     
-   
-    // sortingSubtitle() {
-    //   return this.currentSortType === 'rooms' 
-    //     ? `Комната: ${this.getRoomTitle}`
-    //     : `Параметр: ${this.getSensorTitle(this.getParamKey)}`;
-    // },
   isRoomSort() {
     return this.currentSortType === 'rooms';
   },
   },
 
   watch: {
-    // dID: {
-    //   handler(newVal) {
-    //     if (newVal) {
-    //       console.log('[MainBody] dID изменен:', newVal);
-    //       this.updateView();
-    //     }
-    //   },
-    //   immediate: true,
-    //   deep: true
-    // },
+
     '$store.state.sortParams.forceUpdate': {
       handler(newTimestamp) {
         if (newTimestamp) {
+          logger.dev('[MainBody] - handler - Принудительное обновление view');
           //console.log('[MainBody] - Принудительное обновление view');
           this.updateView();
         }
       },
       immediate: true
     },
-    // initialSortType(newVal) {
-    //   this.SET_SORT_TYPE(newVal);
-    //   this.updateView();
-    //   },
-    // currentSortType(newVal, oldVal) {
-    //   console.log(`[MainBody] Изменен тип сортировки: ${oldVal} -> ${newVal}`);
-    //   this.updateView();
-    // },
-    // getRoomKey(newVal, oldVal) {
-    //   console.log(`[MainBody] Изменен ключ комнаты: ${oldVal} -> ${newVal}`);
-    //   if (this.currentSortType === 'rooms') this.updateView();
-    // },
-    // getParamKey(newVal, oldVal) {
-    //   console.log(`[MainBody] Изменен ключ параметра: ${oldVal} -> ${newVal}`);
-    //   if (this.currentSortType === 'params') this.updateView();
-    // },
-    // getDeviceKey(newVal, oldVal) {
-    //     console.log(`[MainBody] Изменен ключ устройства: ${oldVal} -> ${newVal}`);
-    //     if (this.currentSortType === 'devices') this.updateView();
-    // },
-    // getSetpointKey(newVal, oldVal) {
-    //     console.log(`[MainBody] Изменен ключ сортировки: ${oldVal} -> ${newVal}`);
-    //     if (this.currentSortType === 'setpoints') this.updateView();
-    // },
     getConfig: {
       handler(newVal) {
         if (newVal) this.updateView();
@@ -136,11 +99,6 @@ export default {
     // this.initializeComponent();
   }
   },
-  // mounted() {
-  //   this.viewArray = localStorage.getItem('viewArray') ? JSON.parse(localStorage.getItem('viewArray')) : [];
-  //   console.log('[MainBody] - nounted - View array length:', this.viewArray.length);
-  //   this.updateView();
-  // },
   methods: {
     ...mapMutations('sortParams', [
       'SET_SORT_TYPE', 
@@ -182,7 +140,8 @@ export default {
     },
     
     selectItem(item) {
-      console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
+      logger.info(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
+      //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
       
        if (this.selectedItem === item) {
             // Если клик на уже выбранный элемент, то снимаем выделение
@@ -221,6 +180,7 @@ export default {
     },
   
     toggleSorting(item) { // Меняем сортировку комнаты/параметры при двойном клике по выбранной плашке
+      logger.info(`[MainBody] - toggleSorting - Выбран параметр: ${JSON.stringify(item)}`);
       //console.log(`[MainBody] - toggleSorting - Выбран параметр: ${JSON.stringify(item)}`);
       const newSortType = this.currentSortType === 'rooms' ? 'params' : 'rooms';
       this.SET_SORT_TYPE(newSortType);
@@ -242,41 +202,49 @@ export default {
     },
     async updateView() { // Формируем массив для отображения пользователю в соответствии с типом сортировки и текущим ключем
         try {
+          logger.info('[MainBody] - updateView - started');
           //console.groupCollapsed('[MainBody] - updateView ');
           //console.log('[MainBody] - updateView - started');
           const config = this.getConfig(this.dID);
           if (!config) {
-            console.warn('[MainBody] - updateView - Конфигурация не доступна');
+            logger.error('[MainBody] - updateView - Конфигурация не доступна');
+            //console.warn('[MainBody] - updateView - Конфигурация не доступна');
             this.viewArray = [];
             return;
           }
+          logger.dev('[MainBody] - updateView - Актуальный тип сортировки:', this.currentSortType);
           //console.log('Актуальный тип сортировки:', this.currentSortType);
           //console.log('для конфигурации', config);
 
           if (this.currentSortType === 'rooms') {
+            logger.dev('[MainBody] - updateView - Режим: комнаты -(', this.getRoomKey, ')');
             //console.log(`[MainBody] - updateView - Режим: комнаты -(${this.getRoomKey})`);
             this.viewArray = this.getSortedRooms(config, this.getRoomKey);
           } else if (this.currentSortType === 'params') {
+            logger.dev('[MainBody] - updateView - Режим: параметров -(', this.getParamKey, ')');
             //console.log(`[MainBody] - updateView - Режим: параметров -(${this.getParamKey})`);
           this.viewArray = this.getSortedParams(config, this.getParamKey);
           } else if (this.currentSortType === 'devices') {
+            logger.dev('[MainBody] - updateView - Режим: Устройств -(', this.getDeviceKey, ')');
             //console.log(`[MainBody] - updateView - Режим: Устройств -(${this.getDeviceKey})`);
             this.viewArray = this.getSortedDevices(config, this.getDeviceKey);
           } else if (this.currentSortType === 'setpoints') {
+            logger.dev('[MainBody] - updateView - Режим: Уставки -(', this.getSetpointKey, ')');
             //console.log(`[MainBody] - updateView - Режим: Уставки -(${this.getSetpointKey})`);
             this.viewArray = this.getSortedSetpoints(config, this.getSetpointKey);
           }
         
-        
-          console.log('Шаг 6 - [MainBody] updateView  Отображаемые элементы:', this.viewArray);
+          logger.dev('[MainBody] updateView  Отображаемые элементы:', this.viewArray);
+          //console.log(' [MainBody] updateView  Отображаемые элементы:', this.viewArray);
           localStorage.setItem('viewArray', JSON.stringify(this.viewArray));
+          logger.dev('[MainBody] View array length:', this.viewArray.length);
           //console.log('[MainBody] View array length:', this.viewArray.length);
-          console.groupEnd();
+          //console.groupEnd();
         } catch (error) {
-          console.error('[MainBody] Ошибка обновления:', error);
+          logger.error('[MainBody] - updateView - Ошибка обновления:', error);
+          //console.error('[MainBody] Ошибка обновления:', error);
           this.viewArray = [];
         }
-
     },
 
     getSortedRooms(config, roomKey) {
@@ -296,6 +264,7 @@ export default {
           Object.entries(sectionData).forEach(([itemKey, itemData]) => {
 
             const cleanKey = this.clearKeySync(itemKey);
+            logger.dev('[MainBody] getSortedRooms - Item:', cleanKey);
             //console.log('[MainBody] getSortedRooms - Item:', cleanKey);
             // Для каждого устройства ищем уставку
             let setValue = null;
@@ -327,8 +296,8 @@ export default {
           });
         }
       });
-
-      console.log(`[MainBody] - getSortedRooms - Найдено устройств в комнате ${roomKey}:`, devicesArray.length);
+      logger.dev(`[MainBody] - getSortedRooms - Найдено устройств в комнате ${roomKey}:`, devicesArray.length);
+      //console.log(`[MainBody] - getSortedRooms - Найдено устройств в комнате ${roomKey}:`, devicesArray.length);
       return devicesArray;
 },
 
@@ -375,39 +344,44 @@ export default {
           }
         });
       });
+      logger.dev('[MainBody] - getSortedParams - Получен список сенсоров:', sensors);
       //console.log('[MainBody] - getSortedParams - Получен список сенсоров:', sensors);
       return sensors;
     },
 
     // Формируем массив для отображения сортировки по устройствам
     getSortedDevices(config, deviceKey) {
-      console.log('[MainBody] - getSortedDevices - Выполняем сортировку по deviceKey:', deviceKey);
+      logger.dev('[MainBody] - getSortedDevices - Выполняем сортировку по deviceKey:', deviceKey);
+      //console.log('[MainBody] - getSortedDevices - Выполняем сортировку по deviceKey:', deviceKey);
       const devicesArray = [];
     
       Object.entries(config).forEach(([roomKey, room]) => {
         if (!room || typeof room !== 'object') {
-          console.log('[MainBody] getSortedDevices Комната:', room, ' не содержит объекты');
+          logger.dev('[MainBody] getSortedDevices Комната:', room, ' не содержит объекты');
+          //console.log('[MainBody] getSortedDevices Комната:', room, ' не содержит объекты');
           return
-
         }
-
-        //console.log('Шаг 6 - [MainBody] getSortedDevices - Работаем с комнатой:', roomKey);
+        logger.dev('[MainBody] getSortedDevices - Работаем с комнатой:', roomKey);
+        //console.log('[MainBody] getSortedDevices - Работаем с комнатой:', roomKey);
         // Ищем во всех разделах комнаты кроме исключенных
         Object.entries(room).forEach(([sectionKey, sectionData]) => {
           const excludedSections = ['init', 'id', 'group', 'title', 'setpoints'];
           if (excludedSections.includes(sectionKey)) return;
           
           if (sectionData && typeof sectionData === 'object') {
-            //console.log('Шаг 9 - [MainBody] getSortedDevices - Processing section:', sectionKey);
+            logger.dev('[MainBody] getSortedDevices - Processing section:', sectionKey);
+            //console.log('[MainBody] getSortedDevices - Processing section:', sectionKey);
             Object.entries(sectionData).forEach(([itemKey, itemData]) => {
 
               const baseItemKey = itemKey.replace(/\d+$/, '');
-              console.log('Шаг 10 - [MainBody] getSortedDevices - Item:', itemKey, 'Base item key:', baseItemKey, 'Device key:', deviceKey);
+              logger.dev('[MainBody] getSortedDevices - Item:', itemKey, 'Base item key:', baseItemKey, 'Device key:', deviceKey);
+              //console.log('[MainBody] getSortedDevices - Item:', itemKey, 'Base item key:', baseItemKey, 'Device key:', deviceKey);
               
               if (baseItemKey === deviceKey) {
 
                 const cleanKey = this.clearKeySync(itemKey);
-                console.log('Шаг 11 - [MainBody] getSortedDevices - Ищем совподение с утройством:', cleanKey);
+                logger.dev('[MainBody] getSortedDevices - Ищем совподение с утройством:', cleanKey);
+                //console.log('[MainBody] getSortedDevices - Ищем совподение с утройством:', cleanKey);
                 let setValue = null;
                 
                 // Поиск уставки
@@ -447,24 +421,27 @@ export default {
     },
 
     getSortedSetpoints(config, setpointKey) {
-      console.log('[MainBody] - getSortedSetpoints - Выполняем сортировку по setpointKey:', setpointKey, 'в config:', config);
+      logger.dev('[MainBody] - getSortedSetpoints - Выполняем сортировку по setpointKey:', setpointKey, 'в config:', config);
+      //console.log('[MainBody] - getSortedSetpoints - Выполняем сортировку по setpointKey:', setpointKey, 'в config:', config);
       const setpointsArray = [];
-      
       Object.entries(config).forEach(([roomKey, room]) => {
         if (!room || typeof room !== 'object') {
-          console.log('[MainBody] getSortedSetpoints Комната:', room, ' не содержит объекты');
+          logger.dev('[MainBody] getSortedSetpoints Комната:', room, ' не содержит объекты');
+          //console.log('[MainBody] getSortedSetpoints Комната:', room, ' не содержит объекты');
           return;
         }
 
         // Проверяем наличие setpoints в комнате
         if (!room.setpoints || typeof room.setpoints !== 'object') {
-          console.log('[MainBody] getSortedSetpoints Комната:', roomKey, ' не содержит setpoints');
+          logger.dev('[MainBody] getSortedSetpoints Комната:', roomKey, ' не содержит setpoints');
+          //console.log('[MainBody] getSortedSetpoints Комната:', roomKey, ' не содержит setpoints');
           return;
         }
         Object.entries(room.setpoints).forEach(([setKey, setpointData]) => {
           // Проверяем, что ключ уставки начинается с нужного префикса
           if (setKey.includes(setpointKey)) {
             let newValue, newSet;
+            logger.dev('[MainBody] getSortedSetpoints - Найдено совпадение с ключом Уставки:', setKey);
             //console.log('[MainBody] getSortedSetpoints - Найдено совпадение с ключом Уставки:', setKey);
             
             if (setKey.startsWith('s')) {
@@ -491,8 +468,9 @@ export default {
           }
         });
       });
-      console.log('setpointsArray:', setpointsArray);
-      console.log('Setpoints found:', setpointsArray.length);
+      logger.dev('[MainBody] - getSortedSetpoints - setpointsArray:', setpointsArray, 'setpointsArray.length:', setpointsArray.length);
+      // console.log('setpointsArray:', setpointsArray);
+      // console.log('Setpoints found:', setpointsArray.length);
       return setpointsArray;
     },
 
@@ -515,6 +493,7 @@ export default {
     },
 
     handleTouchStart(event) {
+      logger.dev('[MainBody] - handleTouchStart ', event.touches[0].clientX, event.touches[0].clientY);
       //console.log('[MainBody] - handleTouchStart ', event.touches[0].clientX, event.touches[0].clientY);
       this.touchStartX = event.touches[0].clientX;
       this.isSwiping = true;
@@ -524,7 +503,8 @@ export default {
       
       const touchX = event.touches[0].clientX;
       const diffX = touchX - this.touchStartX;
-      console.log('[MainBody] - handleTouchMove Смещение по Х', diffX);
+      logger.dev('[MainBody] - handleTouchMove Смещение по Х', diffX);
+      //console.log('[MainBody] - handleTouchMove Смещение по Х', diffX);
     },
 
     handleTouchEnd(event) {
@@ -534,16 +514,19 @@ export default {
       
       const touchEndX = event.changedTouches[0].clientX;
       const diffX = touchEndX - this.touchStartX;
-      console.log('[MainBody] - handleTouchEnd Смещение по Х', diffX);
+      logger.dev('[MainBody] - handleTouchEnd Смещение по Х', diffX);
+      //console.log('[MainBody] - handleTouchEnd Смещение по Х', diffX);
       // Определяем минимальную длину свайпа для активации
       
       if (Math.abs(diffX) > this.swipeThreshold) {
         if (diffX > 0) {
-          console.log('Свайп вправо');
+          logger.dev('[MainBody] - handleTouchEnd Свайп вправо');
+          //console.log('Свайп вправо');
           // Свайп вправо - назад
           this.$emit('swipe-back', '');
         } else {
-          console.log('Свайп влево');
+          logger.dev('[MainBody] - handleTouchEnd Свайп влево');
+          //console.log('Свайп влево');
           // Свайп влево - вперед
           this.$emit('swipe-forward', '');
         }

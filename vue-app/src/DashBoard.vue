@@ -70,6 +70,8 @@
 </template>
 
 <script>
+import logger from './store/modules/logger.js';
+
 import { mapGetters, mapActions } from 'vuex';
 import AppPlace from './components/AppPlace.vue';
 import MainHeader from './components/MainHeader.vue';
@@ -113,6 +115,7 @@ export default {
     
     headerTitle() { // Формируем заголовок для Header по типу сортировки и ключу
       const sortType = this.currentSortType;
+      logger.dev(`[DashBoard] - headerTitle - Выбор заголовка для: ${sortType}`);
       //console.log('[DashBoard] - headerTitle - Выбор заголовка для:', sortType);
       
       if (!sortType) {
@@ -149,7 +152,8 @@ export default {
     getConfig: {
       handler(newConfig) {
         if (newConfig) {
-          console.log('[DashBoard] Конфигурация изменена, обновляем навигацию');
+          logger.dev('[DashBoard] Конфигурация изменена, обновляем навигацию');
+          //console.log('[DashBoard] Конфигурация изменена, обновляем навигацию');
         }
       },
       deep: true
@@ -161,14 +165,7 @@ export default {
       'setLimits'
     ]),
     ...mapActions('config', ['initialize']),
-    
-    // async initApp() {
-    //   try {
-    //     console.log('[DashBoard] - initApp - Инициализация приложения');
-    //   } catch (error) {
-    //     console.error('Ошибка инициализации:', error);
-    //   }
-    // },
+  
     
     handleSortTypeChange(sortType) {
       if (sortType) {
@@ -182,7 +179,8 @@ export default {
     },
     
     selectComponent(sortType) {
-      console.log('[DashBoard] - selectComponent - Выбор компонента:', sortType);
+      logger.info(`[DashBoard] - selectComponent - Выбор компонента: ${sortType}`);
+      //console.log('[DashBoard] - selectComponent - Выбор компонента:', sortType);
       this.$router.push({ 
         name: 'DashboardSort', 
         params: { sortType } 
@@ -192,9 +190,9 @@ export default {
     resetSelection() {
       this.$router.push({ name: 'DashboardMain' });
     },
-  
-    sortingBack() {
-      console.log('[DashBoard] - sortingBack - Сортировка назад');
+      sortingBack() {
+      logger.info('[DashBoard] - sortingBack - Сортировка назад');
+      //console.log('[DashBoard] - sortingBack - Сортировка назад');
       const sortType = this.$route.params.sortType;
       this.switchSortKey({ sortingType: sortType, direction: 'prev' });
     },
@@ -206,7 +204,8 @@ export default {
 
     // Работа с Setpoint
     handleMainBodyEvent(event) {
-      console.log('[DashBoard] - handleMainBodyEvent received:', event);
+      logger.dev('[DashBoard] - handleMainBodyEvent received:', event);
+      //console.log('[DashBoard] - handleMainBodyEvent received:', event);
       
       if (event.action === 'show') {
         this.selectedItemData = event.data;
@@ -225,74 +224,11 @@ export default {
         this.setpoint = eventData.updateState.message;
         this.updateConfigSetpoint(eventData.updateState.message);
       } else if (eventData.error) {
-        console.error('[DashBoard] - handleSetpointEvent - Ошибка:', eventData.error);
+        logger.error('[DashBoard] - handleSetpointEvent - Ошибка:', eventData.error);
+        //console.error('[DashBoard] - handleSetpointEvent - Ошибка:', eventData.error);
       }
     },
     
-    // async updateConfigSetpoint(newValue) {
-    //   const oldValue = newValue; 
-    //   try {
-    //     const dID = rootGetters['dID'];
-    //     const sortType = this.currentSortType;
-    //     let paramKey = '';
-    //     if (sortType === 'params') {
-    //       paramKey = this.getParamKey;
-    //     } else {
-    //       paramKey = this.getDeviceKey;
-    //     }
-    //     const roomKey = this.getRoomKey;
-    //     timestamp = new Date().toString();
-    //     payload = {
-    //       room: roomKey, 
-    //       item_name: paramKey,
-    //       item_value: newValue, 
-    //       time: timestamp
-    //     }
-
-    //     // const setpointKey = this.getSetpointKey;
-    //     console.log('[DashBoard] - updateConfigSetpoint - Начинаем обновление Уставки -', oldValue, ' roomKey -', roomKey, ' paramKey -', paramKey);
-    //     if (!dID || !roomKey || !paramKey) {
-    //       console.error('Не выбрана комната или параметр для обновления уставки');
-    //       return;
-    //     }
-
-    //     await dispatch('config/handleSensorUpdate', {dID, payload, type: 'setpoints'}, { root: true });
-
-
-
-
-
-    //     // Очистка предыдущего таймера
-    //     if (this.setpointUpdateTimer) {
-    //       clearTimeout(this.setpointUpdateTimer);
-    //     }
-        
-    //     // Установка нового таймера для отправки на сервер
-    //     this.setpointUpdateTimer = setTimeout(async () => {
-    //       try {
-    //         console.log('[DashBoard] - updateConfigSetpoint - Обновляем уставку -', oldValue, ' roomKey -', roomKey, ' paramKey -', paramKey);
-    //         await this.$store.dispatch('config/updateSetpointServer', {
-    //           roomKey: roomKey,
-    //           paramKey: paramKey,
-    //           value: oldValue
-    //         });
-    //         console.log('Уставка успешно отправлена на сервер после задержки');
-    //       } catch (error) {
-    //         console.error('Ошибка при отправке уставки на сервер:', error);
-    //         // Откат значения при ошибке
-    //         this.setpoint = oldValue;
-    //       }
-    //     }, 1500);
-
-    //     // Запускаем повторную сортировку через изменение флага Обновления updateView
-    //     this.$store.commit('sortParams/SET_FORCE_UPDATE', Date.now());
-    //     // if (this.$refs.mainBody) {
-    //     //   this.$refs.mainBody.updateView();
-    //     // }
-    //   } catch (error) {
-    //     console.error('Ошибка обновления уставки:', error);
-    //   }
-    // },
     async updateConfigSetpoint(newValue) {
       const oldValue = this.setpoint; // Сохраняем текущее значение для возможного отката
       try {
@@ -303,7 +239,8 @@ export default {
 
         const deviceKey = 's' + this.clearKeySync(dKey);
         const paramKey = 's' +  this.clearKeySync(pKey);
-        console.log('[DashBoard] - updateConfigSetpoint - sortType -', sortType, paramKey, deviceKey);
+        logger.info('[DashBoard] - updateConfigSetpoint - sortType -', sortType, paramKey, deviceKey);
+        //console.log('[DashBoard] - updateConfigSetpoint - sortType -', sortType, paramKey, deviceKey);
         let Key = '';
         
         if (sortType === 'devices') {
@@ -320,11 +257,12 @@ export default {
           item_value: newValue, 
           time: timestamp
         };
-
-        console.log(' @@@@@@@@@@@@@@@@  - - - - [DashBoard] - updateConfigSetpoint - Начинаем обновление Уставки -', newValue, ' roomKey -', roomKey, ' Key -', Key);
+        logger.info('[DashBoard] - updateConfigSetpoint - Начинаем обновление Уставки -', newValue, ' roomKey -', roomKey, ' Key -', Key);
+        //console.log('[DashBoard] - updateConfigSetpoint - Начинаем обновление Уставки -', newValue, ' roomKey -', roomKey, ' Key -', Key);
         
         if (!dID || !roomKey || !paramKey) {
-          console.error('Не выбрана комната или параметр для обновления уставки');
+          logger.error('[DashBoard] - updateConfigSetpoint - Не выбрана комната или параметр для обновления уставки');
+          //console.error('Не выбрана комната или параметр для обновления уставки');
           return;
         }
 
@@ -339,15 +277,18 @@ export default {
         // Установка нового таймера для отправки на сервер
         this.setpointUpdateTimer = setTimeout(async () => {
           try {
-            console.log('[DashBoard] - updateConfigSetpoint - Обновляем уставку -', newValue, ' roomKey -', roomKey, ' paramKey -', paramKey);
+            logger.dev('[DashBoard] - updateConfigSetpoint - Обновляем уставку -', newValue, ' roomKey -', roomKey, ' paramKey -', paramKey);
+            //console.log('[DashBoard] - updateConfigSetpoint - Обновляем уставку -', newValue, ' roomKey -', roomKey, ' paramKey -', paramKey);
             await this.$store.dispatch('config/updateSetpointServer', {
               roomKey: roomKey,
               paramKey: paramKey,
               value: newValue
             });
-            console.log('Уставка успешно отправлена на сервер после задержки');
+            logger.info('[DashBoard] - updateConfigSetpoint - Уставка успешно отправлена на сервер после задержки');
+            //console.log('Уставка успешно отправлена на сервер после задержки');
           } catch (error) {
-            console.error('Ошибка при отправке уставки на сервер:', error);
+            logger.error('[DashBoard] - updateConfigSetpoint - Ошибка при отправке уставки на сервер:', error);
+            //console.error('Ошибка при отправке уставки на сервер:', error);
             // Откат значения при ошибке
             this.setpoint = oldValue;
           }
@@ -356,7 +297,8 @@ export default {
         // Запускаем повторную сортировку через изменение флага Обновления updateView
         this.$store.commit('sortParams/SET_FORCE_UPDATE', Date.now());
       } catch (error) {
-        console.error('Ошибка обновления уставки:', error);
+        logger.error('[DashBoard] - updateConfigSetpoint - Ошибка обновления уставки:', error);
+        //console.error('Ошибка обновления уставки:', error);
       }
     },
   }

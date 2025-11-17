@@ -1,12 +1,19 @@
 // // Добавляем константы в начале файла
+import logger from './logger';
 
 const RECONNECT_DELAY = 1000;
 const MAX_RECONNECT_ATTEMPTS = 8;
-console.log('WebSocket connection details:', {
+logger.info('[WebSocket] - WebSocket connection details:', {
   adr: process.env.VUE_APP_EXP,
   port: process.env.VUE_APP_PORT,
   fullUrl: `ws://${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`
 });
+
+// console.log('WebSocket connection details:', {
+//   adr: process.env.VUE_APP_EXP,
+//   port: process.env.VUE_APP_PORT,
+//   fullUrl: `ws://${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`
+// });
 
 export default {
   namespaced: true,
@@ -52,7 +59,8 @@ export default {
         //const socket = new WebSocket(`ws://192.168.1.94:${process.env.VUE_APP_PORT}`);
         
         socket.onopen = () => {
-          console.log(`WebSocket connected to ${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`);
+          logger.info('[WebSocket] WebSocket connected to ' + process.env.VUE_APP_EXP + ':' + process.env.VUE_APP_PORT);
+          //console.log(`WebSocket connected to ${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`);
           commit('SET_RECONNECT_ATTEMPTS', 0);
           socket.onmessage = (event) => dispatch('handleMessage', event);
           commit('SET_SOCKET', socket);
@@ -60,7 +68,8 @@ export default {
         };
 
         socket.onerror = (error) => {
-          console.error('WebSocket error:', error);
+          logger.error('[WebSocket] WebSocket error:', error);
+          //console.error('WebSocket error:', error);
           if (!state.explicitDisconnect) {
             setTimeout(() => dispatch('connect'), RECONNECT_DELAY);
           }
@@ -68,11 +77,13 @@ export default {
         };
 
         socket.onclose = () => {
-          console.log('WebSocket closed');
+          logger.info('[WebSocket] WebSocket closed');
+          //console.log('WebSocket closed');
           commit('SET_SOCKET', null);
           if (!state.explicitDisconnect && state.reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
             const delay = RECONNECT_DELAY * Math.pow(2, Math.min(state.reconnectAttempts, 5));
-            console.log(`Reconnecting in ${delay}ms...`);
+            logger.error(`[WebSocket] Reconnecting in ${delay}ms...`);
+            //console.log(`Reconnecting in ${delay}ms...`);
             setTimeout(() => {
               commit('SET_RECONNECT_ATTEMPTS', state.reconnectAttempts + 1);
               dispatch('connect');
@@ -121,6 +132,7 @@ export default {
 
       try {
         const response = JSON.parse(event.data);
+        logger.dev(`[WebSocket] Received: ${JSON.stringify(response)}`);
         //console.log('[WebSocket] Received:', response);
         const dID = response.name;
         const auth_dID = rootGetters['dID'];
@@ -136,28 +148,33 @@ export default {
         }
        
         if (response.type === 'post') {
+          logger.info('[WebSocket] Обрабатываем сообщение type = post');
           //console.log('[WebSocket] Обрабатываем сообщение type = post');
           //console.log('dID сообщения - ', dID, ' dID активного пользователя - ', auth_dID, 'request - ', response.request);
 
             // Валидация payload
               if (!response.payload || typeof response.payload !== 'object') {
-                console.warn('[WebSocket] Невалидный payload сенсора');
+                logger.error('[WebSocket] Невалидный payload сенсора'); 
+                //console.warn('[WebSocket] Невалидный payload сенсора');
                 return;
               }
 
           // Обновляем значение
             if (dID === auth_dID) {
+              logger.dev('[WebSocket] Обрабатываем сообщение request-', response.request);
               //console.log('[WebSocket] Обрабатываем сообщение request-', response.request);
               await dispatch('config/handleSensorUpdate', {dID, payload: response.payload, type: response.request}, { root: true });
             }  else {
-                console.log('[WebSocket] dID сообщения запроса', dID, ' не соответствует dID текущего пользователя - ', auth_dID);
+              logger.error('[WebSocket] dID сообщения запроса', dID, ' не соответствует dID текущего пользователя - ', auth_dID); 
+                //console.log('[WebSocket] dID сообщения запроса', dID, ' не соответствует dID текущего пользователя - ', auth_dID);
                 return;
             }
 
         }
 
       } catch (error) {
-        console.error('[WebSocket] Message handling error:', error);
+        logger.error('[WebSocket] Message handling error:', error);
+        //console.error('[WebSocket] Message handling error:', error);
         dispatch('log/addError', error, { root: true });
       }
     }

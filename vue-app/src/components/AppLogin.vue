@@ -42,6 +42,8 @@
 <script>
 import PopupMenu from './PopupMenu.vue';
 
+import logger from '../store/modules/logger.js';
+
 export default {
   name: 'AppLogin',
   components: {
@@ -92,11 +94,12 @@ export default {
         if (!username || !password) {
           throw new Error('Имя пользователя и пароль обязательны');
         }
-
-        console.log('Попытка входа для пользователя:', username);
+        logger.info('[AppLogin] - login - Попытка входа для пользователя:', username);
+        //console.log('Попытка входа для пользователя:', username);
         
         // Проверяем состояние WebSocket через вычисляемое свойство
-        console.log('WebSocket connected:', this.isConnected);
+        logger.info('[AppLogin] - login - Проверка состояния WebSocket:', this.isConnected);
+        //console.log('WebSocket connected:', this.isConnected);
         
         if (!this.isConnected) {
           this.showPopupMessage('Нет подключения к серверу', 'error');
@@ -107,9 +110,9 @@ export default {
           username, 
           password 
         });
-
-        console.log('Текущий уровень после логина:', this.userLevel);
-        console.log('Текущий dID после логина:', this.dID);
+        logger.info('[AppLogin] - login - Текущий уровень после логина:', this.userLevel, 'Текущий dID после логина:', this.dID);
+        // console.log('Текущий уровень после логина:', this.userLevel);
+        // console.log('Текущий dID после логина:', this.dID);
 
         if (userData) {
           // Показываем сообщение об успехе
@@ -119,7 +122,9 @@ export default {
           try {
             await this.$store.dispatch('config/ensureConfig', this.dID);
           } catch (err) {
-            console.error('Ошибка при загрузке конфигурации:', err);
+            logger.error('[AppLogin] - login - Ошибка при загрузке конфигурации:', err);
+            //console.error('Ошибка при загрузке конфигурации:', err);
+            logger.error('[AppLogin] - login - ⚠️ Конфигурация не загружена! Некоторые функции могут работать некорректно');
             this.showPopupMessage('⚠️ Конфигурация не загружена! Некоторые функции могут работать некорректно', 'warning');
           }
 
@@ -131,7 +136,8 @@ export default {
           }, 1500);
           
         } else {
-          console.log('❌ Проблемы авторизации в AppLogin.vue');
+          logger.error('[AppLogin] - login - ❌ Проблемы авторизации в AppLogin.vue');
+          //console.log('❌ Проблемы авторизации в AppLogin.vue');
           this.showPopupMessage('❌ Ошибка авторизации пользователя!', 'error');
         }
       } catch (err) {
@@ -147,9 +153,9 @@ export default {
         } else if (err.message.includes('USER_NOT_FOUND') || err.message.includes('INVALID_PASSWORD')) {
           message = 'Неверное имя пользователя или пароль';
         }
-        
         this.showPopupMessage(`❌ ${message}`, messageType);
-        console.error('Ошибка входа:', err);
+        logger.error('Ошибка входа:', err);
+        //console.error('Ошибка входа:', err);
       } finally {
         this.loading = false;
       }

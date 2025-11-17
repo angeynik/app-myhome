@@ -5,6 +5,8 @@
 </template>
 
 <script>
+import logger from './store/modules/logger.js';
+
 export default {
   name: 'App',
   data() {
@@ -36,7 +38,8 @@ export default {
       // 3. Если пользователь был восстановлен из localStorage, автоматически отправляем логин/пароль
       const user = this.$store.state.auth.user;
       if (user && user.username && user.password) {
-        console.log('Автоматическая отправка учетных данных из localStorage для пользователя:', user.username);
+        logger.info('[APP] - mounted - Автоматическая отправка учетных данных из localStorage для пользователя:', user.username);
+        //console.log('Автоматическая отправка учетных данных из localStorage для пользователя:', user.username);
         
         // Используем существующий метод login из auth модуля
         await this.$store.dispatch('auth/login', { 
@@ -44,7 +47,8 @@ export default {
           password: user.password 
         });
       } else {
-        console.log('Недостаточно данных для автоматического входа:', user);
+        logger.error('[APP] - mounted - Недостаточно данных для автоматического входа:', user);
+        //console.log('Недостаточно данных для автоматического входа:', user);
       }
 
       // 4. После успешного подключения загружаем конфигурацию
@@ -55,7 +59,8 @@ export default {
         this.$router.push({ name: 'DashboardMain' });
       }
     } catch (error) {
-      console.error('Ошибка инициализации приложения:', error);
+      logger.error('[APP] - mounted - Ошибка инициализации приложения:', error);
+      //console.error('Ошибка инициализации приложения:', error);
     }
   },
   

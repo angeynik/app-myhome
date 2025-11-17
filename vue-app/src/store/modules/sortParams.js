@@ -1,8 +1,11 @@
 // sortParams.js
+
+import logger from './logger';
 function getSensorTitle(key) {
   if (!key) return 'Неизвестный параметр';
 
   const baseKey = key.replace(/\d+$/, '');
+  logger.dev(`[sortParams] - getSensorTitle - baseKey = ${baseKey}`);
   //console.log('[sortParams] - getSensorTitle - baseKey = ', baseKey);
   const mappings = {
     'dHum': 'Влажность',
@@ -100,17 +103,21 @@ export default {
     },
     SET_PARAM_KEY(state, key) {
       if (typeof key === 'string' && state.paramKey !== key && key != null) {
-        console.log(`[sortParams] MUTATION SET_PARAM_KEY: ${state.paramKey} -> ${key}`);
+        logger.dev(`[sortParams] MUTATION SET_PARAM_KEY: ${state.paramKey} -> ${key}`);
+        //console.log(`[sortParams] MUTATION SET_PARAM_KEY: ${state.paramKey} -> ${key}`);
         state.paramKey = key;
         state.forceUpdate = Date.now();
       }
+      logger.info(`[sortParams] - SET_PARAM_KEY - Ключ обновлен: ${key}`);
       //console.log('[sortParams] - SET_PARAM_KEY - Ключ обновлен', key);
     },
     SET_ROOM_KEY(state, key) {
       if (typeof key === 'string' && state.roomKey !== key && key != null) {
-        console.log(`[sortParams] MUTATION SET_ROOM_KEY: ${state.roomKey} -> ${key}`);
+        logger.dev(`[sortParams] MUTATION SET_ROOM_KEY: ${state.roomKey} -> ${key}`);
+        //console.log(`[sortParams] MUTATION SET_ROOM_KEY: ${state.roomKey} -> ${key}`);
         state.roomKey = key;
       }
+      logger.info(`[sortParams] - SET_ROOM_KEY - Ключ обновлен: ${key}`);
       //console.log('[sortParams] - SET_ROOM_KEY - Ключ обновлен', key);
     },
     SET_DEVICE_KEY(state, key) {
@@ -122,7 +129,8 @@ export default {
     },
     SET_SETPOINT_KEY(state, key) {
       if (typeof key === 'string' && state.setpointKey !== key && key != null) {
-        console.log(`[sortParams] MUTATION SET_SETPOINT_KEY: ${state.setpointKey} -> ${key}`);
+        logger.dev(`[sortParams] MUTATION SET_SETPOINT_KEY: ${state.setpointKey} -> ${key}`);
+        //console.log(`[sortParams] MUTATION SET_SETPOINT_KEY: ${state.setpointKey} -> ${key}`);
         state.setpointKey = key;
         state.forceUpdate = Date.now();
       }
@@ -148,32 +156,38 @@ export default {
       console.log('[sortParams] - UPDATE_STATE Выполнено обновление состояния');
     },
     UPDATE_LIMITS(state, limits) {
-      console.log('[sortParams] - UPDATE_LIMITS ', limits);
+      logger.info('[sortParams] - UPDATE_LIMITS ', limits);
+      //console.log('[sortParams] - UPDATE_LIMITS ', limits);
       if (limits.limHigh) state.limHigh = limits.limHigh;
       if (limits.limLow) state.limLow = limits.limLow;
       if (limits.limStep) state.limStep = limits.limStep;
-      console.log('[sortParams] - UPDATE_LIMITS Выполнено обновление состояния лимитов');
+      logger.dev('[sortParams] - UPDATE_LIMITS Обновлены лимиты', limits);
+      //console.log('[sortParams] - UPDATE_LIMITS Выполнено обновление состояния лимитов');
     },
     SET_FORCE_UPDATE(state, timestamp) {
-      console.log(' ------------!!!!!!!!!!----------- [sortParams] - SET_FORCE_UPDATE Выполнено обновление состояния');
+      logger.dev
+      //console.log('[sortParams] - SET_FORCE_UPDATE Выполнено обновление состояния');
       state.forceUpdate = timestamp;
     },
   },
  
   actions: {
     updateSortKey({ commit, dispatch, state }, { type, newKey }) { //Обновленная функция для изменения ключа любого сортировки
+      logger.dev(`[sortParams] - updateSortKey - Обновляем ключ для ${type}:`, newKey);
       //console.log(`[sortParams] - updateSortKey - Обновляем ключ для ${type}:`, newKey);
       
       // Проверка на валидность ключа
       if (!newKey) {
-        console.warn(`[sortParams] - updateSortKey - Ключ для ${type} не определен:`, newKey);
+        logger.error(`[sortParams] - updateSortKey - Ключ для ${type} не определен:`, newKey);
+        //console.warn(`[sortParams] - updateSortKey - Ключ для ${type} не определен:`, newKey);
         return;
       }
 
       // Проверка на изменение значения
       const currentKey = state[`${type}Key`];
       if (newKey === currentKey) {
-        console.log(`[sortParams] - updateSortKey - Ключ ${type} не изменился:`, newKey);
+        logger.dev(`[sortParams] - updateSortKey - Ключ ${type} не изменился:`, newKey);
+        //console.log(`[sortParams] - updateSortKey - Ключ ${type} не изменился:`, newKey);
         return;
       }
 
@@ -203,7 +217,8 @@ export default {
 
         const typeConfig = config[type];
         if (!typeConfig) {
-          console.error(`[sortParams] - updateSortKey - Неизвестный тип: ${type}`);
+          logger.error(`[sortParams] - updateSortKey - Неизвестный тип: ${type}`);
+          //console.error(`[sortParams] - updateSortKey - Неизвестный тип: ${type}`);
           return;
         }
 
@@ -220,32 +235,24 @@ export default {
         
         // Дополнительное действие (для rooms)
         if (typeConfig.extraAction) {
+          logger.dev(`[sortParams] - updateSortKey - Выполняем дополнительное действие: ${typeConfig.extraAction}`);
           //console.log(`[sortParams] - updateSortKey - Выполняем дополнительное действие: ${typeConfig.extraAction}`);
           dispatch(typeConfig.extraAction, newKey);
         }
-
+        logger.info(`[sortParams] - updateSortKey - Ключ ${type} обновлен:`, newKey);
         //console.log(`[sortParams] - updateSortKey - Ключ ${type} обновлен:`, newKey);
 
       } catch (error) {
-        console.error(`[sortParams] - updateSortKey - Ошибка при обновлении ${type}:`, error);
+        logger.error(`[sortParams] - updateSortKey - Ошибка при обновлении ${type}:`, error);
+        //console.error(`[sortParams] - updateSortKey - Ошибка при обновлении ${type}:`, error);
       }
     },
-
-
-    // updateRoomsKey({ commit, dispatch }, newRoomKey) {
-    //   //console.log('[sortParams] - updateRoomsKey - Обновляем ключ для сортировки комнат');
-    //   if (!newRoomKey || newRoomKey === this.state.roomKey) {
-    //     console.log('[sortParams] - updateRoomsKey - Ключ не определен', newRoomKey)
-    //   }
-    //     commit('SET_ROOM_KEY', newRoomKey);
-    //     localStorage.setItem('roomKey', newRoomKey);
-    //     dispatch ('updateRoomsTitle', newRoomKey);
-    //     console.log('[sortParams] - updateRoomsKey - Ключ обновлен', newRoomKey);
-    // },
     updateRoomsTitle({ commit, rootGetters }, newRoomKey) {
+      logger.dev(`[sortParams] - updateRoomsTitle`, newRoomKey);
       //console.log('[sortParams] - updateRoomsTitle', newRoomKey);
       if (!newRoomKey) {
-        console.log('[sortParams] - updateRoomsTitle - Ключ не определен - ', newRoomKey);
+        logger.error(`[sortParams] - updateRoomsTitle - Ключ не определен`, newRoomKey);  
+        //console.log('[sortParams] - updateRoomsTitle - Ключ не определен - ', newRoomKey);
       }
       // Получаем данные комнаты из конфига
       const dID = rootGetters['dID'];
@@ -254,6 +261,8 @@ export default {
 
       commit('SET_ROOM_ID', newRoom?.id || 0);
       commit('SET_ROOM_TITLE', newRoom?.title || 'не определен');
+
+      logger.dev(`[sortParams] - updateRoomsTitle - Ключ roomTitle обновлен`, newRoom?.title, 'новый roomID', newRoom?.id);
       //console.log('[sortParams] - updateRoomsTitle - Ключ roomTitle обновлен', newRoom?.title, 'новый roomID', newRoom?.id);
     },
 
@@ -277,11 +286,13 @@ export default {
     // },
 
     setLimits({ rootGetters, commit, dispatch }, param) {
-      console.log('[sortParams] - setLimits - Параметр -', param);
+      logger.info(`[sortParams] - setLimits - Параметр -`, param);
+      //console.log('[sortParams] - setLimits - Параметр -', param);
       
       // Используем clearKey из модуля config для очистки параметра
       dispatch('config/clearKey', { key: param }, { root: true })
         .then(cleanedKey => {
+          logger.dev(`[sortParams] - setLimits - Очищенный параметр -`, cleanedKey);
           //console.log('[sortParams] - setLimits - Очищенный параметр -', cleanedKey);
           
           // Получаем данные лимитов из конфига
@@ -290,14 +301,16 @@ export default {
           let limits = config?.init?.limits?.[cleanedKey] || config?.init?.limits?.Default;
           
           if (!limits) {
-            console.log('[sortParams] - setLimits - Не удалось получить лимиты - Устанавливаем по умолчанию');
+            logger.error(`[sortParams] - setLimits - Не удалось получить лимиты - Устанавливаем по умолчанию`);
+            //console.log('[sortParams] - setLimits - Не удалось получить лимиты - Устанавливаем по умолчанию');
             limits = {
               low: 10,
               high: 32,
               step: 0.5
             };
           }
-          console.log('[sortParams] - setLimits Получены лимиты', limits);
+          logger.dev(`[sortParams] - setLimits Получены лимиты`, limits);
+          //console.log('[sortParams] - setLimits Получены лимиты', limits);
           commit('UPDATE_LIMITS', {
             limHigh: limits.high,
             limLow: limits.low,
@@ -305,7 +318,8 @@ export default {
           });
         })
         .catch(error => {
-          console.error('[sortParams] - setLimits - Ошибка при очистке параметра:', error);
+          logger.error(`[sortParams] - setLimits - Ошибка при очистке параметра:`, error);
+          //console.error('[sortParams] - setLimits - Ошибка при очистке параметра:', error);
           // В случае ошибки используем значения по умолчанию
           commit('UPDATE_LIMITS', {
             limHigh: 32,
@@ -316,7 +330,8 @@ export default {
     },
 
     switchSortKey({ dispatch, state, rootGetters }, { sortingType, direction = 'prev' }) {
-      console.log(`[sortParams] - switchSortKey - Переключение ${direction} для [${sortingType}]`);
+      logger.info(`[sortParams] - switchSortKey - Переключение ${direction} для [${sortingType}]`);
+      //console.log(`[sortParams] - switchSortKey - Переключение ${direction} для [${sortingType}]`);
 
       const config = {
         rooms: {
@@ -339,7 +354,8 @@ export default {
 
       const typeConfig = config[sortingType];
       if (!typeConfig) {
-        console.error(`[sortParams] - switchSortKey - Неизвестный тип сортировки: ${sortingType}`);
+        logger.error(`[sortParams] - switchSortKey - Неизвестный тип сортировки: ${sortingType}`);
+        //console.error(`[sortParams] - switchSortKey - Неизвестный тип сортировки: ${sortingType}`);
         return;
       }
 
@@ -348,13 +364,15 @@ export default {
 
       try {
         if (array.length === 0) {
-          console.warn(`[sortParams] - switchSortKey - Массив для ${sortingType} пуст`);
+          logger.error(`[sortParams] - switchSortKey - Массив для ${sortingType} пуст`);
+          //console.warn(`[sortParams] - switchSortKey - Массив для ${sortingType} пуст`);
           return;
         }
 
         const currentIndex = array.indexOf(key);
         if (currentIndex === -1) {
-          console.warn(`[sortParams] - switchSortKey - Ключ ${key} для типа ${sortingType} не найден`);
+          logger.error(`[sortParams] - switchSortKey - Ключ ${key} для типа ${sortingType} не найден`);
+          //console.warn(`[sortParams] - switchSortKey - Ключ ${key} для типа ${sortingType} не найден`);
           return;
         }
 
@@ -367,10 +385,12 @@ export default {
 
         const newKey = array[newIndex];
         dispatch('updateSortKey', { type: sortingType, newKey });
-        console.log(`[sortParams] - switchSortKey - Переключение (${direction}): ${key} -> ${newKey}`);
+        logger.info(`[sortParams] - switchSortKey - Переключение (${direction}): ${key} -> ${newKey}`);
+        //console.log(`[sortParams] - switchSortKey - Переключение (${direction}): ${key} -> ${newKey}`);
 
       } catch (error) {
-        console.error('[sortParams] - switchSortKey - Ошибка:', error);
+        logger.error('[sortParams] - switchSortKey - Ошибка:', error);
+        //console.error('[sortParams] - switchSortKey - Ошибка:', error);
       }
     },
 

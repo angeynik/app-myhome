@@ -1,4 +1,4 @@
-
+import logger from './logger';
 
 export default {
   namespaced: true,
@@ -45,7 +45,8 @@ export default {
   
   actions: {
     async login({ commit, dispatch }, user) {
-      console.log('[auth] - login - Данные пользователя для подключения:', user);
+      logger.dev('[auth] - login - Данные пользователя для подключения:', user);
+      //console.log('[auth] - login - Данные пользователя для подключения:', user);
       commit('AUTH_REQUEST');
       try {
         await dispatch('websocket/connect', null, { root: true });
@@ -59,7 +60,8 @@ export default {
             password: user.password
           }
         }, { root: true });
-        console.log('Ответ сервера:', response);
+        logger.dev('Ответ сервера:', response);
+        //console.log('Ответ сервера:', response);
 
         if (response?.request === 'loginSuccess') {
           const userData = {

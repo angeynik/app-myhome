@@ -39,14 +39,16 @@
 
 <script>
 import { mapGetters } from 'vuex'; // Импортируем mapGetters для доступа к уровню пользователя
+import logger from './store/modules/logger.js';
 
 export default {
   name: 'IntroduceHome',
   computed: {
     ...mapGetters(['level', 'user']), // Получаем уровень доступа из Vuex
     userLevel() {
-      console.log('Пользователь:', this.user);
-      console.log('Уровень доступа пользователя:', this.level);
+      logger.info('[IntroduceHome] - userLevel - Уровень доступа пользователя Пользователь:', this.user, 'Уровень доступа пользователя:', this.level);
+      // console.log('Пользователь:', this.user);
+      // console.log('Уровень доступа пользователя:', this.level);
       return this.level || 0; // Если уровень не задан, считаем его равным 0
     },
   },

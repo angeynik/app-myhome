@@ -149,6 +149,8 @@
  
   <script>
   import { mapGetters } from 'vuex';
+  import logger from '../store/modules/logger.js';
+
   export default {
     data() {
       return {
@@ -159,8 +161,10 @@
     },
     watch: {
       setPoint(newSetPoint) {
+        logger.dev('[MainSetpoint] - setPoint - Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
         // console.log('Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
         this.newSetPointValue = parseFloat(newSetPoint).toFixed(1);
+        logger.dev('[MainSetpoint] - setPoint - Обновили newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
         //console.log('[MainSetpoint] - setPoint - Обновили newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
       },
     },
@@ -185,6 +189,7 @@
       methods: {
     sendEmitMessage(event, name, message) {
       if (!event || !name || !message) return console.error('sendEmitMessage - event', event,'name - ', name, 'message - ', message, ' не переданы');
+      logger.dev('[MainSetpoint] - sendEmitMessage  Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
       //console.log('[MainSetpoint] - sendEmitMessage  Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
         this.$emit('eventsMainSetpoint',{
           [event]: {
@@ -195,13 +200,16 @@
         //eventsMainSetpoint - событие которое слушает DashBoard и передает его в функцию handleSetpointEvent 
     },
     handleTouchStart(event) {
+      logger.dev('[MainSetpoint] - handleTouchStart', event.touches[0].clientX, event.touches[0].clientY);
         // console.log('Компонент bodySetpointBlock событие - handleTouchStart', event.touches[0].clientX, event.touches[0].clientY);
         this.startX = event.touches[0].clientX;
         this.isTouching = true;
     },
     handleTouchEnd(component) {
+      logger.dev('[MainSetpoint] - handleTouchEnd (MainSetpoint) событие - handleTouchEnd, secectedComponent - ', component);
         //console.log('Функция handleTouchEnd (MainSetpoint) событие - handleTouchEnd, secectedComponent - ', component);
         if (component === 'setpointBlock') {
+          logger.dev('[MainSetpoint] - handleTouchEnd (MainSetpoint) Разрешаем изменять значение для Компонента setpointBlock');
         // console.log('Разрешаем изменять значение для Компонента setpointBlock');
         const currentTime = new Date().getTime();
         this.lastTouchTime = currentTime;
@@ -217,14 +225,17 @@
         const deltaX = touch.clientX - this.startX;
   
         if (deltaX < 8 && deltaX > - 8) {
-          console.log('Недостаточное смещение контролла');
+          logger.error('[MainSetpoint] - handleTouchMove Недостаточное смещение контролла');
+          //console.log('Недостаточное смещение контролла');
         } else {
+          logger.dev('[MainSetpoint] - handleTouchMove - Вызываем функцию calculateSetpoint. Смещение - ', deltaX, ' Шаг - ', this.limStep, ' Минимум - ', this.lowLimit, ' Максимум - ', this.highLimit);
           // console.log('Достаточное смещение контролла. Вызываем функцию calculateSetpoint. Смещение - ', deltaX, ' Шаг - ', this.limStep, ' Минимум - ', this.lowLimit, ' Максимум - ', this.highLimit);
           this.debouncedCalculateSetpoint(deltaX, this.limStep, this.limLow, this.limHigh);
         }
     },
     calculateSetpoint(value, step, min, max) {
-        console.log('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
+      logger.dev('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
+        //console.log('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
         let newValue, currentSetPoint;
         if (this.setPoint === null || this.setPoint === undefined) {
           currentSetPoint = parseFloat(min);
@@ -234,24 +245,30 @@
         try {
           if (value > 5 && value < 120) {
           newValue = currentSetPoint + step;
+          logger.dev('[MainSetpoint] - calculateSetpoint  Увеличили SetPoint:', newValue);
         // console.log('Увеличили SetPoint:', newSetPointValue);
         } else if (value < -5 && value > -120) {
           newValue = currentSetPoint - step;
+          logger.dev('[MainSetpoint] - calculateSetpoint  Уменьшили SetPoint:', newValue);
           // console.log('Уменьшили SetPoint:', newSetPointValue);
         } else if (value > 120) {
           newValue = currentSetPoint + (step*10);
+          logger.dev('[MainSetpoint] - calculateSetpoint  Увеличили SetPoint:', newValue);
           // console.log('Увеличили SetPoint:', newSetPointValue);
         } else if (value < - 120) {
           newValue = currentSetPoint - (step*10);
+          logger.dev('[MainSetpoint] - calculateSetpoint  Уменьшили SetPoint:', newValue);
           // console.log('Уменьшили SetPoint:', newSetPointValue);
         }
           try {
               if (newValue > max) {
               newValue = max;
-              console.log('[MainSetpoint] - calculateSetpoint  Ограничиваем Верхняю границу Уставки', newValue);
+              logger.dev('[MainSetpoint] - calculateSetpoint  Ограничиваем Верхняю границу Уставки', newValue);
+              //console.log('[MainSetpoint] - calculateSetpoint  Ограничиваем Верхняю границу Уставки', newValue);
             } else if (newValue < min) {
               newValue = min;
-              console.log('[MainSetpoint] - calculateSetpoint  Ограничиваем Нижнюю границу Уставки', newValue);
+              logger.dev('[MainSetpoint] - calculateSetpoint  Ограничиваем Нижнюю границу Уставки', newValue);
+              //console.log('[MainSetpoint] - calculateSetpoint  Ограничиваем Нижнюю границу Уставки', newValue);
             }
 
             newValue = parseFloat(newValue);
@@ -261,28 +278,28 @@
             // message = newValue
             
             } catch (error) {
-              console.error('[MainSetpoint] - calculateSetpoint  Ошибка проверки ограничений диапазона Уставки', error);
+              logger.error('[MainSetpoint] - calculateSetpoint  Ошибка проверки ограничений диапазона Уставки', error);
+              //console.error('[MainSetpoint] - calculateSetpoint  Ошибка проверки ограничений диапазона Уставки', error);
               //this.sendEmitMessage('error', '[MainSetpoint] - calculateSetpoint Ошибка проверки ограничений диапазона Уставки', error); // отправка логов на сервер для сохранения в файл
             }
         } catch (error) {
-          console.error('[MainSetpoint] - calculateSetpoint Ошибка вычисления изменения Уставки', error);
+          logger.error('[MainSetpoint] - calculateSetpoint Ошибка вычисления изменения Уставки', error);
+          //console.error('[MainSetpoint] - calculateSetpoint Ошибка вычисления изменения Уставки', error);
           //this.sendEmitMessage('error', '[MainSetpoint] - calculateSetpoint Ошибка вычисления изменения Уставки', error); // отправка логов на сервер для сохранения в файл
         }
-        console.log(' -- 260 -- [MainSetpoint] - calculateSetpoint Расчет, проверка и отправка обновленного значения выполнена успешно')
-
-
-
-
-
+        logger.dev('[MainSetpoint] - calculateSetpoint Расчет, проверка и отправка обновленного значения выполнена успешно')
+        //console.log('[MainSetpoint] - calculateSetpoint Расчет, проверка и отправка обновленного значения выполнена успешно')
        //this.sendSetPoint(newValue, min, max);
     },
     clickChangeSetpoint(value) {
+      logger.dev('[MainSetpoint] - clickChangeSetpoint value:', value);
       //console.log('[MainSetpoint] - clickChangeSetpoint value:', value);
       this.calculateSetpoint(value, this.limStep, this.limLow, this.limHigh);
       //this.debouncedUpdatePermitions('updatePermission', 'permission', true);
     },
 
     debounce(func, wait) {
+      logger.dev('[MainSetpoint] - debounce Активирована задержка выполнения функции', func, 'в', wait, 'мсек');
         // console.log('Активирована задержка выполнения функции', func, 'в', wait, 'мсек');
       let timeout;
       return function() {
