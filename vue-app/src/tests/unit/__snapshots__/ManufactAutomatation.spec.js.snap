@@ -1,0 +1,20 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ManufactAutomatation.vue matches the snapshot 1`] = `
+"<div>
+  <div>
+    <nav>
+      <router-link-stub to="/login"></router-link-stub> | <router-link-stub to="/dashboard"></router-link-stub> | <router-link-stub to="/smart-home"></router-link-stub> | <router-link-stub to="/manufact-automatation"></router-link-stub> |
+      <!-- Profile (доступна для level 2 и 3) -->
+      <!--v-if-->
+      <!-- Users (доступна для level 3) -->
+      <!--v-if-->
+    </nav>
+  </div>
+  <p style="width: 100%; height: 1px;"></p>
+  <div>
+    <h1>Manufact Automation</h1>
+    <p>Welcome to the Manufact Automation page!</p>
+  </div>
+</div>"
+`;

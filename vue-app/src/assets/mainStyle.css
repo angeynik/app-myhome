@@ -1,0 +1,690 @@
+/* Создание переменных  */
+:root {
+  --light_font: #E0DFE7;
+  --dark_font: #1E1E31;
+  --header_color: #4D576C;
+  --background_color: #1E1E31;
+  --orange: #F97B00;
+  --yellow: #F8B01E;
+  --violet: #5077f5;
+  --green: #34B534;
+  --red: #F91E00;
+
+  --sensor-green: #cfeecf;
+  --sensor-yellow: #ffe5cc;
+  --sensor-red: #fdbbb2;
+  --sensor-gray: #808080;
+}
+.html {
+  font-size: 18px; /* Теперь 1rem = 18px */
+  height: 100%; 
+  margin: 0; 
+  padding: 0; 
+  /* box-sizing: border-box; */
+}
+#app {
+    font-family: Avenir, Helvetica, Arial, sans-serif;
+    text-align: center;
+    color: var(--dark_font);
+    margin: 0; 
+    border: 0px;
+    padding: 0px;
+    display: grid; 
+    gap: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 3fr));
+  }
+   .app {
+    display: flex; 
+    flex-direction: column; 
+    height: 100vh; 
+    width: 100%;
+    background-color: var(--background_color);
+    color: var(--light_font);
+    font-family:   Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0 !important;
+    border: 0 !important;
+ }
+
+ /* Компонент AppPlace */
+.app-place_body {
+  width: 100vw;
+  border: 0px;
+  padding: 30px;
+  display: grid; 
+  gap: 30px;
+  align-content: stretch;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 3fr));
+}
+.triangle-container {
+  position: relative;
+  width: 100vw;
+}
+.triangle-btn {
+  position: absolute;
+  width: 100px; /* Adjust size as needed */
+  height: 100px; /* Adjust size as needed */
+  transform: translate(-50%, -50%);
+}
+#btn1 {
+  top: 10%;
+  left: 50%;
+}
+#btn2 {
+  top: 70%;
+  left: 20%;
+}
+#btn3 {
+  top: 70%;
+  left: 80%;
+}
+.app-place_module {
+  width: 100%; 
+  max-height: 220px; 
+  min-height: 200px;
+  background: var(--light_font);
+  color: var(--header_color);
+  display: grid;
+  gap: 32px;
+  grid-row: 1fr 5fr;
+  justify-items: center;
+  border-radius: 16px; 
+  border: 1px solid var(--background_color); 
+  box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
+  transition: transform 0.6s; /* Плавное изменение размера */
+}
+.app-place_module:hover {
+  transform: scale(1.1); /* Небольшое увеличение при наведении */
+}
+.app-place_module_h1 {
+  height: 40px;
+  font-size: clamp(1.1rem, 4vw, 1.4em);
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.app-place_module_icon {
+  font-size: 2rem;
+  height: 120px;
+}
+.paramPlace {
+  padding: 0 1vh 0 1vh;
+  display: flex;
+  align-self: center;
+  justify-content: center;
+  align-items: center;
+}
+
+ .body {
+  flex: 1 1 86%; 
+  overflow-y: auto;
+  margin: 1 !important;
+  border: 0 !important;
+  display: flex !important;
+  box-sizing: border-box !important;
+  background-color: var(--header_color);
+  color: var(--light_font);
+}
+    .mainBody {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Автоматическая подгонка элементов по ширине от 120px до доступного пространства */
+      grid-gap: 1.6rem; /* Отступы между элементами */
+      background-color: var(--header_color);
+      height: 100%;
+      width: 100%;
+      justify-items: center;
+      align-content: stretch;
+      padding: 1.4rem; /* Отступы внутри контейнера */
+      box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    } 
+    .mainBody.swiping {
+    transition: none;
+  }
+  .header {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+    box-sizing: border-box !important;
+  }
+  .header-top {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    margin: 0;
+  }
+  .header-bottom {
+    width: 100%;
+    /* height: 100%; */
+    display: flex;
+    justify-content: center;
+    white-space: nowrap;
+    padding: 0;
+    margin: 0;
+    /* background-color: var(--light_font); */
+  }
+  .header_place {
+  display: grid;
+  grid-row: inherit;
+  grid-template-columns: 1fr 5fr 1fr;
+  height: 8vh;
+  width: 100vw
+}
+.header_arrow {
+  box-sizing: border-box !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.8vh;
+  margin: 0 1vw 0 1vw;
+  transition: transform 0.5s;
+}
+.header_arrow:hover {
+  transform: scale(1.6); /* Небольшое увеличение при наведении */
+  /* color: var(--orange) !important; */
+  fill: red !important;
+  /* stroke: red;
+  stroke-width: 2px; */
+}
+
+
+  menu {
+    flex-direction: row;
+  }
+  nav {
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
+  
+  nav a {
+    margin: 0 8px;
+    text-decoration: none;
+    color: #8898a8;
+  }
+  
+  nav a.router-link-exact-active {
+    color: var(--orange);
+    font-weight: bold;
+  }
+  .introduce-place {
+    /* width: 100vw; */
+    gap: 1rem;
+    width: 100%;
+    max-width: 100%;
+    padding: 1rem;
+    box-sizing: border-box;
+    align-content: center;
+    border: 0px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 120px);
+    /* padding: 30px; */
+    /* display: grid; */
+    /* gap: 30px; */
+    /* grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); */
+    margin: 0 auto; 
+  }
+ 
+  .introduce-button {
+    width: 90%;
+    max-width: 600px;
+    height: 22vh; 
+    max-height: 220px;
+    min-height: 140px;
+    background-size: auto 70%;
+    background-position: center; /* Центрируем изображение */
+    background-repeat: no-repeat; /* Запрещаем повторение изображения */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; /* Текст внизу */
+    align-items: center;
+    border-radius: 16px;
+    border: 1px solid var(--background_color);
+    box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
+    transition: transform 0.6s;
+    overflow: hidden; /* Чтобы картинка не выходила за границы */
+    text-overflow: ellipsis;
+  }
+  
+  .color_dark {
+    background-color:  var(--header_color); /* Темный цвет текста */
+    color: var(--light_font);
+  }
+  .color-light {
+    background-color:  var(--light_font); /* Светлый цвет текста */
+    color: var(--header_color);
+  }
+  .dash {
+    background-image: url('@/assets/dash.png');
+  }
+  .home {
+    background-image: url('@/assets/home.png');
+  }
+  .manuft {
+    background-image: url('@/assets/manufact.png');
+  }
+  .button-text {
+    height: 25%; /* Текст занимает 25% высоты кнопки */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(1.1rem, 4vw, 1.6rem);
+    font-weight: bold;
+    width: 100%; /* Ширина текстового блока */
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+.button-image {
+  flex-grow: 1; /* Занимает оставшееся пространство */
+  width: 100%;
+}
+p {
+  min-height: 1px;
+  margin: 0;
+  padding: 0;
+}
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Расстояние между элементами */
+  max-width: 600px; /* Максимальная ширина формы */
+  margin: 0 auto; /* Центрирование формы */
+  padding: 30px;
+  /* border: 1px solid var(--light_font_color); */
+  border-radius: 16px;
+  background-color: var(--header_color);
+  /* box-shadow: 0 2px 6px rgba(255, 255, 255, 0.5); */
+}
+form div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+    .sensor-card {
+      min-width: 190px;
+      width: 98%;
+      max-width: 54vw;
+      min-height: 180px;
+      max-height: 230px;
+      display: grid;
+      grid-template-rows: 1fr 5fr 1fr;
+      flex-direction: column;
+      justify-items: center; /* Центрирование содержимого по вертикали */
+      align-items: center;     /* Центрирование содержимого по горизонтали */
+      background-color: var(--background_color);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Легкая тень для визуального эффекта */
+      padding: 0.6rem;
+      box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
+      transition: transform 0.4s; /* Плавное изменение размера */
+      border-radius: 16px; 
+      border: 0.08rem solid var(--sensor-gray); 
+      box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
+      transition: transform 0.2s ease;
+    }
+    .sensor-card.selected{
+      border: 0.2rem solid var(--orange);
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+      transform: scale(1.08);
+      z-index: 12
+    }
+    .mainBodyValue:hover {
+      transform: scale(1.08); /* Небольшое увеличение при наведении */
+    }
+
+    /* SVG Иконки */
+.icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box !important;
+    margin: 10px;
+}
+.icon.big {
+  fill: var(--light_font);
+  /* display: block; */
+  width: 4vh;
+  height: 4vh;
+}
+.icon:hover {
+  fill: var(--violet);
+  stroke: var(--background_color);
+  stroke-width: 1vh;
+}
+.icon.small {
+  fill: var(--light_font);
+  /* display: block; */
+  /* width: 2vh; */
+  height: 4vh;
+}
+
+
+    .sensor-header {
+      height: 2.4rem;
+      align-content: center;
+      align-items: center;
+      font-size: clamp(0.7rem, 4vw, 1.2rem);
+      font-weight: 800;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+    .sensor-value {
+      height: 4rem;
+      align-content: center;
+      font-size: 2.6rem;
+      font-size: clamp(2rem, 4.2vw, 2.5rem);
+      font-weight: 500;
+      letter-spacing: 4px;
+    }
+    .sensor-value.selected-value {
+      height: 2rem;
+      align-content: center;
+      font-size: clamp(1.1rem, 1.5vw, 1.7rem);
+      font-weight: 300;
+      letter-spacing: 3px;
+      color: var(--light_font);
+      opacity: 0.8;
+    }
+    .sensor-SetValue {
+      height: 2rem;
+      align-content: center;
+      color: var(--orange);
+      font-size: clamp(1.1rem, 1.5vw, 1.7rem);
+      font-weight: 300;
+      letter-spacing: 3px;
+    }
+    .sensor-SetValue.selected-setvalue {
+      height: 4rem;
+      color: var(--orange);
+      font-size: clamp(2rem, 4.2vw, 2.5rem);
+      font-weight: 500;
+      letter-spacing: 4px;
+      opacity: 1;
+    }
+    .sensor-footer {
+      height: 1.4rem;
+      align-content: center;
+      font-size: 0.85rem;
+      font-weight: 200;
+      letter-spacing: 2px;
+      color: var(--sensor-gray);
+    }
+form label {
+  flex: 0 0 180px;
+  align-items: end;
+  align-self: flex-end;
+  align-content: flex-end;
+  font-size: 18px;
+  color: var(--light_font_color);
+}
+form input,
+form select {
+  flex: 1;
+  padding: 14px;
+  font-size: 18px;
+  border: 1px solid var(--light_font);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.5s ease;
+}
+form input:focus,
+form select:focus {
+  border-color: var(--orange);
+  border-width: 4px;
+}
+form button {
+  align-self: flex-end;
+  padding: 12px 24px;
+  font-size: 18px;
+  color: #fff;
+  background-color: var(--violet);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.5s ease;
+}
+
+form button:hover {
+  background-color: var(--violet);
+}
+
+form button:active {
+  background-color: var(--orange);
+}
+.footer {
+    flex: 0 0 6%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    background-color: var(--header_color);
+}
+/* setpointBlock */
+.setpointBlock {
+  display: flex;
+  flex-direction: column;
+  align-content: space-around;
+  align-items: stretch;
+  width: 100%;
+  background-color: var(--background_color);
+  box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
+  margin: 0;
+  padding-bottom: 8vh;
+  box-shadow: 0vw -3vw 6vw rgba(225, 225, 225, 0.15), 0vw 2vw 3vw rgba(225, 225, 225, 0.15),inset 12vw 0 8vw -6vw rgba(0, 0, 0, 0.8), inset -12vw 0 8vw -6vw rgba(0, 0, 0, 0.8);
+}
+/* .setpointBlock.mobile-padding {
+  padding-bottom: 8vh;
+} */
+.setpointValue {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  height: inherit;
+  box-sizing: border-box;
+  padding: 1vw 1.5vw 0 1.5vw;
+}
+
+.setpointValue_number {
+  min-width: 64px;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-self: center;
+  color: var(--light_font);
+}
+.setpointValue_icon {
+  height: 6vh;
+  width: 38vw;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box; 
+}
+
+.setpointValue h1 {
+  /* align-items: center; */
+  font-size: 2.4rem;
+  font-weight: 500;
+  letter-spacing: 0.3rem;
+  margin: 0;
+  padding: 0;
+}
+
+.setpointLimits {
+  display: flex;
+  height: 3vw;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0 4vw;
+}
+.setpointLimits h4 {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.07rem;
+  color: var(--light_font_color);
+  font-weight: 500;
+}
+
+/* Всплывающее информационноеи окно PopipMenu */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .popup-content {
+    background: var(--header_color);
+    padding: 0;
+    border-radius: 16px;
+    box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
+    min-width: 300px;
+    max-width: 400px;
+    border: 1px solid var(--light_font);
+    color: var(--light_font);
+  }
+
+  .popup-success {
+    border-top: 4px solid var(--green);
+  }
+
+  .popup-error {
+    border-top: 4px solid var(--red);
+  }
+
+  .popup-warning {
+    border-top: 4px solid var(--yellow);
+  }
+
+  .popup-info {
+    border-top: 4px solid var(--violet);
+  }
+  
+  .popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--light_font);
+  }
+  
+  .popup-title {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: var(--light_font);
+  }
+  
+  .popup-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--light_font);
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .popup-close:hover {
+    color: var(--orange);
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+  }
+  
+  .popup-message {
+    padding: 30px 20px;
+    white-space: pre-line;
+    font-size: 1rem;
+    line-height: 1.5;
+    text-align: center;
+  }
+  
+  .popup-footer {
+    padding: 20px;
+    text-align: center;
+    border-top: 1px solid var(--light_font);
+  }
+  
+  .popup-ok-button {
+    background: var(--violet);
+    color: var(--light_font);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: background-color 0.5s ease;
+    min-width: 100px;
+  }
+  
+  .popup-ok-button:hover {
+    background: var(--orange);
+  }
+
+  .popup-ok-button:active {
+    background: var(--yellow);
+  }
+
+/* Горизонтальная ориентация (ширина больше высоты) */
+@media (orientation: landscape) {
+    .mainBody {
+      align-content: stretch;
+    }
+  .introduce-place {
+    width: 100vw;
+    display: flex;
+    flex-direction: row; /* Горизонтальное расположение */
+    flex-wrap: wrap; /* Перенос на следующую строку если не помещается */
+    justify-content: space-around;
+    align-items: stretch;
+    min-height: calc(80vh - 130px);
+  }
+  
+  .introduce-button {
+    width: 24%; /* Занимает примерно треть ширины */
+    min-width: 130px; /* Минимальная ширина */
+    height: 60vh; /* Большая высота в ландшафтном режиме */
+    max-height: 240px;
+    flex: 1 1 auto; /* Гибкое растягивание */
+    margin: 0.5rem;
+  }
+  
+  .button-text {
+    font-size: clamp(1.3rem, 3vw, 1.5rem);
+  }
+}
+/* Адаптация для узких экранов */
+@media (max-width: 800px) {
+  .introduce-button {
+    max-width: 500px; /* Максимальная ширина кнопки */
+  }
+}
+@media (max-width: 600px) {
+  .introduce-button {
+    max-width: 380px; /* Максимальная ширина кнопки */
+  }
+  .error {
+    color: red;
+  }
+}

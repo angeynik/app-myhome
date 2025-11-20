@@ -1,0 +1,470 @@
+/* Создание переменных  */
+:root {
+  --light_font: #E0DFE7;
+  --dark_font: #1E1E31;
+  --header_color: #4D576C;
+  --background_color: #1E1E31;
+  --orange: #F97B00;
+  --yellow: #F8B01E;
+  --violet: #5077f5;
+  --green: #34B534;
+  --red: #F91E00;
+
+  --sensor-green: #cfeecf;
+  --sensor-yellow: #ffe5cc;
+  --sensor-red: #fdbbb2;
+  --sensor-gray: #808080;
+}
+.html {
+  font-size: 18px; /* Теперь 1rem = 18px */
+  height: 100%; 
+  margin: 0; 
+  padding: 0; 
+  /* box-sizing: border-box; */
+}
+.h1 {
+  margin: 0;
+  padding: 0;
+  font-size: 6rem;
+  /* font-size: 50px; */
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+} 
+.h2 {
+  margin: 0;
+  padding: 0;
+  font-size: 3rem;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+} 
+.h3 {
+  margin: 0;
+  padding: 0;
+  font-size: 2.5rem;
+  font-weight: 500;
+  letter-spacing: 5px;
+  text-transform: lowercase;
+}
+.h4 {
+  margin: 0;
+  padding: 0;
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--light_font);
+}
+ .app {
+    display: flex; 
+    flex-direction: column; 
+    height: 100vh; 
+    width: 100%;
+    background-color: var(--background_color);
+    color: var(--light_font);
+    font-family:   Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0 !important;
+    border: 0 !important;
+ }
+ .header, .body, .footer { 
+  width: 100%; 
+}
+.body {
+  flex: 1 1 86%; 
+  /* overflow-y: auto; */
+  margin: 1 !important;
+  border: 0 !important;
+  /* display: flex !important; */
+  box-sizing: border-box !important;
+  background-color: var(--header_color);
+  color: var(--light_font);
+}
+.header {
+  flex: 0 0 8%; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  box-sizing: border-box !important;
+  /* padding: 0 1vw 0 1vw; */
+}
+.header_place {
+  display: grid;
+  grid-row: inherit;
+  grid-template-columns: 1fr 5fr 1fr;
+  height: 8vh;
+  width: 100vw
+}
+.header_arrow {
+  box-sizing: border-box !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 6vh;
+  margin: 0 1vw 0 1vw;
+  transition: transform 0.4s;
+}
+.header_arrow:hover {
+  transform: scale(1.3); /* Небольшое увеличение при наведении */
+  /* color: var(--orange) !important; */
+  fill: red !important;
+  /* stroke: red;
+  stroke-width: 2px; */
+}
+.footer {
+    flex: 0 0 6%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+}
+.mainHeader {
+    display: flex;
+    justify-content: c;
+    width: 80%;
+    }
+  .mainFooter {
+    min-height: 80px;
+    width: 100%;
+    /* position: fixed; */
+    bottom: 0;
+    left: 0;
+    background-color: var(--background_color);
+    color: var(--light_font);
+    }
+    .mainBody {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Автоматическая подгонка элементов по ширине от 120px до доступного пространства */
+      grid-gap: 16px; /* Отступы между элементами */
+      background-color: var(--header_color);
+      height: 100%;
+      width: 100%;
+      justify-items: center;
+      padding: 16px; /* Отступы внутри контейнера */
+      box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
+    }    
+    .loading, .error {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 2rem;
+    }
+    .sensor-card {
+      /* min-width: 160px;
+      max-width: 1800px;
+      height: 20vh; */
+      min-width: 180px;
+      width: 100%;
+      max-width: 56vw;
+      min-height: 160px;
+      max-height: 180px;
+      display: grid;
+      grid-template-rows: 1fr 5fr 1fr;
+      flex-direction: column;
+      justify-items: center; /* Центрирование содержимого по вертикали */
+      align-items: center;     /* Центрирование содержимого по горизонтали */
+      background-color: var(--background_color);
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Легкая тень для визуального эффекта */
+      padding: 10px;
+      box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
+      transition: transform 0.4s; /* Плавное изменение размера */
+      border-radius: 16px; 
+      border: 1px solid var(--sensor-gray); 
+      box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
+    }
+    .mainBodyValue:hover {
+      transform: scale(1.08); /* Небольшое увеличение при наведении */
+    }
+    .sensor-header {
+      align-items: center;
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+    .sensor-value {
+      font-size: 2.4rem;
+      font-weight: 500;
+      letter-spacing: 4px;
+    }
+    .sensor-SetValue {
+      font-size: 1.2rem;
+      font-weight: 300;
+      letter-spacing: 3px;
+    }
+    .sensor-footer {
+      font-size: 0.8rem;
+      font-weight: 200;
+      letter-spacing: 2px;
+      color: var(--sensor-gray);
+    }
+  .valueBlock {
+    display: flex;
+    width: 80vw;
+    height: 80vh;
+    padding: 0;
+    margin: 0;
+  }
+  .container {
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  .roomTitle {
+    text-align: center;
+    height: 5vh;
+    margin-top: 2vh;
+  }
+  .pointTitle {
+    text-align: center;
+    height: 2vh;
+    margin-bottom: 6vh;
+  }
+  .time_periodUpdated {
+    font-size: 0.8rem;
+    color: var(--light_font);
+    margin: 0;
+    padding-bottom: 0;
+    align-content: center;
+    min-height: 4vh;
+  }
+  .setpointSwipe {
+    margin-top: 4vh;
+    width: 100vw;
+    height: 8vh;
+    background-color: var(--background_color);
+    color : var(--light_font);
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: center;
+  }
+  .bodySetpoint_selector {
+    background-image: url('/img/bodySetpointBlock_selector.svg');
+    
+  }
+/* Горизонтальная ориентация */
+@media (orientation: landscape) {
+/* .app {
+  flex-direction: row;
+  } */
+  /* .mainHeader {
+    width: 10vh;
+    min-width: 100px;
+    height: 100%;
+    top: 0;
+    left: 0;
+    } */
+  /* .mainFooter {
+    width: 10vh;
+    min-width: 100px;
+    height: 100%;
+    bottom: 0;
+    left: auto;
+    right: 0;
+    } */
+  /* .mainBody {
+    margin-top: 0;
+    margin-bottom: 0;
+    margin-left: 8vh;
+    margin-bottom: 10vh;
+    } */
+}
+
+/* SVG Иконки */
+.icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box !important;
+    margin: 10px;
+}
+.icon.big {
+  fill: var(--light_font);
+  /* display: block; */
+  width: 4vh;
+  height: 4vh;
+}
+.icon:hover {
+  fill: var(--violet);
+  stroke: var(--background_color);
+  stroke-width: 1vh;
+}
+.icon.small {
+  fill: var(--light_font);
+  /* display: block; */
+  /* width: 2vh; */
+  height: 4vh;
+}
+/* SVG Котроллы */
+.control {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.sensorControl {
+  width: 76vw;
+  max-width: 600px;
+  height: 76vw;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.sensorControl:hover {
+  stroke: var(--green);
+  stroke-width: 1vh;
+}
+.value {
+  position: relative;
+  top: 50%; 
+  left: 50%; 
+  transform: translate(-50%, -50%);
+  font-size: 18vw;
+  font-weight: 600;
+  letter-spacing: 1vw;
+  text-transform: uppercase;
+  color: var(--header_color);
+  /* display: flex;
+  justify-content: center;
+  align-items: center; */
+}
+.valueSign {
+  position: relative;
+  top: 40%; 
+  left: 80%; 
+  transform: translate(-50%, -50%);
+  font-size: 14vw;
+  font-weight: 600;
+  color: var(--borderColor);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* setpointBlock */
+.setpointBlock {
+  display: flex;
+  flex-direction: column;
+  align-content: space-around;
+  align-items: stretch;
+  width: 100%;
+  background-color: var(--background_color);
+  box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
+  margin: 0;
+  box-shadow: 0vw -3vw 6vw rgba(225, 225, 225, 0.2), 0vw 2vw 3vw rgba(225, 225, 225, 0.2),inset 12vw 0 8vw -6vw rgba(0, 0, 0, 0.8), inset -12vw 0 8vw -6vw rgba(0, 0, 0, 0.8);
+}
+.setpointValue {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  height: inherit;
+  box-sizing: border-box;
+  padding: 1vw 1.5vw 0 1.5vw;
+}
+
+.setpointValue_number {
+  min-width: 64px;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-self: center;
+}
+.setpointValue_icon {
+  height: 6vh;
+  width: 38vw;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box; 
+}
+
+.setpointValue h1 {
+  /* align-items: center; */
+  font-size: 1.6rem;
+  font-weight: 500;
+  /* letter-spacing: 0.5px; */
+  margin: 0;
+  padding: 0;
+}
+
+.setpointLimits {
+  display: flex;
+  height: 5vw;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0 5vw;
+}
+.setpointLimits h4 {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--light_font_color);
+  font-weight: 500;
+}
+/* Компонент AppPlace */
+.app-place_body {
+  border: 0px;
+  padding: 30px;
+  display: grid; 
+  gap: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 3fr));
+}
+.triangle-container {
+  position: relative;
+  width: 100vw;
+}
+.triangle-btn {
+  position: absolute;
+  width: 100px; /* Adjust size as needed */
+  height: 100px; /* Adjust size as needed */
+  transform: translate(-50%, -50%);
+}
+#btn1 {
+  top: 10%;
+  left: 50%;
+}
+#btn2 {
+  top: 70%;
+  left: 20%;
+}
+#btn3 {
+  top: 70%;
+  left: 80%;
+}
+.app-place_module {
+  width: 100%; 
+  max-height: 220px; 
+  min-height: 200px;
+  background: var(--light_font);
+  color: var(--header_color);
+  display: grid;
+  gap: 32px;
+  grid-row: 1fr 5fr;
+  justify-items: center;
+  border-radius: 16px; 
+  border: 1px solid var(--background_color); 
+  box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
+  transition: transform 0.6s; /* Плавное изменение размера */
+}
+.app-place_module:hover {
+  transform: scale(1.08); /* Небольшое увеличение при наведении */
+}
+.app-place_module_h1 {
+  height: 40px;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.app-place_module_icon {
+  font-size: 2rem;
+  height: 140px;
+}
+.paramPlace {
+  padding: 0 1vh 0 1vh;
+  display: flex;
+  align-self: center;
+  justify-content: center;
+  align-items: center;
+}
