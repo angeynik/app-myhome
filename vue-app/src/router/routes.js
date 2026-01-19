@@ -27,10 +27,17 @@ const routes = [
         component: null
       },
       {
-        path: ':sortType', // Динамический параметр для типа сортировки
+        path: 'sort/:sortType', // Динамический параметр для типа сортировки
         name: 'DashboardSort',
         component: () => import('@/components/MainBody.vue'),
         props: true // Передаем параметры как props
+      },
+      {
+        path: 'settings/:settingsType', //динамический параметр для выбора компонента отображения настроек Расписания или Уведомдений
+        name: 'DashboardSettings',
+        component: () => import('@/components/MainBodySettings.vue'),
+        meta: { requiresAuth: true, requiredLevel: 2 },
+        props: true, 
       }
     ]
   },

@@ -1,3 +1,4 @@
+<!-- components/MainBody.vue -->
 <template>
 
     <div v-if="isLoading" class="loading">Загрузка...</div>
@@ -68,7 +69,7 @@ export default {
       'getSetpointKey',
       'getSetpointTitle',
       'getUnit']),
-    ...mapGetters(['dID']),
+    ...mapGetters(['dID', 'typeSettingsItem']),
     
   isRoomSort() {
     return this.currentSortType === 'rooms';
@@ -178,27 +179,34 @@ export default {
           //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
           }
     },
-  
-    toggleSorting(item) { // Меняем сортировку комнаты/параметры при двойном клике по выбранной плашке
-      logger.info(`[MainBody] - toggleSorting - Выбран параметр: ${JSON.stringify(item)}`);
-      //console.log(`[MainBody] - toggleSorting - Выбран параметр: ${JSON.stringify(item)}`);
-      const newSortType = this.currentSortType === 'rooms' ? 'params' : 'rooms';
-      this.SET_SORT_TYPE(newSortType);
+ 
+    // toggleSorting(item) { // Меняем сортировку комнаты/параметры при двойном клике по выбранной плашке
+    //   logger.info(`[MainBody] - toggleSorting - Выбран параметр: ${JSON.stringify(item)}`);
+    //   //console.log(`[MainBody] - toggleSorting - Выбран параметр: ${JSON.stringify(item)}`);
+    //   const newSortType = this.currentSortType === 'rooms' ? 'params' : 'rooms';
+    //   this.SET_SORT_TYPE(newSortType);
       
-      if (newSortType === 'params') {
-        const baseParamKey = item.paramKey.replace(/\d+$/, '');
-        this.SET_PARAM_KEY(baseParamKey);
-        this.SET_ROOM_KEY(item.roomKey);
-        this.$store.commit('sortParams/SET_PARAM_TITLE', this.getSensorTitle(baseParamKey));
-      } else {
-        this.SET_ROOM_KEY(item.roomKey);
-        this.SET_ROOM_ID(item.roomId);
-        this.$store.commit('sortParams/SET_ROOM_TITLE', item.roomTitle);
-      }
+    //   if (newSortType === 'params') {
+    //     const baseParamKey = item.paramKey.replace(/\d+$/, '');
+    //     this.SET_PARAM_KEY(baseParamKey);
+    //     this.SET_ROOM_KEY(item.roomKey);
+    //     this.$store.commit('sortParams/SET_PARAM_TITLE', this.getSensorTitle(baseParamKey));
+    //   } else {
+    //     this.SET_ROOM_KEY(item.roomKey);
+    //     this.SET_ROOM_ID(item.roomId);
+    //     this.$store.commit('sortParams/SET_ROOM_TITLE', item.roomTitle);
+    //   }
       
-      // Эмитируем событие для обновления навигации
-      this.$emit('sorting-changed', newSortType);
+    //   // Эмитируем событие для обновления навигации
+    //   this.$emit('sorting-changed', newSortType);
 
+    // },
+    toggleSorting() {
+      let settingsType = this.typeSettingsItem || 'schedule';
+      this.$router.push({
+        name: 'DashboardSettings',
+        params: { settingsType }
+      });
     },
     async updateView() { // Формируем массив для отображения пользователю в соответствии с типом сортировки и текущим ключем
         try {

@@ -1,9 +1,12 @@
+// index.js
 import { createStore } from 'vuex';
 import auth from './modules/auth';
 import websocket from './modules/websocket';
 import log from './modules/log';
 import sortParams from './modules/sortParams';
 import config from './modules/config';
+import scheduleConfig from './modules/scheduleConfig';
+import notificationsConfig from './modules/notificationsConfig';
 
 const store = createStore({
   modules: {
@@ -11,7 +14,9 @@ const store = createStore({
     websocket,
     log,
     sortParams,
-    config
+    config,
+    scheduleConfig,
+    notificationsConfig,
   },
   actions: {
     toLowerCase(_, str) {
@@ -40,10 +45,7 @@ const store = createStore({
     paramKey: (state) => state.sortParams.paramKey,
     deviceKey: (state) => state.sortParams.deviceKey,
     setpointKey: (state) => state.sortParams.setpointKey,
-    // roomKey: (state) => state.sortParams.roomKey || localStorage.getItem('roomKey') || null,
-    // paramKey: (state) => state.sortParams.paramKey || localStorage.getItem('paramKey') || null,
-    // getConfig: state => name => state.configs[name] || {},
-    // isLoading: state => state.loading,
+    typeSettingsItem: (state) => state.config.typeSettingsItem,
   }
 });
 

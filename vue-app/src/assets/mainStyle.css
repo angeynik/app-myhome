@@ -673,6 +673,12 @@ form button:active {
   .button-text {
     font-size: clamp(1.3rem, 3vw, 1.5rem);
   }
+
+  /* Компонент настройки Расписания, Уведомления, Аналитики */
+  
+
+  
+
 }
 /* Адаптация для узких экранов */
 @media (max-width: 800px) {

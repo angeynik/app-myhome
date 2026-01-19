@@ -40,7 +40,7 @@
 
     <div class="body">
       <!-- Главное меню -->
-      <div class="app-place_body" v-if="!$route.params.sortType" id="app_place">
+      <div class="app-place_body" v-if="!$route.params.sortType && !$route.params.settingsType" id="app_place">
         <AppPlace class="app-place_module" title="Комнаты" @select="selectComponent('rooms')" />
         <AppPlace class="app-place_module" title="Датчики" @select="selectComponent('params')" />
         <AppPlace class="app-place_module" title="Устройства" @select="selectComponent('devices')" />
@@ -48,14 +48,23 @@
       </div>
 
       <!-- Динамический компонент для всех типов сортировки -->
-      <router-view 
-        v-else
-        :key="$route.params.sortType"
+      <!-- <router-view 
+        v-else :key="$route.params.sortType"
         @eventsMainBody="handleMainBodyEvent"
         @swipe-forward="sortingForvard"
         @swipe-back="sortingBack"
         ref="mainBody"
+      /> -->
+       <router-view 
+        v-else 
+        :key="componentKey"
+        @eventsMainBody="handleMainBodyEvent"
+        @eventsMainBodySettings="handleMainBodySettingsEvent"
+        @swipe-forward="handleSwipeForward"
+        @swipe-back="handleSwipeBack"
+        :ref="currentRef"
       />
+
     </div>
 
     <footer class="footer"> 
@@ -113,12 +122,35 @@ export default {
     ]),
     ...mapGetters('config', ['getMobile', 'getDeviceType', 'clearKeySync']),
     
-    headerTitle() { // Формируем заголовок для Header по типу сортировки и ключу
-      const sortType = this.currentSortType;
-      logger.dev(`[DashBoard] - headerTitle - Выбор заголовка для: ${sortType}`);
-      //console.log('[DashBoard] - headerTitle - Выбор заголовка для:', sortType);
+    // headerTitle() { // Формируем заголовок для Header по типу сортировки и ключу
+    //   const sortType = this.currentSortType;
+    //   logger.dev(`[DashBoard] - headerTitle - Выбор заголовка для: ${sortType}`);
+    //   //console.log('[DashBoard] - headerTitle - Выбор заголовка для:', sortType);
       
+    //   if (!sortType) {
+    //     return "Главное меню";
+    //   }
+      
+    //   if (sortType === 'rooms') {
+    //     return this.getRoomKey ? `${this.getRoomTitle}` : "Сортировка по комнатам";
+    //   } else if (sortType === 'params') {
+    //     return this.getParamKey ? `${this.getSensorTitle(this.getParamKey)}` : "Сортировка по параметрам";
+    //   } else if (sortType === 'devices') {
+    //     return this.getDeviceKey ? `${this.getSensorTitle(this.getDeviceKey)}` : "Сортировка по устройствам";
+    //   } else if (sortType === 'setpoints') {
+    //     return this.getSetpointKey ? `${this.getSensorTitle(this.getSetpointKey)}` : "Сортировка по Уставкам";
+    //   }
+    //   return "Dashboard";
+    // },
+    headerTitle() {
+      const sortType = this.currentSortType;
+      //logger.dev(`[DashBoard] - headerTitle - Выбор заголовка для: ${sortType}`);
+      console.log('[DashBoard] - headerTitle - Выбор заголовка для:', sortType);
       if (!sortType) {
+        // Если это настройки
+        if (this.$route.params.settingsType) {
+          return "Настройки";
+        }
         return "Главное меню";
       }
       
@@ -135,7 +167,24 @@ export default {
     },
     showFooterSetpoint() {
       return this.showSetpoint && this.setpoint !== null && this.setpoint !== undefined;
-    }
+    },
+
+    // Добавляем вычисляемые свойства для навигации
+    hasParams() {
+      return this.$route.params.sortType || this.$route.params.settingsType;
+    },
+    
+    componentKey() {
+      // Уникальный ключ для пересоздания компонента
+      return this.$route.params.sortType || this.$route.params.settingsType || 'main';
+    },
+    
+    currentRef() {
+      // Динамическое имя ref в зависимости от типа компонента
+      return this.$route.params.settingsType ? 'mainBodySettings' : 'mainBody';
+    },
+
+
   },
   beforeUnmount() {
     if (this.setpointUpdateTimer) {
@@ -147,6 +196,12 @@ export default {
       immediate: true,
       handler(newSortType) {
         this.handleSortTypeChange(newSortType);
+      }
+    },
+    '$route.params.settingsType': {
+      immediate: true,
+      handler(newSettingsType) {
+        this.handleSettingsTypeChange(newSettingsType);
       }
     },
     getConfig: {
@@ -177,10 +232,13 @@ export default {
         this.showHeaderArrow = false;
       }
     },
+    handleSettingsTypeChange(settingsType) {
+      console.log('[DashBoard] - handleSettingsTypeChange - Обновляем информацию для : ', settingsType);  
+    },
     
     selectComponent(sortType) {
-      logger.info(`[DashBoard] - selectComponent - Выбор компонента: ${sortType}`);
-      //console.log('[DashBoard] - selectComponent - Выбор компонента:', sortType);
+      //logger.info(`[DashBoard] - selectComponent - Выбор компонента: ${sortType}`);
+      console.log('[DashBoard] - selectComponent - Выбор компонента:', sortType);
       this.$router.push({ 
         name: 'DashboardSort', 
         params: { sortType } 
@@ -301,6 +359,30 @@ export default {
         //console.error('Ошибка обновления уставки:', error);
       }
     },
+
+
+
+
+    handleParamsChange(params) {
+      if (params.sortType) {
+        // Устанавливаем тип сортировки в store только для sortType
+        this.$store.commit('sortParams/SET_SORT_TYPE', params.sortType);
+        // Показываем стрелки для навигации (кроме уставок и на мобильных)
+        this.showHeaderArrow = ['rooms', 'params', 'devices', 'setpoints'].includes(params.sortType) && !this.getMobile;
+      } else if (params.settingsType) {
+        // Для настроек скрываем стрелки или настраиваем иначе
+        this.showHeaderArrow = false;
+      } else {
+        this.showHeaderArrow = false;
+      }
+    },
+
+
+
+
+
+    // Работа с компонентом настройки Расписания, Уведомлений и Статистики
+    
   }
 };
 </script>

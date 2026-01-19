@@ -12,7 +12,8 @@ export default {
     loading: false,
     error: null,
     mobile: false,
-    deviceType: 'desktop' // 'desktop', 'tablet', 'phone'
+    deviceType: 'desktop', // 'desktop', 'tablet', 'phone'
+    typeSettingsItem: localStorage.getItem('typeSettingsItem') || 'schedule',
   }),
  
   mutations: {
@@ -77,7 +78,6 @@ export default {
       // const updatedRoom = config[room];
       // console.log(`[Config] - UPDATE_CONFIG_VALUE - state.configs[${dID}] Обновляем комнату ${room} - ${JSON.stringify(updatedRoom, null, 2)}`);
     },
-
     SET_LOADING(state, value) {
       state.loading = value;
     },
@@ -89,6 +89,11 @@ export default {
     },
      SET_DEVICE_TYPE(state, deviceType) {
       state.deviceType = deviceType;
+    },
+    SET_TYPE_SETTINGS_ITEM(state, type) {
+      console.log(`[Config] - SET_TYPE_SETTINGS_ITEM - type: ${type}`);
+      localStorage.setItem('typeSettingsItem', type);
+      state.typeSettingsItem = type;
     },
   },
   
@@ -505,7 +510,7 @@ export default {
     allSetpoints: state => state.allSetpoints,
     getMobile: state => state.mobile,
     getDeviceType: state => state.deviceType,
-
+    getTypeSettingsItem: (state) => state.typeSettingsItem
 
   }
 };
