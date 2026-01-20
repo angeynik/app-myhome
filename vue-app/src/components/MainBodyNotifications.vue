@@ -1,6 +1,6 @@
 <!-- components/MainBodyNotifications.vue -->
 <template>
-  
+ <h1>Уведомления</h1>
 </template>
 
 <script>

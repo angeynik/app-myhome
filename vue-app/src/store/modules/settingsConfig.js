@@ -10,6 +10,15 @@ export default {
   }),
 
   mutations: {
+    SET_NOTIFICATIONS(state, { name, config }) {
+      state.notifications[name] = config;
+      logger.dev('[settingsConfig] - SET_NOTIFICATIONS - Конфигурация уведомлений обновлена:', name);
+    },
+    
+    SET_STATISTICS(state, { name, config }) {
+      state.statistics[name] = config;
+      logger.dev('[settingsConfig] - SET_STATISTICS - Конфигурация аналитики обновлена:', name);
+    },
     ADD_SCHEDULE(state, { dID, schedule }) {
       const nameSchedules = dID + '_schedules';
     if (!state.schedules[nameSchedules]) {
@@ -199,62 +208,130 @@ export default {
 
 
 
-    async saveSchedules({ state, rootGetters, dispatch }, { roomKey, paramKey, schedules }) {
+async saveSchedules({ rootGetters, dispatch }, { roomKey, paramKey, schedules }) {
+  const dID = rootGetters['dID'];
+  if (!dID) {
+    logger.warn('[settingsConfig] - saveSchedules - dID не определен');
+    return;
+  }
+  
+  try {
+    // Отправляем на сервер
+    try {
+      await dispatch('websocket/send', {
+        type: 'post',
+        request: 'schedules',
+        name: dID,
+        payload: { roomKey, paramKey, schedules }
+      }, { root: true });
+      
+      // После успешной отправки на сервер, обновляем локальное состояние
+      await dispatch('config/handleConfigResponse', {
+        name: dID,
+        request: 'schedules',
+        payload: { [roomKey]: { [paramKey]: schedules } }
+      }, { root: true });
+      
+    } catch (error) {
+      logger.error('[settingsConfig] - saveSchedules - Ошибка отправки на сервер:', error);
+      throw error;
+    }
+    
+    logger.info('[settingsConfig] - saveSchedules - Расписания сохранены:', {
+      roomKey,
+      paramKey,
+      count: schedules.length
+    });
+    
+    return { success: true };
+    
+  } catch (error) {
+    logger.error('[settingsConfig] - saveSchedules - Общая ошибка сохранения:', error);
+    throw error;
+  }
+},
+
+    async saveNotifications({ commit, rootGetters, dispatch }, { roomKey, paramKey, notifications }) {
       const dID = rootGetters['dID'];
       if (!dID) {
-        logger.warn('[settingsConfig] - saveSchedules - dID не определен');
+        logger.warn('[settingsConfig] - saveNotifications - dID не определен');
         return;
       }
       
       try {
+        // Обновляем в хранилище
+        const key = `${dID}_notifications`;
+        const allNotifications = { ...(this.state.notifications[key] || {}) };
         
-        // Сохраняем в локальное хранилище
-        // commit('SAVE_SCHEDULES_LOCAL', { dID, roomKey, paramKey, schedules });
+        if (!allNotifications[roomKey]) {
+          allNotifications[roomKey] = {};
+        }
+        allNotifications[roomKey][paramKey] = notifications;
         
-        // Обновляем Vuex состояние для немедленного отображения
-        const nameSchedules = dID + '_schedules';
-        if (!state.schedules[nameSchedules]) {
-          state.schedules[nameSchedules] = {};
-        }
-        if (!state.schedules[nameSchedules][roomKey]) {
-          state.schedules[nameSchedules][roomKey] = {};
-        }
-        state.schedules[nameSchedules][roomKey][paramKey] = schedules;
+        commit('SET_NOTIFICATIONS', { name: dID, config: allNotifications });
         
         // Отправляем на сервер
-        try {
-          await dispatch('websocket/send', {
-            type: 'post',
-            request: 'schedules',
-            name: dID,
-            payload: { roomKey, paramKey, schedules }
-          }, { root: true });
-        } catch (error) {
-          logger.error('[settingsConfig] - saveSchedules - Ошибка отправки на сервер:', error);
-        }
+        await dispatch('websocket/send', {
+          type: 'post',
+          request: 'notifications',
+          name: dID,
+          payload: { roomKey, paramKey, notifications }
+        }, { root: true });
         
-        logger.info('[settingsConfig] - saveSchedules - Расписания сохранены:', {
-          roomKey,
-          paramKey,
-          count: schedules.length
-        });
+        logger.info('[settingsConfig] - saveNotifications - Уведомления сохранены');
         
         return { success: true };
         
       } catch (error) {
-        logger.error('[settingsConfig] - saveSchedules - Общая ошибка сохранения:', error);
+        logger.error('[settingsConfig] - saveNotifications - Ошибка сохранения:', error);
         throw error;
-      } finally {
-        console.log('[settingsConfig] - saveSchedules - Сохранение расписаний завершено');
       }
     },
-
+    
+    async saveAnalytics({ commit, rootGetters, dispatch }, { roomKey, paramKey, analytics }) {
+      const dID = rootGetters['dID'];
+      if (!dID) {
+        logger.warn('[settingsConfig] - saveAnalytics - dID не определен');
+        return;
+      }
+      
+      try {
+        // Обновляем в хранилище
+        const key = `${dID}_statistics`;
+        const allAnalytics = { ...(this.state.statistics[key] || {}) };
+        
+        if (!allAnalytics[roomKey]) {
+          allAnalytics[roomKey] = {};
+        }
+        allAnalytics[roomKey][paramKey] = analytics;
+        
+        commit('SET_STATISTICS', { name: dID, config: allAnalytics });
+        
+        // Отправляем на сервер
+        await dispatch('websocket/send', {
+          type: 'post',
+          request: 'statistics',
+          name: dID,
+          payload: { roomKey, paramKey, analytics }
+        }, { root: true });
+        
+        logger.info('[settingsConfig] - saveAnalytics - Аналитика сохранена');
+        
+        return { success: true };
+        
+      } catch (error) {
+        logger.error('[settingsConfig] - saveAnalytics - Ошибка сохранения:', error);
+        throw error;
+      }
+    },
 
 
 },
   
   getters: {
     getSchedules: state => dID => state.schedules[dID + '_schedules'] || {},
+    getNotifications: (state) => (dID) => { return state.notifications[dID] || {}; },
+    getAnalytics: (state) => (dID) => {return state.statistics[dID] || {}; },
     // getNotifications: state => dID => state.schedules[dID + 'notifications'] || {},
     // getAnalitics: state => dID => state.schedules[dID + 'statistics'] || {},
 

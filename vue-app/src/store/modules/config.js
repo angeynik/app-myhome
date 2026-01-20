@@ -28,17 +28,17 @@ export default {
     SET_SCHEDULE(state, { name, config }) {
       state.schedules[name] = config;
       logger.dev('[sortParams] - SET_SCHEDULE Обновлен конфиг[' + name + ']: ', config);
-      //console.log('[sortParams] - SET_SCHEDULE Обновлен конфиг[' + name + ']: ', config);
+      console.log('[sortParams] - SET_SCHEDULE Обновлен конфиг[' + name + ']: ', config);
     },
     SET_NOTIFICATION(state, { name, config }) {
       state.notifications[name] = config;
       logger.dev('[sortParams] - SET_NOTIFICATION Обновлен конфиг[' + name + ']: ', config);
-      //console.log('[sortParams] - SET_NOTIFICATION Обновлен конфиг[' + name + ']: ', config);
+      console.log('[sortParams] - SET_NOTIFICATION Обновлен конфиг[' + name + ']: ', config);
     },
     SET_STATISTIC(state, { name, config }) {
       state.statistics[name] = config;
       logger.dev('[sortParams] - SET_STATISTIC Обновлен конфиг[' + name + ']: ', config);
-      //console.log('[sortParams] - SET_STATISTIC Обновлен конфиг[' + name + ']: ', config);
+      console.log('[sortParams] - SET_STATISTIC Обновлен конфиг[' + name + ']: ', config);
     },
 
 
@@ -243,7 +243,7 @@ export default {
 
         if (type === 'config') {
           logger.info('[Config] - handleConfigResponse - Обновляем Конфигурацию - ', dID);
-          console.log('[Config] - handleConfigResponse - Обновляем Конфигурацию - ', dID);
+          //console.log('[Config] - handleConfigResponse - Обновляем Конфигурацию - ', dID);
           commit('SET_CONFIG', { name: dID, config });
           // Обновляем список комнат
           logger.info('[Config] - handleConfigResponse - Обновляем список комнат');
@@ -265,13 +265,13 @@ export default {
           //console.log('[Config] - handleConfigResponse - Конфиг обновлен, данные для сортировки готовы');
           return 'success';
         } else if (type === 'schedules') {
-          console.log('[WebSocket] Получаем Конфигурацию Расписания от сервера');
+          //console.log('[WebSocket] Получаем Конфигурацию Расписания от сервера');
           commit('SET_SCHEDULE', { name: dID, config });
         } else if (type === 'statistics') {
-          console.log('[WebSocket] Получаем Конфигурацию Аналитики от сервера');
+          //console.log('[WebSocket] Получаем Конфигурацию Аналитики от сервера');
           commit('SET_STATISTIC', { name: dID, config });
         } else if (type === 'notifications') {
-          console.log('[WebSocket] Получаем Конфигурацию Уведомлений от сервера');
+          //console.log('[WebSocket] Получаем Конфигурацию Уведомлений от сервера');
           commit('SET_NOTIFICATION', { name: dID, config });
         }
 

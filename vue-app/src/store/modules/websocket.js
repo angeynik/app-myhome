@@ -144,7 +144,7 @@ export default {
         }
 
         if (response.type === 'response') {
-          console.log('[WebSocket] Обрабатываем сообщение type = response');
+          //console.log('[WebSocket] Обрабатываем сообщение type = response');
           await dispatch('config/handleConfigResponse', response, { root: true });
         }
         // if (response.request === 'config') {
