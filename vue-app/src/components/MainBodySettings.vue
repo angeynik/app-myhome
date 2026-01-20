@@ -111,8 +111,7 @@ export default {
     };
   },
   computed: {
-    ...mapGetters('scheduleConfig', ['typeSettings']),
-    ...mapGetters('notificationsConfig', ['typeSettings']),
+    ...mapGetters('settingsConfig', ['typeSettings']),
     ...mapGetters([
       'roomKey',
       'paramKey', 
@@ -138,11 +137,9 @@ export default {
         roomTitle: this.getRoomTitle,
         paramTitle: this.getParamTitle,
         deviceTitle: this.getDeviceTitle,
-        setpointTitle: this.getSetpointTitle
+        setpointTitle: this.getSetpointTitle,
+        setpoint: this.setpointKey
       };
-    },
-    currentType() {
-      return this.title;
     },
 
    selectedTitle() {
@@ -167,18 +164,22 @@ export default {
       level: this.userLevel,
       currentType: this.title
     });
-    this.loadCurrentSettings();
+    this.initialize();
+    // this.loadCurrentSettings();
   },
   watch: {
-    currentType(newType) {
-      console.log('[MainBodySettings] type changed to:', newType);
-      this.loadCurrentSettings();
+    title(newTitle, oldTitle) {
+      if (newTitle !== oldTitle) {
+        console.log('[MainBodySettings] WATCH - this.title:', newTitle);
+        this.loadCurrentSettings();
+      }
     }
   },
- 
+
   methods: {
     ...mapMutations('config', ['SET_TYPE_SETTINGS_ITEM']),
-    ...mapActions('scheduleConfig', [
+    ...mapActions('settingsConfig', [
+      'initialize',
       'updateTypePopupItem', 
       'saveSchedules'
     ]),
@@ -191,18 +192,18 @@ export default {
     },
     async loadCurrentSettings() {
       try {
-        const type = this.currentType;
-        console.log(`[MainBodySettings] Loading ${type} data`);
+        const type = this.title;
+        //console.log(`[MainBodySettings] Loading ${type} data`);
         
         switch(type) {
           case 'schedule':
-            await this.loadSchedules();
+            await this.loadData('schedule');
             break;
           case 'notifications':
-            await this.loadNotifications();
+            await this.loadData('notifications');
             break;
           case 'statistics':
-            await this.loadAnalytics();
+            await this.loadData('statistics');
             break;
           default:
             console.warn(`Unknown settings type: ${type}`);
@@ -265,22 +266,58 @@ export default {
     },
 
     
-    async loadSchedules() {
-      console.log('[MainBodySettings] Loading schedules');
-      this.schedules = []; // Заменить на реальную загрузку
+    async loadData(dataType) {
+      const roomKey = this.itemData.roomKey;
+      const paramKey = this.itemData.paramKey;
+      console.log('[MainBodySettings] Loading ', dataType, ' data for ', roomKey, paramKey);
+      
+      try {
+        let result;
+        result = await this.$store.dispatch('settingsConfig/getConfigSettings', {
+            roomKey: roomKey,
+            paramKey: paramKey,
+            configType: dataType
+          });
+
+        // switch(dataType) {
+        //   case 'schedule':
+        //   result = await this.$store.dispatch('scheduleConfig/getConfigSettings', {
+        //     roomKey: roomKey,
+        //     paramKey: paramKey,
+        //     configType: 'schedule'
+        //   });
+        //     break;
+        //   case 'notifications':
+        //     result = await this.$store.dispatch('scheduleConfig/getConfigSettings', {
+        //     roomKey: roomKey,
+        //     paramKey: paramKey,
+        //     configType: 'notification'
+        //   });
+        //     break;
+        //   case 'statistics':
+        //     result = await this.$store.dispatch('scheduleConfig/getConfigSettings', {
+        //     roomKey: roomKey,
+        //     paramKey: paramKey,
+        //     configType: 'statistics'
+        //   });
+        //     break;
+        //   default:
+        //     console.warn(`Unknown settings type: ${dataType}`);
+        // }
+
+
+        
+        
+        this.schedules = [...result];
+        console.log(' -- $$$$$$$$$ -- [MainBodySettings] - loadSchedules - для - ', dataType, ' Получена конфигурация: ', this.schedules, ' количество элементов:', this.schedules.length);
+        
+      } catch (error) {
+        console.error('[MainBodySettings] - loadSchedules - Ошибка загрузки:', error);
+        this.schedules = [];
+      }
+
     },
     
-    // Загрузка уведомлений (заглушка)
-    async loadNotifications() {
-      console.log('[MainBodySettings] Loading notifications');
-      this.notifications = []; // Заменить на реальную загрузку
-    },
-    
-    // Загрузка аналитики (заглушка)
-    async loadAnalytics() {
-      console.log('[MainBodySettings] Loading analytics');
-      this.analytics = []; // Заменить на реальную загрузку
-    },
 
 
 

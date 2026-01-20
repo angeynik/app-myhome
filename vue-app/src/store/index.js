@@ -5,8 +5,7 @@ import websocket from './modules/websocket';
 import log from './modules/log';
 import sortParams from './modules/sortParams';
 import config from './modules/config';
-import scheduleConfig from './modules/scheduleConfig';
-import notificationsConfig from './modules/notificationsConfig';
+import settingsConfig from './modules/settingsConfig';
 
 const store = createStore({
   modules: {
@@ -15,8 +14,7 @@ const store = createStore({
     log,
     sortParams,
     config,
-    scheduleConfig,
-    notificationsConfig,
+    settingsConfig,
   },
   actions: {
     toLowerCase(_, str) {

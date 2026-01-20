@@ -4,7 +4,10 @@ import logger from './logger';
 export default {
   namespaced: true,
   state: () => ({
-    configs: {},
+    configs: {}, // Для хранения кофигурации по dID
+    schedules: {}, // Для хранения расписаний по dID
+    notifications: {}, // Для хранения уведомлений по dID
+    statistics: {}, // Для хранения аналитики по dID
     allRooms: [],
     allParams: [],
     allDevices: [],
@@ -22,6 +25,24 @@ export default {
       logger.dev('[sortParams] - SET_CONFIG Обновлен конфиг[' + name + ']: ', config);
       //console.log('[sortParams] - SET_CONFIG Обновлен конфиг[' + name + ']: ', config);
     },
+    SET_SCHEDULE(state, { name, config }) {
+      state.schedules[name] = config;
+      logger.dev('[sortParams] - SET_SCHEDULE Обновлен конфиг[' + name + ']: ', config);
+      //console.log('[sortParams] - SET_SCHEDULE Обновлен конфиг[' + name + ']: ', config);
+    },
+    SET_NOTIFICATION(state, { name, config }) {
+      state.notifications[name] = config;
+      logger.dev('[sortParams] - SET_NOTIFICATION Обновлен конфиг[' + name + ']: ', config);
+      //console.log('[sortParams] - SET_NOTIFICATION Обновлен конфиг[' + name + ']: ', config);
+    },
+    SET_STATISTIC(state, { name, config }) {
+      state.statistics[name] = config;
+      logger.dev('[sortParams] - SET_STATISTIC Обновлен конфиг[' + name + ']: ', config);
+      //console.log('[sortParams] - SET_STATISTIC Обновлен конфиг[' + name + ']: ', config);
+    },
+
+
+
     SET_ALL_ROOMS(state, rooms) {
       state.allRooms = rooms;
       logger.dev('[sortParams] - SET_ALL_ROOMS Обновлен список доступных комнат: ', rooms);
@@ -110,7 +131,7 @@ export default {
       //console.log('[config] - initialize - state.configs[dID] до ensureConfig: ', state.configs[dID]);
       
       if (dID && !state.configs[dID]) {
-        logger.info('[config] - initialize - Конфиг для dID -', dID, ' не был загружен -',state.configs[dID], ' инициализируем');
+        logger.dev('[config] - initialize - Конфиг для dID -', dID, ' не был загружен -',state.configs[dID], ' инициализируем');
         //console.log('[config] - initialize - Конфиг для dID -', dID, ' не был загружен -',state.configs[dID], ' инициализируем' );
 
         await dispatch('ensureConfig', dID);
@@ -125,7 +146,7 @@ export default {
         }
       }
       await dispatch('ensureSortingKeys');
-      logger.info('[config] - initialize - Завершена инициализация');
+      logger.dev('[config] - initialize - Завершена инициализация');
       //console.log('[config] - initialize - Завершена инициализация');
     },
 
@@ -214,32 +235,48 @@ export default {
       try {
         const dID = response.name;
         const config = response.payload;
+        const type = response.request;
         
         if (!dID || !config) {
           throw new Error('Невалидный ответ конфигурации');
         }
-        logger.info('[Config] - handleConfigResponse - Обновляем Конфигурацию - ', dID);
-        //console.log('[Config] - handleConfigResponse - Обновляем Конфигурацию - ', dID);
-        commit('SET_CONFIG', { name: dID, config });
-        // Обновляем список комнат
-        logger.info('[Config] - handleConfigResponse - Обновляем список комнат');
-        //console.log('[Config] - handleConfigResponse - Обновляем список комнат');
-        await dispatch('handleRoomsSet', config);
-      // Обновляем список параметров
-      logger.info('[Config] - handleConfigResponse - Обновляем список параметров');
-      //console.log('[Config] - handleConfigResponse - Обновляем список параметров');
-        await dispatch('handleParamsSet', config);
-      // Обновляем список устройств
-      logger.info('[Config] - handleConfigResponse - Обновляем список устройств');
-      //console.log('[Config] - handleConfigResponse - Обновляем список устройств');
-      await dispatch('handleDevicesSet', config);
-      // Обновляем уставки
-      logger.info('[Config] - handleConfigResponse - Обновляем уставки');
-      //console.log('[Config] - handleConfigResponse - Обновляем уставки');
-      await dispatch('handleSetpointsSet', config);
-        logger.info('[Config] - handleConfigResponse - Конфиг обновлен, данные для сортировки готовы');
-        //console.log('[Config] - handleConfigResponse - Конфиг обновлен, данные для сортировки готовы');
-        return 'success';
+
+        if (type === 'config') {
+          logger.info('[Config] - handleConfigResponse - Обновляем Конфигурацию - ', dID);
+          console.log('[Config] - handleConfigResponse - Обновляем Конфигурацию - ', dID);
+          commit('SET_CONFIG', { name: dID, config });
+          // Обновляем список комнат
+          logger.info('[Config] - handleConfigResponse - Обновляем список комнат');
+          //console.log('[Config] - handleConfigResponse - Обновляем список комнат');
+          await dispatch('handleRoomsSet', config);
+          // Обновляем список параметров
+          logger.info('[Config] - handleConfigResponse - Обновляем список параметров');
+          //console.log('[Config] - handleConfigResponse - Обновляем список параметров');
+            await dispatch('handleParamsSet', config);
+          // Обновляем список устройств
+          logger.info('[Config] - handleConfigResponse - Обновляем список устройств');
+          //console.log('[Config] - handleConfigResponse - Обновляем список устройств');
+          await dispatch('handleDevicesSet', config);
+          // Обновляем уставки
+          logger.info('[Config] - handleConfigResponse - Обновляем уставки');
+          //console.log('[Config] - handleConfigResponse - Обновляем уставки');
+          await dispatch('handleSetpointsSet', config);
+          logger.info('[Config] - handleConfigResponse - Конфиг обновлен, данные для сортировки готовы');
+          //console.log('[Config] - handleConfigResponse - Конфиг обновлен, данные для сортировки готовы');
+          return 'success';
+        } else if (type === 'schedules') {
+          console.log('[WebSocket] Получаем Конфигурацию Расписания от сервера');
+          commit('SET_SCHEDULE', { name: dID, config });
+        } else if (type === 'statistics') {
+          console.log('[WebSocket] Получаем Конфигурацию Аналитики от сервера');
+          commit('SET_STATISTIC', { name: dID, config });
+        } else if (type === 'notifications') {
+          console.log('[WebSocket] Получаем Конфигурацию Уведомлений от сервера');
+          commit('SET_NOTIFICATION', { name: dID, config });
+        }
+
+
+
       } catch (error) {
         logger.error('[Config] - handleConfigResponse - Ошибка обработки ответа:', error);
         //console.error('[Config] - handleConfigResponse - Ошибка обработки ответа:', error);
