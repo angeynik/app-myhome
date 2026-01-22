@@ -370,6 +370,35 @@ form div {
   /* width: 2vh; */
   height: 4vh;
 }
+.icon-settings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box !important;
+  margin: 10px;
+  transition: transform 0.4s ease;
+  /* width: 4vh;
+  height: 4vh; */
+}
+.icon-settings.item {
+  max-width: 9rem;
+  margin: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-settings.add {
+  fill: var(--green);
+}
+.icon-settings.close {
+  fill: var(--red);
+}
+
+.icon-settings.add:hover,
+.icon-settings.close:hover {
+  transform: scale(1.2);
+}
 
 
     .sensor-header {
@@ -663,6 +692,22 @@ form button:active {
   padding: 0.6rem 0.2rem; 
   text-align: center;
 }
+.mainBodySettings-header {
+  max-width: 7.4rem;
+  width: 22%;
+}
+.mainBodySettings-header-button {
+  background: none; 
+  border: none; 
+  width: 60%;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
 .mainBodySettings-header-title {
   font-size: 1.8rem;
   font-weight: bold;
@@ -675,26 +720,69 @@ form button:active {
   opacity: 0.7;
   line-height: 1.2;
 }
-.mainBodySettings-header-button {
-    width: 15%;
-}
+
 
 
 /* MainBodySchedule.vue */
 
 .settings-block {
   margin: 2rem 0;
-  padding: 2rem;
+  padding: 0.4rem;
   text-align: center;
   color: rgba(224, 223, 231, 0.6);
   background: rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
+  border-radius: 4px;
   border: 1px dashed rgba(224, 223, 231, 0.3);
 }
 .settings-block p {
   font-size: 1rem;
   margin: 0;
 }
+.settings-block-title {
+  text-align: center;
+  display: flex;
+  align-items: center; /* Вертикальное центрирование */
+  justify-content: center; /* Горизонтальное центрирование */
+  min-height: 2rem;
+}
+
+
+.settings-block.clickable,
+.settings-block-title.clickable {
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: 2rem;
+}
+.settings-block.clickable:hover,
+.settings-block-title.clickable:hover {
+  background: rgba(0, 0, 0, 0.2);
+  border-color: rgba(224, 223, 231, 0.5);
+  color: rgba(224, 223, 231, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+.settings-block.clickable:active,
+.settings-block-title.clickable:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+}
+.settings-value {
+  font-size: 1.8rem;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+
+
+
+
 .schedules-list {
   margin-top: 2rem;
 }
@@ -706,8 +794,85 @@ form button:active {
   border-bottom: 1px solid rgba(224, 223, 231, 0.3);
   text-align: left;
 }
+.settings-info{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid rgba(224, 223, 231, 0.2);
+}
+.settings-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--light_font);
+  opacity: 0.6;
+}
+.settings-info-value {
+  margin-right: 0.9rem;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 1rem;
+  width: 100%;
+  margin-bottom: 0.4rem;
+  overflow: hidden;
+}
+.settings-col-first {
+  flex: 0 0 84%;
+  min-width: 60%;
+  display: flex;
+  flex-direction: column;
+  padding: 0 0.4rem;
+}
+.settings-col-second{
+  flex: 0 0 14%;
+  min-width: 10%;
+}
 
 
+
+
+
+.settings-new-value {
+  flex: 1;
+  min-height: 3rem;
+  height: 35%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(224, 223, 231, 0.3);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  font-size: 1.6rem;
+  font-weight: 500;
+  cursor: pointer;
+  /* transition: all 0.3s ease; */
+  padding: 0.5rem;
+}
+.settings-new-value-title {
+  width: 45%;
+  min-height: 3rem;
+  height: 25%;
+}
+
+.settings-new-value.clickable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.settings-new-value.clickable:hover {
+  color: var(--orange);
+  background: rgba(249, 123, 0, 0.1);
+  transform: translateY(-1px);
+}
 
 
 

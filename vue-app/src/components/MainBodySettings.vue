@@ -4,14 +4,13 @@
   <div>
 
       <div class="mainBodySettings">
-        <div class="mainBodySettings-header-button"> 
-          <button class="button-header" @click="addNewItem">
-            <svg class="icon" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="44" cy="44" r="42" fill="#E0DFE7"/>
-              <circle cx="44" cy="44" r="42" fill="#808080"/>
+        <div class="mainBodySettings-header"> 
+          <button class="mainBodySettings-header-button" @click="addNewItem">
+            <svg class="icon-settings add" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle id="add-bg" cx="44" cy="44" r="42" fill="#34B534"/>
               <circle cx="44" cy="44" r="42" stroke="#34B534" stroke-width="4"/>
-              <line x1="44.0005" y1="23" x2="44.0005" y2="63" stroke="#E0DFE7" stroke-width="8"/>
-              <line x1="24" y1="43.0002" x2="64" y2="43.0002" stroke="#E0DFE7" stroke-width="8"/>
+              <line x1="44" y1="23" x2="44" y2="65" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
+              <line x1="23" y1="44" x2="65" y2="44" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
             </svg>
           </button>
         </div>
@@ -22,11 +21,18 @@
           </div>
         </div>
         
-        <div class="mainBodySettings-header-button"> 
-          <button class="button-header" @click="closeMainBodySettings">
-            <svg class="icon-close" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <line x1="43.1334" y1="14.8492" x2="14.8492" y2="43.1335" stroke="#FF4747" stroke-width="8"/>
-              <line x1="14.8493" y1="14.8492" x2="43.1335" y2="43.1335" stroke="#FF4747" stroke-width="8"/>
+        <div class="mainBodySettings-header"> 
+          <button class="mainBodySettings-header-button" @click="closeMainBodySettings">
+            <svg class="icon-settings close" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Темно-красный фон (появляется при наведении) -->
+              <circle class="hover-bg" cx="44" cy="44" r="42" fill="#CC0000" opacity="0"/>
+              <!-- Красный фон (по умолчанию) -->
+              <circle cx="44" cy="44" r="42" fill="#FF4747"/>
+              <!-- Красная обводка -->
+              <circle cx="44" cy="44" r="42" stroke="#FF4747" stroke-width="4"/>
+              <!-- Белый крестик -->
+              <line x1="28" y1="28" x2="60" y2="60" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
+              <line x1="60" y1="28" x2="28" y2="60" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
             </svg>
           </button>
         </div>
@@ -92,8 +98,8 @@
         
       </div>
 
-      <div class="mainBodySettings-footer">
-        <button class="mainBodySettings-ok-button" @click="closeMainBodySettings">Закрыть</button>
+      <div>
+        <button type="submit" @click="closeMainBodySettings">Закрыть</button>
       </div>
 
   </div>
