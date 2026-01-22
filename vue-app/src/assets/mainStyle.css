@@ -125,6 +125,7 @@
   box-sizing: border-box !important;
   background-color: var(--header_color);
   color: var(--light_font);
+  justify-content: center;
 }
     .mainBody {
       display: grid;
@@ -646,6 +647,73 @@ form button:active {
     background: var(--yellow);
   }
 
+
+ /* Стили для отображения информации MainBodySchedule.vue и MainBodySettings.vue */
+
+
+/* MainBodySettings.vue */
+ .mainBodySettings {
+  width: 96vw;
+  /* background-color: blueviolet; */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  /* margin: 1rem 0; */
+  padding: 0.6rem 0.2rem; 
+  text-align: center;
+}
+.mainBodySettings-header-title {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: var(--light_font);
+  margin-bottom: 4px;
+}
+.mainBodySettings-header-title-others {
+  font-size: 0.9rem;
+  color: var(--light_font);
+  opacity: 0.7;
+  line-height: 1.2;
+}
+.mainBodySettings-header-button {
+    width: 15%;
+}
+
+
+/* MainBodySchedule.vue */
+
+.settings-block {
+  margin: 2rem 0;
+  padding: 2rem;
+  text-align: center;
+  color: rgba(224, 223, 231, 0.6);
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  border: 1px dashed rgba(224, 223, 231, 0.3);
+}
+.settings-block p {
+  font-size: 1rem;
+  margin: 0;
+}
+.schedules-list {
+  margin-top: 2rem;
+}
+.schedules-list-title {
+  color: var(--light_font);
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(224, 223, 231, 0.3);
+  text-align: left;
+}
+
+
+
+
+
+
+
+
 /* Горизонтальная ориентация (ширина больше высоты) */
 @media (orientation: landscape) {
     .mainBody {
@@ -673,13 +741,9 @@ form button:active {
   .button-text {
     font-size: clamp(1.3rem, 3vw, 1.5rem);
   }
-
-  /* Компонент настройки Расписания, Уведомления, Аналитики */
-  
-
-  
-
 }
+
+
 /* Адаптация для узких экранов */
 @media (max-width: 800px) {
   .introduce-button {

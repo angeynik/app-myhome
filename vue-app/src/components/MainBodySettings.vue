@@ -48,7 +48,7 @@
               @delete-schedule="handleDeleteSchedule(schedule.id)"
             />
           </div>
-            <div v-if="selectedTitle === 'Расписание' && schedules.length === 0" class="no-schedules">
+            <div v-if="selectedTitle === 'Расписание' && schedules.length === 0" class="settings-block">
               <p>Расписания для этого параметра не настроены.</p>
             </div>
           </div>
@@ -66,7 +66,7 @@
               />
             </div>
           
-          <div v-if="notifications.length === 0" class="no-schedules">
+          <div v-if="notifications.length === 0" class="settings-block">
             <p>Уведомления для выбранного параметра не настроены.</p>
           </div>
         </div>
@@ -84,7 +84,7 @@
               />
             </div>
           
-          <div v-if="analytics.length === 0" class="no-schedules">
+          <div v-if="analytics.length === 0" class="settings-block">
             <p>Отсутствует Аналитика для выбранного параметра.</p>
           </div>
         </div>
@@ -105,6 +105,7 @@ import { mapMutations, mapGetters, mapActions } from 'vuex';
 import MainBodySchedule from './MainBodySchedule.vue';
 import MainBodyNotifications from './MainBodyNotifications.vue';
 import MainBodyStatistic from './MainBodyStatistic.vue';
+
 
 export default {
   name: 'MainBodySettings',
@@ -624,6 +625,10 @@ export default {
 };
 </script>
 
+<style lang="css" src="../assets/mainStyle.css">
+</style>
+
+<!-- 
 <style scoped>
 
 .mainBodySettings {
@@ -736,4 +741,4 @@ export default {
   font-size: 1rem;
   margin: 0;
 }
-</style>
+</style> -->
