@@ -102,7 +102,7 @@
 
 <script>
 import logger from '../store/modules/logger.js';
-import { mapGetters } from 'vuex';
+import { mapGetters, mapActions} from 'vuex';
 
 export default {
   name: 'MainBodySchedule',
@@ -129,6 +129,7 @@ export default {
   
   computed: {
     ...mapGetters(['level']),
+    ...mapGetters('settingsConfig', ['dateTimeUtils', 'validationUtils']),
     
     userLevel() {
       return this.level || 0;
@@ -154,6 +155,9 @@ export default {
         ? this.scheduleData.value.toFixed(1)
         : this.scheduleData.value;
     },
+    dateUtils() {
+      return this.dateTimeUtils;
+    },
 
     
   },
@@ -168,23 +172,29 @@ export default {
   },
   
   methods: {
+    ...mapActions('settingsConfig', [
+      'timeToMinutes',
+      'minutesToTime',
+      'validateScheduleTime',
+      'checkScheduleOverlap'
+    ]),
     // Переключение типа значения
-toggleValueType(event) {
-  event.stopPropagation(); // Добавьте эту строку
-  
-  console.log('[MainBodySchedule] - toggleValueType - scheduleData:', this.scheduleData);
-  
-  // Используем ID или временный ID
-  const scheduleId = this.scheduleData.id || this.scheduleData._tempId;
-  const newType = this.scheduleData.valueType === 'absolute' ? 'deviation' : 'absolute';
-  
-  console.log('[MainBodySchedule] - toggleValueType - Отправляем событие с ID:', scheduleId, 'новый тип:', newType);
-  
-  this.$emit('value-type-changed', {
-    scheduleId: scheduleId,
-    newValueType: newType
-  });
-},
+    toggleValueType(event) {
+      event.stopPropagation(); // Добавьте эту строку
+      
+      console.log('[MainBodySchedule] - toggleValueType - scheduleData:', this.scheduleData);
+      
+      // Используем ID или временный ID
+      const scheduleId = this.scheduleData.id || this.scheduleData._tempId;
+      const newType = this.scheduleData.valueType === 'absolute' ? 'deviation' : 'absolute';
+      
+      console.log('[MainBodySchedule] - toggleValueType - Отправляем событие с ID:', scheduleId, 'новый тип:', newType);
+      
+      this.$emit('value-type-changed', {
+        scheduleId: scheduleId,
+        newValueType: newType
+      });
+    },
     
     // Редактирование значения расписания
     editScheduleValue() {
@@ -235,20 +245,46 @@ toggleValueType(event) {
     },
     
     // Общий метод для редактирования времени
-    editTimeField(field, label) {
+    // editTimeField(field, label) {
+    //   logger.dev(`[MainBodySchedule] - editTimeField - Редактирование ${label}`);
+      
+    //   const timeString = this.scheduleData[field] || '00:00';
+    //   const [hours, minutes] = timeString.split(':').map(Number);
+    //   const valueInMinutes = hours * 60 + minutes;
+      
+    //   this.$emit('edit-value', {
+    //     field: field,
+    //     value: valueInMinutes,
+    //     limits: {
+    //       min: 0,
+    //       max: 1439, // 23:59
+    //       step: 5 // 5 минут
+    //     },
+    //     type: 'time',
+    //     label: label
+    //   });
+    // },
+    async editTimeField(field, label) {
       logger.dev(`[MainBodySchedule] - editTimeField - Редактирование ${label}`);
       
       const timeString = this.scheduleData[field] || '00:00';
-      const [hours, minutes] = timeString.split(':').map(Number);
-      const valueInMinutes = hours * 60 + minutes;
+      
+      // Используем action из хранилища для преобразования времени
+      let valueInMinutes;
+      try {
+        valueInMinutes = await this.timeToMinutes(timeString);
+      } catch (error) {
+        logger.error('[MainBodySchedule] - editTimeField - Ошибка преобразования времени:', error);
+        valueInMinutes = 0; // значение по умолчанию
+      }
       
       this.$emit('edit-value', {
         field: field,
         value: valueInMinutes,
         limits: {
           min: 0,
-          max: 1439, // 23:59
-          step: 5 // 5 минут
+          max: 1439,
+          step: 5
         },
         type: 'time',
         label: label
@@ -271,32 +307,56 @@ toggleValueType(event) {
     
     // Форматирование даты
     formatDate(dateString) {
-      if (!dateString) return '—';
+      return this.dateUtils.formatDate(dateString, 'ru-RU');
+      // if (!dateString) return '—';
       
-      try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('ru-RU', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      } catch (error) {
-        return dateString;
-      }
+      // try {
+      //   const date = new Date(dateString);
+      //   return date.toLocaleDateString('ru-RU', {
+      //     day: '2-digit',
+      //     month: '2-digit',
+      //     year: 'numeric',
+      //     hour: '2-digit',
+      //     minute: '2-digit'
+      //   });
+      // } catch (error) {
+      //   return dateString;
+      // }
     },
     
-    validateScheduleTime(schedule) {
-      const timeToMinutes = (time) => {
-        const [hours, minutes] = time.split(':').map(Number);
-        return hours * 60 + minutes;
-      };
+    // validateScheduleTime(schedule) {
+    //   const timeToMinutes = (time) => {
+    //     const [hours, minutes] = time.split(':').map(Number);
+    //     return hours * 60 + minutes;
+    //   };
+      
+    //   const startMinutes = timeToMinutes(schedule.startTime);
+    //   const endMinutes = timeToMinutes(schedule.endTime);
+      
+    //   // Проверяем, что endTime > startTime
+    //   if (endMinutes <= startMinutes) {
+    //     return {
+    //       valid: false,
+    //       message: 'Время окончания должно быть позже времени начала'
+    //     };
+    //   }
+      
+    //   return { valid: true };
+    // },
+    validateScheduleTimeSync(schedule) {
+      // Используем синхронную логику через геттер
+      const timeToMinutes = this.dateUtils.timeToMinutes;
+      
+      if (!schedule || !schedule.startTime || !schedule.endTime) {
+        return {
+          valid: false,
+          message: 'Отсутствует время начала или окончания'
+        };
+      }
       
       const startMinutes = timeToMinutes(schedule.startTime);
       const endMinutes = timeToMinutes(schedule.endTime);
       
-      // Проверяем, что endTime > startTime
       if (endMinutes <= startMinutes) {
         return {
           valid: false,
@@ -306,6 +366,20 @@ toggleValueType(event) {
       
       return { valid: true };
     },
+    async checkScheduleOverlap(startTime, endTime, existingSchedules) {
+      try {
+        const result = await this.checkScheduleOverlap({
+          startTime,
+          endTime,
+          existingSchedules
+        });
+        return result;
+      } catch (error) {
+        logger.error('[MainBodySchedule] - checkScheduleOverlap - Ошибка проверки:', error);
+        return true; // В случае ошибки считаем, что есть пересечение
+      }
+    },
+  
   }
 };
 </script>

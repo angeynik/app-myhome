@@ -232,7 +232,12 @@ export default {
     ...mapActions('settingsConfig', [
       'initialize',
       'updateTypePopupItem', 
-      'saveSchedules'
+      'saveSchedules',
+      'getCurrentDateTime',
+      'formatDate',
+      'timeToMinutes',
+      'minutesToTime',
+      'checkScheduleOverlap',
     ]),
     
     formattedValue(value) {
@@ -322,6 +327,72 @@ export default {
       }
     },
   
+  // async addNewSchedule(roomKey, paramKey) {
+  //   // Получаем текущие расписания для этой комнаты и параметра
+  //   const existingSchedules = this.schedules.filter(s => 
+  //     s.roomKey === roomKey && 
+  //     s.paramKey === paramKey
+  //   );
+    
+  //   // Создаем временные метки
+  //   const now = new Date();
+  //   const currentHours = now.getHours().toString().padStart(2, '0');
+  //   const currentMinutes = now.getMinutes().toString().padStart(2, '0');
+  //   const startTime = `${currentHours}:${currentMinutes}`;
+    
+  //   // Время окончания (+1 час от текущего времени)
+  //   const endTimeDate = new Date(now.getTime() + 60 * 60 * 1000);
+  //   const endHours = endTimeDate.getHours().toString().padStart(2, '0');
+  //   const endMinutes = endTimeDate.getMinutes().toString().padStart(2, '0');
+  //   const endTime = `${endHours}:${endMinutes}`;
+    
+  //   // Проверка пересечения с существующими расписаниями
+  //   const hasOverlap = this.checkScheduleOverlap(startTime, endTime, existingSchedules);
+  //   if (hasOverlap) {
+  //     alert('Новое расписание пересекается с существующим. Пожалуйста, выберите другое время.');
+  //     return;
+  //   }
+    
+  //   // Определяем ID нового расписания
+  //   let newId = 1;
+  //   if (existingSchedules.length > 0) {
+  //     const existingIds = existingSchedules
+  //       .map(s => s.id)
+  //       .filter(id => id != null && typeof id === 'number');
+      
+  //     if (existingIds.length > 0) {
+  //       newId = Math.max(...existingIds) + 1;
+  //     }
+  //   }
+    
+  //   const defaultValue = this.effectiveSetpointValue || 0;
+    
+  //   const newSchedule = {
+  //     id: newId,
+  //     startTime: startTime,
+  //     endTime: endTime,
+  //     value: defaultValue,
+  //     valueType: 'absolute',
+  //     unit: this.unit || '',
+  //     roomKey: roomKey,
+  //     paramKey: paramKey,
+  //     paramTitle: this.itemData.paramTitle || 'Новое расписание',
+  //     createdAt: now.toISOString(),
+  //     _modified: true,
+  //     days: [1, 2, 3, 4, 5], // Пн-Пт по умолчанию
+  //     enabled: true
+  //   };
+    
+  //   // Добавляем расписание
+  //   this.schedules = [...this.schedules, newSchedule];
+    
+  //   console.log('[MainBodySettings] - addNewSchedule - Новое расписание создано:', newSchedule);
+    
+  //   // Сохраняем изменения
+  //   await this.saveScheduleBlock();
+  //   console.log('[MainBodySettings] - addNewSchedule - Расписание успешно сохранено');
+  // },
+  
   async addNewSchedule(roomKey, paramKey) {
     // Получаем текущие расписания для этой комнаты и параметра
     const existingSchedules = this.schedules.filter(s => 
@@ -342,10 +413,21 @@ export default {
     const endTime = `${endHours}:${endMinutes}`;
     
     // Проверка пересечения с существующими расписаниями
-    const hasOverlap = this.checkScheduleOverlap(startTime, endTime, existingSchedules);
-    if (hasOverlap) {
-      alert('Новое расписание пересекается с существующим. Пожалуйста, выберите другое время.');
-      return;
+    // Используем функцию из хранилища
+    try {
+      const hasOverlap = await this.checkScheduleOverlap({
+        startTime,
+        endTime,
+        existingSchedules
+      });
+      
+      if (hasOverlap) {
+        alert('Новое расписание пересекается с существующим. Пожалуйста, выберите другое время.');
+        return;
+      }
+    } catch (error) {
+      console.error('[MainBodySettings] - Ошибка проверки пересечения:', error);
+      // Продолжаем создание даже при ошибке проверки
     }
     
     // Определяем ID нового расписания
@@ -374,7 +456,7 @@ export default {
       paramTitle: this.itemData.paramTitle || 'Новое расписание',
       createdAt: now.toISOString(),
       _modified: true,
-      days: [1, 2, 3, 4, 5], // Пн-Пт по умолчанию
+      days: [1, 2, 3, 4, 5],
       enabled: true
     };
     
@@ -387,7 +469,7 @@ export default {
     await this.saveScheduleBlock();
     console.log('[MainBodySettings] - addNewSchedule - Расписание успешно сохранено');
   },
-  
+
   async addNewNotification(roomKey, paramKey) {
     // Получаем текущие уведомления для этой комнаты и параметра
     const existingNotifications = this.notifications.filter(n => 
@@ -480,23 +562,23 @@ export default {
   },
   
   // Проверка пересечения расписаний
-  checkScheduleOverlap(startTime, endTime, existingSchedules) {
-    const [newStartHour, newStartMinute] = startTime.split(':').map(Number);
-    const [newEndHour, newEndMinute] = endTime.split(':').map(Number);
+  // checkScheduleOverlap(startTime, endTime, existingSchedules) {
+  //   const [newStartHour, newStartMinute] = startTime.split(':').map(Number);
+  //   const [newEndHour, newEndMinute] = endTime.split(':').map(Number);
     
-    const newStart = newStartHour * 60 + newStartMinute;
-    const newEnd = newEndHour * 60 + newEndMinute;
+  //   const newStart = newStartHour * 60 + newStartMinute;
+  //   const newEnd = newEndHour * 60 + newEndMinute;
     
-    return existingSchedules.some(schedule => {
-      const [existingStartHour, existingStartMinute] = schedule.startTime.split(':').map(Number);
-      const [existingEndHour, existingEndMinute] = schedule.endTime.split(':').map(Number);
+  //   return existingSchedules.some(schedule => {
+  //     const [existingStartHour, existingStartMinute] = schedule.startTime.split(':').map(Number);
+  //     const [existingEndHour, existingEndMinute] = schedule.endTime.split(':').map(Number);
       
-      const existingStart = existingStartHour * 60 + existingStartMinute;
-      const existingEnd = existingEndHour * 60 + existingEndMinute;
+  //     const existingStart = existingStartHour * 60 + existingStartMinute;
+  //     const existingEnd = existingEndHour * 60 + existingEndMinute;
       
-      return (newStart < existingEnd && newEnd > existingStart);
-    });
-  },
+  //     return (newStart < existingEnd && newEnd > existingStart);
+  //   });
+  // },
 
   // Методы сохранения (добавляем если их нет)
   async saveScheduleBlock() {
