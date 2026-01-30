@@ -345,7 +345,7 @@ export default {
         }
         
         let hasOverlap = false;
-        let latestEndTime = 0;
+        let allExistingEnds = [];
         
         // 1. Сначала проверяем все существующие расписания на пересечение
         for (const scheduleItem of existingSchedules) {
@@ -356,22 +356,19 @@ export default {
             existingStart,
             existingEnd
           });
-          
-          // Обновляем самое позднее время окончания
-          if (existingEnd > latestEndTime) {
-            latestEndTime = existingEnd;
-          }
+          // Добавляем в массив всех времен окончаний
+          allExistingEnds.push(existingEnd);
           
           // Проверяем пересечение интервалов
           if (numStart < existingEnd && numEnd > existingStart) {
             hasOverlap = true;
             console.log('[settingsConfig] - checkScheduleOverlap - Пересечение найдено', existingStart, existingEnd, numStart, numEnd);
-            break;
           }
         }
 
         // 2. Если есть пересечение, вычисляем новое время (этот блок должен быть ПОСЛЕ цикла)
         if (hasOverlap) {
+          const latestEndTime = Math.max(...allExistingEnds);
           // Вычисляем новый startTime: самый поздний existingEnd + 1 минута
           const newStartMinutes = latestEndTime + 1;
           
@@ -392,7 +389,7 @@ export default {
           // Преобразуем минуты обратно в строковое время
           const newStartTimeStr = await context.dispatch('minutesToTime', newStartMinutes);
           const newEndTimeStr = await context.dispatch('minutesToTime', newEndMinutes);
-          
+
           console.log('[settingsConfig] - checkScheduleOverlap - Предложено новое время:', {
             newStartTime: newStartTimeStr,
             newEndTime: newEndTimeStr,
@@ -510,6 +507,8 @@ export default {
 
 
 async saveSchedules({ rootGetters, dispatch }, { roomKey, paramKey, schedules }) {
+  console.log('[settingsConfig] - saveSchedules - Сохраняем расписание:', { roomKey, paramKey, schedules });
+  
   const dID = rootGetters['dID'];
   if (!dID) {
     logger.warn('[settingsConfig] - saveSchedules - dID не определен');
