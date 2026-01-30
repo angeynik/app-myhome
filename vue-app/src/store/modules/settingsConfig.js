@@ -78,7 +78,7 @@ export default {
         return {};
         
       } finally {
-        console.log('[settingsConfig] - Инициализация завершена');
+        console.log('[settingsConfig] - initialize - Инициализация завершена');
       }
     },
     // async getConfigSettings({ state, rootGetters }, { configType, roomKey, paramKey }) {
@@ -200,6 +200,17 @@ export default {
         return new Date().toISOString(); // fallback
       }
     },
+    getCurrentTimeString() {
+      try {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
+      } catch (error) {
+        console.error('[settingsConfig] - getCurrentTimeString - Ошибка:', error);
+        return '00:00';
+      }
+    },
     formatDate(context, { dateString, locale = 'ru-RU' }) {
       try {
         if (!dateString) return '—';
@@ -224,6 +235,7 @@ export default {
       }
     },
     timeToMinutes(_, timeString) {
+      console.log('[settingsConfig] - timeToMinutes - Преобразование времени:', timeString);
         try {
           if (!timeString || typeof timeString !== 'string') {
             logger.warn('[settingsConfig] - timeToMinutes - Неверный формат времени:', timeString);
@@ -248,6 +260,7 @@ export default {
         }
       },
     minutesToTime(_, minutes) {
+      console.log('[settingsConfig] - minutesToTime - Преобразование минут:', minutes);
         try {
           if (typeof minutes !== 'number' || minutes < 0 || minutes > 1439) {
             logger.warn('[settingsConfig] - minutesToTime - Некорректное количество минут:', minutes);
@@ -298,49 +311,187 @@ export default {
           };
         }
     },
-    checkScheduleOverlap(context, { startTime, endTime, existingSchedules }) {
+    async checkScheduleOverlap(context, { startTime, endTime, existingSchedules }) {
+      console.log('[settingsConfig] - checkScheduleOverlap - Начало проверки', {
+        startTime,
+        endTime,
+        existingSchedules
+      });
       try {
+        // Валидация входных параметров
+        if (!startTime || !endTime) {
+          const message = 'Отсутствует startTime или endTime';
+          console.warn('[settingsConfig] - checkScheduleOverlap - ', message);
+          return message;
+        }
         if (!existingSchedules || !Array.isArray(existingSchedules)) {
           return false;
         }
-        
-        const newStart = context.dispatch('timeToMinutes', startTime);
-        const newEnd = context.dispatch('timeToMinutes', endTime);
-        
-        // Проверяем валидность нового времени
-        if (newEnd <= newStart) {
-          logger.warn('[settingsConfig] - checkScheduleOverlap - Некорректное время нового расписания');
-          return true; // Считаем пересечением, т.к. время некорректно
-        }
-        
-        const hasOverlap = existingSchedules.some(schedule => {
-          if (!schedule.startTime || !schedule.endTime) {
-            return false;
-          }
-          
-          const existingStart = context.dispatch('timeToMinutes', schedule.startTime);
-          const existingEnd = context.dispatch('timeToMinutes', schedule.endTime);
-          
-          // Проверяем пересечение интервалов
-          return (newStart < existingEnd && newEnd > existingStart);
-        });
-        
-        logger.dev('[settingsConfig] - checkScheduleOverlap - Результат проверки:', {
+
+        const numStart = await context.dispatch('timeToMinutes', startTime);
+        const numEnd = await context.dispatch('timeToMinutes', endTime);
+        console.log('[settingsConfig] - checkScheduleOverlap - Новое время расписания:', {
           startTime,
           endTime,
-          hasOverlap,
-          schedulesCount: existingSchedules.length
+          numStart,
+          numEnd
         });
+       
+        // Проверяем валидность нового времени
+        if (numEnd <= numStart) {
+          const message = 'Некорректное время нового расписания'
+          logger.dev('[settingsConfig] - checkScheduleOverlap - ', message);
+          return message; // Считаем пересечением, т.к. время некорректно
+        }
         
-        return hasOverlap;
+        let hasOverlap = false;
+        let latestEndTime = 0;
+        
+        // 1. Сначала проверяем все существующие расписания на пересечение
+        for (const scheduleItem of existingSchedules) {
+          const existingStart = await context.dispatch('timeToMinutes', scheduleItem.startTime);
+          const existingEnd = await context.dispatch('timeToMinutes', scheduleItem.endTime);
+          
+          console.log('[settingsConfig] - checkScheduleOverlap - Существующее время расписания:', {
+            existingStart,
+            existingEnd
+          });
+          
+          // Обновляем самое позднее время окончания
+          if (existingEnd > latestEndTime) {
+            latestEndTime = existingEnd;
+          }
+          
+          // Проверяем пересечение интервалов
+          if (numStart < existingEnd && numEnd > existingStart) {
+            hasOverlap = true;
+            console.log('[settingsConfig] - checkScheduleOverlap - Пересечение найдено', existingStart, existingEnd, numStart, numEnd);
+            break;
+          }
+        }
+
+        // 2. Если есть пересечение, вычисляем новое время (этот блок должен быть ПОСЛЕ цикла)
+        if (hasOverlap) {
+          // Вычисляем новый startTime: самый поздний existingEnd + 1 минута
+          const newStartMinutes = latestEndTime + 1;
+          
+          // Вычисляем новый endTime: newStart + 10 минут
+          const newEndMinutes = newStartMinutes + 10;
+          
+          // Проверяем, что новое время не выходит за границы суток (1440 минут)
+          if (newEndMinutes > 1440) {
+            console.log('[settingsConfig] - checkScheduleOverlap - Новое время выходит за границы суток');
+            return { 
+              hasOverlap: true,
+              newStartTime: null,
+              newEndTime: null,
+              message: 'Невозможно найти свободный промежуток в течение суток'
+            };
+          }
+          
+          // Преобразуем минуты обратно в строковое время
+          const newStartTimeStr = await context.dispatch('minutesToTime', newStartMinutes);
+          const newEndTimeStr = await context.dispatch('minutesToTime', newEndMinutes);
+          
+          console.log('[settingsConfig] - checkScheduleOverlap - Предложено новое время:', {
+            newStartTime: newStartTimeStr,
+            newEndTime: newEndTimeStr,
+            newStartMinutes,
+            newEndMinutes
+          });
+          
+          // Возвращаем информацию о пересечении и новом времени
+          const message = `Предложено новое время от ${newStartTimeStr} до ${newEndTimeStr}`;
+          return {
+            message,
+            newStartTime: newStartTimeStr,
+            newEndTime: newEndTimeStr
+          };
+        }
+        
+        // Если пересечения нет, возвращаем false
+        return false;
         
       } catch (error) {
         logger.error('[settingsConfig] - checkScheduleOverlap - Ошибка проверки пересечения:', error);
-        return true; // В случае ошибки считаем, что есть пересечение для безопасности
+        return error; // В случае ошибки считаем, что есть пересечение для безопасности
       }
     },
-
-
+    
+    // findAvailableTimeSlot(context, { currentTime, existingSchedules, minDuration = 60 }) {
+    //   try {
+    //     const timeToMinutes = context.dispatch('timeToMinutes');
+    //     const minutesToTime = context.dispatch('minutesToTime');
+        
+    //     // Сортируем расписания по времени начала
+    //     const sortedSchedules = [...existingSchedules].sort((a, b) => {
+    //       return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
+    //     });
+        
+    //     const currentMinutes = timeToMinutes(currentTime);
+    //     const endOfDay = 24 * 60; // 00:00 следующего дня
+        
+    //     // Если нет существующих расписаний
+    //     if (sortedSchedules.length === 0) {
+    //       const startTime = currentTime;
+    //       const endTime = minutesToTime(Math.min(currentMinutes + minDuration, endOfDay));
+    //       return { startTime, endTime, found: true };
+    //     }
+        
+    //     // Проверяем возможность вставить до первого расписания
+    //     const firstScheduleStart = timeToMinutes(sortedSchedules[0].startTime);
+    //     if (currentMinutes + minDuration <= firstScheduleStart) {
+    //       return {
+    //         startTime: currentTime,
+    //         endTime: minutesToTime(Math.min(currentMinutes + minDuration, firstScheduleStart - 1)),
+    //         found: true
+    //       };
+    //     }
+        
+    //     // Ищем слот между существующими расписаниями
+    //     for (let i = 0; i < sortedSchedules.length; i++) {
+    //       const currentSchedule = sortedSchedules[i];
+    //       const currentEnd = timeToMinutes(currentSchedule.endTime);
+          
+    //       // Время начала следующего расписания (или конец дня)
+    //       const nextStart = i < sortedSchedules.length - 1 
+    //         ? timeToMinutes(sortedSchedules[i + 1].startTime)
+    //         : endOfDay;
+          
+    //       // Максимальное возможное время начала в этом слоте
+    //       const maxPossibleStart = Math.max(currentMinutes, currentEnd + 1);
+          
+    //       // Проверяем, есть ли достаточно места
+    //       if (maxPossibleStart + minDuration <= nextStart) {
+    //         return {
+    //           startTime: minutesToTime(maxPossibleStart),
+    //           endTime: minutesToTime(maxPossibleStart + minDuration),
+    //           found: true
+    //         };
+    //       }
+    //     }
+        
+    //     // Пробуем вставить после последнего расписания в следующем дне
+    //     const lastScheduleEnd = timeToMinutes(sortedSchedules[sortedSchedules.length - 1].endTime);
+    //     const nextDayStart = Math.max(currentMinutes, lastScheduleEnd + 1);
+        
+    //     if (nextDayStart + minDuration <= endOfDay) {
+    //       return {
+    //         startTime: minutesToTime(nextDayStart),
+    //         endTime: minutesToTime(nextDayStart + minDuration),
+    //         found: true
+    //       };
+    //     }
+        
+    //     // Не нашли подходящего слота
+    //     return { startTime: null, endTime: null, found: false };
+        
+    //   } catch (error) {
+    //     console.error('[settingsConfig] - findAvailableTimeSlot - Ошибка:', error);
+    //     return { startTime: null, endTime: null, found: false };
+    //   }
+    // },
+   
 
 
 
@@ -516,25 +667,8 @@ async saveSchedules({ rootGetters, dispatch }, { roomKey, paramKey, schedules })
           return dateString;
         }
       },
-      timeToMinutes: (timeString) => {
-        try {
-          if (!timeString || typeof timeString !== 'string') return 0;
-          const [hours, minutes] = timeString.split(':').map(Number);
-          return hours * 60 + minutes;
-        } catch (error) {
-          return 0;
-        }
-      },
-      minutesToTime: (minutes) => {
-        try {
-          if (typeof minutes !== 'number' || minutes < 0 || minutes > 1439) return '00:00';
-          const hours = Math.floor(minutes / 60);
-          const mins = minutes % 60;
-          return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-        } catch (error) {
-          return '00:00';
-        }
-      },
+
+
     }),
     validationUtils: ( getters) => ({
         validateScheduleTime: (schedule) => {
@@ -559,19 +693,30 @@ async saveSchedules({ rootGetters, dispatch }, { roomKey, paramKey, schedules })
           
           return { valid: true };
         },
-        checkScheduleOverlap: (startTime, endTime, existingSchedules) => {
+       checkScheduleOverlap: (startTime, endTime, existingSchedules) => {
+          try {
+            console.log('[settingsConfig] - checkScheduleOverlap - Начало проверки', {
+              startTime,
+              endTime,
+              existingSchedules,
+              schedulesCount: existingSchedules?.length || 0
+            });
+          } catch (error) {
+            console.log('[settingsConfig] - checkScheduleOverlap - Ошибка валидации:', error);
+          }
+
           // Синхронная версия для геттера
-          const timeToMinutes = getters.dateTimeUtils.timeToMinutes;
-          const newStart = timeToMinutes(startTime);
-          const newEnd = timeToMinutes(endTime);
+          // const timeToMinutes = getters.dateTimeUtils.timeToMinutes;
+          // const newStart = timeToMinutes(startTime);
+          // const newEnd = timeToMinutes(endTime);
           
-          if (newEnd <= newStart) return true;
+          // if (newEnd <= newStart) return true;
           
-          return existingSchedules.some(schedule => {
-            const existingStart = timeToMinutes(schedule.startTime);
-            const existingEnd = timeToMinutes(schedule.endTime);
-            return (newStart < existingEnd && newEnd > existingStart);
-          });
+          // return existingSchedules.some(schedule => {
+          //   const existingStart = timeToMinutes(schedule.startTime);
+          //   const existingEnd = timeToMinutes(schedule.endTime);
+          //   return (newStart < existingEnd && newEnd > existingStart);
+          // });
         }
     }),
 

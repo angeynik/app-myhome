@@ -235,8 +235,6 @@ export default {
       'saveSchedules',
       'getCurrentDateTime',
       'formatDate',
-      'timeToMinutes',
-      'minutesToTime',
       'checkScheduleOverlap',
     ]),
     
@@ -292,17 +290,20 @@ export default {
       console.log('[MainBodySettings] - addNewItem');
       const type = this.title; // 'schedule', 'notifications', 'statistics'
       this.currentItemType = type;
-
+      let roomKey, paramKey;
       switch(type) {
         case 'schedule':
+            roomKey = this.itemData.roomKey;
+            paramKey = this.effectiveSetpointKey;
           this.defaultItemValues = {
-            roomKey: this.itemData.roomKey,
-            paramKey: this.effectiveSetpointKey,
+            roomKey: roomKey,
+            paramKey: paramKey,
             value: this.effectiveSetpointValue || 0,
             unit: this.unit || '°C',
             days: [1, 2, 3, 4, 5] // Пн-Пт по умолчанию
           };
-          this.addNewSchedule();
+          console.log('case Schedule - [MainBodySettings] - addNewItem - ', this.defaultItemValues);
+          this.addNewSchedule(roomKey, paramKey);
           break;
         case 'notifications':
           this.defaultItemValues = {
@@ -311,6 +312,7 @@ export default {
             threshold: this.effectiveSetpointValue || 0,
             condition: 'greater_than'
           };
+          console.log('case Notifications - [MainBodySettings] - addNewItem - ', this.defaultItemValues);
           this.addNewNotification();
           break;
         case 'statistics':
@@ -320,6 +322,7 @@ export default {
             chartType: 'line',
             period: 'day'
           };
+          console.log('case Statistics - [MainBodySettings] - addNewItem - ', this.defaultItemValues);
           this.addNewStatistic();
           break;
         default:
@@ -327,30 +330,48 @@ export default {
       }
     },
   
+  
   // async addNewSchedule(roomKey, paramKey) {
+  //   console.log('[MainBodySettings] - addNewSchedule - ', roomKey, paramKey); 
+
   //   // Получаем текущие расписания для этой комнаты и параметра
   //   const existingSchedules = this.schedules.filter(s => 
   //     s.roomKey === roomKey && 
   //     s.paramKey === paramKey
   //   );
+  //   console.log('[MainBodySettings] - addNewSchedule - Существующие расписания:', existingSchedules);
     
   //   // Создаем временные метки
   //   const now = new Date();
   //   const currentHours = now.getHours().toString().padStart(2, '0');
   //   const currentMinutes = now.getMinutes().toString().padStart(2, '0');
   //   const startTime = `${currentHours}:${currentMinutes}`;
+  //   console.log('[MainBodySettings] - addNewSchedule - Время начала:', startTime);
     
   //   // Время окончания (+1 час от текущего времени)
   //   const endTimeDate = new Date(now.getTime() + 60 * 60 * 1000);
   //   const endHours = endTimeDate.getHours().toString().padStart(2, '0');
   //   const endMinutes = endTimeDate.getMinutes().toString().padStart(2, '0');
   //   const endTime = `${endHours}:${endMinutes}`;
+  //   console.log('[MainBodySettings] - addNewSchedule - Время окончания:', endTime);
     
   //   // Проверка пересечения с существующими расписаниями
-  //   const hasOverlap = this.checkScheduleOverlap(startTime, endTime, existingSchedules);
-  //   if (hasOverlap) {
-  //     alert('Новое расписание пересекается с существующим. Пожалуйста, выберите другое время.');
-  //     return;
+  //   // Используем функцию из хранилища
+  //   try {
+  //     const hasOverlap = await this.checkScheduleOverlap(
+  //       startTime,
+  //       endTime,
+  //       existingSchedules
+  //     );
+      
+  //     if (hasOverlap) {
+  //       //alert('Новое расписание пересекается с существующим. Пожалуйста, выберите другое время.');
+  //       alert(hasOverlap);
+  //       return;
+  //     }
+  //   } catch (error) {
+  //     console.error('[MainBodySettings] - Ошибка проверки пересечения:', error);
+  //     // Продолжаем создание даже при ошибке проверки
   //   }
     
   //   // Определяем ID нового расписания
@@ -379,7 +400,7 @@ export default {
   //     paramTitle: this.itemData.paramTitle || 'Новое расписание',
   //     createdAt: now.toISOString(),
   //     _modified: true,
-  //     days: [1, 2, 3, 4, 5], // Пн-Пт по умолчанию
+  //     days: [1, 2, 3, 4, 5],
   //     enabled: true
   //   };
     
@@ -392,83 +413,124 @@ export default {
   //   await this.saveScheduleBlock();
   //   console.log('[MainBodySettings] - addNewSchedule - Расписание успешно сохранено');
   // },
+
+    async addNewSchedule(roomKey, paramKey) {
+      console.log('[MainBodySettings] - addNewSchedule - ', roomKey, paramKey); 
+
+      // Получаем текущие расписания для этой комнаты и параметра
+      const existingSchedules = this.schedules.filter(s => 
+        s.roomKey === roomKey && 
+        s.paramKey === paramKey
+      );
+      
+      console.log('[MainBodySettings] - addNewSchedule - Существующие расписания:', existingSchedules);
+      
+      // Создаем временные метки
+      const now = new Date();
+      const currentHours = now.getHours().toString().padStart(2, '0');
+      const currentMinutes = now.getMinutes().toString().padStart(2, '0');
+      let startTime = `${currentHours}:${currentMinutes}`;
+      
+      // Время окончания (+1 час от текущего времени)
+      const endTimeDate = new Date(now.getTime() + 60 * 60 * 1000);
+      const endHours = endTimeDate.getHours().toString().padStart(2, '0');
+      const endMinutes = endTimeDate.getMinutes().toString().padStart(2, '0');
+      let endTime = `${endHours}:${endMinutes}`;
+      
+      console.log('[MainBodySettings] - Проверяемое время:', { startTime, endTime });
+      
+      // Проверка пересечения с существующими расписаниями
+      try {
+        const hasOverlap = await this.$store.dispatch('settingsConfig/checkScheduleOverlap', {
+          startTime,
+          endTime,
+          existingSchedules
+        });
+        
+        console.log('[MainBodySettings] - Результат проверки пересечения:', hasOverlap);
+        
+        if (hasOverlap.massage) {
+          alert(hasOverlap.massage);
+          return;
+        }
+        if (hasOverlap.newStartTime || hasOverlap.newEndTime) {
+          startTime = hasOverlap.newStartTime;
+          endTime = hasOverlap.newEndTime;
+          console.log('[MainBodySettings] - Обновлено время расписания:', { startTime, endTime });
+        }
+      } catch (error) {
+        console.error('[MainBodySettings] - Ошибка проверки пересечения:', error);
+        // Продолжаем создание с предупреждением
+        if (!confirm('Ошибка проверки пересечения. Создать расписание вручную?')) {
+          return;
+        }
+      }
+      
+      // Определяем ID нового расписания
+      let newId = 1;
+      if (existingSchedules.length > 0) {
+        const existingIds = existingSchedules
+          .map(s => s.id)
+          .filter(id => id != null && typeof id === 'number');
+        
+        if (existingIds.length > 0) {
+          newId = Math.max(...existingIds) + 1;
+        }
+      }
+      
+      // Получаем текущее значение уставки или используем значение по умолчанию
+      const defaultValue = this.effectiveSetpointValue || 0;
+      
+      // Создаем новое расписание
+      const newSchedule = {
+        id: newId,
+        startTime: startTime,
+        endTime: endTime,
+        value: defaultValue,
+        valueType: 'absolute', // или 'deviation' - зависит от требований
+        unit: this.unit || '',
+        roomKey: roomKey,
+        paramKey: paramKey,
+        paramTitle: this.itemData.paramTitle || 'Новое расписание',
+        roomTitle: this.itemData.roomTitle || 'Неизвестная комната',
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+        _modified: true, // Флаг для отслеживания изменений
+        days: [1, 2, 3, 4, 5], // Пн-Пт по умолчанию
+        enabled: true,
+        description: `Расписание для ${this.itemData.paramTitle || 'параметра'} в ${startTime}-${endTime}`,
+        
+      };
+      
+      // Добавляем расписание в массив
+      this.schedules = [...this.schedules, newSchedule];
+      
+      console.log('[MainBodySettings] - addNewSchedule - Новое расписание создано:', newSchedule);
+      
+      // Сохраняем изменения на сервер
+      try {
+        await this.saveScheduleBlock();
+        console.log('[MainBodySettings] - addNewSchedule - Расписание успешно сохранено');
+        
+        // Опционально: показываем уведомление об успехе
+        this.showSuccessNotification('Расписание успешно создано');
+        
+        // Если нужно, можно обновить список расписаний
+        await this.loadData('schedule');
+        
+        return newSchedule;
+      } catch (error) {
+        console.error('[MainBodySettings] - addNewSchedule - Ошибка сохранения:', error);
+        
+        // Откатываем изменения в UI при ошибке сохранения
+        this.schedules = this.schedules.filter(s => s.id !== newId);
+        
+        // Показываем сообщение об ошибке
+        alert('Не удалось сохранить расписание на сервере. Попробуйте еще раз.');
+        throw error;
+      }
+    },
   
-  async addNewSchedule(roomKey, paramKey) {
-    // Получаем текущие расписания для этой комнаты и параметра
-    const existingSchedules = this.schedules.filter(s => 
-      s.roomKey === roomKey && 
-      s.paramKey === paramKey
-    );
-    
-    // Создаем временные метки
-    const now = new Date();
-    const currentHours = now.getHours().toString().padStart(2, '0');
-    const currentMinutes = now.getMinutes().toString().padStart(2, '0');
-    const startTime = `${currentHours}:${currentMinutes}`;
-    
-    // Время окончания (+1 час от текущего времени)
-    const endTimeDate = new Date(now.getTime() + 60 * 60 * 1000);
-    const endHours = endTimeDate.getHours().toString().padStart(2, '0');
-    const endMinutes = endTimeDate.getMinutes().toString().padStart(2, '0');
-    const endTime = `${endHours}:${endMinutes}`;
-    
-    // Проверка пересечения с существующими расписаниями
-    // Используем функцию из хранилища
-    try {
-      const hasOverlap = await this.checkScheduleOverlap({
-        startTime,
-        endTime,
-        existingSchedules
-      });
-      
-      if (hasOverlap) {
-        alert('Новое расписание пересекается с существующим. Пожалуйста, выберите другое время.');
-        return;
-      }
-    } catch (error) {
-      console.error('[MainBodySettings] - Ошибка проверки пересечения:', error);
-      // Продолжаем создание даже при ошибке проверки
-    }
-    
-    // Определяем ID нового расписания
-    let newId = 1;
-    if (existingSchedules.length > 0) {
-      const existingIds = existingSchedules
-        .map(s => s.id)
-        .filter(id => id != null && typeof id === 'number');
-      
-      if (existingIds.length > 0) {
-        newId = Math.max(...existingIds) + 1;
-      }
-    }
-    
-    const defaultValue = this.effectiveSetpointValue || 0;
-    
-    const newSchedule = {
-      id: newId,
-      startTime: startTime,
-      endTime: endTime,
-      value: defaultValue,
-      valueType: 'absolute',
-      unit: this.unit || '',
-      roomKey: roomKey,
-      paramKey: paramKey,
-      paramTitle: this.itemData.paramTitle || 'Новое расписание',
-      createdAt: now.toISOString(),
-      _modified: true,
-      days: [1, 2, 3, 4, 5],
-      enabled: true
-    };
-    
-    // Добавляем расписание
-    this.schedules = [...this.schedules, newSchedule];
-    
-    console.log('[MainBodySettings] - addNewSchedule - Новое расписание создано:', newSchedule);
-    
-    // Сохраняем изменения
-    await this.saveScheduleBlock();
-    console.log('[MainBodySettings] - addNewSchedule - Расписание успешно сохранено');
-  },
 
   async addNewNotification(roomKey, paramKey) {
     // Получаем текущие уведомления для этой комнаты и параметра
@@ -561,24 +623,6 @@ export default {
     console.log('[MainBodySettings] - addNewStatistic - Аналитика успешно сохранена');
   },
   
-  // Проверка пересечения расписаний
-  // checkScheduleOverlap(startTime, endTime, existingSchedules) {
-  //   const [newStartHour, newStartMinute] = startTime.split(':').map(Number);
-  //   const [newEndHour, newEndMinute] = endTime.split(':').map(Number);
-    
-  //   const newStart = newStartHour * 60 + newStartMinute;
-  //   const newEnd = newEndHour * 60 + newEndMinute;
-    
-  //   return existingSchedules.some(schedule => {
-  //     const [existingStartHour, existingStartMinute] = schedule.startTime.split(':').map(Number);
-  //     const [existingEndHour, existingEndMinute] = schedule.endTime.split(':').map(Number);
-      
-  //     const existingStart = existingStartHour * 60 + existingStartMinute;
-  //     const existingEnd = existingEndHour * 60 + existingEndMinute;
-      
-  //     return (newStart < existingEnd && newEnd > existingStart);
-  //   });
-  // },
 
   // Методы сохранения (добавляем если их нет)
   async saveScheduleBlock() {
@@ -715,118 +759,3 @@ export default {
 
 <style lang="css" src="../assets/mainStyle.css">
 </style>
-
-<!-- 
-<style scoped>
-
-.mainBodySettings {
-  width: 100vw;
-  /* background-color: blueviolet; */
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.mainBodySettings-header {
-  height: 14vh;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Автоматическая подгонка элементов по ширине от 120px до доступного пространства */
-  background-color: blueviolet;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 1rem;
-}
-.mainBodySettings-header-title {
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: var(--light_font);
-  margin-bottom: 4px;
-}
-.mainBodySettings-header-title-others {
-  font-size: 0.9rem;
-  color: var(--light_font);
-  opacity: 0.7;
-  line-height: 1.2;
-}
-.mainBodySettings-header-button {
-    width: 15%;
-}
-.button-header {
-  background: none; 
-  border: none; 
-  width: 70%;
-  padding: 0;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.mainBodySettings-title-container {
-  cursor: pointer;
-  padding: 8px 12px;
-  margin: 1vw;
-  text-align: center;
-  width: 100%;
-  transition: all 0.3s ease;
-}
-/* Секция добавления расписания */
-.add-schedule-section {
-  margin: 1.5rem 0;
-  padding: 1rem;
-  text-align: center;
-  border-top: 1px solid rgba(224, 223, 231, 0.2);
-  border-bottom: 1px solid rgba(224, 223, 231, 0.2);
-}
-
-.add-schedule-button {
-  padding: 0.8rem 1.5rem;
-  background: linear-gradient(135deg, var(--green), #2a9e2a);
-  color: var(--light_font);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: bold;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 10px rgba(52, 181, 52, 0.3);
-}
-
-.add-schedule-button:hover {
-  background: linear-gradient(135deg, #2a9e2a, #1e7c1e);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(52, 181, 52, 0.4);
-}
-
-.add-schedule-button:active {
-  transform: translateY(0);
-}
-
-/* Список расписаний */
-.schedules-list {
-  margin-top: 2rem;
-}
-
-.schedules-list-title {
-  color: var(--light_font);
-  font-size: 1.2rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(224, 223, 231, 0.3);
-  text-align: left;
-}
-
-/* Сообщение об отсутствии расписаний */
-.no-schedules {
-  margin: 2rem 0;
-  padding: 2rem;
-  text-align: center;
-  color: rgba(224, 223, 231, 0.6);
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  border: 1px dashed rgba(224, 223, 231, 0.3);
-}
-
-.no-schedules p {
-  font-size: 1rem;
-  margin: 0;
-}
-</style> -->
