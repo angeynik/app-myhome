@@ -216,7 +216,7 @@ export default {
       currentType: this.title
     });
     this.initialize();
-    // this.loadCurrentSettings();
+    this.getSchedulesFromStore();
   },
   watch: {
     title(newTitle, oldTitle) {
@@ -224,7 +224,19 @@ export default {
         console.log('[MainBodySettings] WATCH - this.title:', newTitle);
         this.loadCurrentSettings();
       }
-    }
+    },
+    // Отслеживаем изменения в store и обновляем локальные данные
+    '$store.state.config.schedules': {
+      handler() {
+        console.log('[MainBodySettings] - Watch - Расписания в store обновились');
+        if (this.title === 'schedule') {
+          this.getSchedulesFromStore();
+        }
+      },
+      deep: true,
+      immediate: false
+    },
+
   },
 
   methods: {
@@ -285,6 +297,31 @@ export default {
       this.$emit('title-changed', nextTitle);
     },
 
+    getSchedulesFromStore() {
+      try {
+        const dID = this.dID;
+        const roomKey = this.itemData.roomKey;
+        const paramKey = this.effectiveSetpointKey;
+        
+        if (!dID || !roomKey || !paramKey) {
+          this.schedules = [];
+          return;
+        }
+        
+        // Получаем данные из store и извлекаем нужный массив
+        const schedulesData = this.$store.state.config.schedules[dID] || {};
+        const roomData = schedulesData[roomKey] || {};
+        const paramSchedules = roomData[paramKey];
+        
+        this.schedules = Array.isArray(paramSchedules) ? [...paramSchedules] : [];
+        
+        console.log('[MainBodySettings] - getSchedulesFromStore - Найдено расписаний:', this.schedules.length);
+        
+      } catch (error) {
+        console.error('[MainBodySettings] - getSchedulesFromStore - Ошибка:', error);
+        this.schedules = [];
+      }
+    },
 
     addNewItem() {
       console.log('[MainBodySettings] - addNewItem');
@@ -293,6 +330,7 @@ export default {
       let roomKey, paramKey;
       switch(type) {
         case 'schedule':
+            // this.getSchedulesFromStore();
             roomKey = this.itemData.roomKey;
             paramKey = this.effectiveSetpointKey;
           this.defaultItemValues = {
@@ -334,6 +372,7 @@ export default {
       console.log('[MainBodySettings] - addNewSchedule - ', roomKey, paramKey); 
 
       // Получаем текущие расписания для этой комнаты и параметра
+      this.getSchedulesFromStore();
       const existingSchedules = this.schedules.filter(s => 
         s.roomKey === roomKey && 
         s.paramKey === paramKey
@@ -422,9 +461,19 @@ export default {
       this.schedules = [...this.schedules, newSchedule];
      
       console.log('[MainBodySettings] - addNewSchedule - Новое расписание создано:', newSchedule);
-      
+     
       // Сохраняем изменения на сервер
       try {
+        console.log('[MainBodySettings] - addNewSchedule - Сохраняем расписание локально');
+        await this.$store.dispatch('settingsConfig/addScheduleLocally', {
+          roomKey: roomKey,
+          paramKey: paramKey,
+          schedule: newSchedule
+        });
+        
+        console.log('[MainBodySettings] - addNewSchedule - Расписание сохранено локально');
+
+
         // await this.saveScheduleBlock();
         await this.saveSchedules({
           roomKey: this.itemData.roomKey,

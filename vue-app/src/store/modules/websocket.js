@@ -123,7 +123,7 @@ export default {
           });
         }
         
-        //console.log('[WebSocket] Sending:', message);
+        console.log('[WebSocket] Sending:', message);
         state.socket.send(JSON.stringify(message));
       });
     },

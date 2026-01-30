@@ -414,6 +414,68 @@ export default {
         return error; // В случае ошибки считаем, что есть пересечение для безопасности
       }
     },
+
+    // async addScheduleLocally({ state, dispatch, rootGetters }, { roomKey, paramKey, schedule }) {
+    //   console.log('[settingsConfig] - addScheduleLocally - Начинаем локальное сохранение расписания');
+    //   let configType = 'schedules';
+    //   const dID = rootGetters['dID'];
+    //   if (!dID) {
+    //     logger.warn('[settingsConfig] - addScheduleLocally - dID не определен');
+    //     return;
+    //   }
+      
+    //   console.log('[settingsConfig] - addScheduleLocally - Добавляем расписание локально:', { dID, roomKey, paramKey, schedule });
+      
+    //   try {
+    //     // 1. Получаем текущие расписания из config модуля
+    //     const currentSchedules = await dispatch('getConfigSettings', {
+    //       roomKey: roomKey,
+    //       paramKey: paramKey,
+    //       configType: configType
+    //     });
+    //     console.log('[settingsConfig] - addScheduleLocally - Текущие расписания:', currentSchedules);
+
+        
+    //     // 2. Инициализируем структуру если нужно
+    //     if (!currentSchedules[roomKey]) {
+    //       currentSchedules[roomKey] = {};
+    //     }
+        
+    //     if (!currentSchedules[roomKey][paramKey]) {
+    //       currentSchedules[roomKey][paramKey] = [];
+    //     }
+        
+    //     // 3. Добавляем новое расписание
+    //     const updatedSchedules = [...currentSchedules[roomKey][paramKey], schedule];
+    //     currentSchedules[roomKey][paramKey] = updatedSchedules;
+        
+    //     // 4. Обновляем состояние
+    //     state.schedules[configType] = { ...currentSchedules };
+        
+    //     // 5. Сохраняем в localStorage
+    //     localStorage.setItem(configType, JSON.stringify(currentSchedules));
+        
+    //     logger.info('[settingsConfig] - addScheduleLocally - Расписание добавлено локально');
+    //     return { success: true, schedule };
+        
+    //   } catch (error) {
+    //     logger.error('[settingsConfig] - addScheduleLocally - Ошибка:', error);
+    //     throw error;
+    //   }
+    // },
+
+
+
+
+
+
+
+
+
+
+
+
+
     
     // findAvailableTimeSlot(context, { currentTime, existingSchedules, minDuration = 60 }) {
     //   try {
@@ -488,68 +550,126 @@ export default {
     //     return { startTime: null, endTime: null, found: false };
     //   }
     // },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-async saveSchedules({ rootGetters, dispatch }, { roomKey, paramKey, schedules }) {
-  console.log('[settingsConfig] - saveSchedules - Сохраняем расписание:', { roomKey, paramKey, schedules });
   
+    async addScheduleLocally({ dispatch, rootGetters, rootState }, { roomKey, paramKey, schedule }) {
+  console.log('[settingsConfig] - addScheduleLocally - Начинаем локальное сохранение расписания');
   const dID = rootGetters['dID'];
   if (!dID) {
-    logger.warn('[settingsConfig] - saveSchedules - dID не определен');
+    logger.warn('[settingsConfig] - addScheduleLocally - dID не определен');
     return;
   }
   
+  console.log('[settingsConfig] - addScheduleLocally - Добавляем расписание локально:', { dID, roomKey, paramKey, schedule });
+  
   try {
-    // Отправляем на сервер
-    try {
-      await dispatch('websocket/send', {
-        type: 'post',
-        request: 'schedules',
-        name: dID,
-        payload: { roomKey, paramKey, schedules }
-      }, { root: true });
-      
-      // После успешной отправки на сервер, обновляем локальное состояние
-      await dispatch('config/handleConfigResponse', {
-        name: dID,
-        request: 'schedules',
-        payload: { [roomKey]: { [paramKey]: schedules } }
-      }, { root: true });
-      
-    } catch (error) {
-      logger.error('[settingsConfig] - saveSchedules - Ошибка отправки на сервер:', error);
-      throw error;
+    // 1. Получаем текущие расписания из config.js
+    const currentSchedules = { ...(rootState.config.schedules[dID] || {}) };
+    console.log('[settingsConfig] - addScheduleLocally - Текущие расписания из config.js:', currentSchedules);
+    
+    // 2. Инициализируем структуру если нужно
+    if (!currentSchedules[roomKey]) {
+      currentSchedules[roomKey] = {};
     }
     
-    logger.info('[settingsConfig] - saveSchedules - Расписания сохранены:', {
-      roomKey,
-      paramKey,
-      count: schedules.length
-    });
+    if (!currentSchedules[roomKey][paramKey]) {
+      currentSchedules[roomKey][paramKey] = [];
+    }
     
-    return { success: true };
+    // 3. Добавляем новое расписание
+    currentSchedules[roomKey][paramKey] = [...currentSchedules[roomKey][paramKey], schedule];
+    
+    // 4. Обновляем состояние в config.js через мутацию
+    // Нам нужен commit, но у нас нет доступа к нему напрямую в action
+    // Вместо этого используем dispatch
+    await dispatch('config/updateScheduleLocally', {
+      dID: dID,
+      schedules: currentSchedules
+    }, { root: true });
+    
+    // 5. Также сохраняем в localStorage для резерва
+    localStorage.setItem(`${dID}_schedules`, JSON.stringify(currentSchedules));
+    
+    logger.info('[settingsConfig] - addScheduleLocally - Расписание добавлено локально');
+    return { success: true, schedule };
     
   } catch (error) {
-    logger.error('[settingsConfig] - saveSchedules - Общая ошибка сохранения:', error);
+    logger.error('[settingsConfig] - addScheduleLocally - Ошибка:', error);
     throw error;
   }
 },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    async saveSchedules({ rootGetters, dispatch }, { roomKey, paramKey, schedules }) {
+      console.log('[settingsConfig] - saveSchedules - Сохраняем расписание:', { roomKey, paramKey, schedules });
+
+      const dID = rootGetters['dID'];
+      if (!dID) {
+        logger.warn('[settingsConfig] - saveSchedules - dID не определен');
+        return;
+      }
+      
+      try {
+        // Отправляем на сервер
+        try {
+          await dispatch('websocket/send', {
+            type: 'post',
+            request: 'addSchedule',
+            name: dID,
+            payload: { roomKey, paramKey, schedules }
+          }, { root: true });
+          
+          // После успешной отправки на сервер, обновляем локальное состояние
+          await dispatch('config/handleConfigResponse', {
+            name: dID,
+            request: 'schedules',
+            payload: { [roomKey]: { [paramKey]: schedules } }
+          }, { root: true });
+          
+        } catch (error) {
+          logger.error('[settingsConfig] - saveSchedules - Ошибка отправки на сервер:', error);
+          throw error;
+        }
+        
+        logger.info('[settingsConfig] - saveSchedules - Расписания сохранены:', {
+          roomKey,
+          paramKey,
+          count: schedules.length
+        });
+        
+        return { success: true };
+        
+      } catch (error) {
+        logger.error('[settingsConfig] - saveSchedules - Общая ошибка сохранения:', error);
+        throw error;
+      }
+    },
+    async deleteSchedules (roomKey, paramKey, id ) {
+      console.log('[settingsConfig] - deleteSchedules - Удаляем элемент расписания:', { roomKey, paramKey, id });
+
+      // await dispatch('websocket/send', {
+      //       type: 'post',
+      //       request: 'delSchedule',
+      //       name: dID,
+      //       payload: { roomKey, paramKey, schedules }
+      //     }, { root: true });
+
+      
+    },
 
     async saveNotifications({ commit, rootGetters, dispatch }, { roomKey, paramKey, notifications }) {
       const dID = rootGetters['dID'];
