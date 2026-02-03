@@ -75,30 +75,43 @@ export default {
     return this.currentSortType === 'rooms';
   },
   },
-
   watch: {
 
+    // '$store.state.sortParams.forceUpdate': {
+    //   handler(newTimestamp) {
+    //     if (newTimestamp) {
+    //       logger.dev('[MainBody] - Watch - handler - Принудительное обновление view');
+    //       console.log('[MainBody] - Watch - handler - Принудительное обновление view');
+    //       this.updateView();
+    //     }
+    //   },
+    //   immediate: true
+    // },
     '$store.state.sortParams.forceUpdate': {
-      handler(newTimestamp) {
-        if (newTimestamp) {
-          logger.dev('[MainBody] - handler - Принудительное обновление view');
-          //console.log('[MainBody] - Принудительное обновление view');
-          this.updateView();
-        }
+        handler(newTimestamp) {
+          if (newTimestamp) {
+          
+            // Очищаем предыдущий таймаут, если он есть
+            if (this.updateViewTimeout) {
+              clearTimeout(this.updateViewTimeout);
+              //console.log('[MainBody] - Очищен предыдущий таймаут');
+            }
+            
+            // Устанавливаем новый таймаут с задержкой 100 мс
+            this.updateViewTimeout = setTimeout(() => {
+              logger.dev('[MainBody] - Watch - handler - Принудительное обновление view');
+              console.log('[MainBody] - Watch - handler - Принудительное обновление view');
+              this.updateView();
+            }, 350);
+          }
+        },
+        immediate: true
       },
-      immediate: true
-    },
-    getConfig: {
-      handler(newVal) {
-        if (newVal) this.updateView();
-      },
-      deep: true
-    },
     sortType(newSortType) {
     // Реагируем на изменение sortType извне
     this.$store.commit('sortParams/SET_SORT_TYPE', newSortType);
     // this.initializeComponent();
-  }
+  },
   },
   methods: {
     ...mapMutations('sortParams', [
@@ -142,6 +155,7 @@ export default {
     
     selectItem(item) {
       logger.info(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
+      console.log(` -- %%%%%%%%%%%% - [MainBody] - selectItem - setpointKey: ${item.setpointKey}, deviceKey: ${item.deviceKey}, paramKey: ${item.paramKey}, roomKey: ${item.roomKey}`);
       //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
       
        if (this.selectedItem === item) {
@@ -162,6 +176,7 @@ export default {
           this.SET_DEVICE_KEY(item.deviceKey);
           this.SET_SETPOINT_KEY(item.setpointKey);
 
+          console.log (` -- %%%%%%%%%%%% - [MainBody] - selectItem - Обновлены ключи выбранного элемента: ${JSON.stringify(item)}`);
           // Отправляем событие с данными в DashBoard
           this.$emit('eventsMainBody', {
             action: 'show',
@@ -176,7 +191,7 @@ export default {
               setpointKey: item.setpointKey
             }
           });
-          //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
+          console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
           }
     },
  
@@ -201,17 +216,23 @@ export default {
     //   this.$emit('sorting-changed', newSortType);
 
     // },
-    toggleSorting() {
+    toggleSorting(item) {
+      console.log('[MainBody] - toggleSorting - Ключ выбранного элемента:', item.setpointKey, ' и значение:', item.setValue);
       let settingsType = this.typeSettingsItem || 'schedule';
+      if (settingsType === 'schedule') {
+        // Установить state    permitSchedule = true     в settingsConfig.js
+        console.log ('[MainBody] - toggleSorting - Устанавливаем флаг работы с расписанием: ', settingsType);
+      }
       this.$router.push({
         name: 'DashboardSettings',
         params: { settingsType }
       });
     },
     async updateView() { // Формируем массив для отображения пользователю в соответствии с типом сортировки и текущим ключем
+      //console.log('[MainBody] - updateView - started');
         try {
           logger.info('[MainBody] - updateView - started');
-          //console.groupCollapsed('[MainBody] - updateView ');
+          console.groupCollapsed('[MainBody] - updateView ');
           //console.log('[MainBody] - updateView - started');
           const config = this.getConfig(this.dID);
           if (!config) {
@@ -263,6 +284,7 @@ export default {
      
       const devicesArray = [];
       const excludedSections = ['init', 'id', 'group', 'title', 'setpoints'];
+      
 
       // Проходим по всем разделам комнаты кроме исключенных
       Object.entries(room).forEach(([sectionKey, sectionData]) => {
@@ -276,15 +298,30 @@ export default {
             //console.log('[MainBody] getSortedRooms - Item:', cleanKey);
             // Для каждого устройства ищем уставку
             let setValue = null;
+            let setpointKey = null;
+
             if (room.setpoints) {
-              const setpointKey = Object.keys(room.setpoints).find(setKey => 
-                cleanKey.includes(setKey) || setKey.includes(cleanKey)
-              );
-              
+              // setpointKey = Object.keys(room.setpoints).find(setKey => 
+              //   cleanKey.includes(setKey) || setKey.includes(cleanKey)
+              // );
+
+              //console.log('983627  -- %%%%%%%%%%%% - [MainBody] getSortedRooms - Доступные уставки в room.setpoints:', Object.keys(room.setpoints));
+              //console.log('983627  -- %%%%%%%%%%%% - [MainBody] getSortedRooms - Ищем для cleanKey:', cleanKey);
+                
+                setpointKey = Object.keys(room.setpoints).find(setKey => {
+                  const result = setKey.toLowerCase().includes(cleanKey.toLowerCase());
+                  //console.log(`[MainBody] getSortedRooms - Проверяем ${setKey} на наличие ${cleanKey}: ${result}`);
+                  return result;
+                });
+
+              //console.log('[MainBody] getSortedRooms - Ключ параметра уставки:', setpointKey);
               if (setpointKey) {
                 setValue = room.setpoints[setpointKey]?.value != null 
                   ? parseFloat(room.setpoints[setpointKey].value) 
                   : null;
+              } else if (!setpointKey) {
+                setValue = null;
+                setpointKey = null;
               }
             }
 
@@ -295,6 +332,7 @@ export default {
               paramKey: itemKey,
               value: this.getSensorValue(itemData?.type, itemData),
               setValue: setValue,
+              setpointKey: setpointKey,
               unit: this.getUnit(itemKey),
               timeDiff: this.getTimeDiff(itemData.lastUpdate),
               roomTitle: room.title,
@@ -305,9 +343,9 @@ export default {
         }
       });
       logger.dev(`[MainBody] - getSortedRooms - Найдено устройств в комнате ${roomKey}:`, devicesArray.length);
-      //console.log(`[MainBody] - getSortedRooms - Найдено устройств в комнате ${roomKey}:`, devicesArray.length);
+      console.log(`[MainBody] - getSortedRooms - Найдено устройств в комнате ${roomKey}:`, devicesArray);
       return devicesArray;
-},
+    },
 
     // Формируем массив для отображения сортировки по параметрам
     getSortedParams(config, paramPrefix) {
@@ -323,18 +361,23 @@ export default {
 
             const cleanKey = this.clearKeySync(sensorKey);
             let setValue = null;
+            let setpointKey = null;
           if (room.setpoints) {
             // Ищем ключ уставки, который соответствует префиксу сенсора
-            const setpointKey = Object.keys(room.setpoints).find(setKey => 
+            setpointKey = Object.keys(room.setpoints).find(setKey => 
               cleanKey.includes(setKey) || setKey.includes(cleanKey)
             );
-            
+            console.log('[MainBody] getSortedParams - Ключ параметра уставки:', setpointKey);
             if (setpointKey) {
               setValue = room.setpoints[setpointKey]?.value != null 
                 ? parseFloat(room.setpoints[setpointKey].value) 
                 : null;
-            }
+            } else if (!setpointKey) {
+                setValue = null;
+                setpointKey = null;
+              }
           }
+          console.log('[MainBody] getSortedParams - Уставка:', setValue);
             
             sensors.push({
               sortType: 'params',
@@ -343,6 +386,7 @@ export default {
               paramKey: sensorKey, // Полный ключ сенсора
               value: this.getSensorValue(sensorData?.type, sensorData),
               setValue: setValue,
+              setpointKey: setpointKey,
               unit: this.getUnit(paramPrefix),
               timeDiff: this.getTimeDiff(sensorData.lastUpdate),
               roomTitle: room.title,
@@ -353,7 +397,7 @@ export default {
         });
       });
       logger.dev('[MainBody] - getSortedParams - Получен список сенсоров:', sensors);
-      //console.log('[MainBody] - getSortedParams - Получен список сенсоров:', sensors);
+      console.log('[MainBody] - getSortedParams - Получен список сенсоров:', sensors);
       return sensors;
     },
 
@@ -391,10 +435,10 @@ export default {
                 logger.dev('[MainBody] getSortedDevices - Ищем совподение с утройством:', cleanKey);
                 //console.log('[MainBody] getSortedDevices - Ищем совподение с утройством:', cleanKey);
                 let setValue = null;
-                
+                let setpointKey = null;
                 // Поиск уставки
                 if (room.setpoints) {
-                  const setpointKey = Object.keys(room.setpoints).find(setKey => 
+                  setpointKey = Object.keys(room.setpoints).find(setKey => 
                     cleanKey.includes(setKey) || setKey.includes(cleanKey)
                   );
                   
@@ -402,7 +446,10 @@ export default {
                     setValue = room.setpoints[setpointKey]?.value != null 
                       ? parseFloat(room.setpoints[setpointKey].value) 
                       : null;
-                  }
+                  } else if (!setpointKey) {
+                      setValue = null;
+                      setpointKey = null;
+                    }
                 }
                 
                 devicesArray.push({
@@ -412,6 +459,7 @@ export default {
                   paramKey: itemKey,
                   value: this.getSensorValue(itemData?.type, itemData),
                   setValue: setValue,
+                  setpointKey: setpointKey,
                   unit: this.getUnit(itemKey),
                   timeDiff: this.getTimeDiff(itemData.lastUpdate),
                   roomTitle: room.title,
@@ -423,8 +471,9 @@ export default {
           }
         });
       });
-      
-      console.log('Devices found:', devicesArray.length);
+     
+      console.log('[MainBody] getSortedDevices - Devices found:', devicesArray.length);
+      console.log('[MainBody] getSortedDevices - Devices array:', devicesArray);
       return devicesArray;
     },
 
@@ -448,16 +497,21 @@ export default {
         Object.entries(room.setpoints).forEach(([setKey, setpointData]) => {
           // Проверяем, что ключ уставки начинается с нужного префикса
           if (setKey.includes(setpointKey)) {
-            let newValue, newSet;
+            let newValue, newSet, newSetpointKey;
             logger.dev('[MainBody] getSortedSetpoints - Найдено совпадение с ключом Уставки:', setKey);
             //console.log('[MainBody] getSortedSetpoints - Найдено совпадение с ключом Уставки:', setKey);
             
             if (setKey.startsWith('s')) {
               newValue = this.getSensorValue(setpointData?.type, setpointData);
               newSet = this.getSensorValue(setpointData?.type, setpointData);
+              newSetpointKey = setpointKey;
             } else if (setKey.startsWith('d')) { 
               newValue = this.getSensorValue(setpointData?.type, setpointData);
               newSet = null;
+              newSetpointKey = null;
+            } else {
+              newSet = null;
+              newSetpointKey = null;
             }
             
             setpointsArray.push({
@@ -467,6 +521,7 @@ export default {
               paramKey: setKey,
               value: newValue,
               setValue: newSet,
+              setpointKey: newSetpointKey,
               unit: this.getUnit(setKey),
               timeDiff: this.getTimeDiff(setpointData?.lastUpdate),
               roomTitle: room.title,
@@ -477,8 +532,9 @@ export default {
         });
       });
       logger.dev('[MainBody] - getSortedSetpoints - setpointsArray:', setpointsArray, 'setpointsArray.length:', setpointsArray.length);
-      // console.log('setpointsArray:', setpointsArray);
-      // console.log('Setpoints found:', setpointsArray.length);
+      console.log('[MainBody] getSortedSetpoints - Setpoints found:', setpointsArray.length);
+      console.log('[MainBody] getSortedSetpoints - setpointsArray:', setpointsArray);
+      
       return setpointsArray;
     },
 

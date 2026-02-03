@@ -231,6 +231,7 @@ export default {
         console.log('[MainBodySettings] - Watch - Расписания в store обновились');
         if (this.title === 'schedule') {
           this.getSchedulesFromStore();
+          console.log('[MainBodySettings] - Watch - Обновленные Расписания:', this.schedules);
         }
       },
       deep: true,

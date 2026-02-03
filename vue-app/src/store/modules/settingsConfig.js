@@ -6,7 +6,10 @@ export default {
   namespaced: true,
   state: () => ({
     loading: false,
-    error: null
+    error: null, 
+    permitSchedule : false,
+    permitNotifications : false,
+    permitStatistics : false,
   }),
 
   mutations: {

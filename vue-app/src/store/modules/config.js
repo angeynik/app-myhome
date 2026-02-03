@@ -528,10 +528,14 @@ export default {
       return clearKey;
     },
   },
-  
+ 
   getters: {
     clearKeySync: () => (key) => {
+      //console.log(`[config] - clearKeySync - key: ${key}`);
+
       const withoutPrefix = key.slice(1);
+      //console.log(`[config] - clearKeySync - withoutPrefix: ${withoutPrefix}`);
+
       const clearKey = withoutPrefix.replace(/\d+$/, '');
       logger.dev(`[config] - clearKeySync - key: ${clearKey}`);
       //console.log(`[config] - clearKeySync - key: ${clearKey}`);

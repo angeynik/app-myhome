@@ -46,6 +46,7 @@ export default {
     unit: String,
     timeUpdated: { type: Number, required: true },
     isSelected: { type: Boolean, required: true, default: false },
+    setpointKey: { type: String, default: '' },
   }, 
   computed: {
     type() {
@@ -89,6 +90,7 @@ export default {
             id: this.id,
             paramKey: this.paramKey,
             roomKey: this.roomKey,
+            setpointKey: this.setpointKey,
             }
         }); 
     }, 
@@ -99,6 +101,7 @@ export default {
                     roomKey: this.roomKey, 
                     paramKey: this.paramKey, 
                     roomId: this.id,
+                    setpointKey: this.setpointKey,
                 });
     },
     customerTouchStart(event) {

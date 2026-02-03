@@ -1,3 +1,4 @@
+<!-- DashBoard.vue -->
 <template>
   <div class="app">
     <svg display="none">
@@ -122,30 +123,10 @@ export default {
     ]),
     ...mapGetters('config', ['getMobile', 'getDeviceType', 'clearKeySync']),
     
-    // headerTitle() { // Формируем заголовок для Header по типу сортировки и ключу
-    //   const sortType = this.currentSortType;
-    //   logger.dev(`[DashBoard] - headerTitle - Выбор заголовка для: ${sortType}`);
-    //   //console.log('[DashBoard] - headerTitle - Выбор заголовка для:', sortType);
-      
-    //   if (!sortType) {
-    //     return "Главное меню";
-    //   }
-      
-    //   if (sortType === 'rooms') {
-    //     return this.getRoomKey ? `${this.getRoomTitle}` : "Сортировка по комнатам";
-    //   } else if (sortType === 'params') {
-    //     return this.getParamKey ? `${this.getSensorTitle(this.getParamKey)}` : "Сортировка по параметрам";
-    //   } else if (sortType === 'devices') {
-    //     return this.getDeviceKey ? `${this.getSensorTitle(this.getDeviceKey)}` : "Сортировка по устройствам";
-    //   } else if (sortType === 'setpoints') {
-    //     return this.getSetpointKey ? `${this.getSensorTitle(this.getSetpointKey)}` : "Сортировка по Уставкам";
-    //   }
-    //   return "Dashboard";
-    // },
     headerTitle() {
       const sortType = this.currentSortType;
-      //logger.dev(`[DashBoard] - headerTitle - Выбор заголовка для: ${sortType}`);
-      console.log('[DashBoard] - headerTitle - Выбор заголовка для:', sortType);
+      logger.dev(`[DashBoard] - headerTitle - Выбор заголовка для: ${sortType}`);
+      console.log('[DashBoard] - headerTitle - Выбор заголовка для sortType:', sortType);
       if (!sortType) {
         // Если это настройки
         if (this.$route.params.settingsType) {
@@ -207,8 +188,8 @@ export default {
     getConfig: {
       handler(newConfig) {
         if (newConfig) {
-          logger.dev('[DashBoard] Конфигурация изменена, обновляем навигацию');
-          //console.log('[DashBoard] Конфигурация изменена, обновляем навигацию');
+          logger.dev('[DashBoard] - Watch - handler - Конфигурация изменена, обновляем навигацию');
+          console.log('[DashBoard] - Watch - handler - Конфигурация изменена, обновляем навигацию');
         }
       },
       deep: true
@@ -223,6 +204,7 @@ export default {
   
     
     handleSortTypeChange(sortType) {
+      console.log('[DashBoard] - handleSortTypeChange - Обновляем информацию для sortType: ', sortType);
       if (sortType) {
         // Устанавливаем тип сортировки в store
         this.$store.commit('sortParams/SET_SORT_TYPE', sortType);
@@ -233,7 +215,7 @@ export default {
       }
     },
     handleSettingsTypeChange(settingsType) {
-      console.log('[DashBoard] - handleSettingsTypeChange - Обновляем информацию для : ', settingsType);  
+      console.log('[DashBoard] - handleSettingsTypeChange - Обновляем информацию для settingsType: ', settingsType);  
     },
     
     selectComponent(sortType) {
