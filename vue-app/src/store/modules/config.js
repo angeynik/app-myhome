@@ -30,6 +30,28 @@ export default {
       logger.dev('[sortParams] - SET_SCHEDULE Обновлен конфиг[' + name + ']: ', config);
       console.log('[sortParams] - SET_SCHEDULE Обновлен конфиг[' + name + ']: ', config);
     },
+    REMOVE_SCHEDULES(state, { dID, roomKey, paramKey, scheduleIds }) {
+      console.log('[config] - REMOVE_SCHEDULES - Удаляем расписания:', { dID, roomKey, paramKey, scheduleIds });
+      
+      if (!state.schedules[dID] || !state.schedules[dID][roomKey] || !state.schedules[dID][roomKey][paramKey]) {
+        console.warn('[config] - REMOVE_SCHEDULES - Структура данных не найдена');
+        return;
+      }
+      
+      // Фильтруем расписания
+      state.schedules[dID][roomKey][paramKey] = state.schedules[dID][roomKey][paramKey].filter(schedule => {
+        const scheduleId = schedule.id || schedule._id || (schedule._tempId ? `temp_${schedule._tempId}` : null);
+        return !scheduleIds.includes(scheduleId);
+      });
+      
+      console.log('[config] - REMOVE_SCHEDULES - Расписания удалены');
+      
+      // Сохраняем в localStorage
+      localStorage.setItem(`${dID}_schedules`, JSON.stringify(state.schedules[dID]));
+    },
+
+
+
     SET_NOTIFICATION(state, { name, config }) {
       state.notifications[name] = config;
       logger.dev('[sortParams] - SET_NOTIFICATION Обновлен конфиг[' + name + ']: ', config);

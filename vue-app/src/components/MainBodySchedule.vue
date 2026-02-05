@@ -312,7 +312,7 @@ export default {
       });
       
       // Сразу скрываем элемент визуально (опционально)
-      this.$el.style.opacity = '0.5';
+      this.$el.style.opacity = '0.35';
       this.$el.style.pointerEvents = 'none';
       
       logger.info('[MainBodySchedule] - deleteScheduleItem - Расписание добавлено в список для удаления:', this.scheduleData.id);
@@ -322,20 +322,6 @@ export default {
     // Форматирование даты
     formatDate(dateString) {
       return this.dateUtils.formatDate(dateString, 'ru-RU');
-      // if (!dateString) return '—';
-      
-      // try {
-      //   const date = new Date(dateString);
-      //   return date.toLocaleDateString('ru-RU', {
-      //     day: '2-digit',
-      //     month: '2-digit',
-      //     year: 'numeric',
-      //     hour: '2-digit',
-      //     minute: '2-digit'
-      //   });
-      // } catch (error) {
-      //   return dateString;
-      // }
     },
     
     // validateScheduleTime(schedule) {

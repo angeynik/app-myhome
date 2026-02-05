@@ -629,10 +629,73 @@ export default {
 
     
     
-    closeMainBodySettings() {
-      console.log('[MainBodySettings] Closing settings');
+    // closeMainBodySettings() {
+    //   console.log('[MainBodySettings] Closing settings');
       
-      // Простой возврат назад
+    //   // Простой возврат назад
+    //   if (window.history.length > 1) {
+    //     this.$router.go(-1);
+    //   } else {
+    //     this.$router.push('/dashboard');
+    //   }
+      
+    //   this.$emit('close');
+    // },
+
+    async closeMainBodySettings() {
+      console.groupCollapsed('[MainBodySettings] - closeMainBodySettings');
+      console.log('[MainBodySettings] - closeMainBodySettings - Начинаем закрытие');
+      
+      // Если есть расписания для удаления, запрашиваем подтверждение
+      if (this.schedulesToDelete.length > 0) {
+        this.$store.dispatch('settingsConfig/deleteSchedules', {
+              roomKey: this.itemData.roomKey,
+              paramKey: this.effectiveSetpointKey,
+              scheduleIds: [...this.schedulesToDelete] // создаем копию массива
+            });
+            
+            // Очищаем массивы после успешной отправки
+            this.schedulesToDelete = [];
+            this.pendingDeletions = {};
+      }
+
+
+
+
+
+      // if (this.schedulesToDelete.length > 0) {
+      //   const confirmMessage = `У вас есть ${this.schedulesToDelete.length} расписаний для удаления.\n\nСохранить изменения и удалить их?`;
+        
+      //   if (confirm(confirmMessage)) {
+      //     try {
+      //       console.log('[MainBodySettings] - sendPendingDeletions - Отправляем расписания на удаление:', this.schedulesToDelete);
+      //       // Отправляем запрос на удаление через store
+      //       await this.$store.dispatch('settingsConfig/deleteSchedules', {
+      //         roomKey: this.itemData.roomKey,
+      //         paramKey: this.effectiveSetpointKey,
+      //         scheduleIds: [...this.schedulesToDelete] // создаем копию массива
+      //       });
+            
+      //       // Очищаем массивы после успешной отправки
+      //       this.schedulesToDelete = [];
+      //       this.pendingDeletions = {};
+            
+      //       logger.info('[MainBodySettings] - sendPendingDeletions - Запрос на удаление отправлен успешно');
+
+
+
+      //     } catch (error) {
+      //       console.error('[MainBodySettings] - closeMainBodySettings - Ошибка при отправке удалений:', error);
+      //       alert('Ошибка при удалении расписаний. Попробуйте еще раз.');
+      //       return; // Не закрываем, если ошибка
+      //     }
+      //   } 
+      // }
+      
+      // Продолжаем стандартное закрытие
+      console.log('[MainBodySettings] - closeMainBodySettings - Закрываем настройки');
+      console.groupEnd();
+
       if (window.history.length > 1) {
         this.$router.go(-1);
       } else {
@@ -640,8 +703,8 @@ export default {
       }
       
       this.$emit('close');
-    },
 
+    },
     handleValueTypeChanged(event) {
       console.log('[MainBodySettings] - handleValueTypeChanged', event);
       // TODO: Обработка изменения типа значения
@@ -652,24 +715,35 @@ export default {
       // TODO: Обработка редактирования значения
     },
     
-    handleDeleteSchedule(scheduleData) {
-      console.log('[MainBodySettings] - handleDeleteSchedule - Добавляем в список на удаление:', scheduleData);
+    handleDeleteSchedule(id) {
+      console.log('[MainBodySettings] - handleDeleteSchedule - Добавляем в список на удаление ID:', id);
   
       // Сохраняем данные для удаления
-      this.pendingDeletions[scheduleData.id] = scheduleData;
+      this.pendingDeletions[id] = id;
       console.log('[MainBodySettings] - handleDeleteSchedule - Массив на удаление:', this.pendingDeletions);
       
       // Добавляем ID в массив для отслеживания
-      if (!this.schedulesToDelete.includes(scheduleData.id)) {
-        this.schedulesToDelete.push(scheduleData.id);
+      if (!this.schedulesToDelete.includes(id)) {
+        this.schedulesToDelete.push(id);
       }
-      
+      console.log('[MainBodySettings] - handleDeleteSchedule - Массив на удаление:', this.schedulesToDelete);
       // Немедленно обновляем локальный список (скрываем удаленный элемент)
-      this.schedules = this.schedules.filter(s => s.id !== scheduleData.id);
+      this.schedules = this.schedules.filter(s => s.id !== id);
       
-      logger.info(`[MainBodySettings] - handleDeleteSchedule - Расписание ${scheduleData.id} добавлено в список на удаление`);
+      logger.info(`[MainBodySettings] - handleDeleteSchedule - Расписание c ${id} добавлено в список на удаление`);
 
     },
+
+
+
+
+
+
+
+
+
+
+
 
     
     async loadData(dataType) {

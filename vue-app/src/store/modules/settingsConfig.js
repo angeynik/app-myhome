@@ -569,53 +569,87 @@ export default {
     //     return { startTime: null, endTime: null, found: false };
     //   }
     // },
-  
+ 
+
+
     async addScheduleLocally({ dispatch, rootGetters, rootState }, { roomKey, paramKey, schedule }) {
-  console.log('[settingsConfig] - addScheduleLocally - Начинаем локальное сохранение расписания');
-  const dID = rootGetters['dID'];
-  if (!dID) {
-    logger.warn('[settingsConfig] - addScheduleLocally - dID не определен');
-    return;
-  }
-  
-  console.log('[settingsConfig] - addScheduleLocally - Добавляем расписание локально:', { dID, roomKey, paramKey, schedule });
-  
-  try {
-    // 1. Получаем текущие расписания из config.js
-    const currentSchedules = { ...(rootState.config.schedules[dID] || {}) };
-    console.log('[settingsConfig] - addScheduleLocally - Текущие расписания из config.js:', currentSchedules);
-    
-    // 2. Инициализируем структуру если нужно
-    if (!currentSchedules[roomKey]) {
-      currentSchedules[roomKey] = {};
-    }
-    
-    if (!currentSchedules[roomKey][paramKey]) {
-      currentSchedules[roomKey][paramKey] = [];
-    }
-    
-    // 3. Добавляем новое расписание
-    currentSchedules[roomKey][paramKey] = [...currentSchedules[roomKey][paramKey], schedule];
-    
-    // 4. Обновляем состояние в config.js через мутацию
-    // Нам нужен commit, но у нас нет доступа к нему напрямую в action
-    // Вместо этого используем dispatch
-    await dispatch('config/updateScheduleLocally', {
-      dID: dID,
-      schedules: currentSchedules
-    }, { root: true });
-    
-    // 5. Также сохраняем в localStorage для резерва
-    localStorage.setItem(`${dID}_schedules`, JSON.stringify(currentSchedules));
-    
-    logger.info('[settingsConfig] - addScheduleLocally - Расписание добавлено локально');
-    return { success: true, schedule };
-    
-  } catch (error) {
-    logger.error('[settingsConfig] - addScheduleLocally - Ошибка:', error);
-    throw error;
-  }
-},
+      console.log('[settingsConfig] - addScheduleLocally - Начинаем локальное сохранение расписания');
+      const dID = rootGetters['dID'];
+      if (!dID) {
+        logger.warn('[settingsConfig] - addScheduleLocally - dID не определен');
+        return;
+      }
+      
+      console.log('[settingsConfig] - addScheduleLocally - Добавляем расписание локально:', { dID, roomKey, paramKey, schedule });
+      
+      try {
+        // 1. Получаем текущие расписания из config.js
+        const currentSchedules = { ...(rootState.config.schedules[dID] || {}) };
+        console.log('[settingsConfig] - addScheduleLocally - Текущие расписания из config.js:', currentSchedules);
+        
+        // 2. Инициализируем структуру если нужно
+        if (!currentSchedules[roomKey]) {
+          currentSchedules[roomKey] = {};
+        }
+        
+        if (!currentSchedules[roomKey][paramKey]) {
+          currentSchedules[roomKey][paramKey] = [];
+        }
+        
+        // 3. Добавляем новое расписание
+        currentSchedules[roomKey][paramKey] = [...currentSchedules[roomKey][paramKey], schedule];
+        
+        // 4. Обновляем состояние в config.js через мутацию
+        // Нам нужен commit, но у нас нет доступа к нему напрямую в action
+        // Вместо этого используем dispatch
+        await dispatch('config/updateScheduleLocally', {
+          dID: dID,
+          schedules: currentSchedules
+        }, { root: true });
+        
+        // 5. Также сохраняем в localStorage для резерва
+        localStorage.setItem(`${dID}_schedules`, JSON.stringify(currentSchedules));
+        
+        logger.info('[settingsConfig] - addScheduleLocally - Расписание добавлено локально');
+        return { success: true, schedule };
+        
+      } catch (error) {
+        logger.error('[settingsConfig] - addScheduleLocally - Ошибка:', error);
+        throw error;
+      }
+    },
+    async deleteSchedules({ dispatch, rootGetters }, { roomKey, paramKey, scheduleIds }) {
+      console.groupCollapsed('[settingsConfig] - deleteSchedules');
+      console.log('[settingsConfig] - deleteSchedules - Удаляем расписания:', { roomKey, paramKey, scheduleIds });
+      
+      const dID = rootGetters['dID'];
+      if (!dID) {
+        logger.warn('[settingsConfig] - deleteSchedules - dID не определен');
+        return;
+      }
+      console.groupEnd();
+      try {
+        // Отправляем на сервер
+        await dispatch('websocket/send', {
+          type: 'post',
+          request: 'delSchedule',
+          name: dID,
+          payload: { 
+            roomKey, 
+            paramKey, 
+            scheduleIds: Array.isArray(scheduleIds) ? scheduleIds : [scheduleIds] 
+          }
+        }, { root: true });
+        
+        logger.info('[settingsConfig] - deleteSchedules - Запрос на удаление отправлен');
+
+        return { success: true };
+        
+      } catch (error) {
+        logger.error('[settingsConfig] - deleteSchedules - Ошибка отправки:', error);
+        throw error;
+      }
+    },
 
 
 
@@ -677,18 +711,18 @@ export default {
         throw error;
       }
     },
-    async deleteSchedules (roomKey, paramKey, id ) {
-      console.log('[settingsConfig] - deleteSchedules - Удаляем элемент расписания:', { roomKey, paramKey, id });
+    // async deleteSchedules (roomKey, paramKey, id ) {
+    //   console.log('[settingsConfig] - deleteSchedules - Удаляем элемент расписания:', { roomKey, paramKey, id });
 
-      // await dispatch('websocket/send', {
-      //       type: 'post',
-      //       request: 'delSchedule',
-      //       name: dID,
-      //       payload: { roomKey, paramKey, schedules }
-      //     }, { root: true });
+    //   // await dispatch('websocket/send', {
+    //   //       type: 'post',
+    //   //       request: 'delSchedule',
+    //   //       name: dID,
+    //   //       payload: { roomKey, paramKey, schedules }
+    //   //     }, { root: true });
 
       
-    },
+    // },
 
     async saveNotifications({ commit, rootGetters, dispatch }, { roomKey, paramKey, notifications }) {
       const dID = rootGetters['dID'];
