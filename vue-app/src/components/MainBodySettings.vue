@@ -151,6 +151,9 @@ export default {
 
       unit: '', // единица измерения
 
+      schedulesToDelete: [], // Массив ID расписаний для удаления
+      pendingDeletions: {}, // Объект с данными для удаления {id: scheduleData}
+
 
     };
   },
@@ -594,21 +597,6 @@ export default {
     console.log('[MainBodySettings] - addNewStatistic - Аналитика успешно сохранена');
   },
   
-
-  // Методы сохранения (добавляем если их нет)
-  // async saveScheduleBlock() {
-  //   console.log('[MainBodySettings] - saveScheduleBlock - Сохраняем расписание');
-  //   try {
-  //     await this.saveSchedules({
-  //       roomKey: this.itemData.roomKey,
-  //       paramKey: this.effectiveSetpointKey,
-  //       schedules: this.schedules
-  //     });
-  //   } catch (error) {
-  //     console.error('[MainBodySettings] - saveScheduleBlock - Ошибка сохранения:', error);
-  //     throw error;
-  //   }
-  // },
   
   async saveNotificationBlock() {
     try {
@@ -664,9 +652,23 @@ export default {
       // TODO: Обработка редактирования значения
     },
     
-    handleDeleteSchedule(scheduleId) {
-      console.log('[MainBodySettings] - handleDeleteSchedule', scheduleId);
-      // TODO: Обработка удаления расписания
+    handleDeleteSchedule(scheduleData) {
+      console.log('[MainBodySettings] - handleDeleteSchedule - Добавляем в список на удаление:', scheduleData);
+  
+      // Сохраняем данные для удаления
+      this.pendingDeletions[scheduleData.id] = scheduleData;
+      console.log('[MainBodySettings] - handleDeleteSchedule - Массив на удаление:', this.pendingDeletions);
+      
+      // Добавляем ID в массив для отслеживания
+      if (!this.schedulesToDelete.includes(scheduleData.id)) {
+        this.schedulesToDelete.push(scheduleData.id);
+      }
+      
+      // Немедленно обновляем локальный список (скрываем удаленный элемент)
+      this.schedules = this.schedules.filter(s => s.id !== scheduleData.id);
+      
+      logger.info(`[MainBodySettings] - handleDeleteSchedule - Расписание ${scheduleData.id} добавлено в список на удаление`);
+
     },
 
     

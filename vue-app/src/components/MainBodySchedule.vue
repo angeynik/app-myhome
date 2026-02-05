@@ -72,7 +72,7 @@
       <!-- Вторая колонка (20%) -->
        <div class="settings-col-second">
         <div class="icon-settings item">
-          <button class="mainBodySettings-header-button" @click="closeMainBodySettings">
+          <button class="mainBodySettings-header-button" @click="deleteScheduleItem">
             <svg class="icon-settings close" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
               <!-- Темно-красный фон (появляется при наведении) -->
               <circle class="hover-bg" cx="44" cy="44" r="42" fill="#CC0000" opacity="0"/>
@@ -292,19 +292,33 @@ export default {
     },
     
     // Удаление расписания
-    handleDelete() {
+    deleteScheduleItem() {
       if (!this.scheduleData.id) {
-        logger.error('[MainBodySchedule] - handleDelete - Невозможно удалить: нет ID расписания');
+        logger.error('[MainBodySchedule] - deleteScheduleItem - Невозможно удалить: нет ID расписания');
         return;
       }
       
-      if (!confirm(`Удалить расписание "${this.scheduleData.paramTitle}"?`)) {
+      const scheduleTitle = this.scheduleData.paramTitle || `расписание ID: ${this.scheduleData.id}`;
+      
+      // Запрос подтверждения
+      if (!confirm(`Удалить расписание "${scheduleTitle}"?\n\nУдаление будет применено после сохранения изменений.`)) {
         return;
       }
       
-      this.$emit('delete-schedule', this.scheduleData.id);
+      // Добавляем ID в список для отложенного удаления
+      this.$emit('delete-schedule', {
+        id: this.scheduleData.id,
+        scheduleData: this.scheduleData
+      });
+      
+      // Сразу скрываем элемент визуально (опционально)
+      this.$el.style.opacity = '0.5';
+      this.$el.style.pointerEvents = 'none';
+      
+      logger.info('[MainBodySchedule] - deleteScheduleItem - Расписание добавлено в список для удаления:', this.scheduleData.id);
+      console.log('[MainBodySchedule] - deleteScheduleItem - Расписание добавлено в список для удаления:', this.scheduleData.id);
     },
-    
+   
     // Форматирование даты
     formatDate(dateString) {
       return this.dateUtils.formatDate(dateString, 'ru-RU');

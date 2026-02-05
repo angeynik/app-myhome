@@ -126,6 +126,11 @@ export default {
       'SET_DEVICE_TITLE', 
       'SET_SETPOINT_TITLE'
     ]),
+    ...mapMutations('settingsConfig', {
+      setPermitSchedule: 'SET_PERMIT_SCHEDULE',
+      setPermitNotifications: 'SET_PERMIT_NOTIFICATIONS',
+      setPermitStatistics: 'SET_PERMIT_STATISTICS'
+    }),
 
     getSensorValue(key, data) {
       switch (key) {
@@ -154,8 +159,9 @@ export default {
     },
     
     selectItem(item) {
+      console.groupCollapsed('[MainBody] - selectItem ');
       logger.info(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
-      console.log(` -- %%%%%%%%%%%% - [MainBody] - selectItem - setpointKey: ${item.setpointKey}, deviceKey: ${item.deviceKey}, paramKey: ${item.paramKey}, roomKey: ${item.roomKey}`);
+      console.log(`[MainBody] - selectItem - setpointKey: ${item.setpointKey}, deviceKey: ${item.deviceKey}, paramKey: ${item.paramKey}, roomKey: ${item.roomKey}`);
       //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
       
        if (this.selectedItem === item) {
@@ -176,7 +182,7 @@ export default {
           this.SET_DEVICE_KEY(item.deviceKey);
           this.SET_SETPOINT_KEY(item.setpointKey);
 
-          console.log (` -- %%%%%%%%%%%% - [MainBody] - selectItem - Обновлены ключи выбранного элемента: ${JSON.stringify(item)}`);
+          //console.log (`[MainBody] - selectItem - Обновлены ключи выбранного элемента: ${JSON.stringify(item)}`);
           // Отправляем событие с данными в DashBoard
           this.$emit('eventsMainBody', {
             action: 'show',
@@ -191,8 +197,9 @@ export default {
               setpointKey: item.setpointKey
             }
           });
-          console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
+          console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
           }
+          console.groupEnd();
     },
  
     // toggleSorting(item) { // Меняем сортировку комнаты/параметры при двойном клике по выбранной плашке
@@ -217,16 +224,34 @@ export default {
 
     // },
     toggleSorting(item) {
+      console.groupCollapsed('[MainBody] - toggleSorting ');
       console.log('[MainBody] - toggleSorting - Ключ выбранного элемента:', item.setpointKey, ' и значение:', item.setValue);
       let settingsType = this.typeSettingsItem || 'schedule';
+      
+      // Устанавливаем флаги в зависимости от типа настроек и наличия setpointKey
       if (settingsType === 'schedule') {
-        // Установить state    permitSchedule = true     в settingsConfig.js
-        console.log ('[MainBody] - toggleSorting - Устанавливаем флаг работы с расписанием: ', settingsType);
+        if (item.setpointKey != null) {
+          console.log('[MainBody] - toggleSorting - Устанавливаем permitSchedule = true');
+          this.setPermitSchedule(true);
+        } else {
+          console.warn('[MainBody] - toggleSorting - Невозможно настроить расписание: setpointKey равен null');
+          // Можно показать уведомление пользователю
+          alert('Для этого элемента невозможно настроить расписание (отсутствует уставка)');
+          return; // Прерываем переход
+        }
+      } else if (settingsType === 'notifications') {
+        console.log('[MainBody] - toggleSorting - Устанавливаем permitNotifications = true');
+        this.setPermitNotifications(true);
+      } else if (settingsType === 'statistics') {
+        console.log('[MainBody] - toggleSorting - Устанавливаем permitStatistics = true');
+        this.setPermitStatistics(true);
       }
+
       this.$router.push({
         name: 'DashboardSettings',
         params: { settingsType }
       });
+      console.groupEnd();
     },
     async updateView() { // Формируем массив для отображения пользователю в соответствии с типом сортировки и текущим ключем
       //console.log('[MainBody] - updateView - started');
@@ -274,6 +299,7 @@ export default {
           //console.error('[MainBody] Ошибка обновления:', error);
           this.viewArray = [];
         }
+        console.groupEnd();
     },
 
     getSortedRooms(config, roomKey) {

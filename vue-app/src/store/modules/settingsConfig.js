@@ -17,7 +17,6 @@ export default {
       state.notifications[name] = config;
       logger.dev('[settingsConfig] - SET_NOTIFICATIONS - Конфигурация уведомлений обновлена:', name);
     },
-    
     SET_STATISTICS(state, { name, config }) {
       state.statistics[name] = config;
       logger.dev('[settingsConfig] - SET_STATISTICS - Конфигурация аналитики обновлена:', name);
@@ -39,11 +38,26 @@ export default {
       }
     },
 
+
+    SET_PERMIT_SCHEDULE(state, value) {
+      state.permitSchedule = value;
+      logger.dev('[settingsConfig] - SET_PERMIT_SCHEDULE - установлено:', value);
+    },
+    SET_PERMIT_NOTIFICATIONS(state, value) {
+      state.permitNotifications = value;
+      logger.dev('[settingsConfig] - SET_PERMIT_NOTIFICATIONS - установлено:', value);
+    },
+    SET_PERMIT_STATISTICS(state, value) {
+      state.permitStatistics = value;
+      logger.dev('[settingsConfig] - SET_PERMIT_STATISTICS - установлено:', value);
+    },
+
   },
 
   actions: {
     async initialize({ commit, dispatch, rootGetters }) {
-      //console.log('[settingsConfig] - initialize - Начинаем инициализацию конфигурации Расписания');
+      console.groupCollapsed('[settingsConfig] - initialize ');
+      console.log('[settingsConfig] - initialize - Начинаем инициализацию конфигурации Расписания');
       
       const dID = rootGetters['dID'];
       if (!dID) {
@@ -63,14 +77,14 @@ export default {
         
         logger.dev('[settingsConfig] - initialize - Инициализация конфигурации расписания');
         
-        //console.log('[settingsConfig] - Initialize - Готовим запрос на получение конфигураций Настроек для dID:', dID);
+        console.log('[settingsConfig] - Initialize - Готовим запрос на получение конфигураций Настроек для dID:', dID);
         
         // Запрашиваем все типы конфигураций
         await dispatch('requestToServer', { configType: 'schedules' });
         await dispatch('requestToServer', { configType: 'notifications' });
         await dispatch('requestToServer', { configType: 'statistics' });
         
-        //console.log('[settingsConfig] - initialize - Все запросы отправлены');
+        console.log('[settingsConfig] - initialize - Все запросы отправлены');
         
         return {};
         
@@ -82,7 +96,9 @@ export default {
         
       } finally {
         console.log('[settingsConfig] - initialize - Инициализация завершена');
+        console.groupEnd();
       }
+      
     },
     // async getConfigSettings({ state, rootGetters }, { configType, roomKey, paramKey }) {
     //   const dID = rootGetters['dID'];
@@ -757,6 +773,9 @@ export default {
     getAnalytics: (state) => (dID) => {return state.statistics[dID] || {}; },
     // getNotifications: state => dID => state.schedules[dID + 'notifications'] || {},
     // getAnalitics: state => dID => state.schedules[dID + 'statistics'] || {},
+    getPermitSchedule: state => state.permitSchedule,
+    getPermitNotifications: state => state.permitNotifications,
+    getPermitStatistics: state => state.permitStatistics,
 
 
     isLoading: state => state.loading,
