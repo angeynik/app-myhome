@@ -157,7 +157,7 @@ export default {
     },
     UPDATE_LIMITS(state, limits) {
       logger.info('[sortParams] - UPDATE_LIMITS ', limits);
-      //console.log('[sortParams] - UPDATE_LIMITS ', limits);
+      console.log('[sortParams] - UPDATE_LIMITS ', limits);
       if (limits.limHigh) state.limHigh = limits.limHigh;
       if (limits.limLow) state.limLow = limits.limLow;
       if (limits.limStep) state.limStep = limits.limStep;
@@ -287,7 +287,7 @@ export default {
 
     setLimits({ rootGetters, commit, dispatch }, param) {
       logger.info(`[sortParams] - setLimits - Параметр -`, param);
-      //console.log('[sortParams] - setLimits - Параметр -', param);
+      console.log('[sortParams] - setLimits - Параметр -', param);
       
       // Используем clearKey из модуля config для очистки параметра
       dispatch('config/clearKey', { key: param }, { root: true })

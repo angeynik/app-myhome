@@ -61,6 +61,7 @@
         :key="componentKey"
         @eventsMainBody="handleMainBodyEvent"
         @eventsMainBodySettings="handleMainBodySettingsEvent"
+        @edit-schedule-value="editScheduleValue"
         @swipe-forward="handleSwipeForward"
         @swipe-back="handleSwipeBack"
         :ref="currentRef"
@@ -73,7 +74,9 @@
       <MainSetpoint
         v-if="showFooterSetpoint"
         :setPoint="setpoint" 
-        @eventsMainSetpoint="handleSetpointEvent"
+        :editType="editType"
+        @eventsMainSetpoint="updateSetpointValue"
+        @eventsSchedule="updateScheduleValue"
       />
     </footer>
   </div>
@@ -100,7 +103,7 @@ export default {
     return {
       showHeaderArrow: false,
       showSetpoint: false,
-      setpointUpdateTimer: null,
+      editType: null,
       setpoint: null,
       selectedItemData: null
     }; 
@@ -198,7 +201,8 @@ export default {
   methods: {
     ...mapActions('sortParams', [
       'switchSortKey',
-      'setLimits'
+      'setLimits',
+      'UPDATE_LIMITS',
     ]),
     ...mapActions('config', ['initialize']),
   
@@ -245,30 +249,45 @@ export default {
     // Работа с Setpoint
     handleMainBodyEvent(event) {
       logger.dev('[DashBoard] - handleMainBodyEvent received:', event);
-      //console.log('[DashBoard] - handleMainBodyEvent received:', event);
+      console.log('[DashBoard] - handleMainBodyEvent received:', event);
       
       if (event.action === 'show') {
         this.selectedItemData = event.data;
         this.setpoint = event.data.setValue;
         this.showSetpoint = true;
+        this.editType = 'setpoint';
         this.setLimits(event.data.paramKey);
       } else if (event.action === 'hide') {
         this.showSetpoint = false;
         this.selectedItemData = null;
         this.setpoint = null;
+        this.editType = '';
       }
     },
 
-    handleSetpointEvent(eventData) {
+    updateSetpointValue(eventData) {
+      console.groupCollapsed('[DashBoard] - updateSetpointValue -  ');
+      console.log('[DashBoard] - updateSetpointValue - Обработка данных от компонента MainSetpoint изменения Уставки :', eventData);
       if (eventData.updateState && eventData.updateState.type === 'newSetPoint') {
+        console.log('[DashBoard] - updateSetpointValue - Обновляем значение уставки');
         this.setpoint = eventData.updateState.message;
         this.updateConfigSetpoint(eventData.updateState.message);
       } else if (eventData.error) {
-        logger.error('[DashBoard] - handleSetpointEvent - Ошибка:', eventData.error);
-        //console.error('[DashBoard] - handleSetpointEvent - Ошибка:', eventData.error);
+        logger.error('[DashBoard] - updateSetpointValue - Ошибка:', eventData.error);
+        //console.error('[DashBoard] - updateSetpointValue - Ошибка:', eventData.error);
       }
+      console.groupEnd();
     },
-    
+   
+    updateScheduleValue(eventData) {
+      console.groupCollapsed('[DashBoard] - updateSetpointValue -  ');
+      console.log('[DashBoard] - updateSetpointValue - Обработка данных от компонента MainSetpoint изменения элемента Расписания:', eventData);
+      this.setpoint = eventData.updateState.message;
+      
+      console.groupEnd();
+    },
+
+
     async updateConfigSetpoint(newValue) {
       const oldValue = this.setpoint; // Сохраняем текущее значение для возможного отката
       try {
@@ -298,7 +317,7 @@ export default {
           time: timestamp
         };
         logger.info('[DashBoard] - updateConfigSetpoint - Начинаем обновление Уставки -', newValue, ' roomKey -', roomKey, ' Key -', Key);
-        //console.log('[DashBoard] - updateConfigSetpoint - Начинаем обновление Уставки -', newValue, ' roomKey -', roomKey, ' Key -', Key);
+        console.log('[DashBoard] - updateConfigSetpoint - Начинаем обновление Уставки -', newValue, ' roomKey -', roomKey, ' Key -', Key);
         
         if (!dID || !roomKey || !paramKey) {
           logger.error('[DashBoard] - updateConfigSetpoint - Не выбрана комната или параметр для обновления уставки');
@@ -342,9 +361,6 @@ export default {
       }
     },
 
-
-
-
     handleParamsChange(params) {
       if (params.sortType) {
         // Устанавливаем тип сортировки в store только для sortType
@@ -364,7 +380,70 @@ export default {
 
 
     // Работа с компонентом настройки Расписания, Уведомлений и Статистики
-    
+    editScheduleValue(event) {
+      console.groupCollapsed('[DashBoard] - editScheduleValue received:');
+      console.log('Полученные данные:', event);
+
+      // Устанавливаем лимиты для MainSetpoint
+        
+        if (event.action === 'show') {
+        this.selectedItemData = event.data;
+        this.setpoint = event.data.setValue;
+        this.showSetpoint = true;
+        this.editType = 'schedule';
+          if (event.limits) {
+            this.$store.commit('sortParams/UPDATE_LIMITS', event.limits);
+          }
+          console.log('[DashBoard] - editScheduleValue - Компонент MainSetpoint показан, лимиты устанавливает');
+      } else if (event.action === 'hide') {
+        this.showSetpoint = false;
+        this.selectedItemData = null;
+        this.setpoint = null;
+        this.editType = '';
+        console.log('[DashBoard] - editScheduleValue - Компонент MainSetpoint скрыт');
+      }
+
+      // this.showSetpoint = true;
+      // this.setpoint = event.currentValue;
+
+      console.groupEnd();
+    },
+    handleMainBodySettingsEvent(event) {
+      console.groupCollapsed('[DashBoard] - handleMainBodySettingsEvent received:');
+      console.log('Полученные данные:', event);
+
+      // Проверяем, что это объект с данными расписания
+      if (event && event.id && event.roomKey) {
+        console.log(' --- [DashBoard] - Редактирование значения расписания');
+        
+        // Сохраняем данные редактирования в отдельную переменную
+        this.editingSchedule = {
+          id: event.id,
+          roomKey: event.roomKey,
+          paramKey: event.paramKey,
+          currentValue: event.currentValue,
+          limits: event.limits,
+          type: event.type
+        };
+        
+        // Устанавливаем лимиты для MainSetpoint
+        if (event.limits) {
+          this.$store.commit('sortParams/UPDATE_LIMITS', event.limits);
+        }
+        
+        // Показываем MainSetpoint с начальным значением
+        this.showSetpoint = true;
+        this.setpoint = event.currentValue;
+        
+        console.log('[DashBoard] - Режим редактирования расписания активирован:', this.editingSchedule);
+      } else {
+        console.log('[DashBoard] - Неизвестное событие:', event);
+      }
+      
+      console.groupEnd();
+    },
+
+
   }
 };
 </script>

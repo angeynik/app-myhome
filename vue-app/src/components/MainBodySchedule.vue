@@ -210,9 +210,9 @@ export default {
       if (this.scheduleData.valueType === 'absolute') {
         // Абсолютное значение - используем стандартные лимиты
         limits = {
-          min: -50,
-          max: 50,
-          step: 0.25
+          limLow: -50,
+          limHigh: 50,
+          limStep: 0.25
         };
       } else {
         // Отклонение - ограничиваем диапазон

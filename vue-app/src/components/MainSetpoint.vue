@@ -182,23 +182,68 @@
       
     props: {   // Переменные полученные в компонент
       setPoint: Number,
+      editType: String,
       // highLimit: Number,
       // lowLimit: Number,
       // step: Number,
     },
       methods: {
-    sendEmitMessage(event, name, message) {
-      if (!event || !name || !message) return console.error('sendEmitMessage - event', event,'name - ', name, 'message - ', message, ' не переданы');
-      logger.dev('[MainSetpoint] - sendEmitMessage  Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
-      //console.log('[MainSetpoint] - sendEmitMessage  Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
-        this.$emit('eventsMainSetpoint',{
-          [event]: {
-            type: name,
-            message: message
-          }
-        });
-        //eventsMainSetpoint - событие которое слушает DashBoard и передает его в функцию handleSetpointEvent 
-    },
+    // sendEmitMessage(event, name, message) {
+    //   if (!event || !name || !message && this.editType === 'setpoint') return console.error('sendEmitMessage - event', event,'name - ', name, 'message - ', message, ' не переданы');
+    //   logger.dev('[MainSetpoint] - sendEmitMessage  Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
+    //   console.log('[MainSetpoint] - sendEmitMessage  Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
+    //     this.$emit('eventsMainSetpoint',{ // Обновление значения для Уставки
+    //       [event]: {
+    //         type: name,
+    //         message: message
+    //       }
+    //     });
+    //     if (!event || !name || !message && this.editType === 'schedule') return console.error('sendEmitMessage - event', event,'name - ', name, 'message - ', message, ' не переданы');
+    //   logger.dev('[MainSetpoint] - sendEmitMessage  Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
+    //   console.log('[MainSetpoint] - sendEmitMessage  Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
+    //     // this.$emit('eventsSchedule',{ // Обновление значения для Расписания
+    //     //   [event]: {
+    //     //     type: name,
+    //     //     message: message
+    //     //   }
+    //     // });
+    //     //eventsMainSetpoint - событие которое слушает DashBoard и передает его в функцию handleSetpointEvent 
+    // },
+      sendEmitMessage(event, name, message) {
+        
+        // Проверяем, что все параметры переданы
+        if (!event || !name || !message) {
+          console.error('sendEmitMessage - параметры не переданы:', { event, name, message });
+          return;
+        }
+        let type = name;
+
+        // Логируем в зависимости от типа редактирования
+        if (this.editType === 'setpoint') {
+          this.$emit('eventsMainSetpoint', {
+            [event]: {
+              type: type,
+              message: message
+            }
+          });
+        } else if (this.editType === 'schedule') {
+          type = 'newScheduleValue';
+          this.$emit('eventsSchedule', {
+            [event]: {
+              type: type,
+              message: message
+            }
+          });
+        } else {
+          console.warn('[MainSetpoint] - sendEmitMessage - неизвестный editType:', this.editType);
+        }
+        console.groupCollapsed('[MainSetpoint] - sendEmitMessage ');
+        logger.dev('[MainSetpoint] - sendEmitMessage для Уставки - type:', type, 'message:', message, 'event:', event);
+        console.log('[MainSetpoint] - sendEmitMessage для Уставки - type:', type, 'message:', message, 'event:', event);
+        console.groupEnd();
+      },
+
+
     handleTouchStart(event) {
       logger.dev('[MainSetpoint] - handleTouchStart', event.touches[0].clientX, event.touches[0].clientY);
         // console.log('Компонент bodySetpointBlock событие - handleTouchStart', event.touches[0].clientX, event.touches[0].clientY);
