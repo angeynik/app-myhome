@@ -182,17 +182,21 @@ export default {
     toggleValueType(event) {
       event.stopPropagation(); // Добавьте эту строку
       
-      console.log('[MainBodySchedule] - toggleValueType - scheduleData:', this.scheduleData);
+      //console.log('[MainBodySchedule] - toggleValueType - scheduleData:', this.scheduleData);
       
       // Используем ID или временный ID
       const scheduleId = this.scheduleData.id || this.scheduleData._tempId;
       const newType = this.scheduleData.valueType === 'absolute' ? 'deviation' : 'absolute';
+      const roomKey = this.scheduleData.roomKey;
+      const paramKey = this.scheduleData.paramKey;
       
-      console.log('[MainBodySchedule] - toggleValueType - Отправляем событие с ID:', scheduleId, 'новый тип:', newType);
+      //console.log('[MainBodySchedule] - toggleValueType - Отправляем событие с ID:', scheduleId, 'новый тип:', newType);
       
       this.$emit('value-type-changed', {
         scheduleId: scheduleId,
-        newValueType: newType
+        newValueType: newType,
+        roomKey: roomKey,
+        paramKey: paramKey,
       });
     },
     
@@ -219,13 +223,18 @@ export default {
         };
         label = 'Отклонение от уставки';
       }
-      
+     
+      const roomKey = this.scheduleData.roomKey;
+      const paramKey = this.scheduleData.paramKey;
+
       // Устанавливаем текущее значение или 0 по умолчанию
       const currentValue = this.scheduleData.value !== null && this.scheduleData.value !== undefined
         ? this.scheduleData.value
         : (this.scheduleData.valueType === 'absolute' ? 20 : 0);
       
       this.$emit('edit-value', {
+        roomKey: roomKey,
+        paramKey: paramKey,
         field: 'value',
         value: currentValue,
         limits: limits,

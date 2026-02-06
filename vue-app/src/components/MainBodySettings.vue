@@ -153,6 +153,7 @@ export default {
 
       schedulesToDelete: [], // Массив ID расписаний для удаления
       pendingDeletions: {}, // Объект с данными для удаления {id: scheduleData}
+      editedSchedules: {}, // Объект с данными для редактирования {id: scheduleData}
 
 
     };
@@ -252,6 +253,8 @@ export default {
       'getCurrentDateTime',
       'formatDate',
       'checkScheduleOverlap',
+      'updateSchedule',
+      'deleteSchedules',
     ]),
     
     formattedValue(value) {
@@ -504,8 +507,25 @@ export default {
         throw error;
       }
     },
+    handleDeleteSchedule(id) {
+      console.log('[MainBodySettings] - handleDeleteSchedule - Добавляем в список на удаление ID:', id);
   
+      // Сохраняем данные для удаления
+      this.pendingDeletions[id] = id;
+      console.log('[MainBodySettings] - handleDeleteSchedule - Массив на удаление:', this.pendingDeletions);
+      
+      // Добавляем ID в массив для отслеживания
+      if (!this.schedulesToDelete.includes(id)) {
+        this.schedulesToDelete.push(id);
+      }
+      console.log('[MainBodySettings] - handleDeleteSchedule - Массив на удаление:', this.schedulesToDelete);
+      // Немедленно обновляем локальный список (скрываем удаленный элемент)
+      this.schedules = this.schedules.filter(s => s.id !== id);
+      
+      logger.info(`[MainBodySettings] - handleDeleteSchedule - Расписание c ${id} добавлено в список на удаление`);
 
+    },
+  
   async addNewNotification(roomKey, paramKey) {
     // Получаем текущие уведомления для этой комнаты и параметра
     const existingNotifications = this.notifications.filter(n => 
@@ -626,22 +646,6 @@ export default {
     }
   },
 
-
-    
-    
-    // closeMainBodySettings() {
-    //   console.log('[MainBodySettings] Closing settings');
-      
-    //   // Простой возврат назад
-    //   if (window.history.length > 1) {
-    //     this.$router.go(-1);
-    //   } else {
-    //     this.$router.push('/dashboard');
-    //   }
-      
-    //   this.$emit('close');
-    // },
-
     async closeMainBodySettings() {
       console.groupCollapsed('[MainBodySettings] - closeMainBodySettings');
       console.log('[MainBodySettings] - closeMainBodySettings - Начинаем закрытие');
@@ -705,34 +709,108 @@ export default {
       this.$emit('close');
 
     },
+
+
+
+
+
+
+
+
+
+
     handleValueTypeChanged(event) {
-      console.log('[MainBodySettings] - handleValueTypeChanged', event);
-      // TODO: Обработка изменения типа значения
+      console.groupCollapsed('[MainBodySettings] - handleValueTypeChanged');
+      console.log('[MainBodySettings] - handleValueTypeChanged Начинаем изменение типа', event);
+      const { scheduleId, newValueType, roomKey, paramKey } = event;
+      const scheduleIndex = this.schedules.findIndex(s => s.id === scheduleId);
+      
+      if (scheduleIndex !== -1) {
+        // Обновляем локально
+        this.schedules[scheduleIndex].valueType = newValueType;
+        
+        // Отмечаем как измененное
+        if (scheduleId > 0) { // Только существующие расписания
+          if (!this.editedSchedules[roomKey]) {
+            this.editedSchedules[roomKey] = {};
+          }
+          if (!this.editedSchedules[roomKey][paramKey]) {
+            this.editedSchedules[roomKey][paramKey] = {};
+          }
+          if (!this.editedSchedules[roomKey][paramKey][scheduleId]) {
+            this.editedSchedules[roomKey][paramKey][scheduleId]  = {};
+          }
+          this.editedSchedules[roomKey][paramKey][scheduleId].valueType = newValueType;
+          this.editedSchedules[roomKey][paramKey][scheduleId].updatedAt = new Date().toISOString();
+        }
+        console.log('[MainBodySettings] - handleValueTypeChanged - В editedSchedules добавлено изменение:', this.editedSchedules);
+        console.log('[MainBodySettings] - handleValueTypeChanged - Расписание обновлено:', this.schedules[scheduleIndex]);
+      }
+      console.groupEnd();
     },
     
     handleEditValue(scheduleId, event) {
-      console.log('[MainBodySettings] - handleEditValue', scheduleId, event);
-      // TODO: Обработка редактирования значения
+      console.groupCollapsed('[MainBodySettings] - handleEditValue');
+      //console.log('[MainBodySettings] - handleEditValue Начинаем изменение значения', scheduleId, event);
+
+      const {value, type, limits, roomKey, paramKey } = event;
+      const scheduleIndex = this.schedules.findIndex(s => s.id === scheduleId);
+      if (scheduleIndex === -1) return;
+
+      console.log('[MainBodySettings] - handleEditValue - scheduleIndex:', scheduleId, value, type, roomKey, paramKey, limits);
+
+              if (scheduleId > 0) { // Только существующие расписания
+          if (!this.editedSchedules[roomKey]) {
+            this.editedSchedules[roomKey] = {};
+          }
+          if (!this.editedSchedules[roomKey][paramKey]) {
+            this.editedSchedules[roomKey][paramKey] = {};
+          }
+          if (!this.editedSchedules[roomKey][paramKey][scheduleId]) {
+            this.editedSchedules[roomKey][paramKey][scheduleId]  = {};
+          }
+          this.editedSchedules[roomKey][paramKey][scheduleId].value = value;
+          this.editedSchedules[roomKey][paramKey][scheduleId].updatedAt = new Date().toISOString();
+        }
+        console.log('[MainBodySettings] - handleValueTypeChanged - В editedSchedules добавлено изменение:', this.editedSchedules);
+        console.log('[MainBodySettings] - handleValueTypeChanged - Расписание обновлено:', this.schedules[scheduleIndex]);
+
+
+      // const { field, value, type } = event;
+      // const scheduleIndex = this.schedules.findIndex(s => s.id === scheduleId);
+      
+      // if (scheduleIndex === -1) return;
+      
+      // let newValue = value;
+      
+      // if (type === 'time') {
+      //   // Преобразуем минуты обратно в строку времени
+      //   newValue = await this.$store.dispatch('settingsConfig/minutesToTime', value);
+      // }
+      
+      // // Обновляем локально
+      // this.schedules[scheduleIndex][field] = newValue;
+      // this.schedules[scheduleIndex].updatedAt = new Date().toISOString();
+      
+      // // Отмечаем как измененное (только для существующих расписаний)
+      // if (scheduleId > 0) {
+      //   if (!this.editedSchedules[scheduleId]) {
+      //     this.editedSchedules[scheduleId] = {};
+      //   }
+      //   this.editedSchedules[scheduleId][field] = newValue;
+      //   this.editedSchedules[scheduleId].updatedAt = new Date().toISOString();
+      // }
+      
+      // console.log('[MainBodySettings] - handleEditValue - Расписание обновлено:', {
+      //   scheduleId,
+      //   field,
+      //   value: newValue,
+      //   schedule: this.schedules[scheduleIndex]
+      // });
+      console.groupEnd();
     },
     
-    handleDeleteSchedule(id) {
-      console.log('[MainBodySettings] - handleDeleteSchedule - Добавляем в список на удаление ID:', id);
-  
-      // Сохраняем данные для удаления
-      this.pendingDeletions[id] = id;
-      console.log('[MainBodySettings] - handleDeleteSchedule - Массив на удаление:', this.pendingDeletions);
-      
-      // Добавляем ID в массив для отслеживания
-      if (!this.schedulesToDelete.includes(id)) {
-        this.schedulesToDelete.push(id);
-      }
-      console.log('[MainBodySettings] - handleDeleteSchedule - Массив на удаление:', this.schedulesToDelete);
-      // Немедленно обновляем локальный список (скрываем удаленный элемент)
-      this.schedules = this.schedules.filter(s => s.id !== id);
-      
-      logger.info(`[MainBodySettings] - handleDeleteSchedule - Расписание c ${id} добавлено в список на удаление`);
 
-    },
 
 
 

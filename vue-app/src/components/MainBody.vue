@@ -159,9 +159,9 @@ export default {
     },
     
     selectItem(item) {
-      console.groupCollapsed('[MainBody] - selectItem ');
+      //console.groupCollapsed('[MainBody] - selectItem ');
       logger.info(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
-      console.log(`[MainBody] - selectItem - setpointKey: ${item.setpointKey}, deviceKey: ${item.deviceKey}, paramKey: ${item.paramKey}, roomKey: ${item.roomKey}`);
+      //console.log(`[MainBody] - selectItem - setpointKey: ${item.setpointKey}, deviceKey: ${item.deviceKey}, paramKey: ${item.paramKey}, roomKey: ${item.roomKey}`);
       //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
       
        if (this.selectedItem === item) {
@@ -197,44 +197,24 @@ export default {
               setpointKey: item.setpointKey
             }
           });
-          console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
+          //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
           }
-          console.groupEnd();
+          //console.groupEnd();
     },
  
-    // toggleSorting(item) { // Меняем сортировку комнаты/параметры при двойном клике по выбранной плашке
-    //   logger.info(`[MainBody] - toggleSorting - Выбран параметр: ${JSON.stringify(item)}`);
-    //   //console.log(`[MainBody] - toggleSorting - Выбран параметр: ${JSON.stringify(item)}`);
-    //   const newSortType = this.currentSortType === 'rooms' ? 'params' : 'rooms';
-    //   this.SET_SORT_TYPE(newSortType);
-      
-    //   if (newSortType === 'params') {
-    //     const baseParamKey = item.paramKey.replace(/\d+$/, '');
-    //     this.SET_PARAM_KEY(baseParamKey);
-    //     this.SET_ROOM_KEY(item.roomKey);
-    //     this.$store.commit('sortParams/SET_PARAM_TITLE', this.getSensorTitle(baseParamKey));
-    //   } else {
-    //     this.SET_ROOM_KEY(item.roomKey);
-    //     this.SET_ROOM_ID(item.roomId);
-    //     this.$store.commit('sortParams/SET_ROOM_TITLE', item.roomTitle);
-    //   }
-      
-    //   // Эмитируем событие для обновления навигации
-    //   this.$emit('sorting-changed', newSortType);
-
-    // },
     toggleSorting(item) {
-      console.groupCollapsed('[MainBody] - toggleSorting ');
-      console.log('[MainBody] - toggleSorting - Ключ выбранного элемента:', item.setpointKey, ' и значение:', item.setValue);
+      logger.dev('[MainBody] - toggleSorting - Ключ выбранного элемента:', item.setpointKey, ' и значение:', item.setValue);
+      //console.groupCollapsed('[MainBody] - toggleSorting ');
+      //console.log('[MainBody] - toggleSorting - Ключ выбранного элемента:', item.setpointKey, ' и значение:', item.setValue);
       let settingsType = this.typeSettingsItem || 'schedule';
       
       // Устанавливаем флаги в зависимости от типа настроек и наличия setpointKey
       if (settingsType === 'schedule') {
         if (item.setpointKey != null) {
-          console.log('[MainBody] - toggleSorting - Устанавливаем permitSchedule = true');
+          //console.log('[MainBody] - toggleSorting - Устанавливаем permitSchedule = true');
           this.setPermitSchedule(true);
         } else {
-          console.warn('[MainBody] - toggleSorting - Невозможно настроить расписание: setpointKey равен null');
+          //console.warn('[MainBody] - toggleSorting - Невозможно настроить расписание: setpointKey равен null');
           // Можно показать уведомление пользователю
           alert('Для этого элемента невозможно настроить расписание (отсутствует уставка)');
           return; // Прерываем переход
@@ -251,7 +231,7 @@ export default {
         name: 'DashboardSettings',
         params: { settingsType }
       });
-      console.groupEnd();
+      //console.groupEnd();
     },
     async updateView() { // Формируем массив для отображения пользователю в соответствии с типом сортировки и текущим ключем
       //console.log('[MainBody] - updateView - started');

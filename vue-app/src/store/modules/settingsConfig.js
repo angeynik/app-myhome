@@ -56,8 +56,9 @@ export default {
 
   actions: {
     async initialize({ commit, dispatch, rootGetters }) {
-      console.groupCollapsed('[settingsConfig] - initialize ');
-      console.log('[settingsConfig] - initialize - Начинаем инициализацию конфигурации Расписания');
+      logger
+      //console.groupCollapsed('[settingsConfig] - initialize ');
+      //console.log('[settingsConfig] - initialize - Начинаем инициализацию конфигурации Расписания');
       
       const dID = rootGetters['dID'];
       if (!dID) {
@@ -77,14 +78,15 @@ export default {
         
         logger.dev('[settingsConfig] - initialize - Инициализация конфигурации расписания');
         
-        console.log('[settingsConfig] - Initialize - Готовим запрос на получение конфигураций Настроек для dID:', dID);
+        //console.log('[settingsConfig] - Initialize - Готовим запрос на получение конфигураций Настроек для dID:', dID);
         
         // Запрашиваем все типы конфигураций
         await dispatch('requestToServer', { configType: 'schedules' });
         await dispatch('requestToServer', { configType: 'notifications' });
         await dispatch('requestToServer', { configType: 'statistics' });
         
-        console.log('[settingsConfig] - initialize - Все запросы отправлены');
+        logger.dev('[settingsConfig] - initialize - Все запросы для dID:', dID, 'отправлены');
+        //console.log('[settingsConfig] - initialize - Все запросы отправлены');
         
         return {};
         
@@ -95,8 +97,9 @@ export default {
         return {};
         
       } finally {
-        console.log('[settingsConfig] - initialize - Инициализация завершена');
-        console.groupEnd();
+        logger.dev
+        //console.log('[settingsConfig] - initialize - Инициализация завершена');
+        //console.groupEnd();
       }
       
     },

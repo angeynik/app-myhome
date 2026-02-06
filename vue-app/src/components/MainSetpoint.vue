@@ -1,4 +1,4 @@
-
+<!-- components/MainBodySetpoint.vue -->
 <template>
   
     <div class="setpointBlock" 
