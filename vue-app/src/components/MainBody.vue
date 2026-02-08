@@ -26,7 +26,7 @@
 </template>
 
 <script>
-import { mapGetters, mapMutations } from 'vuex'
+import { mapGetters, mapMutations, mapActions} from 'vuex'
 import MainBodyValue from './MainBodyValue.vue'
 import logger from '../store/modules/logger.js';
 
@@ -126,6 +126,9 @@ export default {
       'SET_DEVICE_TITLE', 
       'SET_SETPOINT_TITLE'
     ]),
+    ...mapActions('sortParams', [
+      'setLimits',
+    ]),
     ...mapMutations('settingsConfig', {
       setPermitSchedule: 'SET_PERMIT_SCHEDULE',
       setPermitNotifications: 'SET_PERMIT_NOTIFICATIONS',
@@ -184,8 +187,16 @@ export default {
 
           //console.log (`[MainBody] - selectItem - Обновлены ключи выбранного элемента: ${JSON.stringify(item)}`);
           // Отправляем событие с данными в DashBoard
-          this.$emit('eventsMainBody', {
+          const params = {
+            param: item.setpointKey, 
+            valueType: 'absolute', 
+          }
+          console.log('[MainBodySettings] - handleEditValue - params:', params);
+          this.setLimits(params);
+          //console.log(`[MainBody] - selectItem - setLimits установлены лимиты по ключу ${item.setpointKey}`);
+          this.$emit('edit-value-MainSetpoint', {
             action: 'show',
+            editType: 'value-setpoint',
             data: {
               value: item.value,
               setValue: item.setValue,
@@ -193,7 +204,7 @@ export default {
               paramKey: item.paramKey,
               roomKey: item.roomKey,
               sortType: item.sortType,
-              deviceKey: item.deviceKey,
+              // deviceKey: item.deviceKey,
               setpointKey: item.setpointKey
             }
           });

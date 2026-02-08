@@ -61,7 +61,7 @@
         :key="componentKey"
         @eventsMainBody="handleMainBodyEvent"
         @eventsMainBodySettings="handleMainBodySettingsEvent"
-        @edit-schedule-value="editScheduleValue"
+        @edit-value-MainSetpoint="editValueMainSetpoint"
         @swipe-forward="handleSwipeForward"
         @swipe-back="handleSwipeBack"
         :ref="currentRef"
@@ -75,7 +75,9 @@
         v-if="showFooterSetpoint"
         :setPoint="setpoint" 
         :editType="editType"
-        @eventsMainSetpoint="updateSetpointValue"
+        :roomKey="selectedItemData.roomKey"
+        :setpointKey="selectedItemData.setpointKey"
+        @eventsMainSetpoint="updateConfigSetpoint"
         @eventsSchedule="updateScheduleValue"
       />
     </footer>
@@ -201,7 +203,7 @@ export default {
   methods: {
     ...mapActions('sortParams', [
       'switchSortKey',
-      'setLimits',
+      // 'setLimits',
       'UPDATE_LIMITS',
     ]),
     ...mapActions('config', ['initialize']),
@@ -247,54 +249,130 @@ export default {
     },
 
     // Работа с Setpoint
-    handleMainBodyEvent(event) {
-      logger.dev('[DashBoard] - handleMainBodyEvent received:', event);
-      console.log('[DashBoard] - handleMainBodyEvent received:', event);
+    // handleMainBodyEvent(event) {
+    //   logger.dev('[DashBoard] - handleMainBodyEvent received:', event);
+    //   console.log('[DashBoard] - handleMainBodyEvent received:', event);
       
-      if (event.action === 'show') {
-        this.selectedItemData = event.data;
-        this.setpoint = event.data.setValue;
-        this.showSetpoint = true;
-        this.editType = 'setpoint';
-        this.setLimits(event.data.paramKey);
-      } else if (event.action === 'hide') {
-        this.showSetpoint = false;
-        this.selectedItemData = null;
-        this.setpoint = null;
-        this.editType = '';
-      }
-    },
+    //   if (event.action === 'show') {
+    //     this.selectedItemData = event.data;
+    //     this.setpoint = event.data.setValue;
+    //     this.showSetpoint = true;
+    //     this.editType = 'setpoint';
+    //     this.setLimits(event.data.paramKey);
+    //   } else if (event.action === 'hide') {
+    //     this.showSetpoint = false;
+    //     this.selectedItemData = null;
+    //     this.setpoint = null;
+    //     this.editType = '';
+    //   }
+    // },
 
     updateSetpointValue(eventData) {
-      console.groupCollapsed('[DashBoard] - updateSetpointValue -  ');
-      console.log('[DashBoard] - updateSetpointValue - Обработка данных от компонента MainSetpoint изменения Уставки :', eventData);
+      //console.groupCollapsed('[DashBoard] - updateSetpointValue -  ');
+      //console.log('[DashBoard] - updateSetpointValue - Обработка данных от компонента MainSetpoint изменения Уставки :', eventData);
       if (eventData.updateState && eventData.updateState.type === 'newSetPoint') {
-        console.log('[DashBoard] - updateSetpointValue - Обновляем значение уставки');
+        console.log('[DashBoard] - updateSetpointValue - Обновляем значение уставки', eventData);
         this.setpoint = eventData.updateState.message;
         this.updateConfigSetpoint(eventData.updateState.message);
       } else if (eventData.error) {
         logger.error('[DashBoard] - updateSetpointValue - Ошибка:', eventData.error);
         //console.error('[DashBoard] - updateSetpointValue - Ошибка:', eventData.error);
       }
-      console.groupEnd();
+      //console.groupEnd();
     },
    
     updateScheduleValue(eventData) {
       console.groupCollapsed('[DashBoard] - updateSetpointValue -  ');
       console.log('[DashBoard] - updateSetpointValue - Обработка данных от компонента MainSetpoint изменения элемента Расписания:', eventData);
       this.setpoint = eventData.updateState.message;
-      
+
       console.groupEnd();
     },
 
 
-    async updateConfigSetpoint(newValue) {
+
+
+    async updateConfigSetpoint(eventData) {
+    let newValue = eventData.updateState.message;
+    let oldValue = this.setpoint; // Сохраняем текущее значение для возможного отката
+    //this.setpoint = eventData.updateState.message;
+    logger.dev('[DashBoard] - updateConfigSetpoint - Обновляем значение уставки:', this.setpoint, ' oldValue -', oldValue);
+    console.log('[DashBoard] - updateConfigSetpoint - Обновляем значение уставки:', this.setpoint, ' oldValue -', oldValue);
+
+    let dID = this.dID;
+    let roomKey = this.selectedItemData.roomKey;
+    let setpointKey = this.selectedItemData.setpointKey;
+    let requestName = '';
+
+    if (!dID || !roomKey || !setpointKey) {
+          logger.error(`[DashBoard] - updateConfigSetpoint - Не удалось обновить значение уставки: dID - ${dID}, roomKey - ${roomKey}, setpointKey - ${setpointKey} - не определены`);
+          console.error('Не удалось обновить значение уставки: dID, roomKey или setpointKey не определены');
+          return;
+    }
+      
+    
+      
+      try {
+        if (eventData.updateState && eventData.updateState.type === 'newSetPoint') {
+          console.groupCollapsed('[DashBoard] - updateConfigSetpoint - newSetPoint');
+          this.setpoint = newValue;
+          requestName = 'setpoints';
+        }
+        console.log('[DashBoard] - updateConfigSetpoint - Обновляем значение уставки:', eventData.updateState.message);
+        const timestamp = new Date().toString();
+        const payload = {
+          room: roomKey, 
+          item_name: setpointKey,
+          item_value: eventData.updateState.message, 
+          time: timestamp
+        };
+        
+        logger.dev('[DashBoard] - updateConfigSetpoint - Формируем сообщение для отпраку на сервер:', payload, 'request -', requestName);
+        console.log('[DashBoard] - updateConfigSetpoint - Формируем сообщение для отпраку на сервер:', payload, 'request -', requestName);
+        // Обновляем конфигурацию в store
+        await this.$store.dispatch('config/handleSensorUpdate', { dID, payload, type: requestName });
+      } catch (error) {
+        logger.error('[DashBoard] - updateConfigSetpoint - Ошибка обновления уставки:', error);
+        //console.error('Ошибка обновления уставки:', error);
+      }
+      console.groupEnd();
+    
+      // Установка нового таймера для отправки на сервер
+        this.setpointUpdateTimer = setTimeout(async () => {
+          try {
+            logger.dev('[DashBoard] - updateConfigSetpoint - Обновляем уставку -', newValue, ' roomKey -', roomKey, ' paramKey -', setpointKey);
+            console.log('[DashBoard] - updateConfigSetpoint - Обновляем уставку -', newValue, ' roomKey -', roomKey, ' paramKey -', setpointKey);
+            await this.$store.dispatch('config/updateSetpointServer', {
+              roomKey: roomKey,
+              paramKey: setpointKey,
+              value: newValue,
+              req: requestName, 
+            });
+            logger.info('[DashBoard] - updateConfigSetpoint - Уставка успешно отправлена на сервер после задержки');
+            //console.log('Уставка успешно отправлена на сервер после задержки');
+          } catch (error) {
+            logger.error('[DashBoard] - updateConfigSetpoint - Ошибка при отправке уставки на сервер:', error);
+            //console.error('Ошибка при отправке уставки на сервер:', error);
+            // Откат значения при ошибке
+            this.setpoint = oldValue;
+          }
+        }, 1500);
+
+        // Запускаем повторную сортировку через изменение флага Обновления updateView
+        this.$store.commit('sortParams/SET_FORCE_UPDATE', Date.now());
+    },
+
+    async _updateConfigSetpoint(eventData) {
+
       const oldValue = this.setpoint; // Сохраняем текущее значение для возможного отката
+      const newValue = eventData.updateState.message;
+      this.setpoint = newValue;
       try {
         const dID = this.dID; // Используем геттер из computed
         const sortType = this.currentSortType;
         const dKey = this.getDeviceKey; // Используем геттер
         const pKey = this.getParamKey;
+        console.log('[DashBoard] - updateConfigSetpoint - Обновляем значение уставки:', newValue, ' sortType -', sortType, ' dKey -', dKey, ' pKey -', pKey);
 
         const deviceKey = 's' + this.clearKeySync(dKey);
         const paramKey = 's' +  this.clearKeySync(pKey);
@@ -380,27 +458,27 @@ export default {
 
 
     // Работа с компонентом настройки Расписания, Уведомлений и Статистики
-    editScheduleValue(event) {
-      console.groupCollapsed('[DashBoard] - editScheduleValue received:');
+    editValueMainSetpoint(event) {
+      console.groupCollapsed('[DashBoard] - editValueMainSetpoint received:');
       console.log('Полученные данные:', event);
 
       // Устанавливаем лимиты для MainSetpoint
-        
-        if (event.action === 'show') {
+      const editType = event.editType;
+      if (event.action === 'show') {
         this.selectedItemData = event.data;
         this.setpoint = event.data.setValue;
         this.showSetpoint = true;
-        this.editType = 'schedule';
+        this.editType = editType;
           if (event.limits) {
             this.$store.commit('sortParams/UPDATE_LIMITS', event.limits);
           }
-          console.log('[DashBoard] - editScheduleValue - Компонент MainSetpoint показан, лимиты устанавливает');
+          console.log('[DashBoard] - editValueMainSetpoint - Компонент MainSetpoint показан, лимиты устанавливает');
       } else if (event.action === 'hide') {
         this.showSetpoint = false;
         this.selectedItemData = null;
         this.setpoint = null;
         this.editType = '';
-        console.log('[DashBoard] - editScheduleValue - Компонент MainSetpoint скрыт');
+        console.log('[DashBoard] - editValueMainSetpoint - Компонент MainSetpoint скрыт');
       }
 
       // this.showSetpoint = true;
@@ -408,40 +486,47 @@ export default {
 
       console.groupEnd();
     },
-    handleMainBodySettingsEvent(event) {
-      console.groupCollapsed('[DashBoard] - handleMainBodySettingsEvent received:');
-      console.log('Полученные данные:', event);
 
-      // Проверяем, что это объект с данными расписания
-      if (event && event.id && event.roomKey) {
-        console.log(' --- [DashBoard] - Редактирование значения расписания');
+
+
+
+
+
+    
+    // handleMainBodySettingsEvent(event) {
+    //   console.groupCollapsed('[DashBoard] - handleMainBodySettingsEvent received:');
+    //   console.log('Полученные данные:', event);
+
+    //   // Проверяем, что это объект с данными расписания
+    //   if (event && event.id && event.roomKey) {
+    //     console.log(' --- [DashBoard] - Редактирование значения расписания');
         
-        // Сохраняем данные редактирования в отдельную переменную
-        this.editingSchedule = {
-          id: event.id,
-          roomKey: event.roomKey,
-          paramKey: event.paramKey,
-          currentValue: event.currentValue,
-          limits: event.limits,
-          type: event.type
-        };
+    //     // Сохраняем данные редактирования в отдельную переменную
+    //     this.editingSchedule = {
+    //       id: event.id,
+    //       roomKey: event.roomKey,
+    //       paramKey: event.paramKey,
+    //       currentValue: event.currentValue,
+    //       limits: event.limits,
+    //       type: event.type
+    //     };
         
-        // Устанавливаем лимиты для MainSetpoint
-        if (event.limits) {
-          this.$store.commit('sortParams/UPDATE_LIMITS', event.limits);
-        }
+    //     // Устанавливаем лимиты для MainSetpoint
+    //     if (event.limits) {
+    //       this.$store.commit('sortParams/UPDATE_LIMITS', event.limits);
+    //     }
         
-        // Показываем MainSetpoint с начальным значением
-        this.showSetpoint = true;
-        this.setpoint = event.currentValue;
+    //     // Показываем MainSetpoint с начальным значением
+    //     this.showSetpoint = true;
+    //     this.setpoint = event.currentValue;
         
-        console.log('[DashBoard] - Режим редактирования расписания активирован:', this.editingSchedule);
-      } else {
-        console.log('[DashBoard] - Неизвестное событие:', event);
-      }
+    //     console.log('[DashBoard] - Режим редактирования расписания активирован:', this.editingSchedule);
+    //   } else {
+    //     console.log('[DashBoard] - Неизвестное событие:', event);
+    //   }
       
-      console.groupEnd();
-    },
+    //   console.groupEnd();
+    // },
 
 
   }

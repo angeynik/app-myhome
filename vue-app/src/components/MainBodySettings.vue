@@ -249,6 +249,9 @@ export default {
       'updateSchedule',
       'deleteSchedules',
     ]),
+    ...mapActions('sortParams', [
+      'setLimits',
+    ]),
     
     formattedValue(value) {
       if (typeof value === 'number') {
@@ -747,11 +750,14 @@ export default {
       //console.log('[MainBodySettings] - handleEditValue Начинаем изменение значения', scheduleId, event);
       this.currentEvent = event;
 
-      const {value, type, limits, roomKey, paramKey } = event;
+      const {value, type, roomKey, paramKey } = event;
+     
       const scheduleIndex = this.schedules.findIndex(s => s.id === scheduleId);
       if (scheduleIndex === -1) return;
 
-      console.log('[MainBodySettings] - handleEditValue - scheduleIndex:', scheduleId, value, type, roomKey, paramKey, limits);
+      const valueType = this.schedules[scheduleIndex]?.valueType;
+
+      console.log('[MainBodySettings] - handleEditValue - scheduleIndex:', scheduleId, value, type, roomKey, paramKey, valueType);
 
         if (scheduleId > 0) { // Только существующие расписания
           if (!this.editedSchedules[roomKey]) {
@@ -772,15 +778,16 @@ export default {
         // Формируем данные для передачи в компонент Main Setpoint для редактирования
         const editingSchedule = {
           action: 'show',
+          editType: 'value-scheduale', 
           data: {
             id: scheduleId,
-            deviceKey: roomKey,
+            roomKey: roomKey,
             paramKey: paramKey,
             setValue: value,
             value: value,
-            limits: limits,
+            // limits: limits,
             unit: type,
-            sortType: this.currentSortType,
+            // sortType: this.currentSortType,
             setpointKey: paramKey,
             }
         };
@@ -789,7 +796,13 @@ export default {
         this.isEditingSchedule = true;
 
         // Отправляем событие родителю (Dashboard) для показа MainSetpoint
-        this.$emit('edit-schedule-value', editingSchedule);
+        const params = {
+          param: 'Default', // Default - базовые параметры    Minutes - минуты Hours - часы
+          valueType: valueType // deviation - отклонение от уставки, absolute - новое значение
+        }
+        console.log('[MainBodySettings] - handleEditValue - params:', params);
+        this.setLimits(params);
+        this.$emit('edit-value-MainSetpoint', editingSchedule);
         console.log('[MainBodySettings] - handleEditValue - Данные для редактирования отправлены:', editingSchedule);
 
       console.groupEnd();

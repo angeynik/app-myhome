@@ -205,24 +205,24 @@ export default {
       logger.dev('[MainBodySchedule] - editScheduleValue - Начало редактирования значения');
       
       // Определяем лимиты в зависимости от типа значения
-      let limits;
+      // let limits;
       let label = 'Значение расписания';
-      if (this.scheduleData.valueType === 'absolute') {
-        // Абсолютное значение - используем стандартные лимиты
-        limits = {
-          limLow: -50,
-          limHigh: 50,
-          limStep: 0.25
-        };
-      } else {
-        // Отклонение - ограничиваем диапазон
-        limits = {
-          min: -20,
-          max: 20,
-          step: 0.1
-        };
-        label = 'Отклонение от уставки';
-      }
+      // if (this.scheduleData.valueType === 'absolute') {
+      //   // Абсолютное значение - используем стандартные лимиты
+      //   limits = {
+      //     limLow: -50,
+      //     limHigh: 50,
+      //     limStep: 0.25
+      //   };
+      // } else {
+      //   // Отклонение - ограничиваем диапазон
+      //   limits = {
+      //     min: -20,
+      //     max: 20,
+      //     step: 0.1
+      //   };
+      //   label = 'Отклонение от уставки';
+      // }
      
       const roomKey = this.scheduleData.roomKey;
       const paramKey = this.scheduleData.paramKey;
@@ -237,7 +237,6 @@ export default {
         paramKey: paramKey,
         field: 'value',
         value: currentValue,
-        limits: limits,
         type: 'number',
         label: label
       });

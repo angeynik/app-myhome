@@ -157,12 +157,12 @@ export default {
     },
     UPDATE_LIMITS(state, limits) {
       logger.info('[sortParams] - UPDATE_LIMITS ', limits);
-      console.log('[sortParams] - UPDATE_LIMITS ', limits);
+      //console.log('[sortParams] - UPDATE_LIMITS ', limits);
       if (limits.limHigh) state.limHigh = limits.limHigh;
-      if (limits.limLow) state.limLow = limits.limLow;
+      if (limits.limLow !== undefined) state.limLow = limits.limLow;
       if (limits.limStep) state.limStep = limits.limStep;
       logger.dev('[sortParams] - UPDATE_LIMITS Обновлены лимиты', limits);
-      //console.log('[sortParams] - UPDATE_LIMITS Выполнено обновление состояния лимитов');
+      //console.log('[sortParams] - UPDATE_LIMITS Выполнено обновление состояния лимитов', state.limHigh, state.limLow, state.limStep);
     },
     SET_FORCE_UPDATE(state, timestamp) {
       logger.dev
@@ -285,39 +285,32 @@ export default {
     //   });
     // },
 
-    setLimits({ rootGetters, commit, dispatch }, param) {
-      logger.info(`[sortParams] - setLimits - Параметр -`, param);
-      console.log('[sortParams] - setLimits - Параметр -', param);
-      
-      // Используем clearKey из модуля config для очистки параметра
-      dispatch('config/clearKey', { key: param }, { root: true })
-        .then(cleanedKey => {
-          logger.dev(`[sortParams] - setLimits - Очищенный параметр -`, cleanedKey);
-          //console.log('[sortParams] - setLimits - Очищенный параметр -', cleanedKey);
-          
-          // Получаем данные лимитов из конфига
-          const dID = rootGetters['dID'];
+    setLimits({ rootGetters, commit }, params) {
+      console.groupCollapsed('[sortParams] - setLimits');
+      logger.info(`[sortParams] - setLimits - Параметр -`, params);
+      //console.log('[sortParams] - setLimits - Параметр -', params);
+
+      const { param, valueType } = params;
+      console.log('[sortParams] - setLimits - Параметр -', param, valueType);
+
+      let limits = null;
+      try {
+        const dID = rootGetters['dID'];
           const config = rootGetters['config/getConfig'](dID);
-          let limits = config?.init?.limits?.[cleanedKey] || config?.init?.limits?.Default;
-          
+          console.log('[sortParams] - setLimits - Получен конфиг', JSON.stringify(config, null, 2));
+          limits = config?.init?.limits?.[param] || config?.init?.limits?.Default;
+          console.log('[sortParams] - setLimits - Получены лимиты', limits);
           if (!limits) {
             logger.error(`[sortParams] - setLimits - Не удалось получить лимиты - Устанавливаем по умолчанию`);
-            //console.log('[sortParams] - setLimits - Не удалось получить лимиты - Устанавливаем по умолчанию');
+            console.log('[sortParams] - setLimits - Не удалось получить лимиты - Устанавливаем по умолчанию');
             limits = {
-              low: 10,
-              high: 32,
+              low: 4,
+              high: 40,
               step: 0.5
             };
           }
-          logger.dev(`[sortParams] - setLimits Получены лимиты`, limits);
-          //console.log('[sortParams] - setLimits Получены лимиты', limits);
-          commit('UPDATE_LIMITS', {
-            limHigh: limits.high,
-            limLow: limits.low,
-            limStep: limits.step
-          });
-        })
-        .catch(error => {
+          
+      } catch (error) {
           logger.error(`[sortParams] - setLimits - Ошибка при очистке параметра:`, error);
           //console.error('[sortParams] - setLimits - Ошибка при очистке параметра:', error);
           // В случае ошибки используем значения по умолчанию
@@ -326,7 +319,73 @@ export default {
             limLow: 10,
             limStep: 1
           });
-        });
+      }
+      if (valueType === 'deviation') { // Задаем лимиты для диапазона значений отклонения Уставки
+            const { high, step } = limits;
+            limits = {
+              low: 0,
+              high: Math.round(high/4),
+              step: step/10,
+            };
+      }
+
+      logger.dev(`[sortParams] - setLimits Получены лимиты`, limits);
+      //console.log('[sortParams] - setLimits Получены лимиты', limits);
+      commit('UPDATE_LIMITS', {
+            limHigh: limits.high,
+            limLow: limits.low,
+            limStep: limits.step
+      });
+      console.groupEnd();
+
+      //console.log('[sortParams] - setLimits - Проверка ключа:', param, 'перед отправлением в clearKey');
+      // Используем clearKey из модуля config для очистки параметра
+      // dispatch('config/clearKey', { key: param }, { root: true })
+      //   .then(cleanedKey => {
+      //     logger.dev(`[sortParams] - setLimits - Очищенный параметр -`, cleanedKey);
+      //     //console.log('[sortParams] - setLimits - Очищенный параметр -', cleanedKey);
+          
+      //     // Получаем данные лимитов из конфига
+      //     const dID = rootGetters['dID'];
+      //     const config = rootGetters['config/getConfig'](dID);
+      //     limits = config?.init?.limits?.[cleanedKey] || config?.init?.limits?.Default;
+      //     console.log('[sortParams] - setLimits - Получены лимиты', limits);
+         
+      //     if (!limits) {
+      //       logger.error(`[sortParams] - setLimits - Не удалось получить лимиты - Устанавливаем по умолчанию`);
+      //       console.log('[sortParams] - setLimits - Не удалось получить лимиты - Устанавливаем по умолчанию');
+      //       limits = {
+      //         low: 4,
+      //         high: 40,
+      //         step: 0.5
+      //       };
+      //     }
+      //     if (valueType === 'deviation') {
+      //       const { high, step } = limits;
+      //       limits = {
+      //         low: 0,
+      //         high: Math.round(high/4),
+      //         step: step/4,
+      //       };
+      //     }
+      //     logger.dev(`[sortParams] - setLimits Получены лимиты`, limits);
+      //     console.log('[sortParams] - setLimits Получены лимиты', limits);
+      //     commit('UPDATE_LIMITS', {
+      //       limHigh: limits.high,
+      //       limLow: limits.low,
+      //       limStep: limits.step
+      //     });
+      //   })
+      //   .catch(error => {
+      //     logger.error(`[sortParams] - setLimits - Ошибка при очистке параметра:`, error);
+      //     //console.error('[sortParams] - setLimits - Ошибка при очистке параметра:', error);
+      //     // В случае ошибки используем значения по умолчанию
+      //     commit('UPDATE_LIMITS', {
+      //       limHigh: 32,
+      //       limLow: 10,
+      //       limStep: 1
+      //     });
+      //   });
     },
 
     switchSortKey({ dispatch, state, rootGetters }, { sortingType, direction = 'prev' }) {

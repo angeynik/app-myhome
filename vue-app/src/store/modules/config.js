@@ -87,16 +87,19 @@ export default {
     },
     UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value, timestamp }) {
       const config = state.configs[dID];
+      console.log('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value, timestamp });
+      console.log('[config] - UPDATE_CONFIG_VALUE - Конфиг:', config);
       if (!config) {
         logger.error(`[Config] - dID ${dID} не найден в конфигурации`);
-        //console.warn(`[Config] - dID ${dID} не найден в конфигурации`);
+        console.warn(`[Config] - dID ${dID} не найден в конфигурации`);
         return;
       }
 
       const roomObj = config[room];
+      console.log('[config] - UPDATE_CONFIG_VALUE - Комната:', roomObj);
       if (!roomObj) {
         logger.error(`[Config] - Комната ${room} не найдена в конфигурации`);
-        //console.warn(`[Config] - Комната ${room} не найдена в конфигурации`);
+        console.warn(`[Config] - Комната ${room} не найдена в конфигурации`);
         return;
       }
 
@@ -428,9 +431,11 @@ export default {
 
 
     handleSensorUpdate({ commit }, { dID, payload, type }) {
+      console.log(' ++++++++++++++++++++ [Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
+
       if (type === 'setpoints') {
         logger.info('[Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
-        //console.log(' ++++++++++++++++++++ [Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
+        console.log(' ++++++++++++++++++++ [Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
       }
 
       try {
@@ -525,7 +530,7 @@ export default {
         }
       }
     },
-      async updateSetpointServer( {rootGetters}, { roomKey, paramKey, value }) {
+      async updateSetpointServer( {rootGetters}, { roomKey, paramKey, value, req }) {
         logger.info('[config] - updateSetpointServer - Готовим уставку для отправки на сервер', paramKey);
         //console.log('[config] - updateSetpointServer - Готовим уставку для отправки на сервер', paramKey);
         const dID = rootGetters.dID;
@@ -535,7 +540,7 @@ export default {
 
         await this.dispatch('websocket/send', {
           type: 'post',
-          request: 'setpoints',
+          request: req,
           name: dID,
           payload: { room: roomKey, param: paramKey, value }
         }, { root: true });
@@ -543,10 +548,11 @@ export default {
         //console.log('[config] - updateSetpointServer - Уставка обновлена и отправлена на сервер');
       },
     clearKey(context, { key }) { // гетер clearKeySync используем для внешней очистки
+      console.log('[config] - clearKey - key: ', key);
       const withoutPrefix = key.slice(1);
       const clearKey = withoutPrefix.replace(/\d+$/, '');
       logger.dev(`[config] - clearKey - key: ${clearKey}`);
-      //console.log(`[config] - clearKey - key: ${clearKey}`);
+      console.log(`[config] - clearKey - key: ${clearKey}`);
       return clearKey;
     },
   },

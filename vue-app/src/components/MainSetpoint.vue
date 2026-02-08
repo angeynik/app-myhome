@@ -183,6 +183,8 @@
     props: {   // Переменные полученные в компонент
       setPoint: Number,
       editType: String,
+      roomKey: String,
+      setpointKey: String,
       // highLimit: Number,
       // lowLimit: Number,
       // step: Number,
@@ -210,7 +212,7 @@
     //     //eventsMainSetpoint - событие которое слушает DashBoard и передает его в функцию handleSetpointEvent 
     // },
       sendEmitMessage(event, name, message) {
-        
+        console.log('[MainSetpoint] - sendEmitMessage - Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event, 'roomKey: ', this.roomKey, 'setpointKey: ', this.setpointKey);
         // Проверяем, что все параметры переданы
         if (!event || !name || !message) {
           console.error('sendEmitMessage - параметры не переданы:', { event, name, message });
@@ -219,14 +221,14 @@
         let type = name;
 
         // Логируем в зависимости от типа редактирования
-        if (this.editType === 'setpoint') {
+        if (this.editType === 'value-setpoint') {
           this.$emit('eventsMainSetpoint', {
             [event]: {
               type: type,
               message: message
             }
           });
-        } else if (this.editType === 'schedule') {
+        } else if (this.editType === 'value-scheduale') {
           type = 'newScheduleValue';
           this.$emit('eventsSchedule', {
             [event]: {
@@ -317,6 +319,7 @@
             }
 
             newValue = parseFloat(newValue);
+            console.log('[MainSetpoint] - calculateSetpoint  Обновили значение Уставки:', newValue);
             this.sendEmitMessage('updateState', 'newSetPoint', newValue);
             // event = 'updateState'
             // name = 'newSetPoint'
