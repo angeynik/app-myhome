@@ -87,8 +87,9 @@ export default {
     },
     UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value, timestamp }) {
       const config = state.configs[dID];
-      console.log('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value, timestamp });
-      console.log('[config] - UPDATE_CONFIG_VALUE - Конфиг:', config);
+      logger.dev('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value, timestamp });
+      //console.log('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value, timestamp });
+      //console.log('[config] - UPDATE_CONFIG_VALUE - Конфиг:', config);
       if (!config) {
         logger.error(`[Config] - dID ${dID} не найден в конфигурации`);
         console.warn(`[Config] - dID ${dID} не найден в конфигурации`);
@@ -96,7 +97,7 @@ export default {
       }
 
       const roomObj = config[room];
-      console.log('[config] - UPDATE_CONFIG_VALUE - Комната:', roomObj);
+      //console.log('[config] - UPDATE_CONFIG_VALUE - Комната:', roomObj);
       if (!roomObj) {
         logger.error(`[Config] - Комната ${room} не найдена в конфигурации`);
         console.warn(`[Config] - Комната ${room} не найдена в конфигурации`);
@@ -119,7 +120,7 @@ export default {
       roomObj[type][name].lastUpdate = timestamp || new Date().toString();
       logger.dev(`[Config] - Обновлено значение ${type}.${name} в комнате ${room}:`, roomObj[type][name]);
       logger.dev(`[Config] - UPDATE_CONFIG_VALUE - state.configs[${dID}] ${JSON.stringify(config, null, 2)}`);
-      //console.log(`[Config] - Обновлено значение ${type}.${name} в комнате ${room}:`, roomObj[type][name]);
+      console.log(`[Config] - Обновлено значение ${type}.${name} в комнате ${room}:`, roomObj[type][name]);
       // console.log(`[Config] - UPDATE_CONFIG_VALUE - state.configs[${dID}] ${JSON.stringify(config, null, 2)}`);
       // const updatedRoom = config[room];
       // console.log(`[Config] - UPDATE_CONFIG_VALUE - state.configs[${dID}] Обновляем комнату ${room} - ${JSON.stringify(updatedRoom, null, 2)}`);
@@ -431,11 +432,12 @@ export default {
 
 
     handleSensorUpdate({ commit }, { dID, payload, type }) {
-      console.log(' ++++++++++++++++++++ [Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
+      console.groupCollapsed('[Config] - handleSensorUpdate');
+      console.log('[Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
 
       if (type === 'setpoints') {
         logger.info('[Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
-        console.log(' ++++++++++++++++++++ [Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
+        //console.log(' ++++++++++++++++++++ [Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
       }
 
       try {
@@ -458,6 +460,7 @@ export default {
         logger.error('[Config] Ошибка обработки данных сенсора:', error);
         //console.error('[Config] Ошибка обработки данных сенсора:', error);
       }
+      console.groupEnd('[Config] - handleSensorUpdate');
     },
 
     async ensureConfig({ dispatch }, dID) {
@@ -530,7 +533,7 @@ export default {
         }
       }
     },
-      async updateSetpointServer( {rootGetters}, { roomKey, paramKey, value, req }) {
+    async updateSetpointServer( {rootGetters}, { roomKey, paramKey, value, req }) {
         logger.info('[config] - updateSetpointServer - Готовим уставку для отправки на сервер', paramKey);
         //console.log('[config] - updateSetpointServer - Готовим уставку для отправки на сервер', paramKey);
         const dID = rootGetters.dID;
@@ -546,7 +549,7 @@ export default {
         }, { root: true });
         logger.info('[config] - updateSetpointServer - Уставка обновлена и отправлена на сервер');
         //console.log('[config] - updateSetpointServer - Уставка обновлена и отправлена на сервер');
-      },
+    },
     clearKey(context, { key }) { // гетер clearKeySync используем для внешней очистки
       console.log('[config] - clearKey - key: ', key);
       const withoutPrefix = key.slice(1);

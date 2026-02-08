@@ -229,8 +229,8 @@
             }
           });
         } else if (this.editType === 'value-scheduale') {
-          type = 'newScheduleValue';
-          this.$emit('eventsSchedule', {
+          type = 'newScheduelSetPoint';
+          this.$emit('eventsMainSetpoint', {
             [event]: {
               type: type,
               message: message
@@ -319,11 +319,15 @@
             }
 
             newValue = parseFloat(newValue);
-            console.log('[MainSetpoint] - calculateSetpoint  Обновили значение Уставки:', newValue);
-            this.sendEmitMessage('updateState', 'newSetPoint', newValue);
-            // event = 'updateState'
-            // name = 'newSetPoint'
-            // message = newValue
+            if (this.editType === 'value-setpoint') {
+              this.sendEmitMessage('updateState', 'newSetPoint', newValue);
+            }
+            if (this.editType === 'value-scheduale') {
+             this.sendEmitMessage('updateState', 'newScheduelSetPoint', newValue);
+            }
+            logger.dev('[MainSetpoint] - calculateSetpoint  Обновили значение Уставки:', newValue, 'editType', this.editType);
+            console.log('[MainSetpoint] - calculateSetpoint  Обновили значение Уставки:', newValue, 'editType', this.editType);
+            //this.sendEmitMessage('updateState', 'newSetPoint', newValue);
             
             } catch (error) {
               logger.error('[MainSetpoint] - calculateSetpoint  Ошибка проверки ограничений диапазона Уставки', error);

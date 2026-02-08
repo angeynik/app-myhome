@@ -660,7 +660,10 @@ export default {
 
 
 
+    settingsConfigUpdate({ dID, payload, type }) {
+       console.log(' [settingConfig] - settingsConfigUpdate - Параметры запроса:', { dID, payload, type });
 
+    },
 
 
 
