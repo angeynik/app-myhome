@@ -434,6 +434,11 @@ export default {
     handleSensorUpdate({ commit }, { dID, payload, type }) {
       console.groupCollapsed('[Config] - handleSensorUpdate');
       console.log('[Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
+      if (!dID || !payload || !type) {
+        logger.error('[Config] - handleSensorUpdate - Невалидные параметры запроса:', { dID, payload, type });
+        console.error('[Config] - handleSensorUpdate - Невалидные параметры запроса:', { dID, payload, type });
+        return;
+      }
 
       if (type === 'setpoints') {
         logger.info('[Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });

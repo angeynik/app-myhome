@@ -33,11 +33,17 @@ const store = createStore({
       logger.dev('[index] - INIT_SETPOINTS_MANAGER - Инициализация менеджера сетпоинтов manageSetpoints', dID, config);
       state.setpointsManager = new ManageSetpoints(dID, config);
     },
-    UPDATE_SETTINGS_DATA(state, payload) { // Обновление settingsData manageSetpoints
-      if (state.setpointsManager) {
-        state.setpointsManager.updatePayload(payload);
-        state.settingsData = { ...state.setpointsManager.settingsData };
-      }
+    UPDATE_SETTINGS_DATA(state, { field, value }) {
+        if (state.setpointsManager) {
+            if (field === 'request' || field === 'type') {
+                state.setpointsManager.settingsData[field] = value;
+            } else {
+                state.setpointsManager.settingsData.payload[field] = value;
+                state.setpointsManager.settingsData.payload.updated = 
+                    new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+            }
+            state.settingsData = { ...state.setpointsManager.settingsData };
+        }
     },
     RESET_SETTINGS_DATA(state) { // Сброс settingsData manageSetpoints
       if (state.setpointsManager) {
@@ -109,8 +115,8 @@ const store = createStore({
         });
       }
     },
-    updateSettingsData({ commit }, payload) { // Action для обновления данных настроек manageSetpoints
-      commit('UPDATE_SETTINGS_DATA', payload);
+    updateSettingsData({ commit }, { field, value }) { // Action для обновления данных настроек manageSetpoints
+      commit('UPDATE_SETTINGS_DATA', { field, value });
     },
     resetSettingsData({ commit }) { // Action для сброса данных настроек manageSetpoints
       commit('RESET_SETTINGS_DATA');

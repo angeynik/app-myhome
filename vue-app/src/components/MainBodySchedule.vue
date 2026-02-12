@@ -192,7 +192,7 @@ export default {
       
       //console.log('[MainBodySchedule] - toggleValueType - Отправляем событие с ID:', scheduleId, 'новый тип:', newType);
       
-      this.$emit('value-type-changed', {
+      this.$emit('getComponentData', {
         scheduleId: scheduleId,
         newValueType: newType,
         roomKey: roomKey,
@@ -232,7 +232,7 @@ export default {
         ? this.scheduleData.value
         : (this.scheduleData.valueType === 'absolute' ? 20 : 0);
       
-      this.$emit('edit-value', {
+      this.$emit('getComponentData', {
         roomKey: roomKey,
         paramKey: paramKey,
         field: 'value',
@@ -286,14 +286,14 @@ export default {
         valueInMinutes = 0; // значение по умолчанию
       }
       
-      this.$emit('edit-value', {
+      this.$emit('getComponentData', {
         field: field,
         value: valueInMinutes,
-        limits: {
-          min: 0,
-          max: 1439,
-          step: 5
-        },
+        // limits: {
+        //   min: 0,
+        //   max: 1439,
+        //   step: 5
+        // },
         type: 'time',
         label: label
       });

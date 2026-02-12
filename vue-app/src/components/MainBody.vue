@@ -165,13 +165,13 @@ export default {
       //console.groupCollapsed('[MainBody] - selectItem ');
       logger.info(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
       //console.log(`[MainBody] - selectItem - setpointKey: ${item.setpointKey}, deviceKey: ${item.deviceKey}, paramKey: ${item.paramKey}, roomKey: ${item.roomKey}`);
-      console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
+      console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item, null, 2)}`);
       
     if (this.selectedItem === item) {
         // Если клик на уже выбранный элемент, то снимаем выделение
         this.selectedItem = null;
         // Отправляем событие, что нужно скрыть MainSetpoint
-        this.$emit('edit-value-MainSetpoint', { 
+        this.$emit('getComponentData', { 
           action: 'hide' 
         });
         //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
@@ -197,7 +197,7 @@ export default {
 
 
           // Отправляем событие с данными в DashBoard
-          this.$emit('edit-value-MainSetpoint', {
+          this.$emit('getComponentData', {
             action: 'show',
             request: 'setpoints',
             editType: 'value-setpoint',

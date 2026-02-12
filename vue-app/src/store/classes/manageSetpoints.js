@@ -35,12 +35,30 @@ export default class ManageSetpoints {
             updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
         };
     }
-    updatePayload(data) {
-        this.settingsData.payload = {
-            ...this.settingsData.payload,
-            ...data,
-            updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
-        };
+    // updatePayload(data) {
+    //     this.settingsData.payload = {
+    //         ...this.settingsData.payload,
+    //         ...data,
+    //         updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+    //     };
+    // }
+    updateSettingsData(data) {
+        const { request, type, payload } = data;
+        
+        if (request !== undefined) {
+            this.settingsData.request = request;
+        }
+        
+        if (type !== undefined) {
+            this.settingsData.type = type;
+        }
+        
+        if (payload) {
+            this.settingsData.payload = {
+                ...this.settingsData.payload,
+                ...payload,
+                updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+            };
+        }
     }
-
 }
