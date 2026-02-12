@@ -111,15 +111,18 @@ export default {
   },
   },
   methods: {
+    ...mapMutations({
+      SET_ROOM_KEY: 'SET_ROOM_KEY',
+      SET_PARAM_KEY: 'SET_PARAM_KEY', 
+      SET_DEVICE_KEY: 'SET_DEVICE_KEY', 
+      SET_SETPOINT_KEY: 'SET_SETPOINT_KEY' 
+    }),
     ...mapMutations('sortParams', [
       'SET_SORT_TYPE', 
       'SET_ROOM_ID', 
-      'SET_ROOM_KEY', 
-      'SET_PARAM_KEY', 
       'SET_ROOM_TITLE', 
       'SET_PARAM_TITLE', 
-      'SET_SETPOINT_KEY', 
-      'SET_DEVICE_KEY', 
+
       'SET_DEVICE_TITLE', 
       'SET_SETPOINT_TITLE'
     ]),
@@ -162,19 +165,18 @@ export default {
       //console.groupCollapsed('[MainBody] - selectItem ');
       logger.info(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
       //console.log(`[MainBody] - selectItem - setpointKey: ${item.setpointKey}, deviceKey: ${item.deviceKey}, paramKey: ${item.paramKey}, roomKey: ${item.roomKey}`);
-      //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
+      console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
       
-       if (this.selectedItem === item) {
-            // Если клик на уже выбранный элемент, то снимаем выделение
-            this.selectedItem = null;
-
-            // Отправляем событие, что нужно скрыть MainSetpoint
-            this.$emit('eventsMainBody', { 
-              action: 'hide' 
-            });
-            //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
-          } else {
-            this.selectedItem = item;
+    if (this.selectedItem === item) {
+        // Если клик на уже выбранный элемент, то снимаем выделение
+        this.selectedItem = null;
+        // Отправляем событие, что нужно скрыть MainSetpoint
+        this.$emit('edit-value-MainSetpoint', { 
+          action: 'hide' 
+        });
+        //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
+        } else {
+          this.selectedItem = item;
 
         // Обновляем ключи в хранилище
           this.SET_ROOM_KEY(item.roomKey);
@@ -183,7 +185,8 @@ export default {
           this.SET_SETPOINT_KEY(item.setpointKey);
 
           //console.log (`[MainBody] - selectItem - Обновлены ключи выбранного элемента: ${JSON.stringify(item)}`);
-          // Отправляем событие с данными в DashBoard
+          
+          // Устанавливаем лимиты
           const params = {
             param: item.setpointKey, 
             valueType: 'absolute', 
@@ -191,23 +194,28 @@ export default {
           console.log('[MainBodySettings] - handleEditValue - params:', params);
           this.setLimits(params);
           //console.log(`[MainBody] - selectItem - setLimits установлены лимиты по ключу ${item.setpointKey}`);
+
+
+          // Отправляем событие с данными в DashBoard
           this.$emit('edit-value-MainSetpoint', {
             action: 'show',
+            request: 'setpoints',
             editType: 'value-setpoint',
             data: {
-              value: item.value,
+              value: item.setValue,
               setValue: item.setValue,
-              unit: item.unit,
-              paramKey: item.paramKey,
-              roomKey: item.roomKey,
-              sortType: item.sortType,
+              value_type: params.valueType,
+              // unit: item.unit,
+              // paramKey: item.paramKey,
+              // roomKey: item.roomKey,
+              // sortType: item.sortType,
               // deviceKey: item.deviceKey,
-              setpointKey: item.setpointKey
+              // setpointKey: item.setpointKey
             }
           });
           //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
-          }
-          //console.groupEnd();
+        }
+        //console.groupEnd();
     },
  
     toggleSorting(item) {

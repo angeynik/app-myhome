@@ -1,11 +1,15 @@
 <template>
-  <div 
+  <!-- <div 
     class="sensor-card"
     :class="{ selected: isSelected, [type]: true }"
     @click="customerClick"
     @dblclick="customerDoubleClick"
     @touchstart="customerTouchStart" 
     @touchend="customerTouchEnd"
+  > -->
+    <div 
+    class="sensor-card"
+    :class="{ selected: isSelected, [type]: true }"
   >
     <div v-if="sortType === 'rooms'" class="sensor-header">
       <span class="room">{{ paramTitle }}</span>
@@ -80,20 +84,20 @@ export default {
       }
       return value
     },
-        customerClick() {
-          logger.dev(' [MainBodyValue] - customerClick - Пользователь выбрал параметр', this.paramKey, 'для комнаты', this.roomKey);
-        //console.log(' --- 82 --- Функция customerClick(MainBodyValue) - Пользователь выбрал параметр', this.paramKey, 'для комнаты', this.roomKey);
-        this.$emit('select', {
-            type: 'select', 
-            message: {
-            state: this.isSelecte,
-            id: this.id,
-            paramKey: this.paramKey,
-            roomKey: this.roomKey,
-            setpointKey: this.setpointKey,
-            }
-        }); 
-    }, 
+    // customerClick() {
+    //     logger.dev(' [MainBodyValue] - customerClick - Пользователь выбрал параметр', this.paramKey, 'для комнаты', this.roomKey);
+    //     //console.log(' --- 82 --- Функция customerClick(MainBodyValue) - Пользователь выбрал параметр', this.paramKey, 'для комнаты', this.roomKey);
+    //     this.$emit('select', {
+    //         type: 'select', 
+    //         message: {
+    //         state: this.isSelecte,
+    //         id: this.id,
+    //         paramKey: this.paramKey,
+    //         roomKey: this.roomKey,
+    //         setpointKey: this.setpointKey,
+    //         }
+    //     }); 
+    // }, 
     customerDoubleClick() {
       logger.dev(' [MainBodyValue] - customerDoubleClick - Пользователь начал двойной клик');
         //console.log('customerDoubleClick(MainBodyValue) - Пользователь начал двойной клик');
