@@ -16,7 +16,7 @@ export default {
     error: null,
     mobile: false,
     deviceType: 'desktop', // 'desktop', 'tablet', 'phone'
-    typeSettingsItem: localStorage.getItem('typeSettingsItem') || 'schedule',
+    typeSettingsKey: localStorage.getItem('typeSettingsKey') || 'schedule',
   }),
  
   mutations: {
@@ -139,8 +139,8 @@ export default {
     },
     SET_TYPE_SETTINGS_ITEM(state, type) {
       console.log(`[Config] - SET_TYPE_SETTINGS_ITEM - type: ${type}`);
-      localStorage.setItem('typeSettingsItem', type);
-      state.typeSettingsItem = type;
+      localStorage.setItem('typeSettingsKey', type);
+      state.typeSettingsKey = type;
     },
   },
   
@@ -582,7 +582,7 @@ export default {
     allSetpoints: state => state.allSetpoints,
     getMobile: state => state.mobile,
     getDeviceType: state => state.deviceType,
-    getTypeSettingsItem: (state) => state.typeSettingsItem
+    getTypeSettingsItem: (state) => state.typeSettingsKey
 
   }
 };

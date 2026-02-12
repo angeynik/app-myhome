@@ -130,7 +130,7 @@ export default {
         'notifications': 'Уведомления',
         'statistics': 'Аналитика'
       },
-      title: localStorage.getItem('typeSettingsItem') || this.typeSettingsItem || 'schedule',
+      title: localStorage.getItem('typeSettingsKey') || this.typeSettingsKey || 'schedule',
 
       showAddDialog: false, // Добавьте это
       currentItemType: '',
@@ -161,7 +161,7 @@ export default {
       'paramKey', 
       'deviceKey',
       'setpointKey',
-      'typeSettingsItem'
+      'typeSettingsKey'
     ]),
     ...mapGetters('sortParams', [
       'getRoomTitle',

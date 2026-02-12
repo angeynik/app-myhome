@@ -45,15 +45,22 @@ export default {
   },
 
   props: {
-  initialSortType: {
-    type: String,
-    default: 'rooms'
+    initialSortType: {
+      type: String,
+      default: 'rooms'
+    },
+    sortType: {
+      type: String,
+      required: true
+    }
   },
-  sortType: {
-    type: String,
-    required: true
-  }
-},
+  // async created() {
+  //   // При создании компонента форсируем обновление view
+  //   logger.dev('[MainBody] - created - Компонент создан');
+  //   this.SET_ROOM_KEY(localStorage.getItem('roomKey'));
+  //   this.SET_PARAM_KEY(localStorage.getItem('paramKey'));
+  //   console.log('[MainBody] - created - roomKey:', this.getRoomKey, ' paramKey:', this.getParamKey);
+  // },
   computed: {
     ...mapGetters('config', ['isLoading', 'error', 'getConfig', 'clearKeySync']),
     ...mapGetters('sortParams', [
@@ -69,26 +76,16 @@ export default {
       'getSetpointKey',
       'getSetpointTitle',
       'getUnit']),
-    ...mapGetters(['dID', 'typeSettingsItem']),
+    ...mapGetters(['dID', 'typeSettingsKey']),
     
   isRoomSort() {
     return this.currentSortType === 'rooms';
   },
   },
   watch: {
-
-    // '$store.state.sortParams.forceUpdate': {
-    //   handler(newTimestamp) {
-    //     if (newTimestamp) {
-    //       logger.dev('[MainBody] - Watch - handler - Принудительное обновление view');
-    //       console.log('[MainBody] - Watch - handler - Принудительное обновление view');
-    //       this.updateView();
-    //     }
-    //   },
-    //   immediate: true
-    // },
     '$store.state.sortParams.forceUpdate': {
         handler(newTimestamp) {
+          //console.log('[MainBody] - Watch - handler - Изменилась временная метка');
           if (newTimestamp) {
           
             // Очищаем предыдущий таймаут, если он есть
@@ -100,7 +97,7 @@ export default {
             // Устанавливаем новый таймаут с задержкой 100 мс
             this.updateViewTimeout = setTimeout(() => {
               logger.dev('[MainBody] - Watch - handler - Принудительное обновление view');
-              console.log('[MainBody] - Watch - handler - Принудительное обновление view');
+              //console.log('[MainBody] - Watch - handler - Принудительное обновление view');
               this.updateView();
             }, 350);
           }
@@ -217,7 +214,7 @@ export default {
       logger.dev('[MainBody] - toggleSorting - Ключ выбранного элемента:', item.setpointKey, ' и значение:', item.setValue);
       //console.groupCollapsed('[MainBody] - toggleSorting ');
       //console.log('[MainBody] - toggleSorting - Ключ выбранного элемента:', item.setpointKey, ' и значение:', item.setValue);
-      let settingsType = this.typeSettingsItem || 'schedule';
+      let settingsType = this.typeSettingsKey || 'schedule';
       
       // Устанавливаем флаги в зависимости от типа настроек и наличия setpointKey
       if (settingsType === 'schedule') {
@@ -245,7 +242,7 @@ export default {
       //console.groupEnd();
     },
     async updateView() { // Формируем массив для отображения пользователю в соответствии с типом сортировки и текущим ключем
-      //console.log('[MainBody] - updateView - started');
+      console.log('[MainBody] - updateView - started');
         try {
           logger.info('[MainBody] - updateView - started');
           console.groupCollapsed('[MainBody] - updateView ');
@@ -258,12 +255,12 @@ export default {
             return;
           }
           logger.dev('[MainBody] - updateView - Актуальный тип сортировки:', this.currentSortType);
-          //console.log('Актуальный тип сортировки:', this.currentSortType);
+          console.log('Актуальный тип сортировки:', this.currentSortType);
           //console.log('для конфигурации', config);
 
           if (this.currentSortType === 'rooms') {
             logger.dev('[MainBody] - updateView - Режим: комнаты -(', this.getRoomKey, ')');
-            //console.log(`[MainBody] - updateView - Режим: комнаты -(${this.getRoomKey})`);
+            console.log(`[MainBody] - updateView - Режим: комнаты -(${this.getRoomKey})`);
             this.viewArray = this.getSortedRooms(config, this.getRoomKey);
           } else if (this.currentSortType === 'params') {
             logger.dev('[MainBody] - updateView - Режим: параметров -(', this.getParamKey, ')');

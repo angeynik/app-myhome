@@ -87,7 +87,7 @@
 <script>
 import logger from './store/modules/logger.js';
 
-import { mapGetters, mapActions } from 'vuex';
+import { mapGetters, mapActions, mapMutations } from 'vuex';
 import AppPlace from './components/AppPlace.vue';
 import MainHeader from './components/MainHeader.vue';
 import MainFooter from './components/MainFooter.vue';
@@ -110,21 +110,31 @@ export default {
       selectedItemData: null
     }; 
   },
-  // async created() {
-  //   await this.initApp();
-  // },
+  async created() {
+    console.log('[DashBoard] - created - roomKey:', this.getRoomKey, ' paramKey:', this.getParamKey);
+    await this.initializeSetpointsManager();
+    this.updateSettingsData({ room: this.getRoomKey});
+    logger.info('[DashBoard] - created ManageSetpoints - Менеджер сетпоинтов инициализирован Актуальные данные:', 
+    JSON.parse(JSON.stringify(this.$store.state.setpointsManager)));
+    console.log('[DashBoard] - created ManageSetpoints - Менеджер сетпоинтов инициализирован Актуальные данные:', 
+    JSON.parse(JSON.stringify(this.$store.state.setpointsManager)));
+  },
+ 
   computed: {
+    ...mapGetters({ // Используем корневые геттеры
+      getRoomKey: 'roomKey',
+      getParamKey: 'paramKey',
+      getDeviceKey: 'deviceKey',
+      getSetpointKey: 'setpointKey',
+    }),
     ...mapGetters(['level', 'dID']),
     ...mapGetters('sortParams', [
+      'updateSortKey',
       'currentSortType',
       'getRoomId',
-      'getRoomKey',
-      'getParamKey',
       'getRoomTitle',
       'getParamTitle',
       'getSensorTitle',
-      'getDeviceKey',
-      'getSetpointKey'
     ]),
     ...mapGetters('config', ['getMobile', 'getDeviceType', 'clearKeySync']),
     
@@ -201,14 +211,19 @@ export default {
     }
   },
   methods: {
+    ...mapMutations({
+      SET_ROOM_KEY: 'SET_ROOM_KEY',
+      SET_PARAM_KEY: 'SET_PARAM_KEY', 
+      SET_DEVICE_KEY: 'SET_DEVICE_KEY', 
+      SET_SETPOINT_KEY: 'SET_SETPOINT_KEY' 
+    }),
     ...mapActions('sortParams', [
       'switchSortKey',
-      // 'setLimits',
       'UPDATE_LIMITS',
     ]),
-    ...mapActions('config', ['initialize']),
+    // ...mapActions('config', ['initialize']),
     ...mapActions('settingsConfig', ['settingsConfigUpdate']),
-  
+    ...mapActions(['initializeSetpointsManager', 'updateSettingsData']),
     
     handleSortTypeChange(sortType) {
       console.log('[DashBoard] - handleSortTypeChange - Обновляем информацию для sortType: ', sortType);
@@ -232,18 +247,21 @@ export default {
         name: 'DashboardSort', 
         params: { sortType } 
       });
+      this.updateSettingsData({ room: this.getRoomKey });
+      console.log('[DashBoard] - selectComponent - Комната в settingsData:',
+      this.$store.state.setpointsManager?.settingsData?.payload?.room
+      );
     },
     
     resetSelection() {
       this.$router.push({ name: 'DashboardMain' });
     },
       sortingBack() {
-      logger.info('[DashBoard] - sortingBack - Сортировка назад');
-      //console.log('[DashBoard] - sortingBack - Сортировка назад');
       const sortType = this.$route.params.sortType;
+      logger.info('[DashBoard] - sortingBack - Сортировка назад', sortType);
+      //console.log('[DashBoard] - sortingBack - Сортировка назад', sortType);
       this.switchSortKey({ sortingType: sortType, direction: 'prev' });
-    },
-    
+    },    
     sortingForvard() {
       const sortType = this.$route.params.sortType;
       this.switchSortKey({ sortingType: sortType, direction: 'next' });

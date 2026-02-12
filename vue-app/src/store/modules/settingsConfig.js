@@ -67,13 +67,13 @@ export default {
       }
       
       try {
-        // Восстанавливаем typeSettingsItem из localStorage
-        const savedType = localStorage.getItem('typeSettingsItem');
+        // Восстанавливаем typeSettingsKey из localStorage
+        const savedType = localStorage.getItem('typeSettingsKey');
         if (savedType) {
           commit('config/SET_TYPE_SETTINGS_ITEM', savedType, { root: true });
         } else {
           commit('config/SET_TYPE_SETTINGS_ITEM', 'schedule', { root: true });
-          localStorage.setItem('typeSettingsItem', 'schedule');
+          localStorage.setItem('typeSettingsKey', 'schedule');
         }
         
         logger.dev('[settingsConfig] - initialize - Инициализация конфигурации расписания');
