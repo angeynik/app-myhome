@@ -74,7 +74,7 @@
       <MainSetpoint
         v-if="showFooterSetpoint"
         :setPoint="setpoint" 
-        :editType="editType"
+        :request="request"
         :roomKey="selectedItemData.roomKey"
         :setpointKey="selectedItemData.setpointKey"
         @eventsMainSetpoint="editValueMainSetpoint"
@@ -105,7 +105,7 @@ export default {
     return {
       showHeaderArrow: false,
       showSetpoint: false,
-      editType: null,
+      request: null,
       setpoint: null,
       selectedItemData: null
     }; 
@@ -422,86 +422,32 @@ export default {
 
 
 
-    // Работа с компонентом настройки Расписания, Уведомлений и Статистики
-
-
-
 
 
 
 
     
-    // handleMainBodySettingsEvent(event) {
-    //   console.groupCollapsed('[DashBoard] - handleMainBodySettingsEvent received:');
-    //   console.log('Полученные данные:', event);
 
-    //   // Проверяем, что это объект с данными расписания
-    //   if (event && event.id && event.roomKey) {
-    //     console.log(' --- [DashBoard] - Редактирование значения расписания');
-        
-    //     // Сохраняем данные редактирования в отдельную переменную
-    //     this.editingSchedule = {
-    //       id: event.id,
-    //       roomKey: event.roomKey,
-    //       paramKey: event.paramKey,
-    //       currentValue: event.currentValue,
-    //       limits: event.limits,
-    //       type: event.type
-    //     };
-        
-    //     // Устанавливаем лимиты для MainSetpoint
-    //     if (event.limits) {
-    //       this.$store.commit('sortParams/UPDATE_LIMITS', event.limits);
-    //     }
-        
-    //     // Показываем MainSetpoint с начальным значением
-    //     this.showSetpoint = true;
-    //     this.setpoint = event.currentValue;
-        
-    //     console.log('[DashBoard] - Режим редактирования расписания активирован:', this.editingSchedule);
-    //   } else {
-    //     console.log('[DashBoard] - Неизвестное событие:', event);
-    //   }
-      
-    //   console.groupEnd();
-    // },
+    // Работа с компонентом настройки Расписания, Уведомлений и Статистики
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  async editValueMainSetpoint(eventData) {
+  async editValueMainSetpoint(eventData) { // Формирует сообщение при изменении уставки и выполняет отправку этого сообщения на сервер с фиксированной задержкой
     console.groupCollapsed('[DashBoard] - editValueMainSetpoint');
     console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения Уставки :', eventData);
 
-    let newValue = eventData.updateState.message;
+    let newValue = eventData.updateState.value;
     let oldValue = this.setpoint; // Сохраняем текущее значение для возможного отката
 
     logger.dev('[DashBoard] - editValueMainSetpoint - Обновляем значение уставки:', newValue, ' oldValue -', oldValue);
-    //console.log('[DashBoard] - editValueMainSetpoint - Обновляем значение уставки:', newValue, ' oldValue -', oldValue);
+    console.log('[DashBoard] - editValueMainSetpoint - Обновляем значение уставки:', newValue, ' oldValue -', oldValue);
 
     let dID = this.dID;
     let roomKey = this.getRoomKey;
     let setpointKey = this.getSetpointKey;
     let requestName = eventData.updateState.request || 'unknown';
+
+    //console.log('[DashBoard] - editValueMainSetpoint - Обновляем значение уставки: requestName -', requestName);
 
     if (!dID || !roomKey || !setpointKey) {
           logger.error(`[DashBoard] - editValueMainSetpoint - Не удалось обновить значение уставки: dID - ${dID}, roomKey - ${roomKey}, setpointKey - ${setpointKey} - не определены`);
@@ -515,26 +461,17 @@ export default {
         const payload = {
           room: roomKey, 
           item_name: setpointKey,
-          item_value: eventData.updateState.message, 
+          item_value: eventData.updateState.value, 
           time: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
         };
         this.setpoint = newValue;
         logger.dev('[DashBoard] - editValueMainSetpoint - Формируем сообщение для отпраку на сервер:', payload);
-        console.log('[DashBoard] - editValueMainSetpoint - Формируем сообщение для отпраку на сервер:', payload); 
+        console.log('[DashBoard] - editValueMainSetpoint - Формируем сообщение для отпраку на сервер:', payload);
 
-        if (eventData.updateState && eventData.updateState.type === 'newSetPoint') {
 
-          requestName = 'setpoints';
-          // Обновляем конфигурацию в store config
-          await this.$store.dispatch('config/handleSensorUpdate', { dID, payload, type: requestName });
-        }
-        if (eventData.updateState && eventData.updateState.type === 'newScheduelSetPoint') {
-          
-          requestName = 'schedule_setpoints';
-          // Обновляем конфигурацию в store settingsConfig.js
-          console.log('[DashBoard] - editValueMainSetpoint - Обновляем конфигурацию в store settingsConfig.js');
-          await this.$store.dispatch('settingsConfig/settingsConfigUpdate', { dID, payload, type: requestName });
-        }
+
+        await this.$store.dispatch('config/handleSensorUpdate', { dID, payload, type: requestName });
+
         console.log('[DashBoard] - editValueMainSetpoint - Отправлен запрос на обновление для request -', requestName, '  type -', eventData.updateState.type);
         
         
@@ -545,6 +482,10 @@ export default {
       console.groupEnd();
     
       // Установка нового таймера для отправки на сервер
+      if (this.setpointUpdateTimer) {
+        clearTimeout(this.setpointUpdateTimer);
+        console.log('[DashBoard] - editValueMainSetpoint - Предыдущий таймер очищен');
+      }
         this.setpointUpdateTimer = setTimeout(async () => {
           try {
             logger.dev('[DashBoard] - editValueMainSetpoint - Обновляем уставку -', newValue, ' roomKey -', roomKey, ' paramKey -', setpointKey);
@@ -563,10 +504,11 @@ export default {
             // Откат значения при ошибке
             this.setpoint = oldValue;
           }
-        }, 1500);
+        }, 2500);
 
         // Запускаем повторную сортировку через изменение флага Обновления updateView
         this.$store.commit('sortParams/SET_FORCE_UPDATE', Date.now());
+        console.groupEnd();
   },
 
 
@@ -595,12 +537,12 @@ export default {
 
       
       // Устанавливаем лимиты для MainSetpoint
-      const editType = event.editType;
+      const request = event.request;
       if (event.action === 'show') {
         this.selectedItemData = event.data;
         this.setpoint = event.data.value;
         this.showSetpoint = true;
-        this.editType = editType;
+        this.request = request;
           // if (event.limits) {
           //   this.$store.commit('sortParams/UPDATE_LIMITS', event.limits);
           // }
@@ -609,7 +551,7 @@ export default {
         this.showSetpoint = false;
         this.selectedItemData = null;
         this.setpoint = null;
-        this.editType = '';
+        this.request = '';
         console.log('[DashBoard] - getComponentData - Компонент MainSetpoint скрыт');
       }
 

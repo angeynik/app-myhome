@@ -200,10 +200,10 @@ export default {
           this.$emit('getComponentData', {
             action: 'show',
             request: 'setpoints',
-            editType: 'value-setpoint',
+            // editType: 'value-setpoint',
             data: {
               value: item.setValue,
-              setValue: item.setValue,
+              // setValue: item.setValue,
               value_type: params.valueType,
               // unit: item.unit,
               // paramKey: item.paramKey,

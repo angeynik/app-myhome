@@ -182,66 +182,28 @@
       
     props: {   // Переменные полученные в компонент
       setPoint: Number,
-      editType: String,
+      request: String,
       roomKey: String,
       setpointKey: String,
-      // highLimit: Number,
-      // lowLimit: Number,
-      // step: Number,
     },
       methods: {
-    // sendEmitMessage(event, name, message) {
-    //   if (!event || !name || !message && this.editType === 'setpoint') return console.error('sendEmitMessage - event', event,'name - ', name, 'message - ', message, ' не переданы');
-    //   logger.dev('[MainSetpoint] - sendEmitMessage  Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
-    //   console.log('[MainSetpoint] - sendEmitMessage  Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
-    //     this.$emit('eventsMainSetpoint',{ // Обновление значения для Уставки
-    //       [event]: {
-    //         type: name,
-    //         message: message
-    //       }
-    //     });
-    //     if (!event || !name || !message && this.editType === 'schedule') return console.error('sendEmitMessage - event', event,'name - ', name, 'message - ', message, ' не переданы');
-    //   logger.dev('[MainSetpoint] - sendEmitMessage  Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
-    //   console.log('[MainSetpoint] - sendEmitMessage  Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
-    //     // this.$emit('eventsSchedule',{ // Обновление значения для Расписания
-    //     //   [event]: {
-    //     //     type: name,
-    //     //     message: message
-    //     //   }
-    //     // });
-    //     //eventsMainSetpoint - событие которое слушает DashBoard и передает его в функцию handleSetpointEvent 
-    // },
-      sendEmitMessage(event, name, message) {
-        console.log('[MainSetpoint] - sendEmitMessage - Формируем сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event, 'roomKey: ', this.roomKey, 'setpointKey: ', this.setpointKey);
+
+      sendEmitMessage(event, value) {
+        console.log('[MainSetpoint] - sendEmitMessage - Формируем сообщение для отправки на сервер - message: ', value, 'event: ', event);
         // Проверяем, что все параметры переданы
-        if (!event || !name || !message) {
-          console.error('sendEmitMessage - параметры не переданы:', { event, name, message });
+        if (!event ||!value) {
+          console.error('sendEmitMessage - параметры не переданы:', { event, value });
           return;
         }
-        let type = name;
-
-        // Логируем в зависимости от типа редактирования
-        if (this.editType === 'value-setpoint') {
-          this.$emit('eventsMainSetpoint', {
+        this.$emit('eventsMainSetpoint', {
             [event]: {
-              type: type,
-              message: message
+              request: this.request,
+              value: value
             }
           });
-        } else if (this.editType === 'value-scheduale') {
-          type = 'newScheduelSetPoint';
-          this.$emit('eventsMainSetpoint', {
-            [event]: {
-              type: type,
-              message: message
-            }
-          });
-        } else {
-          console.warn('[MainSetpoint] - sendEmitMessage - неизвестный editType:', this.editType);
-        }
         console.groupCollapsed('[MainSetpoint] - sendEmitMessage ');
-        logger.dev('[MainSetpoint] - sendEmitMessage для Уставки - type:', type, 'message:', message, 'event:', event);
-        console.log('[MainSetpoint] - sendEmitMessage для Уставки - type:', type, 'message:', message, 'event:', event);
+        logger.dev('[MainSetpoint] - sendEmitMessage для Уставки - value:', value, 'event:', event);
+        console.log('[MainSetpoint] - sendEmitMessage для Уставки - value:', value, 'event:', event);
         console.groupEnd();
       },
 
@@ -319,14 +281,10 @@
             }
 
             newValue = parseFloat(newValue);
-            if (this.editType === 'value-setpoint') {
-              this.sendEmitMessage('updateState', 'newSetPoint', newValue);
-            }
-            if (this.editType === 'value-scheduale') {
-             this.sendEmitMessage('updateState', 'newScheduelSetPoint', newValue);
-            }
-            logger.dev('[MainSetpoint] - calculateSetpoint  Обновили значение Уставки:', newValue, 'editType', this.editType);
-            console.log('[MainSetpoint] - calculateSetpoint  Обновили значение Уставки:', newValue, 'editType', this.editType);
+            this.sendEmitMessage('updateState', newValue);
+
+            logger.dev('[MainSetpoint] - calculateSetpoint  Обновили значение Уставки:', newValue, 'request', this.request);
+            console.log('[MainSetpoint] - calculateSetpoint  Обновили значение Уставки:', newValue, 'request', this.request);
             //this.sendEmitMessage('updateState', 'newSetPoint', newValue);
             
             } catch (error) {
