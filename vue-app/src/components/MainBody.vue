@@ -18,7 +18,7 @@
         :timeUpdated="item.timeDiff"
         :isSelected="isSelected(item)"
         @click="selectItem(item)"
-        @dblclick="toggleSorting(item)"
+        @dblclick="DclickSelectItem(item)"
         @touchstart.passive="selectItem(item)"
       /> 
     </div>
@@ -41,6 +41,8 @@ export default {
       touchStartX: 0,
       isSwiping: false,
       swipeThreshold: 50, // минимальное расстояние для определения свайпа
+
+      clickTimer: null, // Таймер для определения двойного клика
     }
   },
 
@@ -162,12 +164,20 @@ export default {
     },
     
     selectItem(item) {
-      //console.groupCollapsed('[MainBody] - selectItem ');
-      logger.info(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
-      //console.log(`[MainBody] - selectItem - setpointKey: ${item.setpointKey}, deviceKey: ${item.deviceKey}, paramKey: ${item.paramKey}, roomKey: ${item.roomKey}`);
-      console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item, null, 2)}`);
       
-    if (this.selectedItem === item) {
+      if (this.clickTimer) {
+        clearTimeout(this.clickTimer);
+        this.clickTimer = null;
+      }
+      
+      this.clickTimer = setTimeout(() => {
+        //console.groupCollapsed('[MainBody] - selectItem ');
+        logger.info(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
+        //console.log(`[MainBody] - selectItem - setpointKey: ${item.setpointKey}, deviceKey: ${item.deviceKey}, paramKey: ${item.paramKey}, roomKey: ${item.roomKey}`);
+        console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item, null, 2)}`);
+
+        // Если за это время не было двойного клика, выполняем selectItem
+        if (this.selectedItem === item) {
         // Если клик на уже выбранный элемент, то снимаем выделение
         this.selectedItem = null;
         // Отправляем событие, что нужно скрыть MainSetpoint
@@ -215,33 +225,75 @@ export default {
           });
           //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
         }
+        this.clickTimer = null;
+      }, 350);
+      
+        
+
         //console.groupEnd();
     },
  
-    toggleSorting(item) {
-      logger.dev('[MainBody] - toggleSorting - Ключ выбранного элемента:', item.setpointKey, ' и значение:', item.setValue);
-      //console.groupCollapsed('[MainBody] - toggleSorting ');
-      //console.log('[MainBody] - toggleSorting - Ключ выбранного элемента:', item.setpointKey, ' и значение:', item.setValue);
+    DclickSelectItem(item) {
+      if (this.clickTimer) {
+        clearTimeout(this.clickTimer);
+        this.clickTimer = null;
+      }
+
+      logger.dev('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', item.setpointKey, ' и значение:', item.setValue);
+      //console.groupCollapsed('[MainBody] - DclickSelectItem ');
+      console.log('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', item.setpointKey, ' и значение:', item.setValue);
+
+      // Обновляем ключи в хранилище
+          this.SET_ROOM_KEY(item.roomKey);
+          this.SET_PARAM_KEY(item.paramKey);
+          this.SET_DEVICE_KEY(item.deviceKey);
+          this.SET_SETPOINT_KEY(item.setpointKey);
+
       let settingsType = this.typeSettingsKey || 'schedule';
+
+      // Отправляем событие с данными в DashBoard
+          this.$emit('getComponentData', {
+            // action: 'show',
+            request: settingsType,
+            data: {
+              value: item.setValue,
+              value_type: '',
+            }
+          });
+
+      // switch (settingsType) {
+      //   case 'schedule':
+      //     console.log('[MainBody] - DclickSelectItem - settingsType', settingsType);
+      //   break;
+      //   case 'notifications':
+      //     console.log('[MainBody] - DclickSelectItem - Устанавливаем permitNotifications = true');
+      //   break;
+      //   case 'statistics':
+      //     console.log('[MainBody] - DclickSelectItem - Устанавливаем permitStatistics = true');
+      //   break;
+      
+      //   default:
+      //     break;
+      // }
       
       // Устанавливаем флаги в зависимости от типа настроек и наличия setpointKey
-      if (settingsType === 'schedule') {
-        if (item.setpointKey != null) {
-          //console.log('[MainBody] - toggleSorting - Устанавливаем permitSchedule = true');
-          this.setPermitSchedule(true);
-        } else {
-          //console.warn('[MainBody] - toggleSorting - Невозможно настроить расписание: setpointKey равен null');
-          // Можно показать уведомление пользователю
-          alert('Для этого элемента невозможно настроить расписание (отсутствует уставка)');
-          return; // Прерываем переход
-        }
-      } else if (settingsType === 'notifications') {
-        console.log('[MainBody] - toggleSorting - Устанавливаем permitNotifications = true');
-        this.setPermitNotifications(true);
-      } else if (settingsType === 'statistics') {
-        console.log('[MainBody] - toggleSorting - Устанавливаем permitStatistics = true');
-        this.setPermitStatistics(true);
-      }
+      // if (settingsType === 'schedule') {
+      //   if (item.setpointKey != null) {
+      //     //console.log('[MainBody] - DclickSelectItem - Устанавливаем permitSchedule = true');
+      //     this.setPermitSchedule(true);
+      //   } else {
+      //     //console.warn('[MainBody] - DclickSelectItem - Невозможно настроить расписание: setpointKey равен null');
+      //     // Можно показать уведомление пользователю
+      //     alert('Для этого элемента невозможно настроить расписание (отсутствует уставка)');
+      //     return; // Прерываем переход
+      //   }
+      // } else if (settingsType === 'notifications') {
+      //   console.log('[MainBody] - DclickSelectItem - Устанавливаем permitNotifications = true');
+      //   this.setPermitNotifications(true);
+      // } else if (settingsType === 'statistics') {
+      //   console.log('[MainBody] - DclickSelectItem - Устанавливаем permitStatistics = true');
+      //   this.setPermitStatistics(true);
+      // }
 
       this.$router.push({
         name: 'DashboardSettings',

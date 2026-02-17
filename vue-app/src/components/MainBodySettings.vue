@@ -52,6 +52,7 @@
               @value-type-changed="handleValueTypeChanged($event)"
               @edit-value="handleEditValue(schedule.id, $event)"
               @delete-schedule="handleDeleteSchedule(schedule.id)"
+              @getComponentData="getComponentData"
             />
           </div>
             <div v-if="selectedTitle === 'Расписание' && schedules.length === 0" class="settings-block">
@@ -253,6 +254,10 @@ export default {
       'setLimits',
     ]),
     
+    getComponentData(event) {
+      this.$emit('getComponentData', event);
+    },
+    
     formattedValue(value) {
       if (typeof value === 'number') {
         return value.toFixed(1);
@@ -301,6 +306,7 @@ export default {
     },
 
     getSchedulesFromStore() {
+      console.log('[MainBodySettings] - getSchedulesFromStore - Start');
       try {
         const dID = this.dID;
         const roomKey = this.itemData.roomKey;
@@ -747,7 +753,7 @@ export default {
     
     handleEditValue(scheduleId, event) {
       console.groupCollapsed('[MainBodySettings] - handleEditValue');
-      //console.log('[MainBodySettings] - handleEditValue Начинаем изменение значения', scheduleId, event);
+      console.log('[MainBodySettings] - handleEditValue Начинаем изменение значения', scheduleId, event);
       this.currentEvent = event;
 
       const {value, type, roomKey, paramKey } = event;
