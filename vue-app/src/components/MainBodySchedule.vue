@@ -53,7 +53,7 @@
               @click.stop="editStartTime"
             >
             <div class="settings-value">
-              {{ scheduleData.startTime || '00:00' }}
+              {{ displayStartTime }}
             </div>
               
             </div>
@@ -63,7 +63,7 @@
               @click.stop="editEndTime"
             >
             <div class="settings-value">
-              {{ scheduleData.endTime || '01:59' }}
+              {{ displayEndTime }}
               </div>
             </div>
           </div>
@@ -124,7 +124,7 @@ export default {
  
   data() {
     return {
-      timeEditMode: 'minutes',
+      timeEditMode: 'hours',
     };
   },
   
@@ -156,8 +156,13 @@ export default {
         ? this.scheduleData.value.toFixed(1)
         : this.scheduleData.value;
     },
-    dateUtils() {
-      return this.dateTimeUtils;
+    displayStartTime() {
+      return this.scheduleData.startTime || '00:00';
+    },
+    
+    // Единое свойство для отображения времени окончания
+    displayEndTime() {
+      return this.scheduleData.endTime || '00:05';
     },
 
     
@@ -225,98 +230,38 @@ export default {
       });
     },
     
-    // Редактирование времени начала
+
     editStartTime() {
-      this.$store.commit('UPDATE_SETTINGS_DATA', { 
-        field: 'id', 
-        value: this.scheduleData.id,
-      });
-      this.editTimeFieldWithToggle('startTime', 'Время начала');
+        const timeString = this.scheduleData.startTime || '00:00';
+        console.log('[MainBodySchedule] - Редактирование startTime:', timeString);
+        const [hours, minutes] = timeString.split(':').map(Number);
+        
+        this.editTimeFieldWithToggle(hours, minutes);
     },
     
-    // Редактирование времени окончания
     editEndTime() {
-      this.$store.commit('UPDATE_SETTINGS_DATA', { 
-        field: 'id', 
-        value: this.scheduleData.id,
-      });
-      this.editTimeFieldWithToggle('startTime', 'Время начала');
+        const timeString = this.scheduleData.endTime || '01:59';
+        const [hours, minutes] = timeString.split(':').map(Number);
+        
+        this.editTimeFieldWithToggle( hours, minutes);
     },
     
-
-
-
-
-
-
-
-
-    async editTimeField(field, label) {
-      logger.dev(`[MainBodySchedule] - editTimeField - Редактирование ${label}`);
-      
-      const timeString = this.scheduleData[field] || '00:00';
-      
-      // Используем action из хранилища для преобразования времени
-      let valueInMinutes;
-      try {
-        valueInMinutes = await this.timeToMinutes(timeString);
-      } catch (error) {
-        logger.error('[MainBodySchedule] - editTimeField - Ошибка преобразования времени:', error);
-        valueInMinutes = 0; // значение по умолчанию
-      }
-      
-      this.$emit('getComponentData', {
-        field: field,
-        value: valueInMinutes,
-        type: 'time',
-        label: label
-      });
+    editTimeFieldWithToggle(currentHours, currentMinutes) {
+        console.log('[MainBodySchedule] - Редактирование:', currentHours, currentMinutes);
+        const editMode = this.timeEditMode;
+        if (editMode === 'minutes') {
+            this.$emit('getComponentData', {
+                [editMode]: currentMinutes
+            });
+        } else {
+            this.$emit('getComponentData', {
+                [editMode]: currentHours
+            });
+        }
+        
+        // Переключаем режим
+        this.timeEditMode = this.timeEditMode === 'minutes' ? 'hours' : 'minutes';
     },
-
-
-    async editTimeFieldWithToggle(field, label) {
-      console.log('[MainBodySchedule] - editTimeFieldWithToggle - Редактирование времени:', field);
-      const timeString = this.scheduleData[field] || '00:00';
-      
-      let totalMinutes;
-      try {
-        totalMinutes = await this.timeToMinutes(timeString);
-      } catch (error) {
-        logger.error('[MainBodySchedule] - Ошибка преобразования времени:', error);
-        totalMinutes = 0;
-      }
-      
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
-      console.log('[MainBodySchedule] - editTimeFieldWithToggle - hours:', hours, 'minutes:', minutes);
-      
-      // Отправляем данные в зависимости от текущего режима
-      if (this.timeEditMode === 'minutes') {
-        this.$emit('getComponentData', {
-          field: field,
-          value: minutes,
-          type: 'time',
-          subType: 'minutes',
-          label: `${label} (минуты)`,
-          fullTime: timeString
-        });
-      } else {
-        this.$emit('getComponentData', {
-          field: field,
-          value: hours,
-          type: 'time',
-          subType: 'hours',
-          label: `${label} (часы)`,
-          fullTime: timeString
-        });
-      }
-      
-      // Переключаем режим для следующего клика
-      this.timeEditMode = this.timeEditMode === 'minutes' ? 'hours' : 'minutes';
-    },
-
-
-
 
 
 
@@ -361,7 +306,7 @@ export default {
    
     // Форматирование даты
     formatDate(dateString) {
-      return this.dateUtils.formatDate(dateString, 'ru-RU');
+      return this.dateTimeUtils.formatDate(dateString, 'ru-RU');
     },
     
     // validateScheduleTime(schedule) {

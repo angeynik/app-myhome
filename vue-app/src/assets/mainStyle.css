@@ -758,11 +758,12 @@ form button:active {
 }
 .settings-block.clickable:hover,
 .settings-block-title.clickable:hover {
-  background: rgba(0, 0, 0, 0.2);
-  border-color: rgba(224, 223, 231, 0.5);
-  color: rgba(224, 223, 231, 0.8);
+  /* background: rgba(0, 0, 0, 0.2);
+  border-color: rgba(224, 223, 231, 0.5); */
+  font-weight: 900;
+  color: #34B534;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); */
 }
 .settings-block.clickable:active,
 .settings-block-title.clickable:active {
