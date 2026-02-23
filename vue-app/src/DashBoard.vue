@@ -260,7 +260,7 @@ export default {
         field: 'room', 
         value: this.getRoomKey 
       });
-
+      console.log('[DashBoard] - selectComponent - Обновили комнату - ', this.getRoomKey);
       // Проверка
       console.log('[DashBoard] - selectComponent - Комната в settingsData.payload:',
         this.$store.state.setpointsManager?.settingsData?.payload?.room
@@ -426,7 +426,7 @@ export default {
 
 
 
-    
+
 
     // Работа с компонентом настройки Расписания, Уведомлений и Статистики
 

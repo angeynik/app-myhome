@@ -213,14 +213,7 @@ export default {
             // editType: 'value-setpoint',
             data: {
               value: item.setValue,
-              // setValue: item.setValue,
-              value_type: params.valueType,
-              // unit: item.unit,
-              // paramKey: item.paramKey,
-              // roomKey: item.roomKey,
-              // sortType: item.sortType,
-              // deviceKey: item.deviceKey,
-              // setpointKey: item.setpointKey
+              title: 'value',
             }
           });
           //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
@@ -257,43 +250,9 @@ export default {
             request: settingsType,
             data: {
               value: item.setValue,
-              value_type: '',
+              title: 'value',
             }
           });
-
-      // switch (settingsType) {
-      //   case 'schedule':
-      //     console.log('[MainBody] - DclickSelectItem - settingsType', settingsType);
-      //   break;
-      //   case 'notifications':
-      //     console.log('[MainBody] - DclickSelectItem - Устанавливаем permitNotifications = true');
-      //   break;
-      //   case 'statistics':
-      //     console.log('[MainBody] - DclickSelectItem - Устанавливаем permitStatistics = true');
-      //   break;
-      
-      //   default:
-      //     break;
-      // }
-      
-      // Устанавливаем флаги в зависимости от типа настроек и наличия setpointKey
-      // if (settingsType === 'schedule') {
-      //   if (item.setpointKey != null) {
-      //     //console.log('[MainBody] - DclickSelectItem - Устанавливаем permitSchedule = true');
-      //     this.setPermitSchedule(true);
-      //   } else {
-      //     //console.warn('[MainBody] - DclickSelectItem - Невозможно настроить расписание: setpointKey равен null');
-      //     // Можно показать уведомление пользователю
-      //     alert('Для этого элемента невозможно настроить расписание (отсутствует уставка)');
-      //     return; // Прерываем переход
-      //   }
-      // } else if (settingsType === 'notifications') {
-      //   console.log('[MainBody] - DclickSelectItem - Устанавливаем permitNotifications = true');
-      //   this.setPermitNotifications(true);
-      // } else if (settingsType === 'statistics') {
-      //   console.log('[MainBody] - DclickSelectItem - Устанавливаем permitStatistics = true');
-      //   this.setPermitStatistics(true);
-      // }
 
       this.$router.push({
         name: 'DashboardSettings',

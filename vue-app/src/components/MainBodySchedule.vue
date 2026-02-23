@@ -165,6 +165,7 @@ export default {
         : this.scheduleData.value;
     },
     displayStartTime() {
+      console.log('[MainBodySchedule] - displayStartTime - startTime:', this.scheduleData.startTime);
       return this.scheduleData.startTime || '00:00';
     },
     
@@ -209,7 +210,9 @@ export default {
       }
     },
     formattedTime(timeProperty) {
+      console.log('[MainBodySchedule] - formattedTime - ', timeProperty);
       const timeString = this[timeProperty];
+      console.log('[MainBodySchedule] - formattedTime - timeString:', timeString);
       if (!timeString || !timeString.includes(':')) {
         return timeString || '00:00';
       }
@@ -236,7 +239,18 @@ export default {
       }
 
     },
-
+    setpointsManagerUpdate(type, request, payload) {
+      const setpointsManager = this.$store.getters.getSetpointsManager;
+       if (setpointsManager) { 
+        setpointsManager.updateSettingsData({
+          type: type, 
+          request: request,
+          payload: payload
+        });
+       } else {
+        console.error('[MainBodySchedule] - setpointsManagerUpdate - setpointsManager не нашелся');
+       }
+    },
 
 
 
@@ -244,49 +258,60 @@ export default {
     // Переключение типа значения
     toggleValueType(event) {
       event.stopPropagation(); // Добавьте эту строку
+      console.log('[DashBoard] - toggleValueType - Данные в settingsData:',
+        this.$store.state.setpointsManager?.settingsData
+      );
       this.selectedField = "valueType";
-      
-      //console.log('[MainBodySchedule] - toggleValueType - scheduleData:', this.scheduleData);
-      this.$store.commit('UPDATE_SETTINGS_DATA', { 
-        field: 'id', 
-        value: this.scheduleData.id,
+    
+      console.log('DashBoard] - toggleValueType - Начало переключения типа значения', this.valueTypeLabel );
+      const newType = this.scheduleData.valueType === 'absolute' ? 'deviation' : 'absolute';
+      console.log('[DashBoard] - toggleValueType - oldType', this.scheduleData.valueType , '  newType:', newType);
+
+      this.setpointsManagerUpdate('post', 'schedules', {
+        config: 'schedules',
+        id: this.scheduleData.id,
+        value: newType,
+        value_name: this.selectedField
       });
-      // console.log('[DashBoard] - selectComponent - ID комнаты в settingsData.payload:',
+      // console.log('[DashBoard] - toggleValueType - ID комнаты в settingsData.payload:',
       //   this.$store.state.setpointsManager?.settingsData?.payload?.id
       // );
-
-      const newType = this.scheduleData.valueType === 'absolute' ? 'deviation' : 'absolute';
-      
-      //console.log('[MainBodySchedule] - toggleValueType - Отправляем событие с ID:', scheduleId, 'новый тип:', newType);
-
       // Отправляем событие с данными в MainBodySettings
           this.$emit('getComponentData', {
-            data: {
-              [this.selectedField]: newType,
+              value: newType,
               title: this.selectedField,
-            }
           });
       
     },
    
     // Редактирование значения расписания
     editValue() {
+      console.log('[DashBoard] - editValue - Данные в settingsData:',
+        this.$store.state.setpointsManager?.settingsData
+      );
       this.selectedField = "value";
-      logger.dev('[MainBodySchedule] - editValue - Начало редактирования значения');
-      this.$store.commit('UPDATE_SETTINGS_DATA', { 
-        field: 'id', 
-        value: this.scheduleData.id,
-      });
-      // Устанавливаем текущее значение или 0 по умолчанию
       const currentValue = this.scheduleData.value !== null && this.scheduleData.value !== undefined
         ? this.scheduleData.value
         : (this.scheduleData.valueType === 'absolute' ? 20 : 0);
+
+      logger.dev('[MainBodySchedule] - editValue - Начало редактирования значения');
+      this.setpointsManagerUpdate('post', 'schedules', {
+        config: 'schedules',
+        id: this.scheduleData.id,
+        value: currentValue,
+        value_name: this.selectedField 
+      });
+
+      // this.$store.commit('UPDATE_SETTINGS_DATA', { 
+      //   field: 'id', 
+      //   value: this.scheduleData.id,
+      // });
+      // Устанавливаем текущее значение или 0 по умолчанию
+
       
       this.$emit('getComponentData', {
-        data: {
-              [this.selectedField]: currentValue,
-                title: this.selectedField,
-            }
+              value: currentValue,
+              title: this.selectedField,           
       });
     },
     
@@ -303,22 +328,27 @@ export default {
     editEndTime() {
       this.selectedField = "endTime";
         const timeString = this.scheduleData.endTime || '00:05';
-        const [hours, minutes] = timeString.split(':').map(Number);
-        
+        const [hours, minutes] = timeString.split(':').map(Number);      
         this.editTimeFieldWithToggle(hours, minutes);
     },
     
     editTimeFieldWithToggle(currentHours, currentMinutes) {
         console.log('[MainBodySchedule] - Редактирование:', currentHours, currentMinutes);
+        this.setpointsManagerUpdate('post', 'schedules', {
+              config: 'schedules',
+              id: this.scheduleData.id,
+              value: this.scheduleData[this.selectedField],
+              value_name: this.selectedField 
+            });
         const editMode = this.timeEditMode;
         if (editMode === 'minutes') {
             this.$emit('getComponentData', {
-                [editMode]: currentMinutes,
+                value: currentMinutes,
                 title: this.selectedField,
             });
         } else {
             this.$emit('getComponentData', {
-                [editMode]: currentHours,
+                value: currentHours,
                 title: this.selectedField,
             });
         }

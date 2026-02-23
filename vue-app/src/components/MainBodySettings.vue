@@ -50,7 +50,6 @@
               :scheduleData="schedule"
               :scheduleUnit="unit"
               @value-type-changed="handleValueTypeChanged($event)"
-              @edit-value="handleEditValue(schedule.id, $event)"
               @delete-schedule="handleDeleteSchedule(schedule.id)"
               @getComponentData="getComponentData"
             />
@@ -255,9 +254,41 @@ export default {
     ]),
     
     getComponentData(event) {
-      this.$emit('getComponentData', event);
+      console.log('[DashBoard] - getComponentData - Данные от компонента MainBodySchedule:', event);
+      const settingsData = this.$store.state.setpointsManager?.settingsData;
+      console.log('[DashBoard] - getComponentData - Данные в settingsData:', settingsData);
+      let action = "show";
+
+      const arrayTitle = settingsData?.request; // имя массива (например, "schedule")
+      if(!arrayTitle) return console.error('[DashBoard] - getComponentData - Отсутствует массив', arrayTitle);
+      const targetId = settingsData?.payload?.id; // id искомого объекта
+      if(!targetId) return console.error('[DashBoard] - getComponentData - ID объекта не определен', targetId);
+      const fieldName = event.title; // имя поля для изменения
+      if(!fieldName) return console.error('[DashBoard] - getComponentData - Название поля не определено', fieldName);
+      const newValue = event.value;
+      if(!newValue) return console.error('[DashBoard] - getComponentData - Значение поля не определено', newValue);
+
+      const targetArray = this[arrayTitle];
+      const targetObject = targetArray.find(item => item.id === targetId);
+        if (targetObject && fieldName === 'valueType') {
+          // Изменяем значение поля
+          targetObject[fieldName] = newValue;
+          
+          console.log(`[DashBoard] - getComponentData - Обновлено поле "${fieldName}" в объекте с id ${targetId}:`, 
+            targetObject);
+        } else {
+          console.warn(`[DashBoard] - getComponentData - Объект с id ${targetId} не найден в массиве ${arrayTitle}`);
+        }
+        if (fieldName === 'valueType') action = "hide";
+
+      const message = {
+        action: action,
+        data: event,
+        request: arrayTitle,
+      };
+      this.$emit('getComponentData', message);
     },
-    
+  
     formattedValue(value) {
       if (typeof value === 'number') {
         return value.toFixed(1);
@@ -751,68 +782,68 @@ export default {
       console.groupEnd();
     },
     
-    handleEditValue(scheduleId, event) {
-      console.groupCollapsed('[MainBodySettings] - handleEditValue');
-      console.log('[MainBodySettings] - handleEditValue Начинаем изменение значения', scheduleId, event);
-      this.currentEvent = event;
+    // handleEditValue(scheduleId, event) {
+    //   console.groupCollapsed('[MainBodySettings] - handleEditValue');
+    //   console.log('[MainBodySettings] - handleEditValue Начинаем изменение значения', scheduleId, event);
+    //   this.currentEvent = event;
 
-      const {value, type, roomKey, paramKey } = event;
+    //   const {value, type, roomKey, paramKey } = event;
      
-      const scheduleIndex = this.schedules.findIndex(s => s.id === scheduleId);
-      if (scheduleIndex === -1) return;
+    //   const scheduleIndex = this.schedules.findIndex(s => s.id === scheduleId);
+    //   if (scheduleIndex === -1) return;
 
-      const valueType = this.schedules[scheduleIndex]?.valueType;
+    //   const valueType = this.schedules[scheduleIndex]?.valueType;
 
-      console.log('[MainBodySettings] - handleEditValue - scheduleIndex:', scheduleId, value, type, roomKey, paramKey, valueType);
+    //   console.log('[MainBodySettings] - handleEditValue - scheduleIndex:', scheduleId, value, type, roomKey, paramKey, valueType);
 
-        if (scheduleId > 0) { // Только существующие расписания
-          if (!this.editedSchedules[roomKey]) {
-            this.editedSchedules[roomKey] = {};
-          }
-          if (!this.editedSchedules[roomKey][paramKey]) {
-            this.editedSchedules[roomKey][paramKey] = {};
-          }
-          if (!this.editedSchedules[roomKey][paramKey][scheduleId]) {
-            this.editedSchedules[roomKey][paramKey][scheduleId]  = {};
-          }
-          this.editedSchedules[roomKey][paramKey][scheduleId].value = value;
-          this.editedSchedules[roomKey][paramKey][scheduleId].updatedAt = new Date().toISOString();
-        }
-        console.log('[MainBodySettings] - handleValueTypeChanged - В editedSchedules добавлено изменение:', this.editedSchedules);
-        console.log('[MainBodySettings] - handleValueTypeChanged - Расписание обновлено:', this.schedules[scheduleIndex]);
-        console.groupEnd();
-        // Формируем данные для передачи в компонент Main Setpoint для редактирования
-        const editingSchedule = {
-          action: 'show',
-          editType: 'value-scheduale', 
-          data: {
-            id: scheduleId,
-            roomKey: roomKey,
-            paramKey: paramKey,
-            setValue: value,
-            value: value,
-            // limits: limits,
-            unit: type,
-            // sortType: this.currentSortType,
-            setpointKey: paramKey,
-            }
-        };
+    //     if (scheduleId > 0) { // Только существующие расписания
+    //       if (!this.editedSchedules[roomKey]) {
+    //         this.editedSchedules[roomKey] = {};
+    //       }
+    //       if (!this.editedSchedules[roomKey][paramKey]) {
+    //         this.editedSchedules[roomKey][paramKey] = {};
+    //       }
+    //       if (!this.editedSchedules[roomKey][paramKey][scheduleId]) {
+    //         this.editedSchedules[roomKey][paramKey][scheduleId]  = {};
+    //       }
+    //       this.editedSchedules[roomKey][paramKey][scheduleId].value = value;
+    //       this.editedSchedules[roomKey][paramKey][scheduleId].updatedAt = new Date().toISOString();
+    //     }
+    //     console.log('[MainBodySettings] - handleValueTypeChanged - В editedSchedules добавлено изменение:', this.editedSchedules);
+    //     console.log('[MainBodySettings] - handleValueTypeChanged - Расписание обновлено:', this.schedules[scheduleIndex]);
+    //     console.groupEnd();
+    //     // Формируем данные для передачи в компонент Main Setpoint для редактирования
+    //     const editingSchedule = {
+    //       action: 'show',
+    //       editType: 'value-scheduale', 
+    //       data: {
+    //         id: scheduleId,
+    //         roomKey: roomKey,
+    //         paramKey: paramKey,
+    //         setValue: value,
+    //         value: value,
+    //         // limits: limits,
+    //         unit: type,
+    //         // sortType: this.currentSortType,
+    //         setpointKey: paramKey,
+    //         }
+    //     };
 
-        this.editScheduleValue = value;
-        this.isEditingSchedule = true;
+    //     this.editScheduleValue = value;
+    //     this.isEditingSchedule = true;
 
-        // Отправляем событие родителю (Dashboard) для показа MainSetpoint
-        const params = {
-          param: 'Default', // Default - базовые параметры    Minutes - минуты Hours - часы
-          valueType: valueType // deviation - отклонение от уставки, absolute - новое значение
-        }
-        console.log('[MainBodySettings] - handleEditValue - params:', params);
-        this.setLimits(params);
-        this.$emit('edit-value-MainSetpoint', editingSchedule);
-        console.log('[MainBodySettings] - handleEditValue - Данные для редактирования отправлены:', editingSchedule);
+    //     // Отправляем событие родителю (Dashboard) для показа MainSetpoint
+    //     const params = {
+    //       param: 'Default', // Default - базовые параметры    Minutes - минуты Hours - часы
+    //       valueType: valueType // deviation - отклонение от уставки, absolute - новое значение
+    //     }
+    //     console.log('[MainBodySettings] - handleEditValue - params:', params);
+    //     this.setLimits(params);
+    //     this.$emit('edit-value-MainSetpoint', editingSchedule);
+    //     console.log('[MainBodySettings] - handleEditValue - Данные для редактирования отправлены:', editingSchedule);
 
-      console.groupEnd();
-    },
+    //   console.groupEnd();
+    // },
      saveHandleEditValue(scheduleId, newValue) {
       console.groupCollapsed('[MainBodySettings] - saveEditedScheduleValue');
         console.log('[MainBodySettings] - saveEditedScheduleValue - Сохраняем новое значение:', newValue, scheduleId);
