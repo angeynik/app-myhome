@@ -26,11 +26,14 @@
     <div class="settings-row">
         <!-- Первый столбец -->
         <!-- <p> Первый столбец </p> -->
-          <div  class="settings-block-title clickable" @click.stop="toggleValueType" >
+          <div  class="settings-block-title clickable" 
+          :class="{ 'selected': isFieldSelected('valueType') }"
+          @click.stop="toggleValueType" >
             <p> {{ valueTypeLabel }} </p>
           </div>
 
            <div style="width: 25vw;" class="settings-block clickable"
+           :class="{ 'selected': isFieldSelected('value') }"
             @click.stop="editValue" >
             <div class="settings-value">
               {{ value }}
@@ -49,22 +52,26 @@
               <p> Период </p>
             </div>
             <div style="width: 25vw;"
-              class="settings-block clickable"
+              class="settings-block clickable" 
+              :class="{ 'selected': isFieldSelected('startTime') }"
               @click.stop="editStartTime"
             >
-            <div class="settings-value">
+            <!-- <div class="settings-value">
               {{ displayStartTime }}
-            </div>
+            </div> -->
+            <div class="settings-value" v-html="formattedTime('displayStartTime')"></div>
               
             </div>
             <div class="settings_item-separator">—</div>
             <div style="width: 25vw;"
-              class="settings-block clickable"
+              class="settings-block clickable" 
+              :class="{ 'selected': isFieldSelected('endTime') }"
               @click.stop="editEndTime"
             >
-            <div class="settings-value">
+            <!-- <div class="settings-value">
               {{ displayEndTime }}
-              </div>
+              </div> -->
+              <div class="settings-value" v-html="formattedTime('displayEndTime')"></div>
             </div>
           </div>
 
@@ -125,6 +132,7 @@ export default {
   data() {
     return {
       timeEditMode: 'hours',
+      selectedField: null,
     };
   },
   
@@ -165,6 +173,7 @@ export default {
       return this.scheduleData.endTime || '00:05';
     },
 
+
     
   },
   
@@ -174,9 +183,16 @@ export default {
         logger.dev('[MainBodySchedule] - Данные расписания обновлены:', newData);
       },
       deep: true
-    }
+    },
+    
   },
-  
+  mounted() {
+    document.addEventListener('click', this.handleClickOutside);
+  },
+
+  beforeUnmount() {
+    document.removeEventListener('click', this.handleClickOutside);
+  },
   methods: {
     ...mapActions('settingsConfig', [
       'timeToMinutes',
@@ -184,10 +200,51 @@ export default {
       'validateScheduleTime',
       'checkScheduleOverlap'
     ]),
+   isFieldSelected(fieldName) {
+      return this.selectedField === fieldName;
+    },
+    handleClickOutside(event) {
+      if (this.$el && !this.$el.contains(event.target)) {
+        this.selectedField = null;
+      }
+    },
+    formattedTime(timeProperty) {
+      const timeString = this[timeProperty];
+      if (!timeString || !timeString.includes(':')) {
+        return timeString || '00:00';
+      }
+
+      const [hours, minutes] = timeString.split(':');
+      const fieldName = timeProperty === 'displayStartTime' ? 'startTime' : 'endTime';
+      const isSelected = this.selectedField === fieldName;
+
+      if (!isSelected) {
+        return `${hours}:${minutes}`;
+      }
+     
+      // if (this.timeEditMode === 'hours') {
+      //   // Подсвечиваем часы
+      //   return `<span class="time-highlight">${hours}</span>:${minutes}`;
+      // } else {
+      //   // Подсвечиваем минуты
+      //   return `${hours}:<span class="time-highlight">${minutes}</span>`;
+      // }
+      if (this.timeEditMode === 'hours') {
+        return `<span class="time-highlight-simple">${hours}</span> <span class="time-dimmed"> :${minutes}</span>`;
+      } else {
+        return `<span class="time-dimmed">${hours}:</span> <span class="time-highlight-simple">${minutes}</span>`;
+      }
+
+    },
+
+
+
+
+
     // Переключение типа значения
     toggleValueType(event) {
       event.stopPropagation(); // Добавьте эту строку
-      
+      this.selectedField = "valueType";
       
       //console.log('[MainBodySchedule] - toggleValueType - scheduleData:', this.scheduleData);
       this.$store.commit('UPDATE_SETTINGS_DATA', { 
@@ -205,14 +262,16 @@ export default {
       // Отправляем событие с данными в MainBodySettings
           this.$emit('getComponentData', {
             data: {
-              'valueType': newType,
+              [this.selectedField]: newType,
+              title: this.selectedField,
             }
           });
       
     },
-    
+   
     // Редактирование значения расписания
     editValue() {
+      this.selectedField = "value";
       logger.dev('[MainBodySchedule] - editValue - Начало редактирования значения');
       this.$store.commit('UPDATE_SETTINGS_DATA', { 
         field: 'id', 
@@ -225,25 +284,28 @@ export default {
       
       this.$emit('getComponentData', {
         data: {
-              'value': currentValue,
+              [this.selectedField]: currentValue,
+                title: this.selectedField,
             }
       });
     },
     
 
     editStartTime() {
+      this.selectedField = "startTime";
         const timeString = this.scheduleData.startTime || '00:00';
         console.log('[MainBodySchedule] - Редактирование startTime:', timeString);
         const [hours, minutes] = timeString.split(':').map(Number);
         
-        this.editTimeFieldWithToggle(hours, minutes);
+        this.editTimeFieldWithToggle( hours, minutes);
     },
     
     editEndTime() {
-        const timeString = this.scheduleData.endTime || '01:59';
+      this.selectedField = "endTime";
+        const timeString = this.scheduleData.endTime || '00:05';
         const [hours, minutes] = timeString.split(':').map(Number);
         
-        this.editTimeFieldWithToggle( hours, minutes);
+        this.editTimeFieldWithToggle(hours, minutes);
     },
     
     editTimeFieldWithToggle(currentHours, currentMinutes) {
@@ -251,11 +313,13 @@ export default {
         const editMode = this.timeEditMode;
         if (editMode === 'minutes') {
             this.$emit('getComponentData', {
-                [editMode]: currentMinutes
+                [editMode]: currentMinutes,
+                title: this.selectedField,
             });
         } else {
             this.$emit('getComponentData', {
-                [editMode]: currentHours
+                [editMode]: currentHours,
+                title: this.selectedField,
             });
         }
         

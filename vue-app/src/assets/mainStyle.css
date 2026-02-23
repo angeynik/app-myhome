@@ -745,7 +745,26 @@ form button:active {
   justify-content: center; /* Горизонтальное центрирование */
   min-height: 2rem;
 }
+/* Стили для выделенного элемента */
+.settings-block.selected {
+  border: 2px solid var(--green) !important;
+  box-shadow: 0 0 10px rgba(52, 181, 52, 0.3);
+  transition: all 0.2s ease;
+}
 
+.settings-block.selected .settings-value {
+  color: var(--orange) !important;
+  font-weight: 600;
+}
+
+.settings-block-title.selected {
+  color: var(--orange) !important;
+  font-weight: 600;
+}
+
+.settings-block-title.selected p {
+  color: var(--orange) !important;
+}
 
 .settings-block.clickable,
 .settings-block-title.clickable {
@@ -762,7 +781,8 @@ form button:active {
   border-color: rgba(224, 223, 231, 0.5); */
   font-weight: 900;
   color: #34B534;
-  transform: translateY(-2px);
+  /* transform: translateY(-2px); */
+  border-color: var(--violet);
   /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); */
 }
 .settings-block.clickable:active,
@@ -779,8 +799,20 @@ form button:active {
   justify-content: center;
   padding: 0.5rem;
 }
-
-
+.time-highlight-simple {
+  /* letter-spacing: 4px; */
+  color: var(--orange);
+  font-weight: 800;
+  font-size: 1.5em;
+  /* transition: font-size 0.4s ease, color 0.4s ease; */
+}
+.time-dimmed {
+  color: rgba(224, 223, 231, 0.8); /* Полупрозрачный светлый */
+  /* или */
+  color: var(--light_font);
+  opacity: 0.4;
+  font-weight: 400;
+}
 
 
 
