@@ -1,5 +1,6 @@
 // store/modules/config.js
 import logger from './logger';
+import store from '@/store';
 
 export default {
   namespaced: true,
@@ -538,19 +539,19 @@ export default {
         }
       }
     },
-    async updateSetpointServer( {rootGetters}, { roomKey, paramKey, value, req }) {
-        logger.info('[config] - updateSetpointServer - Готовим уставку для отправки на сервер', paramKey);
-        //console.log('[config] - updateSetpointServer - Готовим уставку для отправки на сервер', paramKey);
+    async updateSetpointServer( {rootGetters}) {
+      const settingsData = store.state.setpointsManager?.settingsData;
+        logger.info('[config] - updateSetpointServer - Готовим уставку для отправки на сервер');
+        console.log('[config] - updateSetpointServer - Готовим уставку для отправки на сервер', settingsData);
         const dID = rootGetters.dID;
+
         if (!dID) throw new Error('dID не определен');
-        logger.dev('[config] - updateSetpointServer - Готовим уставку для dID:', dID, 'Key', paramKey, 'Value', value);
-        //console.log('[config] - updateSetpointServer - Готовим уставку для dID:', dID, 'Key', paramKey, 'Value', value);
 
         await this.dispatch('websocket/send', {
           type: 'post',
-          request: req,
-          name: dID,
-          payload: { room: roomKey, param: paramKey, value }
+          request: settingsData.request,
+          name: settingsData.name,
+          payload: settingsData.payload
         }, { root: true });
         logger.info('[config] - updateSetpointServer - Уставка обновлена и отправлена на сервер');
         //console.log('[config] - updateSetpointServer - Уставка обновлена и отправлена на сервер');

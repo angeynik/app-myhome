@@ -201,6 +201,9 @@ export default {
       'validateScheduleTime',
       'checkScheduleOverlap'
     ]),
+    ...mapActions('sortParams', [
+      'setLimits',
+    ]),
    isFieldSelected(fieldName) {
       return this.selectedField === fieldName;
     },
@@ -224,15 +227,7 @@ export default {
       if (!isSelected) {
         return `${hours}:${minutes}`;
       }
-     
-      // if (this.timeEditMode === 'hours') {
-      //   // Подсвечиваем часы
-      //   return `<span class="time-highlight">${hours}</span>:${minutes}`;
-      // } else {
-      //   // Подсвечиваем минуты
-      //   return `${hours}:<span class="time-highlight">${minutes}</span>`;
-      // }
-      if (this.timeEditMode === 'hours') {
+      if (this.timeEditMode === 'minutes') {
         return `<span class="time-highlight-simple">${hours}</span> <span class="time-dimmed"> :${minutes}</span>`;
       } else {
         return `<span class="time-dimmed">${hours}:</span> <span class="time-highlight-simple">${minutes}</span>`;
@@ -271,7 +266,8 @@ export default {
         config: 'schedules',
         id: this.scheduleData.id,
         value: newType,
-        value_name: this.selectedField
+        value_name: this.selectedField,
+        value_details: ''
       });
       // console.log('[DashBoard] - toggleValueType - ID комнаты в settingsData.payload:',
       //   this.$store.state.setpointsManager?.settingsData?.payload?.id
@@ -286,9 +282,17 @@ export default {
    
     // Редактирование значения расписания
     editValue() {
-      console.log('[DashBoard] - editValue - Данные в settingsData:',
-        this.$store.state.setpointsManager?.settingsData
-      );
+      // console.log('[DashBoard] - editValue - Данные в settingsData:',
+      //   this.$store.state.setpointsManager?.settingsData
+      // );
+       // Устанавливаем лимиты
+          const params = {
+            param: 'deviation', 
+            valueType: this.scheduleData.valueType, 
+          }
+          console.log('[MainBodySettings] - editValue - params:', params);
+          this.setLimits(params);
+
       this.selectedField = "value";
       const currentValue = this.scheduleData.value !== null && this.scheduleData.value !== undefined
         ? this.scheduleData.value
@@ -299,7 +303,8 @@ export default {
         config: 'schedules',
         id: this.scheduleData.id,
         value: currentValue,
-        value_name: this.selectedField 
+        value_name: this.selectedField, 
+        value_details: ''
       });
 
       // this.$store.commit('UPDATE_SETTINGS_DATA', { 
@@ -338,10 +343,19 @@ export default {
               config: 'schedules',
               id: this.scheduleData.id,
               value: this.scheduleData[this.selectedField],
-              value_name: this.selectedField 
+              value_name: this.selectedField,
+              value_details: this.timeEditMode
             });
         const editMode = this.timeEditMode;
+        // Устанавливаем лимиты
+          const params = {
+            param: editMode, 
+            valueType: '', 
+          }
+          console.log('[MainBodySettings] - editValue - params:', params);
+
         if (editMode === 'minutes') {
+          this.setLimits(params);
             this.$emit('getComponentData', {
                 value: currentMinutes,
                 title: this.selectedField,

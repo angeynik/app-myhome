@@ -173,7 +173,7 @@ export default {
       this.clickTimer = setTimeout(() => {
         //console.groupCollapsed('[MainBody] - selectItem ');
         logger.info(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
-        //console.log(`[MainBody] - selectItem - setpointKey: ${item.setpointKey}, deviceKey: ${item.deviceKey}, paramKey: ${item.paramKey}, roomKey: ${item.roomKey}`);
+        console.log(`[MainBody] - selectItem - setpointKey: ${item.setpointKey}, deviceKey: ${item.deviceKey}, paramKey: ${item.paramKey}, roomKey: ${item.roomKey}`);
         console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item, null, 2)}`);
 
         // Если за это время не было двойного клика, выполняем selectItem
@@ -187,6 +187,10 @@ export default {
         //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
         } else {
           this.selectedItem = item;
+          const setpointsManager = this.$store.getters.getSetpointsManager;
+          setpointsManager.updateSettingsData({ 
+              payload: { param: item.setpointKey, room: item.roomKey } 
+          });
 
         // Обновляем ключи в хранилище
           this.SET_ROOM_KEY(item.roomKey);
@@ -201,9 +205,9 @@ export default {
             param: item.setpointKey, 
             valueType: 'absolute', 
           }
-          console.log('[MainBodySettings] - handleEditValue - params:', params);
+          console.log('[MainBody] - handleEditValue - params:', params);
           this.setLimits(params);
-          //console.log(`[MainBody] - selectItem - setLimits установлены лимиты по ключу ${item.setpointKey}`);
+          console.log(`[MainBody] - selectItem - setLimits установлены лимиты по ключу ${item.setpointKey}`);
 
 
           // Отправляем событие с данными в DashBoard

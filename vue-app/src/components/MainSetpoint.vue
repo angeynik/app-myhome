@@ -185,6 +185,7 @@
       request: String,
       roomKey: String,
       setpointKey: String,
+      valueTitle: String,
     },
       methods: {
 
@@ -195,15 +196,20 @@
           console.error('sendEmitMessage - параметры не переданы:', { event, value });
           return;
         }
+        const setpointsManager = this.$store.getters.getSetpointsManager;
+          setpointsManager.updateSettingsData({ 
+              payload: { value: value} 
+          });
         this.$emit('eventsMainSetpoint', {
             [event]: {
               request: this.request,
-              value: value
+              value: value,
+              title: this.valueTitle,
             }
           });
         console.groupCollapsed('[MainSetpoint] - sendEmitMessage ');
         logger.dev('[MainSetpoint] - sendEmitMessage для Уставки - value:', value, 'event:', event);
-        console.log('[MainSetpoint] - sendEmitMessage для Уставки - value:', value, 'event:', event);
+        //console.log('[MainSetpoint] - sendEmitMessage для Уставки - value:', value, 'event:', event);
         console.groupEnd();
       },
 
