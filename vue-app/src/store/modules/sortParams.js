@@ -174,7 +174,7 @@ export default {
   updateSortKey({ commit, dispatch}, { type, newKey }) {
     //console.groupCollapsed('[sortParams] - updateSortKey');
     logger.dev(`[sortParams] - updateSortKey - Обновляем ключ для ${type}:`, newKey);
-    console.log(`[sortParams] - updateSortKey - Обновляем ключ для ${type}:`, newKey);
+    //console.log(`[sortParams] - updateSortKey - Обновляем ключ для ${type}:`, newKey);
     
     // Проверка на валидность ключа
     if (!newKey) {
@@ -288,7 +288,7 @@ export default {
     setLimits({ rootGetters, commit }, params) {
       console.groupCollapsed('[sortParams] - setLimits');
       logger.info(`[sortParams] - setLimits - Параметр -`, params);
-      //console.log('[sortParams] - setLimits - Параметр -', params);
+      console.log('[sortParams] - setLimits - Параметр -', params);
 
       const { param, valueType } = params;
       console.log('[sortParams] - setLimits - Параметр -', param, valueType);
@@ -297,7 +297,7 @@ export default {
       try {
         const dID = rootGetters['dID'];
           const config = rootGetters['config/getConfig'](dID);
-          //console.log('[sortParams] - setLimits - Получен конфиг', JSON.stringify(config, null, 2));
+          console.log('[sortParams] - setLimits - Получен конфиг', JSON.stringify(config?.init?.limits, null, 2));
           limits = config?.init?.limits?.[param] || config?.init?.limits?.Default;
           console.log('[sortParams] - setLimits - Получены лимиты', limits);
           if (!limits) {
@@ -323,7 +323,7 @@ export default {
       if (valueType === 'deviation') { // Задаем лимиты для диапазона значений отклонения Уставки
             const { high, step } = limits;
             limits = {
-              low: 0,
+              low: -(Math.round(high/4)),
               high: Math.round(high/4),
               step: step/10,
             };

@@ -269,11 +269,11 @@
         } else if (value > 120) {
           newValue = currentSetPoint + (step*10);
           logger.dev('[MainSetpoint] - calculateSetpoint  Увеличили SetPoint:', newValue);
-          // console.log('Увеличили SetPoint:', newSetPointValue);
+          console.log('Увеличили SetPoint:', newValue);
         } else if (value < - 120) {
           newValue = currentSetPoint - (step*10);
           logger.dev('[MainSetpoint] - calculateSetpoint  Уменьшили SetPoint:', newValue);
-          // console.log('Уменьшили SetPoint:', newSetPointValue);
+          console.log('Уменьшили SetPoint:', newValue);
         }
           try {
               if (newValue > max) {
@@ -286,7 +286,7 @@
               //console.log('[MainSetpoint] - calculateSetpoint  Ограничиваем Нижнюю границу Уставки', newValue);
             }
 
-            newValue = parseFloat(newValue);
+            newValue = parseFloat(newValue.toFixed(1));
             this.sendEmitMessage('updateState', newValue);
 
             logger.dev('[MainSetpoint] - calculateSetpoint  Обновили значение Уставки:', newValue, 'request', this.request);

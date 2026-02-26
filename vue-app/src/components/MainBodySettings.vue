@@ -224,7 +224,7 @@ export default {
     // Отслеживаем изменения в store и обновляем локальные данные
     '$store.state.config.schedules': {
       handler() {
-        console.log('[MainBodySettings] - Watch - Расписания в store обновились');
+        //console.log('[MainBodySettings] - Watch - Расписания в store обновились');
         if (this.title === 'schedule') {
           this.getSchedulesFromStore();
           console.log('[MainBodySettings] - Watch - Обновленные Расписания:', this.schedules);
@@ -336,7 +336,7 @@ export default {
     },
 
     getSchedulesFromStore() {
-      console.log('[MainBodySettings] - getSchedulesFromStore - Start');
+      //console.log('[MainBodySettings] - getSchedulesFromStore - Start');
       try {
         const dID = this.dID;
         const roomKey = this.itemData.roomKey;
@@ -354,7 +354,7 @@ export default {
         
         this.schedules = Array.isArray(paramSchedules) ? [...paramSchedules] : [];
         
-        console.log('[MainBodySettings] - getSchedulesFromStore - Найдено расписаний:', this.schedules.length);
+        //console.log('[MainBodySettings] - getSchedulesFromStore - Найдено расписаний:', this.schedules.length);
         
       } catch (error) {
         console.error('[MainBodySettings] - getSchedulesFromStore - Ошибка:', error);

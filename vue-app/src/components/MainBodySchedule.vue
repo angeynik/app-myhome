@@ -165,7 +165,7 @@ export default {
         : this.scheduleData.value;
     },
     displayStartTime() {
-      console.log('[MainBodySchedule] - displayStartTime - startTime:', this.scheduleData.startTime);
+      //console.log('[MainBodySchedule] - displayStartTime - startTime:', this.scheduleData.startTime);
       return this.scheduleData.startTime || '00:00';
     },
     
@@ -213,9 +213,9 @@ export default {
       }
     },
     formattedTime(timeProperty) {
-      console.log('[MainBodySchedule] - formattedTime - ', timeProperty);
+      //console.log('[MainBodySchedule] - formattedTime - ', timeProperty);
       const timeString = this[timeProperty];
-      console.log('[MainBodySchedule] - formattedTime - timeString:', timeString);
+      //console.log('[MainBodySchedule] - formattedTime - timeString:', timeString);
       if (!timeString || !timeString.includes(':')) {
         return timeString || '00:00';
       }
@@ -282,12 +282,13 @@ export default {
    
     // Редактирование значения расписания
     editValue() {
-      // console.log('[DashBoard] - editValue - Данные в settingsData:',
-      //   this.$store.state.setpointsManager?.settingsData
-      // );
+    //  const param = this.$store.state.setpointsManager?.settingsData?.payload.param;
+    //   console.log('[DashBoard] - editValue - Данные в settingsData:',
+    //     this.$store.state.setpointsManager?.settingsData?.payload, 'ключ - ', param
+    //   );
        // Устанавливаем лимиты
           const params = {
-            param: 'deviation', 
+            param: this.$store.state.setpointsManager?.settingsData?.payload?.param, 
             valueType: this.scheduleData.valueType, 
           }
           console.log('[MainBodySettings] - editValue - params:', params);
@@ -297,6 +298,7 @@ export default {
       const currentValue = this.scheduleData.value !== null && this.scheduleData.value !== undefined
         ? this.scheduleData.value
         : (this.scheduleData.valueType === 'absolute' ? 20 : 0);
+      //const currentValue = this.scheduleData.valueType === 'absolute' ? 20 : 0;
 
       logger.dev('[MainBodySchedule] - editValue - Начало редактирования значения');
       this.setpointsManagerUpdate('post', 'schedules', {
@@ -353,9 +355,9 @@ export default {
             valueType: '', 
           }
           console.log('[MainBodySettings] - editValue - params:', params);
+          this.setLimits(params);
 
         if (editMode === 'minutes') {
-          this.setLimits(params);
             this.$emit('getComponentData', {
                 value: currentMinutes,
                 title: this.selectedField,

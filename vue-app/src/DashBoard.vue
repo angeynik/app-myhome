@@ -151,7 +151,7 @@ export default {
     headerTitle() {
       const sortType = this.currentSortType;
       logger.dev(`[DashBoard] - headerTitle - Выбор заголовка для: ${sortType}`);
-      console.log('[DashBoard] - headerTitle - Выбор заголовка для sortType:', sortType);
+      //console.log('[DashBoard] - headerTitle - Выбор заголовка для sortType:', sortType);
       if (!sortType) {
         // Если это настройки
         if (this.$route.params.settingsType) {

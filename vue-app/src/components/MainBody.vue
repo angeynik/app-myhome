@@ -240,6 +240,14 @@ export default {
       //console.groupCollapsed('[MainBody] - DclickSelectItem ');
       console.log('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', item.setpointKey, ' и значение:', item.setValue);
 
+      const setpointsManager = this.$store.getters.getSetpointsManager;
+      setpointsManager.updateSettingsData({ 
+          payload: { param: item.setpointKey, room: item.roomKey } 
+      });
+     console.log('[MainBody] - DclickSelectItem - ОБНОВИЛИ КЛЮЧ param в settingsData:',
+        this.$store.state.setpointsManager?.settingsData?.payload?.param
+      );
+
       // Обновляем ключи в хранилище
           this.SET_ROOM_KEY(item.roomKey);
           this.SET_PARAM_KEY(item.paramKey);
