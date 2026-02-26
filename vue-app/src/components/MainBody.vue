@@ -164,7 +164,9 @@ export default {
     },
     
     selectItem(item) {
-      
+      localStorage.setItem('paramKey', item.setpointKey);
+      console.log(' %%%%%%%%%%%%% ------- [MainBody] - selectItem - Обновили localStorage paramKey:', item.setpointKey);
+
       if (this.clickTimer) {
         clearTimeout(this.clickTimer);
         this.clickTimer = null;
@@ -239,7 +241,9 @@ export default {
       logger.dev('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', item.setpointKey, ' и значение:', item.setValue);
       //console.groupCollapsed('[MainBody] - DclickSelectItem ');
       console.log('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', item.setpointKey, ' и значение:', item.setValue);
-
+      if (!item.setpointKey) return `[MainBody] - DclickSelectItem - Отсутствуетлюч выбранного элемента:', ${item.setpointKey}`;
+      console.log(' -+++++++++++++ - [MainBody] - DclickSelectItem - Обновление ключа в paramKey localStorage:', item.setpointKey);
+      localStorage.setItem('paramKey', item.setpointKey);
       const setpointsManager = this.$store.getters.getSetpointsManager;
       setpointsManager.updateSettingsData({ 
           payload: { param: item.setpointKey, room: item.roomKey } 

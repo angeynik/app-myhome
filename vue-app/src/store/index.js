@@ -30,7 +30,7 @@ const store = createStore({
   },
   mutations: {
     INIT_SETPOINTS_MANAGER(state, { dID, config }) { // Инициализация менеджера сетпоинтов manageSetpoints
-      logger.dev('[index] - INIT_SETPOINTS_MANAGER - Инициализация менеджера сетпоинтов manageSetpoints', dID, config);
+      logger.dev('[index] - INIT_SETPOINTS_MANAGER - Инициализация менеджера взаимодействия пользователя со значениями -  manageSetpoints', dID, config);
       state.setpointsManager = new ManageSetpoints(dID, config);
     },
     UPDATE_SETTINGS_DATA(state, { field, value }) {
@@ -68,6 +68,7 @@ const store = createStore({
       if (typeof key === 'string' && state.paramKey !== key && key != null) {
         logger.dev(`[index] MUTATION SET_PARAM_KEY: ${state.paramKey} -> ${key}`);
         state.paramKey = key;
+        console.log(' -+++++++++++++ - [index] - SET_PARAM_KEY - Обновление ключа в paramKey localStorage:', key);
         localStorage.setItem('paramKey', key);
       }
     },

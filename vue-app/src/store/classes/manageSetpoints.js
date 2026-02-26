@@ -10,12 +10,24 @@ export default class ManageSetpoints {
             request: '',
             payload: {
                 config: config,
-                room: '',
-                param: '',
-                value: '',
-                value_name: '',
+                room: null,
+                param: null,
+                value: null,
+                value_name: null,
+                value_details: null,
                 id: null,
                 updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+            },
+            view: {
+                value: null,
+                title: null,
+                updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+            },
+            limits: {
+              low: null,
+              high: null,
+              step: null,
+              updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
             }
         };
     }

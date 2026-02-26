@@ -99,40 +99,6 @@ export default {
       state.roomId = Number(id) || 0;
       state.forceUpdate = Date.now();
     },
-    // SET_PARAM_KEY(state, key) {
-    //   if (typeof key === 'string' && state.paramKey !== key && key != null) {
-    //     logger.dev(`[sortParams] MUTATION SET_PARAM_KEY: ${state.paramKey} -> ${key}`);
-    //     //console.log(`[sortParams] MUTATION SET_PARAM_KEY: ${state.paramKey} -> ${key}`);
-    //     state.paramKey = key;
-    //     state.forceUpdate = Date.now();
-    //   }
-    //   logger.info(`[sortParams] - SET_PARAM_KEY - Ключ обновлен: ${key}`);
-    //   //console.log('[sortParams] - SET_PARAM_KEY - Ключ обновлен', key);
-    // },
-    // SET_ROOM_KEY(state, key) {
-    //   if (typeof key === 'string' && state.roomKey !== key && key != null) {
-    //     logger.dev(`[sortParams] MUTATION SET_ROOM_KEY: ${state.roomKey} -> ${key}`);
-    //     //console.log(`[sortParams] MUTATION SET_ROOM_KEY: ${state.roomKey} -> ${key}`);
-    //     state.roomKey = key;
-    //   }
-    //   logger.info(`[sortParams] - SET_ROOM_KEY - Ключ обновлен: ${key}`);
-    //   //console.log('[sortParams] - SET_ROOM_KEY - Ключ обновлен', key);
-    // },
-    // SET_DEVICE_KEY(state, key) {
-    //   if (typeof key === 'string' && state.deviceKey !== key && key != null) {
-    //     console.log(`[sortParams] MUTATION SET_DEVICE_KEY: ${state.deviceKey} -> ${key}`);
-    //     state.deviceKey = key;
-    //     state.forceUpdate = Date.now();
-    //   }
-    // },
-    // SET_SETPOINT_KEY(state, key) {
-    //   if (typeof key === 'string' && state.setpointKey !== key && key != null) {
-    //     logger.dev(`[sortParams] MUTATION SET_SETPOINT_KEY: ${state.setpointKey} -> ${key}`);
-    //     //console.log(`[sortParams] MUTATION SET_SETPOINT_KEY: ${state.setpointKey} -> ${key}`);
-    //     state.setpointKey = key;
-    //     state.forceUpdate = Date.now();
-    //   }
-    // },
     SET_DEVICE_TITLE(state, title) {
       state.deviceTitle = title || '';
     },
@@ -199,15 +165,13 @@ export default {
         }
 
         case 'params': {
-          //const cleanKey = newKey.replace(/\d+$/, '');
+          const cleanKey = newKey.replace(/\d+$/, '');
           //console.log(`[sortParams] - updateSortKey - cleanKey: ${cleanKey}`);
           // Обновляем ключ параметра
-          commit('SET_PARAM_KEY', newKey, { root: true });
-          localStorage.setItem('paramKey', newKey);
-          //console.log(`[sortParams] - updateSortKey - Сохраняем в localStorage: paramKey:${newKey}`);
+          commit('SET_PARAM_KEY', cleanKey, { root: true });
           
           // Обновляем заголовок параметра
-          const paramTitle = getSensorTitle(newKey);
+          const paramTitle = getSensorTitle(cleanKey);
           if (paramTitle !== undefined) {
             commit('SET_PARAM_TITLE', paramTitle);
           }

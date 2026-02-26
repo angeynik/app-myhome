@@ -112,12 +112,18 @@ export default {
     }; 
   },
   async created() {
-    console.log('[DashBoard] - created - roomKey:', this.getRoomKey, ' paramKey:', this.getParamKey);
+    const param = localStorage.getItem('paramKey');
+    console.log('[DashBoard] - created - roomKey:', this.getRoomKey, ' paramKey:', this.getParamKey, ' localStorageparam:', param);
+    
     await this.initializeSetpointsManager();
     //this.updateSettingsData({ room: this.getRoomKey});
     this.$store.commit('UPDATE_SETTINGS_DATA', { 
       field: 'room', 
       value: this.getRoomKey 
+    });
+    this.$store.commit('UPDATE_SETTINGS_DATA', { 
+      field: 'param', 
+      value: param 
     });
 
     // Проверка
@@ -282,38 +288,6 @@ export default {
       this.switchSortKey({ sortingType: sortType, direction: 'next' });
     },
 
-    // Работа с Setpoint
-    // handleMainBodyEvent(event) {
-    //   logger.dev('[DashBoard] - handleMainBodyEvent received:', event);
-    //   console.log('[DashBoard] - handleMainBodyEvent received:', event);
-      
-    //   if (event.action === 'show') {
-    //     this.selectedItemData = event.data;
-    //     this.setpoint = event.data.setValue;
-    //     this.showSetpoint = true;
-    //     this.editType = 'setpoint';
-    //     this.setLimits(event.data.paramKey);
-    //   } else if (event.action === 'hide') {
-    //     this.showSetpoint = false;
-    //     this.selectedItemData = null;
-    //     this.setpoint = null;
-    //     this.editType = '';
-    //   }
-    // },
-
-    // updateSetpointValue(eventData) {
-    //   //console.groupCollapsed('[DashBoard] - updateSetpointValue -  ');
-    //   //console.log('[DashBoard] - updateSetpointValue - Обработка данных от компонента MainSetpoint изменения Уставки :', eventData);
-    //   if (eventData.updateState && eventData.updateState.type === 'newSetPoint') {
-    //     console.log('[DashBoard] - updateSetpointValue - Обновляем значение уставки', eventData);
-    //     this.setpoint = eventData.updateState.message;
-    //     this.updateConfigSetpoint(eventData.updateState.message);
-    //   } else if (eventData.error) {
-    //     logger.error('[DashBoard] - updateSetpointValue - Ошибка:', eventData.error);
-    //     //console.error('[DashBoard] - updateSetpointValue - Ошибка:', eventData.error);
-    //   }
-    //   //console.groupEnd();
-    // },
    
     updateScheduleValue(eventData) {
       console.groupCollapsed('[DashBoard] - updateSetpointValue -  ');
