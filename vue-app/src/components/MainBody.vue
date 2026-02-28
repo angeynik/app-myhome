@@ -262,17 +262,12 @@ export default {
 
       logger.dev('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', clearParam, ' и значение:', item.setValue);
       //console.groupCollapsed('[MainBody] - DclickSelectItem ');
-      //console.log('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', clearParam, ' и значение:', item.setValue);
+      console.log('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', clearParam, ' и значение:', item);
       if (!clearParam) return `[MainBody] - DclickSelectItem - Отсутствуетлюч выбранного элемента:', ${clearParam}`;
-
-      this.updateSettingsData({ 
-              field: 'param', 
-              value: clearParam
-          });
-
-     console.log('[MainBody] - DclickSelectItem - ОБНОВИЛИ КЛЮЧ param в settingsData:',
-        this.$store.state.setpointsManager?.settingsData?.payload?.param
-      );
+      this.updatePayloadData({ param: clearParam, room: item.roomKey});
+      // console.log('[MainBody] - DclickSelectItem - ОБНОВИЛИ КЛЮЧ param в settingsData:',
+      //   this.$store.state.setpointsManager?.settingsData?.payload?.param
+      // );
 
       // Обновляем ключи в хранилище
           this.SET_ROOM_KEY(item.roomKey);

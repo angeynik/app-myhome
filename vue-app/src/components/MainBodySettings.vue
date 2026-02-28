@@ -156,6 +156,7 @@ export default {
   computed: {
     ...mapGetters('settingsConfig', ['typeSettings']),
     ...mapGetters([
+      'getSetpointsManager',
       'roomKey',
       'paramKey', 
       'deviceKey',
@@ -170,20 +171,22 @@ export default {
     ]),
     ...mapGetters(['level', 'dID']),
     ...mapGetters('config', ['getConfig']),
-    itemData() {
-      // Собираем данные текущего элемента из store
-      return {
-        roomKey: this.roomKey,
-        paramKey: this.paramKey,
-        deviceKey: this.deviceKey,
-        setpointKey: this.setpointKey,
-        roomTitle: this.getRoomTitle,
-        paramTitle: this.getParamTitle,
-        deviceTitle: this.getDeviceTitle,
-        setpointTitle: this.getSetpointTitle,
-        setpoint: this.setpointKey
-      };
+    settingsData() {
+      return this.getSetpointsManager?.settingsData || null;
     },
+    // itemData() {
+    //   // Собираем данные текущего элемента из store
+    //   return {
+    //     roomKey: this.roomKey,
+    //     paramKey: this.paramKey,
+    //     deviceKey: this.deviceKey,
+    //     setpointKey: this.setpointKey,
+    //     roomTitle: this.getRoomTitle,
+    //     deviceTitle: this.getDeviceTitle,
+    //     setpointTitle: this.getSetpointTitle,
+    //     setpoint: this.setpointKey
+    //   };
+    // },
    selectedTitle() {
       // Находим соответствующий заголовок в typeToTitleMap по ключу title
       return this.typeToTitleMap[this.title];
@@ -207,7 +210,7 @@ export default {
   },
   created() {
     console.log('[MainBodySettings] - created', {
-      itemData: this.itemData,
+      settingsData: this.settingsData,
       level: this.userLevel,
       currentType: this.title
     });
@@ -259,13 +262,13 @@ export default {
     
     getComponentData(event) {
       console.log('[MainBodySettings] -  getComponentData - Данные от компонента MainBodySchedule value:', event.value, 'title: ', event.title);
-      const settingsData = this.$store.state.setpointsManager?.settingsData;
+      //const settingsData = this.$store.state.setpointsManager?.settingsData;
       // console.log('[MainBodySettings] -  getComponentData - Данные в settingsData:', settingsData);
       let action = "show";
 
-      const arrayTitle = settingsData?.request; // имя массива (например, "schedule")
+      const arrayTitle = this.settingsData?.request; // имя массива (например, "schedule")
       if(!arrayTitle) return console.error('[MainBodySettings] -  getComponentData - Отсутствует массив', arrayTitle);
-      const targetId = settingsData?.payload?.id; // id искомого объекта
+      const targetId = this.settingsData?.payload?.id; // id искомого объекта
       if(!targetId) return console.error('[MainBodySettings] - getComponentData - ID объекта не определен', targetId);
       const fieldName = event.title; // имя поля для изменения
       if(!fieldName) return console.error('[MainBodySettings] - getComponentData - Название поля не определено', fieldName);
@@ -344,7 +347,7 @@ export default {
       //console.log('[MainBodySettings] - getSchedulesFromStore - Start');
       try {
         const dID = this.dID;
-        const roomKey = this.itemData.roomKey;
+        const roomKey = this.settingsData.payload.room;
         const paramKey = this.effectiveSetpointKey;
         
         if (!dID || !roomKey || !paramKey) {
@@ -371,25 +374,25 @@ export default {
       console.log('[MainBodySettings] - addNewItem');
       const type = this.title; // 'schedule', 'notifications', 'statistics'
       this.currentItemType = type;
-      let roomKey, paramKey;
+      // let roomKey, paramKey;
       switch(type) {
         case 'schedule':
             // this.getSchedulesFromStore();
-            roomKey = this.itemData.roomKey;
-            paramKey = this.effectiveSetpointKey;
+            // roomKey = this.settingsData.payload.room;
+            // paramKey = this.effectiveSetpointKey;
           this.defaultItemValues = {
-            roomKey: roomKey,
-            paramKey: paramKey,
+            roomKey: this.settingsData.payload.room,
+            paramKey: this.effectiveSetpointKey,
             value: this.effectiveSetpointValue || 0,
             unit: this.unit || '°C',
             days: [1, 2, 3, 4, 5] // Пн-Пт по умолчанию
           };
           console.log('case Schedule - [MainBodySettings] - addNewItem - ', this.defaultItemValues);
-          this.addNewSchedule(roomKey, paramKey);
+          this.addNewSchedule(this.settingsData.payload.room, this.effectiveSetpointKey);
           break;
         case 'notifications':
           this.defaultItemValues = {
-            roomKey: this.itemData.roomKey,
+            roomKey: this.settingsData.payload.room,
             paramKey: this.effectiveSetpointKey,
             threshold: this.effectiveSetpointValue || 0,
             condition: 'greater_than'
@@ -399,7 +402,7 @@ export default {
           break;
         case 'statistics':
           this.defaultItemValues = {
-            roomKey: this.itemData.roomKey,
+            roomKey: this.settingsData.payload.room,
             paramKey: this.effectiveSetpointKey,
             chartType: 'line',
             period: 'day'
@@ -490,14 +493,10 @@ export default {
         unit: this.unit || '',
         roomKey: roomKey,
         paramKey: paramKey,
-        // paramTitle: this.itemData.paramTitle || 'Новое расписание',
-        // roomTitle: this.itemData.roomTitle || 'Неизвестная комната',
         createdAt: now.toISOString(),
         updatedAt: now.toISOString(),
         // _modified: true, // Флаг для отслеживания изменений
         days: [1, 2, 3, 4, 5], // Пн-Пт по умолчанию
-        // enabled: true,
-        // description: `Расписание для ${this.itemData.paramTitle || 'параметра'} в ${startTime}-${endTime}`,
         
       };
       
@@ -520,7 +519,7 @@ export default {
 
         // await this.saveScheduleBlock();
         await this.saveSchedules({
-          roomKey: this.itemData.roomKey,
+          roomKey: this.settingsData.payload.room,
           paramKey: this.effectiveSetpointKey,
           schedules: newSchedule
         });
@@ -591,13 +590,7 @@ export default {
       notificationType: 'email', // 'email', 'push', 'sms'
       roomKey: roomKey,
       paramKey: paramKey,
-      paramTitle: this.itemData.paramTitle || 'Новое уведомление',
       createdAt: new Date().toISOString(),
-      _modified: true,
-      enabled: true,
-      repeat: true,
-      repeatInterval: 60, // минут
-      messageTemplate: 'Значение параметра {param} достигло {threshold}'
     };
     
     // Добавляем уведомление
@@ -636,12 +629,6 @@ export default {
       aggregation: 'average', // 'average', 'sum', 'min', 'max'
       roomKey: roomKey,
       paramKey: paramKey,
-      paramTitle: this.itemData.paramTitle || 'Новая аналитика',
-      createdAt: new Date().toISOString(),
-      _modified: true,
-      enabled: true,
-      showTrend: true,
-      showAverage: true
     };
     
     // Добавляем аналитику
@@ -658,7 +645,7 @@ export default {
   async saveNotificationBlock() {
     try {
       // Если нет соответствующего action в store, сохраняем в localStorage
-      const key = `notifications_${this.dID}_${this.itemData.roomKey}_${this.effectiveSetpointKey}`;
+      const key = `notifications_${this.dID}_${this.settingsData.payload.room}_${this.effectiveSetpointKey}`;
       localStorage.setItem(key, JSON.stringify(this.notifications));
       
       // Или вызываем action если он есть
@@ -672,7 +659,7 @@ export default {
   async saveAnalyticBlock() {
     try {
       // Если нет соответствующего action в store, сохраняем в localStorage
-      const key = `analytics_${this.dID}_${this.itemData.roomKey}_${this.effectiveSetpointKey}`;
+      const key = `analytics_${this.dID}_${this.settingsData.payload.room}_${this.effectiveSetpointKey}`;
       localStorage.setItem(key, JSON.stringify(this.analytics));
       
       // Или вызываем action если он есть
@@ -690,7 +677,7 @@ export default {
       // Если есть расписания для удаления, запрашиваем подтверждение
       if (this.schedulesToDelete.length > 0) {
         this.$store.dispatch('settingsConfig/deleteSchedules', {
-              roomKey: this.itemData.roomKey,
+              roomKey: this.settingsData.payload.room,
               paramKey: this.effectiveSetpointKey,
               scheduleIds: [...this.schedulesToDelete] // создаем копию массива
             });
@@ -703,35 +690,6 @@ export default {
 
 
 
-
-      // if (this.schedulesToDelete.length > 0) {
-      //   const confirmMessage = `У вас есть ${this.schedulesToDelete.length} расписаний для удаления.\n\nСохранить изменения и удалить их?`;
-        
-      //   if (confirm(confirmMessage)) {
-      //     try {
-      //       console.log('[MainBodySettings] - sendPendingDeletions - Отправляем расписания на удаление:', this.schedulesToDelete);
-      //       // Отправляем запрос на удаление через store
-      //       await this.$store.dispatch('settingsConfig/deleteSchedules', {
-      //         roomKey: this.itemData.roomKey,
-      //         paramKey: this.effectiveSetpointKey,
-      //         scheduleIds: [...this.schedulesToDelete] // создаем копию массива
-      //       });
-            
-      //       // Очищаем массивы после успешной отправки
-      //       this.schedulesToDelete = [];
-      //       this.pendingDeletions = {};
-            
-      //       logger.info('[MainBodySettings] - sendPendingDeletions - Запрос на удаление отправлен успешно');
-
-
-
-      //     } catch (error) {
-      //       console.error('[MainBodySettings] - closeMainBodySettings - Ошибка при отправке удалений:', error);
-      //       alert('Ошибка при удалении расписаний. Попробуйте еще раз.');
-      //       return; // Не закрываем, если ошибка
-      //     }
-      //   } 
-      // }
       
       // Продолжаем стандартное закрытие
       console.log('[MainBodySettings] - closeMainBodySettings - Закрываем настройки');
@@ -756,8 +714,8 @@ export default {
 
     
     async loadData(dataType) {
-      const roomKey = this.itemData.roomKey;
-      const paramKey = this.itemData.paramKey;
+      const roomKey = this.settingsData.payload.room;
+      const paramKey = this.settingsData.payload.param;
       console.log('[MainBodySettings] Loading ', dataType, ' data for ', roomKey, paramKey);
       
       try {
@@ -768,31 +726,6 @@ export default {
             configType: dataType
           });
 
-        // switch(dataType) {
-        //   case 'schedule':
-        //   result = await this.$store.dispatch('scheduleConfig/getConfigSettings', {
-        //     roomKey: roomKey,
-        //     paramKey: paramKey,
-        //     configType: 'schedule'
-        //   });
-        //     break;
-        //   case 'notifications':
-        //     result = await this.$store.dispatch('scheduleConfig/getConfigSettings', {
-        //     roomKey: roomKey,
-        //     paramKey: paramKey,
-        //     configType: 'notification'
-        //   });
-        //     break;
-        //   case 'statistics':
-        //     result = await this.$store.dispatch('scheduleConfig/getConfigSettings', {
-        //     roomKey: roomKey,
-        //     paramKey: paramKey,
-        //     configType: 'statistics'
-        //   });
-        //     break;
-        //   default:
-        //     console.warn(`Unknown settings type: ${dataType}`);
-        // }
 
 
         
