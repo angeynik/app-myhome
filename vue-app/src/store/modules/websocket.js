@@ -167,7 +167,7 @@ export default {
             if (dID === auth_dID) {
               logger.dev('[WebSocket] Обрабатываем сообщение request-', response.request);
               //console.log('[WebSocket] Обрабатываем сообщение request-', response.request);
-              await dispatch('config/handleSensorUpdate', {dID, payload: response.payload, type: response.request}, { root: true });
+              await dispatch('config/handleValueUpdate', {dID, payload: response.payload, type: response.request}, { root: true });
             }  else {
               logger.error('[WebSocket] dID сообщения запроса', dID, ' не соответствует dID текущего пользователя - ', auth_dID); 
                 //console.log('[WebSocket] dID сообщения запроса', dID, ' не соответствует dID текущего пользователя - ', auth_dID);

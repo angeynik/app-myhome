@@ -1,4 +1,4 @@
-<!-- components/MainBodySetpoint.vue -->
+<!-- components/MainSetpoint.vue -->
 <template>
   
     <div class="setpointBlock" 
@@ -148,7 +148,7 @@
   </template>
  
   <script>
-  import { mapGetters } from 'vuex';
+  import { mapActions } from 'vuex';
   import logger from '../store/modules/logger.js';
 
   export default {
@@ -167,13 +167,32 @@
         logger.dev('[MainSetpoint] - setPoint - Обновили newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
         //console.log('[MainSetpoint] - setPoint - Обновили newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
       },
+      '$store.state.settingsData.limits': {
+        handler(newLimits) {
+          console.log('Limits обновились:', newLimits);
+          // Здесь можно выполнить дополнительные действия
+        },
+        deep: true
+      }
     },
     computed: {
-      ...mapGetters('sortParams', [
-        'limHigh',
-        'limLow', 
-        'limStep'
-      ]),
+      // ...mapGetters('sortParams', [
+      //   'limHigh',
+      //   'limLow', 
+      //   'limStep'
+      // ]),
+      limHigh() {
+        return this.$store.state.settingsData?.limits?.limHigh ?? 
+              this.$store.getters['sortParams/limHigh'];
+      },
+      limLow() {
+        return this.$store.state.settingsData?.limits?.limLow ?? 
+              this.$store.getters['sortParams/limLow'];
+      },
+      limStep() {
+        return this.$store.state.settingsData?.limits?.limStep ?? 
+              this.$store.getters['sortParams/limStep'];
+      },
     },
     created() {
       this.debouncedCalculateSetpoint = this.debounce(this.calculateSetpoint, 16);
@@ -188,7 +207,7 @@
       valueTitle: String,
     },
       methods: {
-
+      ...mapActions(['updateSettingsData']),
       sendEmitMessage(event, value) {
         console.log('[MainSetpoint] - sendEmitMessage - Формируем сообщение для отправки на сервер - message: ', value, 'event: ', event);
         // Проверяем, что все параметры переданы
@@ -196,10 +215,8 @@
           console.error('sendEmitMessage - параметры не переданы:', { event, value });
           return;
         }
-        const setpointsManager = this.$store.getters.getSetpointsManager;
-          setpointsManager.updateSettingsData({ 
-              payload: { value: value} 
-          });
+        this.updateSettingsData({  field: 'value', value: value });
+        this.updateSettingsData({  field: 'value_name', value: this.valueTitle });
         this.$emit('eventsMainSetpoint', {
             [event]: {
               request: this.request,

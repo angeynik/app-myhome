@@ -128,14 +128,16 @@ export default {
       'SET_DEVICE_TITLE', 
       'SET_SETPOINT_TITLE'
     ]),
-    ...mapActions('sortParams', [
-      'setLimits',
-    ]),
     ...mapMutations('settingsConfig', {
       setPermitSchedule: 'SET_PERMIT_SCHEDULE',
       setPermitNotifications: 'SET_PERMIT_NOTIFICATIONS',
       setPermitStatistics: 'SET_PERMIT_STATISTICS'
     }),
+    ...mapActions('sortParams', [
+      'setLimits',
+    ]),
+    ...mapActions(['updateSettingsData', 'updatePayloadData', 'updateLimitsData', 'updateViewData']),
+    
 
     getSensorValue(key, data) {
       switch (key) {
@@ -164,8 +166,11 @@ export default {
     },
     
     selectItem(item) {
-      localStorage.setItem('paramKey', item.setpointKey);
-      console.log(' %%%%%%%%%%%%% ------- [MainBody] - selectItem - Обновили localStorage paramKey:', item.setpointKey);
+      
+      const clearParam = 'd' + this.clearKeySync(item.paramKey);
+      console.log('%%%%%%%%%%%%% ------- [MainBody] - selectItem - Исходный ключ -', item.paramKey, ' Очищенный ключ -', clearParam);
+      // localStorage.setItem('paramKey', clearParam);
+      //console.log(' %%%%%%%%%%%%% ------- [MainBody] - selectItem - Обновили localStorage paramKey:', clearParam);
 
       if (this.clickTimer) {
         clearTimeout(this.clickTimer);
@@ -173,43 +178,58 @@ export default {
       }
       
       this.clickTimer = setTimeout(() => {
-        //console.groupCollapsed('[MainBody] - selectItem ');
-        logger.info(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
-        console.log(`[MainBody] - selectItem - setpointKey: ${item.setpointKey}, deviceKey: ${item.deviceKey}, paramKey: ${item.paramKey}, roomKey: ${item.roomKey}`);
+        console.groupCollapsed('[MainBody] - selectItem ');
+        logger.dev(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
+        //console.log(`[MainBody] - selectItem - setpointKey: ${item.setpointKey}, deviceKey: ${item.deviceKey}, paramKey: ${item.paramKey}, roomKey: ${item.roomKey}`);
         console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item, null, 2)}`);
 
         // Если за это время не было двойного клика, выполняем selectItem
         if (this.selectedItem === item) {
-        // Если клик на уже выбранный элемент, то снимаем выделение
-        this.selectedItem = null;
-        // Отправляем событие, что нужно скрыть MainSetpoint
-        this.$emit('getComponentData', { 
-          action: 'hide' 
-        });
-        //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
+            // Если клик на уже выбранный элемент, то снимаем выделение
+            this.selectedItem = null;
+            // Отправляем событие, что нужно скрыть MainSetpoint
+            this.$emit('getComponentData', { 
+              action: 'hide' 
+            });
+            //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
         } else {
           this.selectedItem = item;
-          const setpointsManager = this.$store.getters.getSetpointsManager;
-          setpointsManager.updateSettingsData({ 
-              payload: { param: item.setpointKey, room: item.roomKey } 
+          this.updateSettingsData({ field: 'param', value: clearParam});
+          this.updatePayloadData({ 
+            value: item.setValue,
+            param: clearParam,
+            id: item.roomId
+          });
+          this.updateViewData({ 
+            value: item.setValue,
+            key: item.setpointKey,
+            unit: item.unit,
+            title: 'value'
           });
 
+        console.log('[MainBody] - DclickSelectItem - ОБНОВИЛИ payload в settingsData:',
+          this.$store.state.setpointsManager?.settingsData?.payload
+        );
+        console.log('[MainBody] - DclickSelectItem - ОБНОВИЛИ view в settingsData:',
+          this.$store.state.setpointsManager?.settingsData?.view
+        );
         // Обновляем ключи в хранилище
           this.SET_ROOM_KEY(item.roomKey);
-          this.SET_PARAM_KEY(item.paramKey);
+          this.SET_PARAM_KEY(clearParam);
           this.SET_DEVICE_KEY(item.deviceKey);
           this.SET_SETPOINT_KEY(item.setpointKey);
 
           //console.log (`[MainBody] - selectItem - Обновлены ключи выбранного элемента: ${JSON.stringify(item)}`);
           
-          // Устанавливаем лимиты
-          const params = {
+          // Устанавливаем лимиты - по ключу вида sTemp
+          const params = { 
             param: item.setpointKey, 
             valueType: 'absolute', 
           }
           console.log('[MainBody] - handleEditValue - params:', params);
+          console.groupEnd();
           this.setLimits(params);
-          console.log(`[MainBody] - selectItem - setLimits установлены лимиты по ключу ${item.setpointKey}`);
+          //console.log(`[MainBody] - selectItem - setLimits установлены лимиты по ключу ${item.setpointKey}`);
 
 
           // Отправляем событие с данными в DashBoard
@@ -222,39 +242,41 @@ export default {
               title: 'value',
             }
           });
-          //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
+          console.log(`[MainBody] - selectItem - Отправляем событие с данными в DashBoard, value: ${item.setValue}, title: value`);
         }
         this.clickTimer = null;
       }, 350);
       
         
 
-        //console.groupEnd();
+        
     },
  
     DclickSelectItem(item) {
+      const clearParam = 'd' + this.clearKeySync(item.paramKey);
+
       if (this.clickTimer) {
         clearTimeout(this.clickTimer);
         this.clickTimer = null;
       }
 
-      logger.dev('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', item.setpointKey, ' и значение:', item.setValue);
+      logger.dev('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', clearParam, ' и значение:', item.setValue);
       //console.groupCollapsed('[MainBody] - DclickSelectItem ');
-      console.log('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', item.setpointKey, ' и значение:', item.setValue);
-      if (!item.setpointKey) return `[MainBody] - DclickSelectItem - Отсутствуетлюч выбранного элемента:', ${item.setpointKey}`;
-      console.log(' -+++++++++++++ - [MainBody] - DclickSelectItem - Обновление ключа в paramKey localStorage:', item.setpointKey);
-      localStorage.setItem('paramKey', item.setpointKey);
-      const setpointsManager = this.$store.getters.getSetpointsManager;
-      setpointsManager.updateSettingsData({ 
-          payload: { param: item.setpointKey, room: item.roomKey } 
-      });
+      //console.log('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', clearParam, ' и значение:', item.setValue);
+      if (!clearParam) return `[MainBody] - DclickSelectItem - Отсутствуетлюч выбранного элемента:', ${clearParam}`;
+
+      this.updateSettingsData({ 
+              field: 'param', 
+              value: clearParam
+          });
+
      console.log('[MainBody] - DclickSelectItem - ОБНОВИЛИ КЛЮЧ param в settingsData:',
         this.$store.state.setpointsManager?.settingsData?.payload?.param
       );
 
       // Обновляем ключи в хранилище
           this.SET_ROOM_KEY(item.roomKey);
-          this.SET_PARAM_KEY(item.paramKey);
+          this.SET_PARAM_KEY(clearParam);
           this.SET_DEVICE_KEY(item.deviceKey);
           this.SET_SETPOINT_KEY(item.setpointKey);
 

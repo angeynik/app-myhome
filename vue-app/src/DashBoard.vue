@@ -88,7 +88,7 @@
 <script>
 import logger from './store/modules/logger.js';
 
-import { mapGetters, mapActions, mapMutations } from 'vuex';
+import { mapGetters, mapActions} from 'vuex';
 import AppPlace from './components/AppPlace.vue';
 import MainHeader from './components/MainHeader.vue';
 import MainFooter from './components/MainFooter.vue';
@@ -113,10 +113,9 @@ export default {
   },
   async created() {
     const param = localStorage.getItem('paramKey');
-    console.log('[DashBoard] - created - roomKey:', this.getRoomKey, ' paramKey:', this.getParamKey, ' localStorageparam:', param);
+    console.log(' ^^^^^^^^^^^^^  -- [DashBoard] - created - roomKey:', this.getRoomKey, ' paramKey:', this.getParamKey, ' localStorageparam:', param);
     
     await this.initializeSetpointsManager();
-    //this.updateSettingsData({ room: this.getRoomKey});
     this.$store.commit('UPDATE_SETTINGS_DATA', { 
       field: 'room', 
       value: this.getRoomKey 
@@ -152,7 +151,7 @@ export default {
       'getParamTitle',
       'getSensorTitle',
     ]),
-    ...mapGetters('config', ['getMobile', 'getDeviceType', 'clearKeySync']),
+    ...mapGetters('config', ['getMobile', 'getDeviceType']),
     
     headerTitle() {
       const sortType = this.currentSortType;
@@ -227,19 +226,13 @@ export default {
     }
   },
   methods: {
-    ...mapMutations({
-      SET_ROOM_KEY: 'SET_ROOM_KEY',
-      SET_PARAM_KEY: 'SET_PARAM_KEY', 
-      SET_DEVICE_KEY: 'SET_DEVICE_KEY', 
-      SET_SETPOINT_KEY: 'SET_SETPOINT_KEY' 
-    }),
     ...mapActions('sortParams', [
       'switchSortKey',
       'UPDATE_LIMITS',
     ]),
     // ...mapActions('config', ['initialize']),
     ...mapActions('settingsConfig', ['settingsConfigUpdate']),
-    ...mapActions(['initializeSetpointsManager', 'updateSettingsData']),
+    ...mapActions(['initializeSetpointsManager', 'updateSettingsData','updatePayloadData', 'updateLimitsData', 'updateViewData']),
     
     handleSortTypeChange(sortType) {
       console.log('[DashBoard] - handleSortTypeChange - Обновляем информацию для sortType: ', sortType);
@@ -289,33 +282,33 @@ export default {
     },
 
    
-    updateScheduleValue(eventData) {
-      console.groupCollapsed('[DashBoard] - updateSetpointValue -  ');
-      console.log('[DashBoard] - updateSetpointValue - Обработка данных от компонента MainSetpoint изменения элемента Расписания:', eventData);
-      this.setpoint = eventData.updateState.message;
+    // updateScheduleValue(eventData) {
+    //   console.groupCollapsed('[DashBoard] - updateSetpointValue -  ');
+    //   console.log('[DashBoard] - updateSetpointValue - Обработка данных от компонента MainSetpoint изменения элемента Расписания:', eventData);
+    //   this.setpoint = eventData.updateState.message;
 
-      console.groupEnd();
-    },
-
-
+    //   console.groupEnd();
+    // },
 
 
 
 
 
-    handleParamsChange(params) {
-      if (params.sortType) {
-        // Устанавливаем тип сортировки в store только для sortType
-        this.$store.commit('sortParams/SET_SORT_TYPE', params.sortType);
-        // Показываем стрелки для навигации (кроме уставок и на мобильных)
-        this.showHeaderArrow = ['rooms', 'params', 'devices', 'setpoints'].includes(params.sortType) && !this.getMobile;
-      } else if (params.settingsType) {
-        // Для настроек скрываем стрелки или настраиваем иначе
-        this.showHeaderArrow = false;
-      } else {
-        this.showHeaderArrow = false;
-      }
-    },
+
+
+    // handleParamsChange(params) {
+    //   if (params.sortType) {
+    //     // Устанавливаем тип сортировки в store только для sortType
+    //     this.$store.commit('sortParams/SET_SORT_TYPE', params.sortType);
+    //     // Показываем стрелки для навигации (кроме уставок и на мобильных)
+    //     this.showHeaderArrow = ['rooms', 'params', 'devices', 'setpoints'].includes(params.sortType) && !this.getMobile;
+    //   } else if (params.settingsType) {
+    //     // Для настроек скрываем стрелки или настраиваем иначе
+    //     this.showHeaderArrow = false;
+    //   } else {
+    //     this.showHeaderArrow = false;
+    //   }
+    // },
 
 
 
@@ -371,7 +364,7 @@ export default {
 
 
 
-        await this.$store.dispatch('config/handleSensorUpdate', { dID, payload, type: requestName });
+        await this.$store.dispatch('config/handleValueUpdate', { dID, payload, type: requestName });
 
         console.log('[DashBoard] - editValueMainSetpoint - Отправлен запрос на обновление для request -', requestName, '  type -', eventData.updateState.type);
         
@@ -394,26 +387,6 @@ export default {
             await this.$store.dispatch('config/updateSetpointServer'); // Отправляем на данные из settingsData - index.js на сервер
             
             
-            // if(requestName === 'setpoints') {
-            //   await this.$store.dispatch('config/updateSetpointServer', {
-            //     roomKey: roomKey,
-            //     paramKey: setpointKey,
-            //     value: newValue,
-            //     req: requestName, 
-            //   });
-            // } else if(requestName === 'schedules') {
-            //   console.log('[DashBoard] - editValueMainSetpoint - request: ', requestName);
-            //   this.$store.dispatch('updateSettingsData', { 
-            //     field: valueTitle, 
-            //     value: eventData.updateState.value 
-            //   }).then(() => {
-            //     // Логируем после завершения обновления
-            //     console.log('[DashBoard] - Request в settingsData:',
-            //       this.$store.state.setpointsManager?.settingsData?.payload
-            //     );
-            //   });
-
-            // }
             
             logger.info('[DashBoard] - editValueMainSetpoint - Уставка успешно отправлена на сервер после задержки');
             //console.log('Уставка успешно отправлена на сервер после задержки');
@@ -443,16 +416,17 @@ export default {
       console.log('Полученные данные:', event);
       // let request = event.request;
       if (event.request !== null && event.request !== undefined) {
-        this.$store.dispatch('updateSettingsData', { 
-          field: 'request', 
-          value: event.request 
-        }).then(() => {
-          // Логируем после завершения обновления
-          console.log('[DashBoard] - Request в settingsData:',
-            this.$store.state.setpointsManager?.settingsData?.request
-          );
+        this.updateSettingsData({ 
+            field: 'request', 
+            value: event.request
         });
-      }
+      } else console.error ('[DashBoard] - getComponentData - request не определен:', event.request);
+      // if (event.data !== null && event.data !== undefined) {
+      //   this.updateSettingsData({ 
+      //       field: 'data', 
+      //       value: event.data
+      //   });
+      // } else console.error ('[DashBoard] - getComponentData - data не определен:', event.data);
 
       
       // Устанавливаем лимиты для MainSetpoint

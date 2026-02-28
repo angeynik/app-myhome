@@ -1,6 +1,7 @@
 // sortParams.js
 
 import logger from './logger';
+import store from '@/store';
 import { mapActions } from 'vuex';
 function getSensorTitle(key) {
   if (!key) return 'Неизвестный параметр';
@@ -136,7 +137,7 @@ export default {
   },
  
   actions: {
-    ...mapActions(['updateSettingsData']),
+  ...mapActions(['updateSettingsData', 'updatePayloadData', 'updateLimitsData', 'updateViewData']),
   updateSortKey({ commit, dispatch}, { type, newKey }) {
     //console.groupCollapsed('[sortParams] - updateSortKey');
     logger.dev(`[sortParams] - updateSortKey - Обновляем ключ для ${type}:`, newKey);
@@ -234,39 +235,26 @@ export default {
       if (state.sortType === type) return;
       commit('SET_SORT_TYPE', type);
     },
-    // setRoom({ commit }, room) {
-    //   commit('UPDATE_STATE', {
-    //     roomId: room.id,
-    //     roomKey: room.key,
-    //     roomTitle: room.title
-    //   });
-    // },
-   
-    // setParam({ commit }, param) {
-    //   commit('UPDATE_STATE', {
-    //     paramKey: param.key,
-    //     paramTitle: param.title
-    //   });
-    // },
 
-    setLimits({ rootGetters, commit }, params) {
+
+    setLimits({ rootGetters, dispatch, commit }, params) {
       console.groupCollapsed('[sortParams] - setLimits');
       logger.info(`[sortParams] - setLimits - Параметр -`, params);
-      console.log('[sortParams] - setLimits - Параметр -', params);
+      //console.log('[sortParams] - setLimits - Параметр -', params);
 
       const { param, valueType } = params;
-      console.log('[sortParams] - setLimits - Параметр -', param, valueType);
+      //console.log('[sortParams] - setLimits - Параметр -', param, valueType);
 
       let limits = null;
       try {
         const dID = rootGetters['dID'];
           const config = rootGetters['config/getConfig'](dID);
-          console.log('[sortParams] - setLimits - Получен конфиг', JSON.stringify(config?.init?.limits, null, 2));
+          //console.log('[sortParams] - setLimits - Получен конфиг', JSON.stringify(config?.init?.limits, null, 2));
           limits = config?.init?.limits?.[param] || config?.init?.limits?.Default;
           console.log('[sortParams] - setLimits - Получены лимиты', limits);
           if (!limits) {
             logger.error(`[sortParams] - setLimits - Не удалось получить лимиты - Устанавливаем по умолчанию`);
-            console.log('[sortParams] - setLimits - Не удалось получить лимиты - Устанавливаем по умолчанию');
+            //console.log('[sortParams] - setLimits - Не удалось получить лимиты - Устанавливаем по умолчанию');
             limits = {
               low: 4,
               high: 40,
@@ -275,14 +263,8 @@ export default {
           }
           
       } catch (error) {
-          logger.error(`[sortParams] - setLimits - Ошибка при очистке параметра:`, error);
-          //console.error('[sortParams] - setLimits - Ошибка при очистке параметра:', error);
-          // В случае ошибки используем значения по умолчанию
-          commit('UPDATE_LIMITS', {
-            limHigh: 32,
-            limLow: 10,
-            limStep: 1
-          });
+          logger.error(`[sortParams] - setLimits - Ошибка при виборе лимитов:`, error);
+          //console.error('[sortParams] - setLimits - Ошибка при виборе лимитов:', error);
       }
       if (valueType === 'deviation') { // Задаем лимиты для диапазона значений отклонения Уставки
             const { high, step } = limits;
@@ -295,6 +277,15 @@ export default {
 
       logger.dev(`[sortParams] - setLimits Получены лимиты`, limits);
       //console.log('[sortParams] - setLimits Получены лимиты', limits);
+      dispatch('updateLimitsData', {
+        limHigh: limits.high,
+        limLow: limits.low,
+        limStep: limits.step
+      }, { root: true });
+      const settingsDataLimits = store.state.setpointsManager?.settingsData.limits;
+        logger.info('[sortParams] - setLimits - Обновили Limits в settingsData:', settingsDataLimits);
+        console.log('[sortParams] - setLimits - Обновили Limits в settingsData:', settingsDataLimits);
+
       commit('UPDATE_LIMITS', {
             limHigh: limits.high,
             limLow: limits.low,

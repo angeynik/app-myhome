@@ -228,6 +228,10 @@ export default {
         if (this.title === 'schedule') {
           this.getSchedulesFromStore();
           console.log('[MainBodySettings] - Watch - Обновленные Расписания:', this.schedules);
+          const param = localStorage.getItem('paramKey');
+          const setKey = localStorage.getItem('setpointKey');
+          console.log(' *************** --  [MainBodySettings] - Watch - получаем ключ param из localStorage -', param, ' setpointKey:', setKey);
+          this.SET_PARAM_KEY(param);
         }
       },
       deep: true,
@@ -238,6 +242,9 @@ export default {
 
   methods: {
     ...mapMutations('config', ['SET_TYPE_SETTINGS_ITEM']),
+    ...mapMutations({
+      SET_PARAM_KEY: 'SET_PARAM_KEY', 
+    }),
     ...mapActions('settingsConfig', [
       'initialize',
       'updateTypePopupItem', 
@@ -248,9 +255,7 @@ export default {
       'updateSchedule',
       'deleteSchedules',
     ]),
-    // ...mapActions('sortParams', [
-    //   'setLimits',
-    // ]),
+    ...mapActions(['updateSettingsData', 'updatePayloadData', 'updateLimitsData', 'updateViewData']),
     
     getComponentData(event) {
       console.log('[MainBodySettings] -  getComponentData - Данные от компонента MainBodySchedule value:', event.value, 'title: ', event.title);

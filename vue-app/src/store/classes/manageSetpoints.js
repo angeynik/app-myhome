@@ -13,20 +13,20 @@ export default class ManageSetpoints {
                 room: null,
                 param: null,
                 value: null,
-                value_name: null,
-                value_details: null,
                 id: null,
                 updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
             },
             view: {
                 value: null,
+                value_details: null,
                 title: null,
-                updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+                key: null,
+                unit: null
             },
             limits: {
-              low: null,
-              high: null,
-              step: null,
+              limHigh: null,
+              limLow: null,
+              limStep: null,
               updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
             }
         };

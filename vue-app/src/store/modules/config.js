@@ -146,7 +146,6 @@ export default {
   },
   
   actions: {
-
     async initialize({ dispatch, rootGetters, state }) {
       dispatch('detectDevice'); 
       logger.dev('[config] - initialize - Начинаем Инициализацию конфига - state.configs: ', state.configs);
@@ -432,18 +431,18 @@ export default {
 
 
 
-    handleSensorUpdate({ commit }, { dID, payload, type }) {
-      console.groupCollapsed('[Config] - handleSensorUpdate');
-      console.log('[Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
+    handleValueUpdate({ commit }, { dID, payload, type }) {
+      console.groupCollapsed('[Config] - handleValueUpdate');
+      console.log('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
       if (!dID || !payload || !type) {
-        logger.error('[Config] - handleSensorUpdate - Невалидные параметры запроса:', { dID, payload, type });
-        console.error('[Config] - handleSensorUpdate - Невалидные параметры запроса:', { dID, payload, type });
+        logger.error('[Config] - handleValueUpdate - Невалидные параметры запроса:', { dID, payload, type });
+        console.error('[Config] - handleValueUpdate - Невалидные параметры запроса:', { dID, payload, type });
         return;
       }
 
       if (type === 'setpoints') {
-        logger.info('[Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
-        //console.log(' ++++++++++++++++++++ [Config] - handleSensorUpdate - Параметры запроса:', { dID, payload, type });
+        logger.info('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
+        console.log(' ++++++++++++++++++++ [Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
       }
 
       try {
@@ -466,7 +465,7 @@ export default {
         logger.error('[Config] Ошибка обработки данных сенсора:', error);
         //console.error('[Config] Ошибка обработки данных сенсора:', error);
       }
-      console.groupEnd('[Config] - handleSensorUpdate');
+      console.groupEnd('[Config] - handleValueUpdate');
     },
 
     async ensureConfig({ dispatch }, dID) {
@@ -485,7 +484,7 @@ export default {
         throw error;
       }
     },
-  
+ 
     async ensureSortingKeys({ state, dispatch, rootGetters }) {
       //console.groupCollapsed('[config] - ensureSortingKeys');
       logger.dev('Проверяем наличие ключей сортировки');
@@ -539,6 +538,101 @@ export default {
         }
       }
     },
+
+    // async ensureSortingKeys({ state, dispatch, rootGetters }) {
+    //   logger.dev('[config] - Проверяем наличие ключей сортировки');
+      
+    //   const processKey = async (type, stateArrayName, getterName, storageKey, specialAction) => {
+    //     // Получаем текущий ключ и массив допустимых значений
+    //     const currentKey = rootGetters[getterName] || localStorage.getItem(storageKey);
+    //     const validItems = state[stateArrayName];
+        
+    //     // Если массив пуст, ничего не делаем
+    //     if (!validItems.length) {
+    //       logger.dev(`[config] - Массив ${stateArrayName} пуст, пропускаем`);
+    //       return null;
+    //     }
+        
+    //     // Функция для нормализации ключа
+    //     const normalizeKey = (key) => {
+    //       if (!key) return null;
+    //       const withoutPrefix = key.slice(1);
+    //       return withoutPrefix.replace(/\d+$/, '');
+    //     };
+        
+    //     // Проверяем валидность текущего ключа
+    //     if (currentKey) {
+    //       const normalizedKey = normalizeKey(currentKey);
+    //       const isValid = validItems.includes(currentKey) || 
+    //                     (normalizedKey && validItems.includes(normalizedKey));
+          
+    //       if (!isValid) {
+    //         logger.warn(`[config] - ${storageKey} невалиден, пытаемся нормализовать`, currentKey, validItems);
+            
+    //         // Пытаемся найти соответствующий валидный ключ
+    //         if (normalizedKey) {
+    //           const matchedKey = validItems.find(item => normalizeKey(item) === normalizedKey);
+    //           if (matchedKey) {
+    //             // Нашли соответствующий валидный ключ
+    //             localStorage.setItem(storageKey, matchedKey);
+    //             logger.dev(`[config] - Ключ нормализован: ${matchedKey}`);
+                
+    //             await dispatch('sortParams/updateSortKey', { 
+    //               type, 
+    //               newKey: matchedKey 
+    //             }, { root: true });
+                
+    //             if (specialAction) {
+    //               await dispatch(`sortParams/${specialAction}`, matchedKey, { root: true });
+    //             }
+                
+    //             return matchedKey;
+    //           }
+    //         }
+            
+    //         // Если не нашли соответствия - сбрасываем
+    //         logger.error(`[config] - Не удалось нормализовать ${storageKey}, сбрасываем`, currentKey);
+    //         localStorage.removeItem(storageKey);
+    //       } else {
+    //         // Ключ валидный, используем его
+    //         return currentKey;
+    //       }
+    //     }
+        
+    //     // Если ключа нет или он был сброшен, устанавливаем первый элемент
+    //     if (!localStorage.getItem(storageKey) && validItems.length > 0) {
+    //       const newKey = validItems[0];
+    //       localStorage.setItem(storageKey, newKey);
+    //       logger.dev(`[config] - Установлен первый ${type}:`, newKey);
+          
+    //       await dispatch('sortParams/updateSortKey', { 
+    //         type, 
+    //         newKey 
+    //       }, { root: true });
+          
+    //       if (specialAction) {
+    //         await dispatch(`sortParams/${specialAction}`, newKey, { root: true });
+    //       }
+          
+    //       return newKey;
+    //     }
+        
+    //     return localStorage.getItem(storageKey);
+    //   };
+
+    //   // Конфигурация ключей
+    //   const keyConfigs = [
+    //     { type: 'rooms', stateArray: 'allRooms', getter: 'roomKey', storage: 'roomKey', specialAction: 'updateRoomsTitle' },
+    //     { type: 'params', stateArray: 'allParams', getter: 'paramKey', storage: 'paramKey' },
+    //     { type: 'devices', stateArray: 'allDevices', getter: 'deviceKey', storage: 'deviceKey' },
+    //     { type: 'setpoints', stateArray: 'allSetpoints', getter: 'setpointKey', storage: 'setpointKey' }
+    //   ];
+
+    //   // Параллельная обработка всех ключей для оптимизации
+    //   await Promise.all(keyConfigs.map(config => 
+    //     processKey(config.type, config.stateArray, config.getter, config.storage, config.specialAction)
+    //   ));
+    // },
     async updateSetpointServer( {rootGetters}) {
       const settingsData = store.state.setpointsManager?.settingsData;
         logger.info('[config] - updateSetpointServer - Готовим уставку для отправки на сервер');
@@ -557,11 +651,11 @@ export default {
         //console.log('[config] - updateSetpointServer - Уставка обновлена и отправлена на сервер');
     },
     clearKey(context, { key }) { // гетер clearKeySync используем для внешней очистки
-      console.log('[config] - clearKey - key: ', key);
+      //console.log('[config] - clearKey - key: ', key);
       const withoutPrefix = key.slice(1);
       const clearKey = withoutPrefix.replace(/\d+$/, '');
       logger.dev(`[config] - clearKey - key: ${clearKey}`);
-      console.log(`[config] - clearKey - key: ${clearKey}`);
+      //console.log(`[config] - clearKey - key: ${clearKey}`);
       return clearKey;
     },
   },

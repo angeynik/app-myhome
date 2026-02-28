@@ -16,9 +16,9 @@ const store = createStore({
     settingsData: null, // Текущие данные настроек
 
     roomKey: localStorage.getItem('roomKey') || null,
-    paramKey: localStorage.getItem('paramKey') || null,
-    deviceKey: localStorage.getItem('deviceKey') || null,
-    setpointKey: localStorage.getItem('setpointKey') || null,
+    paramKey: localStorage.getItem('paramKey') || null, // Ключ вида dTemp используется для определения параметра при сортировке по параметрам
+    deviceKey: localStorage.getItem('deviceKey') || null, 
+    setpointKey: localStorage.getItem('setpointKey') || null, // Ключ вида sTemp используется при работе с Уставкой 
   },
   modules: {
     auth,
@@ -33,11 +33,13 @@ const store = createStore({
       logger.dev('[index] - INIT_SETPOINTS_MANAGER - Инициализация менеджера взаимодействия пользователя со значениями -  manageSetpoints', dID, config);
       state.setpointsManager = new ManageSetpoints(dID, config);
     },
-    UPDATE_SETTINGS_DATA(state, { field, value }) {
+    UPDATE_SETTINGS_DATA(state, { field, value }) { 
         if (state.setpointsManager) {
-            if (field === 'request' || field === 'type') {
-                state.setpointsManager.settingsData[field] = value;
-            } else {
+            if (field === 'request' || field === 'type' || field === 'limits' || field === 'view') { // если поле field содержит имя объекта - заменяем весь объект иначе только параметр в payload
+              console.log('[index] - UPDATE_SETTINGS_DATA -  Обновляем весь объект', field, 'value:', value);  
+              state.setpointsManager.settingsData[field] = value;
+            } else{
+              console.log('[index] - UPDATE_SETTINGS_DATA -  Обновляем поле', field, 'в объекте payload значением:', value); 
                 state.setpointsManager.settingsData.payload[field] = value;
                 state.setpointsManager.settingsData.payload.updated = 
                     new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
@@ -54,6 +56,40 @@ const store = createStore({
     SET_SETTINGS_DATA(state, data) { // Прямая установка settingsData manageSetpoints
       state.settingsData = data;
     },
+    UPDATE_PAYLOAD_DATA(state, payload) {
+      if (state.setpointsManager) {
+        // Частичное обновление - сохраняем существующие поля
+        state.setpointsManager.settingsData.payload = {
+          ...state.setpointsManager.settingsData.payload, // существующие данные
+          ...payload // новые/обновленные поля
+        };
+        state.setpointsManager.settingsData.payload.updated = 
+          new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+        
+        state.settingsData = { ...state.setpointsManager.settingsData };
+      }
+    },
+    UPDATE_LIMITS_DATA(state, limits) {
+      if (state.setpointsManager) {
+        console.log('[index] - UPDATE_LIMITS_DATA - Обновляем limits:', limits);
+        state.setpointsManager.settingsData.limits = {
+          ...state.setpointsManager.settingsData.limits, // существующие данные лимитов
+          ...limits // новые/обновленные поля лимитов
+        };
+        state.settingsData = { ...state.setpointsManager.settingsData };
+      }
+    },
+    UPDATE_VIEW_DATA(state, view) {
+      if (state.setpointsManager) {
+        console.log('[index] - UPDATE_VIEW_DATA - Обновляем view:', view);
+        state.setpointsManager.settingsData.view = {
+          ...state.setpointsManager.settingsData.view, // существующие данные view
+          ...view // новые/обновленные поля view
+        };
+        state.settingsData = { ...state.setpointsManager.settingsData };
+      }
+    },
+
 
 
 
@@ -119,6 +155,20 @@ const store = createStore({
     updateSettingsData({ commit }, { field, value }) { // Action для обновления данных настроек manageSetpoints
       commit('UPDATE_SETTINGS_DATA', { field, value });
     },
+    updatePayloadData({ commit }, payload) {
+      commit('UPDATE_PAYLOAD_DATA', payload);
+    },
+    
+    updateLimitsData({ commit }, limits) {
+      commit('UPDATE_LIMITS_DATA', limits);
+    },
+    
+    updateViewData({ commit }, view) {
+      commit('UPDATE_VIEW_DATA', view);
+    },
+
+
+
     resetSettingsData({ commit }) { // Action для сброса данных настроек manageSetpoints
       commit('RESET_SETTINGS_DATA');
     },
