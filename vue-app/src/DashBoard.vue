@@ -113,7 +113,7 @@ export default {
   },
   async created() {
     const param = localStorage.getItem('paramKey');
-    console.log(' ^^^^^^^^^^^^^  -- [DashBoard] - created - roomKey:', this.getRoomKey, ' paramKey:', this.getParamKey, ' localStorageparam:', param);
+    //console.log(' ^^^^^^^^^^^^^  -- [DashBoard] - created - roomKey:', this.getRoomKey, ' paramKey:', this.getParamKey, ' localStorageparam:', param);
     
     await this.initializeSetpointsManager();
     this.$store.commit('UPDATE_SETTINGS_DATA', { 
@@ -126,9 +126,9 @@ export default {
     });
 
     // Проверка
-    console.log('[DashBoard] - created - Комната в settingsData.payload:',
-      this.$store.state.setpointsManager?.settingsData?.payload?.room
-    );
+    // console.log('[DashBoard] - created - Комната в settingsData.payload:',
+    //   this.$store.state.setpointsManager?.settingsData?.payload?.room
+    // );
     logger.info('[DashBoard] - created ManageSetpoints - Менеджер сетпоинтов инициализирован Актуальные данные:', 
     JSON.parse(JSON.stringify(this.$store.state.setpointsManager)));
     // console.log('[DashBoard] - created ManageSetpoints - Менеджер сетпоинтов инициализирован Актуальные данные:', 
@@ -235,7 +235,7 @@ export default {
     ...mapActions(['initializeSetpointsManager', 'updateSettingsData','updatePayloadData', 'updateLimitsData', 'updateViewData']),
     
     handleSortTypeChange(sortType) {
-      console.log('[DashBoard] - handleSortTypeChange - Обновляем информацию для sortType: ', sortType);
+      //console.log('[DashBoard] - handleSortTypeChange - Обновляем информацию для sortType: ', sortType);
       if (sortType) {
         // Устанавливаем тип сортировки в store
         this.$store.commit('sortParams/SET_SORT_TYPE', sortType);
@@ -251,7 +251,7 @@ export default {
     
     selectComponent(sortType) {
       //logger.info(`[DashBoard] - selectComponent - Выбор компонента: ${sortType}`);
-      console.log('[DashBoard] - selectComponent - Выбор компонента:', sortType);
+      //console.log('[DashBoard] - selectComponent - Выбор компонента:', sortType);
       this.$router.push({ 
         name: 'DashboardSort', 
         params: { sortType } 
@@ -260,11 +260,11 @@ export default {
         field: 'room', 
         value: this.getRoomKey 
       });
-      console.log('[DashBoard] - selectComponent - Обновили комнату - ', this.getRoomKey);
+      //console.log('[DashBoard] - selectComponent - Обновили комнату - ', this.getRoomKey);
       // Проверка
-      console.log('[DashBoard] - selectComponent - Комната в settingsData.payload:',
-        this.$store.state.setpointsManager?.settingsData?.payload?.room
-      );
+      // console.log('[DashBoard] - selectComponent - Комната в settingsData.payload:',
+      //   this.$store.state.setpointsManager?.settingsData?.payload?.room
+      // );
     },
     
     resetSelection() {
@@ -334,46 +334,80 @@ export default {
     logger.dev('[DashBoard] - editValueMainSetpoint - Обновляем значение уставки:', newValue, ' oldValue -', oldValue);
     console.log('[DashBoard] - editValueMainSetpoint - Обновляем значение уставки:', newValue, ' oldValue -', oldValue);
 
+    const settingsData = this.$store.state.setpointsManager?.settingsData;
     let dID = this.dID;
     let roomKey = this.getRoomKey;
     let setpointKey = this.getSetpointKey;
     let requestName = eventData.updateState.request || 'unknown';
     let valueTitle = eventData.updateState.title || '';
+    let value = eventData.updateState.value || '';
+    let value_details = settingsData.payload.value_details || null;
 
-    //console.log('[DashBoard] - editValueMainSetpoint - Обновляем значение уставки: requestName -', requestName);
+    //console.log('[DashBoard] - editValueMainSetpoint - Обновляем значение уставки: requestName -', requestName, ' value_details-', value_details);
 
     if (!dID || !roomKey || !setpointKey) {
           logger.error(`[DashBoard] - editValueMainSetpoint - Не удалось обновить значение уставки: dID - ${dID}, roomKey - ${roomKey}, setpointKey - ${setpointKey} - не определены`);
           console.error('Не удалось обновить значение уставки: dID, roomKey или setpointKey не определены');
           return;
     }
-      
-    
-     
-      try {
-        const payload = {
+    console.log('[DashBoard] - editValueMainSetpoint - REQUEST:', requestName);
+    this.setpoint = newValue;
+    let payload = null;
+    switch (requestName) {
+      case 'setpoints':
+        console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - Уставка');
+
+        // this.updatePayloadData({ value: eventData.updateState.value });
+        payload = {
           room: roomKey, 
-          item_name: setpointKey,
-          item_value: eventData.updateState.value, 
-          item_title: valueTitle,
+          param: setpointKey,
+          value: eventData.updateState.value, 
           time: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
         };
-        this.setpoint = newValue;
-        logger.dev('[DashBoard] - editValueMainSetpoint - Формируем сообщение для отпраку на сервер:', payload);
-        console.log('[DashBoard] - editValueMainSetpoint - Формируем сообщение для отпраку на сервер:', payload);
-
-
-
-        await this.$store.dispatch('config/handleValueUpdate', { dID, payload, type: requestName });
-
-        console.log('[DashBoard] - editValueMainSetpoint - Отправлен запрос на обновление для request -', requestName, '  type -', eventData.updateState.type);
         
-        
-      } catch (error) {
-        logger.error('[DashBoard] - editValueMainSetpoint - Ошибка обновления уставки:', error);
-        //console.error('Ошибка обновления уставки:', error);
-      }
-      console.groupEnd();
+
+        // await this.$store.dispatch('config/handleValueUpdate', { dID, payload, type: requestName });
+  
+      break;
+      case 'schedules':
+        console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - Расписание');
+        if (value_details) {
+          console.log('[DashBoard] - editValueMainSetpoint - value_details-', value_details, '--ДОПИСЫВАЕМ ОБРАБОТКУ ИЗМЕНЕНИЯ ВРЕМЕНИ --');
+        }
+        payload = {
+          room: roomKey, 
+          param: setpointKey,
+          value: eventData.updateState.value, 
+          time: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+        };
+
+      break;
+      case 'notifications':
+        console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - Уведомления');
+      break;
+      case 'statistics':
+        console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - Статистика');
+      break;
+    
+      default:
+        console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - ?????');
+        break;
+    }
+     this.updatePayloadData({ value: value });
+    logger.dev('[DashBoard] - editValueMainSetpoint - Формируем сообщение для отпраку на сервер:', payload);
+    console.log('[DashBoard] - editValueMainSetpoint - Формируем сообщение для отпраку на сервер:', payload);
+    console.groupEnd();
+    await this.$store.dispatch('config/handleValueUpdate', { dID, payload, type: requestName });
+
+  //  try {
+  //     await this.$store.dispatch('config/handleValueUpdate', { dID, payload, type: requestName });
+  //     console.log('[DashBoard] - editValueMainSetpoint - Отправлен запрос на обновление для request -', requestName, '  type -', eventData.updateState.type); 
+  //   } catch (error) {
+  //     logger.error('[DashBoard] - editValueMainSetpoint - Ошибка обновления уставки:', error);
+  //     console.error('Ошибка обновления уставки:', error);
+  //   }
+     
+      
     
       // Установка нового таймера для отправки на сервер
       if (this.setpointUpdateTimer) {
@@ -382,12 +416,11 @@ export default {
       }
         this.setpointUpdateTimer = setTimeout(async () => {
           try {
-            logger.dev('[DashBoard] - editValueMainSetpoint - Обновляем уставку -', newValue, ' roomKey -', roomKey, ' paramKey -', setpointKey, 'valueTitle -', valueTitle);
-            console.log('[DashBoard] - editValueMainSetpoint - Обновляем уставку -', newValue, ' roomKey -', roomKey, ' paramKey -', setpointKey, 'valueTitle -', valueTitle, 'request-', requestName);
-            await this.$store.dispatch('config/updateSetpointServer'); // Отправляем на данные из settingsData - index.js на сервер
+            logger.dev('[DashBoard] - editValueMainSetpoint - Обновляем уставку -', newValue, ' roomKey -', roomKey, ' setpointKey -', setpointKey, 'valueTitle -', valueTitle);
+            console.log('[DashBoard] - editValueMainSetpoint - Обновляем уставку -', newValue, ' roomKey -', roomKey, ' setpointKey -', setpointKey, 'valueTitle -', valueTitle, 'request-', requestName);
             
-            
-            
+        await this.$store.dispatch('config/updateSetpointServer'); // Отправляем на данные из settingsData - index.js на сервер
+             
             logger.info('[DashBoard] - editValueMainSetpoint - Уставка успешно отправлена на сервер после задержки');
             //console.log('Уставка успешно отправлена на сервер после задержки');
           } catch (error) {
@@ -415,31 +448,36 @@ export default {
       console.groupCollapsed('[DashBoard] - getComponentData - Данные от компонента:');
       console.log('Полученные данные:', event);
       // let request = event.request;
+      const settingsData = this.$store.state.setpointsManager?.settingsData;
+      this.selectedItemData = event.data;
+      this.selectedItemData.roomKey = settingsData?.payload?.room;
+      this.selectedItemData.setpointKey = settingsData?.payload?.param;
+      console.log('[DashBoard] - getComponentData - Данные в settingsData ', settingsData, ' request:', settingsData.request);
+      // console.log('[DashBoard] - getComponentData - Данные в settingsData ', 
+      //   JSON.parse(JSON.stringify(settingsData)), 
+      //   ' request:', settingsData?.request
+      // );
+      // console.log('[DashBoard] - getComponentData - Данные в event.request ', event.request);
       if (event.request !== null && event.request !== undefined) {
-        this.updateSettingsData({ 
-            field: 'request', 
-            value: event.request
-        });
+        if (event.request !== settingsData?.request) {
+          console.log('[DashBoard] - getComponentData - Обновляем request в settingsData. Текущее значение -  ', settingsData?.request, ' Новое значение - ', event.request);
+          this.updateSettingsData({ 
+              field: 'request', 
+              value: event.request
+          });
+        }
+        
       } else console.error ('[DashBoard] - getComponentData - request не определен:', event.request);
-      // if (event.data !== null && event.data !== undefined) {
-      //   this.updateSettingsData({ 
-      //       field: 'data', 
-      //       value: event.data
-      //   });
-      // } else console.error ('[DashBoard] - getComponentData - data не определен:', event.data);
 
       
       // Устанавливаем лимиты для MainSetpoint
       const request = event.request;
       if (event.action === 'show') {
-        this.selectedItemData = event.data;
+        
         console.log('[DashBoard] - getComponentData - Показываем компонент MainSetpoint с данными:', this.selectedItemData);
         this.setpoint = event.data.value;
         this.showSetpoint = true;
         this.request = request;
-          // if (event.limits) {
-          //   this.$store.commit('sortParams/UPDATE_LIMITS', event.limits);
-          // }
       console.log('[DashBoard] - getComponentData - Компонент MainSetpoint показан');
       } else if (event.action === 'hide') {
         this.showSetpoint = false;

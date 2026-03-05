@@ -269,9 +269,9 @@ export default {
         value_name: this.selectedField,
         value_details: ''
       });
-      // console.log('[DashBoard] - toggleValueType - ID комнаты в settingsData.payload:',
-      //   this.$store.state.setpointsManager?.settingsData?.payload?.id
-      // );
+      console.log('[DashBoard] - toggleValueType - ID комнаты в settingsData.payload:',
+        this.$store.state.setpointsManager?.settingsData?.payload?.id
+      );
       // Отправляем событие с данными в MainBodySettings
           this.$emit('getComponentData', {
               value: newType,
@@ -287,12 +287,12 @@ export default {
     //     this.$store.state.setpointsManager?.settingsData?.payload, 'ключ - ', param
     //   );
        // Устанавливаем лимиты
-          const params = {
-            param: this.$store.state.setpointsManager?.settingsData?.payload?.param, 
-            valueType: this.scheduleData.valueType, 
-          }
-          console.log('[MainBodySettings] - editValue - params:', params);
-          this.setLimits(params);
+      const params = {
+        param: this.$store.state.setpointsManager?.settingsData?.payload?.param, 
+        valueType: this.scheduleData.valueType, 
+      }
+      console.log('[MainBodySettings] - editValue - params:', params);
+      this.setLimits(params);
 
       this.selectedField = "value";
       const currentValue = this.scheduleData.value !== null && this.scheduleData.value !== undefined
@@ -302,7 +302,6 @@ export default {
 
       logger.dev('[MainBodySchedule] - editValue - Начало редактирования значения');
       this.setpointsManagerUpdate('post', 'schedules', {
-        config: 'schedules',
         id: this.scheduleData.id,
         value: currentValue,
         value_name: this.selectedField, 

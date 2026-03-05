@@ -18,88 +18,45 @@
         height="100%" 
         preserveAspectRatio="xMidYMid meet"
         >         
-          <!-- <line x1="261.5" y1="10" x2="261.5" y2="50" stroke="white"/>
-          <line x1="204.5" y1="10" x2="204.5" y2="50" stroke="white"/>
-          <line x1="147.5" y1="10" x2="147.5" y2="50" stroke="white"/>
-          <line x1="90.5" y1="10" x2="90.5" y2="50" stroke="white"/>
-          <line x1="33.5" y1="10" x2="33.5" y2="50" stroke="white"/>
-          <line x1="250.5" y1="10" x2="250.5" y2="50" stroke="white"/>
-          <line x1="193.5" y1="10" x2="193.5" y2="50" stroke="white"/>
-          <line x1="136.5" y1="10" x2="136.5" y2="50" stroke="white"/>
-          <line x1="79.5" y1="10" x2="79.5" y2="50" stroke="white"/>
-          <line x1="22.5" y1="10" x2="22.5" y2="50" stroke="white"/>
-          <line x1="239.5" y1="10" x2="239.5" y2="50" stroke="white"/>
-          <line x1="182.5" y1="10" x2="182.5" y2="50" stroke="white"/>
-          <line x1="125.5" y1="10" x2="125.5" y2="50" stroke="white"/>
-          <line x1="68.5" y1="10" x2="68.5" y2="50" stroke="white"/>
-          <line x1="11.5" y1="10" x2="11.5" y2="50" stroke="white"/>
-          <line x1="228.5" y1="10" x2="228.5" y2="50" stroke="white"/>
-          <line x1="171.5" y1="10" x2="171.5" y2="50" stroke="white"/>
-          <line x1="114.5" y1="10" x2="114.5" y2="50" stroke="white"/>
-          <line x1="57.5" y1="10" x2="57.5" y2="50" stroke="white"/>
-          <line x1="0.5" y1="10" x2="0.499998" y2="50" stroke="white"/>
-          <line x1="273.5" y1="6.55671e-08" x2="273.5" y2="60" stroke="white" stroke-width="3"/>
-          <line x1="216.5" y1="6.55671e-08" x2="216.5" y2="60" stroke="white" stroke-width="3"/>
-          <line x1="159.5" y1="6.55671e-08" x2="159.5" y2="60" stroke="white" stroke-width="3"/>
-          <line x1="102.5" y1="6.55671e-08" x2="102.5" y2="60" stroke="white" stroke-width="3"/>
-          <line x1="45.5" y1="4" x2="45.5" y2="64" stroke="white" stroke-width="3"/>
-          <line x1="285.5" y1="10" x2="285.5" y2="50" stroke="white"/>
-          <line x1="296.5" y1="10" x2="296.5" y2="50" stroke="white"/>
-          <line x1="307.5" y1="10" x2="307.5" y2="50" stroke="white"/>
-          <line x1="318.5" y1="10" x2="318.5" y2="50" stroke="white"/> -->
-
-
-
-
-            <!-- <svg width="433" height="60" viewBox="0 0 433 60" fill="none" xmlns="http://www.w3.org/2000/svg"> -->
-
-<line x1="261.5" y1="10" x2="261.5" y2="50" stroke="white"/>
-<line x1="204.5" y1="10" x2="204.5" y2="50" stroke="white"/>
-<line x1="147.5" y1="10" x2="147.5" y2="50" stroke="white"/>
-<line x1="90.5" y1="10" x2="90.5" y2="50" stroke="white"/>
-<line x1="33.5" y1="10" x2="33.5" y2="50" stroke="white"/>
-<line x1="250.5" y1="10" x2="250.5" y2="50" stroke="white"/>
-<line x1="193.5" y1="10" x2="193.5" y2="50" stroke="white"/>
-<line x1="136.5" y1="10" x2="136.5" y2="50" stroke="white"/>
-<line x1="79.5" y1="10" x2="79.5" y2="50" stroke="white"/>
-<line x1="22.5" y1="10" x2="22.5" y2="50" stroke="white"/>
-<line x1="239.5" y1="10" x2="239.5" y2="50" stroke="white"/>
-<line x1="182.5" y1="10" x2="182.5" y2="50" stroke="white"/>
-<line x1="125.5" y1="10" x2="125.5" y2="50" stroke="white"/>
-<line x1="68.5" y1="10" x2="68.5" y2="50" stroke="white"/>
-<line x1="11.5" y1="10" x2="11.5" y2="50" stroke="white"/>
-<line x1="228.5" y1="10" x2="228.5" y2="50" stroke="white"/>
-<line x1="171.5" y1="10" x2="171.5" y2="50" stroke="white"/>
-<line x1="114.5" y1="10" x2="114.5" y2="50" stroke="white"/>
-<line x1="57.5" y1="10" x2="57.5" y2="50" stroke="white"/>
-<line x1="0.5" y1="10" x2="0.499998" y2="50" stroke="white"/>
-<line x1="273.5" y1="6.55671e-08" x2="273.5" y2="60" stroke="white" stroke-width="3"/>
-<line x1="330.5" y1="6.55671e-08" x2="330.5" y2="60" stroke="white" stroke-width="3"/>
-<line x1="387.5" y1="6.55671e-08" x2="387.5" y2="60" stroke="white" stroke-width="3"/>
-<line x1="216.5" y1="6.55671e-08" x2="216.5" y2="60" stroke="white" stroke-width="3"/>
-<line x1="159.5" y1="6.55671e-08" x2="159.5" y2="60" stroke="white" stroke-width="3"/>
-<line x1="102.5" y1="6.55671e-08" x2="102.5" y2="60" stroke="white" stroke-width="3"/>
-<line x1="45.5" y1="6.55671e-08" x2="45.5" y2="60" stroke="white" stroke-width="3"/>
-<line x1="285.5" y1="10" x2="285.5" y2="50" stroke="white"/>
-<line x1="342.5" y1="10" x2="342.5" y2="50" stroke="white"/>
-<line x1="399.5" y1="10" x2="399.5" y2="50" stroke="white"/>
-<line x1="296.5" y1="10" x2="296.5" y2="50" stroke="white"/>
-<line x1="353.5" y1="10" x2="353.5" y2="50" stroke="white"/>
-<line x1="410.5" y1="10" x2="410.5" y2="50" stroke="white"/>
-<line x1="307.5" y1="10" x2="307.5" y2="50" stroke="white"/>
-<line x1="364.5" y1="10" x2="364.5" y2="50" stroke="white"/>
-<line x1="421.5" y1="10" x2="421.5" y2="50" stroke="white"/>
-<line x1="318.5" y1="10" x2="318.5" y2="50" stroke="white"/>
-<line x1="375.5" y1="10" x2="375.5" y2="50" stroke="white"/>
-<line x1="432.5" y1="10" x2="432.5" y2="50" stroke="white"/>
-
-
-
-
-
-
-
-
+      <line x1="261.5" y1="10" x2="261.5" y2="50" stroke="white"/>
+      <line x1="204.5" y1="10" x2="204.5" y2="50" stroke="white"/>
+      <line x1="147.5" y1="10" x2="147.5" y2="50" stroke="white"/>
+      <line x1="90.5" y1="10" x2="90.5" y2="50" stroke="white"/>
+      <line x1="33.5" y1="10" x2="33.5" y2="50" stroke="white"/>
+      <line x1="250.5" y1="10" x2="250.5" y2="50" stroke="white"/>
+      <line x1="193.5" y1="10" x2="193.5" y2="50" stroke="white"/>
+      <line x1="136.5" y1="10" x2="136.5" y2="50" stroke="white"/>
+      <line x1="79.5" y1="10" x2="79.5" y2="50" stroke="white"/>
+      <line x1="22.5" y1="10" x2="22.5" y2="50" stroke="white"/>
+      <line x1="239.5" y1="10" x2="239.5" y2="50" stroke="white"/>
+      <line x1="182.5" y1="10" x2="182.5" y2="50" stroke="white"/>
+      <line x1="125.5" y1="10" x2="125.5" y2="50" stroke="white"/>
+      <line x1="68.5" y1="10" x2="68.5" y2="50" stroke="white"/>
+      <line x1="11.5" y1="10" x2="11.5" y2="50" stroke="white"/>
+      <line x1="228.5" y1="10" x2="228.5" y2="50" stroke="white"/>
+      <line x1="171.5" y1="10" x2="171.5" y2="50" stroke="white"/>
+      <line x1="114.5" y1="10" x2="114.5" y2="50" stroke="white"/>
+      <line x1="57.5" y1="10" x2="57.5" y2="50" stroke="white"/>
+      <line x1="0.5" y1="10" x2="0.499998" y2="50" stroke="white"/>
+      <line x1="273.5" y1="6.55671e-08" x2="273.5" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="330.5" y1="6.55671e-08" x2="330.5" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="387.5" y1="6.55671e-08" x2="387.5" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="216.5" y1="6.55671e-08" x2="216.5" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="159.5" y1="6.55671e-08" x2="159.5" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="102.5" y1="6.55671e-08" x2="102.5" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="45.5" y1="6.55671e-08" x2="45.5" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="285.5" y1="10" x2="285.5" y2="50" stroke="white"/>
+      <line x1="342.5" y1="10" x2="342.5" y2="50" stroke="white"/>
+      <line x1="399.5" y1="10" x2="399.5" y2="50" stroke="white"/>
+      <line x1="296.5" y1="10" x2="296.5" y2="50" stroke="white"/>
+      <line x1="353.5" y1="10" x2="353.5" y2="50" stroke="white"/>
+      <line x1="410.5" y1="10" x2="410.5" y2="50" stroke="white"/>
+      <line x1="307.5" y1="10" x2="307.5" y2="50" stroke="white"/>
+      <line x1="364.5" y1="10" x2="364.5" y2="50" stroke="white"/>
+      <line x1="421.5" y1="10" x2="421.5" y2="50" stroke="white"/>
+      <line x1="318.5" y1="10" x2="318.5" y2="50" stroke="white"/>
+      <line x1="375.5" y1="10" x2="375.5" y2="50" stroke="white"/>
+      <line x1="432.5" y1="10" x2="432.5" y2="50" stroke="white"/>
 
         </symbol>
   
@@ -182,21 +139,25 @@
       //   'limStep'
       // ]),
       limHigh() {
-        return this.$store.state.settingsData?.limits?.limHigh ?? 
-              this.$store.getters['sortParams/limHigh'];
+        return this.$store.state.settingsData?.limits?.limHigh ?? 36;
       },
       limLow() {
-        return this.$store.state.settingsData?.limits?.limLow ?? 
-              this.$store.getters['sortParams/limLow'];
+        return this.$store.state.settingsData?.limits?.limLow ?? 5;
       },
       limStep() {
-        return this.$store.state.settingsData?.limits?.limStep ?? 
-              this.$store.getters['sortParams/limStep'];
+        return this.$store.state.settingsData?.limits?.limStep ?? 1;
       },
     },
     created() {
       this.debouncedCalculateSetpoint = this.debounce(this.calculateSetpoint, 16);
       //this.debouncedUpdatePermitions = this.debounce(this.sendEmitMessage, 2000);
+      console.log('[MainSetpoint] - created', {
+        setPoint: this.setPoint,
+        request: this.request,
+        roomKey: this.roomKey,
+        setpointKey: this.setpointKey,
+        valueTitle: this.valueTitle
+      })
       },
       
     props: {   // Переменные полученные в компонент
@@ -215,8 +176,8 @@
           console.error('sendEmitMessage - параметры не переданы:', { event, value });
           return;
         }
-        this.updateSettingsData({  field: 'value', value: value });
-        this.updateSettingsData({  field: 'value_name', value: this.valueTitle });
+        // this.updateSettingsData({  field: 'value', value: value });
+        // this.updateSettingsData({  field: 'value_name', value: this.valueTitle });
         this.$emit('eventsMainSetpoint', {
             [event]: {
               request: this.request,
@@ -267,7 +228,8 @@
     },
     calculateSetpoint(value, step, min, max) {
       logger.dev('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
-        //console.log('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
+        console.log('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
+        
         let newValue, currentSetPoint;
         if (this.setPoint === null || this.setPoint === undefined) {
           currentSetPoint = parseFloat(min);
@@ -304,20 +266,18 @@
             }
 
             newValue = parseFloat(newValue.toFixed(1));
-            this.sendEmitMessage('updateState', newValue);
-
             logger.dev('[MainSetpoint] - calculateSetpoint  Обновили значение Уставки:', newValue, 'request', this.request);
-            console.log('[MainSetpoint] - calculateSetpoint  Обновили значение Уставки:', newValue, 'request', this.request);
-            //this.sendEmitMessage('updateState', 'newSetPoint', newValue);
+            //console.log('[MainSetpoint] - calculateSetpoint  Обновили значение Уставки:', newValue, 'request', this.request);
+            this.sendEmitMessage('updateState', newValue);
             
             } catch (error) {
               logger.error('[MainSetpoint] - calculateSetpoint  Ошибка проверки ограничений диапазона Уставки', error);
-              //console.error('[MainSetpoint] - calculateSetpoint  Ошибка проверки ограничений диапазона Уставки', error);
+              console.error('[MainSetpoint] - calculateSetpoint  Ошибка проверки ограничений диапазона Уставки', error);
               //this.sendEmitMessage('error', '[MainSetpoint] - calculateSetpoint Ошибка проверки ограничений диапазона Уставки', error); // отправка логов на сервер для сохранения в файл
             }
         } catch (error) {
           logger.error('[MainSetpoint] - calculateSetpoint Ошибка вычисления изменения Уставки', error);
-          //console.error('[MainSetpoint] - calculateSetpoint Ошибка вычисления изменения Уставки', error);
+          console.error('[MainSetpoint] - calculateSetpoint Ошибка вычисления изменения Уставки', error);
           //this.sendEmitMessage('error', '[MainSetpoint] - calculateSetpoint Ошибка вычисления изменения Уставки', error); // отправка логов на сервер для сохранения в файл
         }
         logger.dev('[MainSetpoint] - calculateSetpoint Расчет, проверка и отправка обновленного значения выполнена успешно')
@@ -326,7 +286,7 @@
     },
     clickChangeSetpoint(value) {
       logger.dev('[MainSetpoint] - clickChangeSetpoint value:', value);
-      //console.log('[MainSetpoint] - clickChangeSetpoint value:', value);
+      console.log('[MainSetpoint] - clickChangeSetpoint value:', value);
       this.calculateSetpoint(value, this.limStep, this.limLow, this.limHigh);
       //this.debouncedUpdatePermitions('updatePermission', 'permission', true);
     },

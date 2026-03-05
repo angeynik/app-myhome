@@ -101,7 +101,7 @@ export default {
               logger.dev('[MainBody] - Watch - handler - Принудительное обновление view');
               //console.log('[MainBody] - Watch - handler - Принудительное обновление view');
               this.updateView();
-            }, 350);
+            }, 250);
           }
         },
         immediate: true
@@ -168,7 +168,7 @@ export default {
     selectItem(item) {
       
       const clearParam = 'd' + this.clearKeySync(item.paramKey);
-      console.log('%%%%%%%%%%%%% ------- [MainBody] - selectItem - Исходный ключ -', item.paramKey, ' Очищенный ключ -', clearParam);
+      //console.log('%%%%%%%%%%%%% ------- [MainBody] - selectItem - Исходный ключ -', item.paramKey, ' Очищенный ключ -', clearParam);
       // localStorage.setItem('paramKey', clearParam);
       //console.log(' %%%%%%%%%%%%% ------- [MainBody] - selectItem - Обновили localStorage paramKey:', clearParam);
 
@@ -179,9 +179,9 @@ export default {
       
       this.clickTimer = setTimeout(() => {
         console.groupCollapsed('[MainBody] - selectItem ');
-        logger.dev(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item)}`);
+        logger.dev(`[MainBody] - selectItem - Выбран параметр:  ${JSON.stringify(item, null, 2)}`);
         //console.log(`[MainBody] - selectItem - setpointKey: ${item.setpointKey}, deviceKey: ${item.deviceKey}, paramKey: ${item.paramKey}, roomKey: ${item.roomKey}`);
-        console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item, null, 2)}`);
+        //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item, null, 2)}`);
 
         // Если за это время не было двойного клика, выполняем selectItem
         if (this.selectedItem === item) {
@@ -207,10 +207,11 @@ export default {
             title: 'value'
           });
 
-        console.log('[MainBody] - DclickSelectItem - ОБНОВИЛИ payload в settingsData:',
-          this.$store.state.setpointsManager?.settingsData?.payload
+        console.log('[MainBody] - selectItem - ОБНОВИЛИ payload в settingsData Param:',
+          this.$store.state.setpointsManager?.settingsData?.payload?.param, ' и значение:',
+          this.$store.state.setpointsManager?.settingsData?.payload?.value
         );
-        console.log('[MainBody] - DclickSelectItem - ОБНОВИЛИ view в settingsData:',
+        console.log('[MainBody] - selectItem - ОБНОВИЛИ view в settingsData:',
           this.$store.state.setpointsManager?.settingsData?.view
         );
         // Обновляем ключи в хранилище
@@ -226,7 +227,7 @@ export default {
             param: item.setpointKey, 
             valueType: 'absolute', 
           }
-          console.log('[MainBody] - handleEditValue - params:', params);
+          console.log('[MainBody] - selectItem - params:', params);
           console.groupEnd();
           this.setLimits(params);
           //console.log(`[MainBody] - selectItem - setLimits установлены лимиты по ключу ${item.setpointKey}`);
@@ -261,13 +262,13 @@ export default {
       }
 
       logger.dev('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', clearParam, ' и значение:', item.setValue);
-      //console.groupCollapsed('[MainBody] - DclickSelectItem ');
+      console.groupCollapsed('[MainBody] - DclickSelectItem ');
       console.log('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', clearParam, ' и значение:', item);
       if (!clearParam) return `[MainBody] - DclickSelectItem - Отсутствуетлюч выбранного элемента:', ${clearParam}`;
-      this.updatePayloadData({ param: clearParam, room: item.roomKey});
-      // console.log('[MainBody] - DclickSelectItem - ОБНОВИЛИ КЛЮЧ param в settingsData:',
-      //   this.$store.state.setpointsManager?.settingsData?.payload?.param
-      // );
+      this.updatePayloadData({ param: clearParam, room: item.roomKey, config: this.typeSettingsKey});
+      console.log('[MainBody] - DclickSelectItem - ОБНОВИЛИ КЛЮЧ param в settingsData:',
+        this.$store.state.setpointsManager?.settingsData?.payload?.param
+      );
 
       // Обновляем ключи в хранилище
           this.SET_ROOM_KEY(item.roomKey);
@@ -278,8 +279,9 @@ export default {
       let settingsType = this.typeSettingsKey || 'schedule';
 
       // Отправляем событие с данными в DashBoard
+      console.log('[MainBody] - DclickSelectItem - Отправляем событие с данными в DashBoard, value: ', item.setValue, ', title: value');
           this.$emit('getComponentData', {
-            // action: 'show',
+            action: 'hide',
             request: settingsType,
             data: {
               value: item.setValue,
@@ -291,7 +293,7 @@ export default {
         name: 'DashboardSettings',
         params: { settingsType }
       });
-      //console.groupEnd();
+      console.groupEnd();
     },
     async updateView() { // Формируем массив для отображения пользователю в соответствии с типом сортировки и текущим ключем
       console.log('[MainBody] - updateView - started');
@@ -306,25 +308,22 @@ export default {
             this.viewArray = [];
             return;
           }
-          logger.dev('[MainBody] - updateView - Актуальный тип сортировки:', this.currentSortType);
-          console.log('Актуальный тип сортировки:', this.currentSortType);
-          //console.log('для конфигурации', config);
 
           if (this.currentSortType === 'rooms') {
-            logger.dev('[MainBody] - updateView - Режим: комнаты -(', this.getRoomKey, ')');
-            console.log(`[MainBody] - updateView - Режим: комнаты -(${this.getRoomKey})`);
+            logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: комнаты -(', this.getRoomKey, ')');
+            console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: комнаты -(${this.getRoomKey})`);
             this.viewArray = this.getSortedRooms(config, this.getRoomKey);
           } else if (this.currentSortType === 'params') {
-            logger.dev('[MainBody] - updateView - Режим: параметров -(', this.getParamKey, ')');
-            //console.log(`[MainBody] - updateView - Режим: параметров -(${this.getParamKey})`);
+            logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: параметров -(', this.getParamKey, ')');
+            console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: параметров -(${this.getParamKey})`);
           this.viewArray = this.getSortedParams(config, this.getParamKey);
           } else if (this.currentSortType === 'devices') {
-            logger.dev('[MainBody] - updateView - Режим: Устройств -(', this.getDeviceKey, ')');
-            //console.log(`[MainBody] - updateView - Режим: Устройств -(${this.getDeviceKey})`);
+            logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: Устройств -(', this.getDeviceKey, ')');
+            console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: Устройств -(${this.getDeviceKey})`);
             this.viewArray = this.getSortedDevices(config, this.getDeviceKey);
           } else if (this.currentSortType === 'setpoints') {
-            logger.dev('[MainBody] - updateView - Режим: Уставки -(', this.getSetpointKey, ')');
-            //console.log(`[MainBody] - updateView - Режим: Уставки -(${this.getSetpointKey})`);
+            logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: Уставки -(', this.getSetpointKey, ')');
+            console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: Уставки -(${this.getSetpointKey})`);
             this.viewArray = this.getSortedSetpoints(config, this.getSetpointKey);
           }
         
@@ -416,6 +415,7 @@ export default {
     // Формируем массив для отображения сортировки по параметрам
     getSortedParams(config, paramPrefix) {
       // Получаем все ключи сенсоров, которые начинаются с этого префикса
+      //console.log('[MainBody] getSortedParams - Выполняем сортировку по paramPrefix:', paramPrefix, 'в ', Object.keys(config).length, ' комнатах');
       const sensors = [];
       
       Object.entries(config).forEach(([roomKey, room]) => {
@@ -433,17 +433,18 @@ export default {
             setpointKey = Object.keys(room.setpoints).find(setKey => 
               cleanKey.includes(setKey) || setKey.includes(cleanKey)
             );
-            console.log('[MainBody] getSortedParams - Ключ параметра уставки:', setpointKey);
+            
             if (setpointKey) {
               setValue = room.setpoints[setpointKey]?.value != null 
                 ? parseFloat(room.setpoints[setpointKey].value) 
                 : null;
+                console.log('[MainBody] getSortedParams - Ключ параметра уставки:', setpointKey);
             } else if (!setpointKey) {
                 setValue = null;
                 setpointKey = null;
               }
           }
-          console.log('[MainBody] getSortedParams - Уставка:', setValue);
+          //console.log('[MainBody] getSortedParams - Уставка:', setValue);
             
             sensors.push({
               sortType: 'params',

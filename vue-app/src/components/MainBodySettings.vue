@@ -199,9 +199,9 @@ export default {
     userLevel() {
       return this.level || 0;
     },
-    effectiveSetpointKey() {
+    effectiveParamKey() {
     // Определяем какой ключ использовать
-    return this.setpointKey || this.paramKey || '';
+    return this.paramKey || '';
     },
     isEditingMode() {
       return this.isEditingSchedule && this.editingSchedule !== null;
@@ -227,14 +227,14 @@ export default {
     // Отслеживаем изменения в store и обновляем локальные данные
     '$store.state.config.schedules': {
       handler() {
-        //console.log('[MainBodySettings] - Watch - Расписания в store обновились');
+        console.log('[MainBodySettings] - Watch - Расписания в store обновились');
         if (this.title === 'schedule') {
           this.getSchedulesFromStore();
           console.log('[MainBodySettings] - Watch - Обновленные Расписания:', this.schedules);
-          const param = localStorage.getItem('paramKey');
-          const setKey = localStorage.getItem('setpointKey');
-          console.log(' *************** --  [MainBodySettings] - Watch - получаем ключ param из localStorage -', param, ' setpointKey:', setKey);
-          this.SET_PARAM_KEY(param);
+          // const param = localStorage.getItem('paramKey');
+          // const setKey = localStorage.getItem('setpointKey');
+          // console.log(' *************** --  [MainBodySettings] - Watch - получаем ключ param из localStorage -', param, ' setpointKey:', setKey);
+          // this.SET_PARAM_KEY(param);
         }
       },
       deep: true,
@@ -344,14 +344,16 @@ export default {
     },
 
     getSchedulesFromStore() {
-      //console.log('[MainBodySettings] - getSchedulesFromStore - Start');
+      console.groupCollapsed('[MainBodySettings] - getSchedulesFromStore ');
+      console.log('[MainBodySettings] - getSchedulesFromStore - Start');
       try {
         const dID = this.dID;
         const roomKey = this.settingsData.payload.room;
-        const paramKey = this.effectiveSetpointKey;
+        const paramKey = this.effectiveParamKey;
         
         if (!dID || !roomKey || !paramKey) {
           this.schedules = [];
+          console.groupEnd();
           return;
         }
         
@@ -363,10 +365,12 @@ export default {
         this.schedules = Array.isArray(paramSchedules) ? [...paramSchedules] : [];
         
         //console.log('[MainBodySettings] - getSchedulesFromStore - Найдено расписаний:', this.schedules.length);
+        console.groupEnd();
         
       } catch (error) {
         console.error('[MainBodySettings] - getSchedulesFromStore - Ошибка:', error);
         this.schedules = [];
+        console.groupEnd();
       }
     },
 
@@ -379,21 +383,21 @@ export default {
         case 'schedule':
             // this.getSchedulesFromStore();
             // roomKey = this.settingsData.payload.room;
-            // paramKey = this.effectiveSetpointKey;
+            // paramKey = this.effectiveParamKey;
           this.defaultItemValues = {
             roomKey: this.settingsData.payload.room,
-            paramKey: this.effectiveSetpointKey,
+            paramKey: this.effectiveParamKey,
             value: this.effectiveSetpointValue || 0,
             unit: this.unit || '°C',
             days: [1, 2, 3, 4, 5] // Пн-Пт по умолчанию
           };
           console.log('case Schedule - [MainBodySettings] - addNewItem - ', this.defaultItemValues);
-          this.addNewSchedule(this.settingsData.payload.room, this.effectiveSetpointKey);
+          this.addNewSchedule(this.settingsData.payload.room, this.effectiveParamKey);
           break;
         case 'notifications':
           this.defaultItemValues = {
             roomKey: this.settingsData.payload.room,
-            paramKey: this.effectiveSetpointKey,
+            paramKey: this.effectiveParamKey,
             threshold: this.effectiveSetpointValue || 0,
             condition: 'greater_than'
           };
@@ -403,7 +407,7 @@ export default {
         case 'statistics':
           this.defaultItemValues = {
             roomKey: this.settingsData.payload.room,
-            paramKey: this.effectiveSetpointKey,
+            paramKey: this.effectiveParamKey,
             chartType: 'line',
             period: 'day'
           };
@@ -520,7 +524,7 @@ export default {
         // await this.saveScheduleBlock();
         await this.saveSchedules({
           roomKey: this.settingsData.payload.room,
-          paramKey: this.effectiveSetpointKey,
+          paramKey: this.effectiveParamKey,
           schedules: newSchedule
         });
         console.log('[MainBodySettings] - addNewSchedule - Расписание успешно сохранено');
@@ -645,7 +649,7 @@ export default {
   async saveNotificationBlock() {
     try {
       // Если нет соответствующего action в store, сохраняем в localStorage
-      const key = `notifications_${this.dID}_${this.settingsData.payload.room}_${this.effectiveSetpointKey}`;
+      const key = `notifications_${this.dID}_${this.settingsData.payload.room}_${this.effectiveParamKey}`;
       localStorage.setItem(key, JSON.stringify(this.notifications));
       
       // Или вызываем action если он есть
@@ -659,7 +663,7 @@ export default {
   async saveAnalyticBlock() {
     try {
       // Если нет соответствующего action в store, сохраняем в localStorage
-      const key = `analytics_${this.dID}_${this.settingsData.payload.room}_${this.effectiveSetpointKey}`;
+      const key = `analytics_${this.dID}_${this.settingsData.payload.room}_${this.effectiveParamKey}`;
       localStorage.setItem(key, JSON.stringify(this.analytics));
       
       // Или вызываем action если он есть
@@ -678,7 +682,7 @@ export default {
       if (this.schedulesToDelete.length > 0) {
         this.$store.dispatch('settingsConfig/deleteSchedules', {
               roomKey: this.settingsData.payload.room,
-              paramKey: this.effectiveSetpointKey,
+              paramKey: this.effectiveParamKey,
               scheduleIds: [...this.schedulesToDelete] // создаем копию массива
             });
             

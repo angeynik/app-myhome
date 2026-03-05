@@ -90,7 +90,7 @@ export default {
       const config = state.configs[dID];
       logger.dev('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value, timestamp });
       //console.log('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value, timestamp });
-      //console.log('[config] - UPDATE_CONFIG_VALUE - Конфиг:', config);
+      console.log('[config] - UPDATE_CONFIG_VALUE - Конфиг:', config);
       if (!config) {
         logger.error(`[Config] - dID ${dID} не найден в конфигурации`);
         console.warn(`[Config] - dID ${dID} не найден в конфигурации`);
@@ -126,6 +126,67 @@ export default {
       // const updatedRoom = config[room];
       // console.log(`[Config] - UPDATE_CONFIG_VALUE - state.configs[${dID}] Обновляем комнату ${room} - ${JSON.stringify(updatedRoom, null, 2)}`);
     },
+
+
+
+    // Добавьте эту мутацию в объект mutations после существующих мутаций
+    UPDATE_SCHEDULE_VALUE(state, { dID, room, param, config, id, title, value }) {
+      logger.dev('[config] - UPDATE_SCHEDULE_VALUE - Обновляем расписание:', { dID, room, param, config, id, title, value });
+      console.log('[config] - UPDATE_SCHEDULE_VALUE - Обновляем расписание:', { dID, room, param, config, id, title, value });
+      
+      if (!state.schedules[dID]) {
+        logger.error(`[Config] - schedules для dID ${dID} не найден`);
+        return;
+      }
+      console.log('[config] - UPDATE_SCHEDULE_VALUE - Найдена конфигурация ',config,':', state.schedules[dID]);
+
+      // Ищем расписание по id в массиве
+      if (state.schedules[dID][room] && state.schedules[dID][room][param]) {
+        const schedules = state.schedules[dID][room][param];
+        const index = schedules.findIndex(s => (s.id || s._id) === id);
+        console.log('[config] - UPDATE_SCHEDULE_VALUE - Найдено расписание :', index);
+        
+        if (index !== -1) {
+          // Обновляем существующее расписание
+          state.schedules[dID][room][param][index] = {
+            ...schedules[index],
+            [title]: value,
+            updatedAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+          };
+          logger.dev('[config] - UPDATE_SCHEDULE_VALUE - Расписание обновлено');
+          console.log('[config] - UPDATE_SCHEDULE_VALUE - Расписание обновлено', state.schedules[dID][room][param][index] );
+        } 
+        // else {
+        //   // Добавляем новое расписание
+        //   state.schedules[dID][room][param].push({
+        //     ...scheduleData,
+        //     updatedAt: scheduleData.time || new Date().toISOString()
+        //   });
+        //   logger.dev('[config] - UPDATE_SCHEDULE_VALUE - Новое расписание добавлено');
+        // }
+      } 
+      // else {
+      //   // Создаем структуру если её нет
+      //   if (!state.schedules[dID][room]) {
+      //     state.schedules[dID][room] = {};
+      //   }
+      //   if (!state.schedules[dID][room][param]) {
+      //     state.schedules[dID][room][param] = [];
+      //   }
+        
+      //   // Добавляем новое расписание
+      //   state.schedules[dID][room][param].push({
+      //     ...scheduleData,
+      //     updatedAt: scheduleData.time || new Date().toISOString()
+      //   });
+      //   logger.dev('[config] - UPDATE_SCHEDULE_VALUE - Создана новая структура и добавлено расписание');
+      // }
+      
+      // Сохраняем в localStorage
+      // localStorage.setItem(`${dID}_schedules`, JSON.stringify(state.schedules[dID]));
+    },
+
+
     SET_LOADING(state, value) {
       state.loading = value;
     },
@@ -431,8 +492,9 @@ export default {
 
 
 
-    handleValueUpdate({ commit }, { dID, payload, type }) {
+    handleValueUpdate({ commit, rootGetters}, { dID, payload, type }) {
       console.groupCollapsed('[Config] - handleValueUpdate');
+      logger.info('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
       console.log('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
       if (!dID || !payload || !type) {
         logger.error('[Config] - handleValueUpdate - Невалидные параметры запроса:', { dID, payload, type });
@@ -440,32 +502,53 @@ export default {
         return;
       }
 
+      const { room, param, value, time } = payload;
+      if (!dID || !room || !param || value === undefined) return;
+      
+      let settingsData = rootGetters.getSetpointsManager?.settingsData;
+
       if (type === 'setpoints') {
-        logger.info('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
-        console.log(' ++++++++++++++++++++ [Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
+        try {
+          commit('UPDATE_CONFIG_VALUE', {
+            dID,
+            room,
+            type: type,
+            name: param,
+            value: value,
+            timestamp: time
+          });
+
+        } catch (error) {
+          logger.error('[Config] Ошибка обработки данных сенсора:', error);
+          //console.error('[Config] Ошибка обработки данных сенсора:', error);
+        }
+        console.groupEnd('[Config] - handleSensorUpdate');
+      }
+      if (type === 'schedules') {
+        console.log(' ~~~~~~~~~~~~~~~~~~~  [Config] - handleSensorUpdate - Необходимо написать логику ОБНОВЛЕНИЯ локальной конфигурации Расписания');
+        try {
+          commit('UPDATE_SCHEDULE_VALUE', {
+            dID: settingsData.name,
+            room: settingsData.payload.room,
+            param: settingsData.payload.param,
+            config: settingsData.payload.config,
+            id: settingsData.payload.id,
+            title: settingsData.payload.value_name,
+            value: settingsData.payload.value,
+          });
+        } catch (error) {
+          logger.error('[Config] Ошибка обработки данных расписания:', error);
+          console.error('[Config] Ошибка обработки данных расписания:', error);
+        }
+      }
+      if (type === 'notifications') {
+        console.log(' ~~~~~~~~~~~~~~~~~~~  [Config] - handleSensorUpdate - Необходимо написать логику ОБНОВЛЕНИЯ локальной конфигурации УВЕДОМЛЕНИЙ');
+      }
+      if (type === 'statistics') {
+        console.log(' ~~~~~~~~~~~~~~~~~~~  [Config] - handleSensorUpdate - Необходимо написать логику ОБНОВЛЕНИЯ локальной конфигурации АНАЛИТИКИ');
       }
 
-      try {
-        const { room, item_name, item_value, time } = payload;
-        if (!dID || !room || !item_name || item_value === undefined) return;
 
-        const timestamp = time ? new Date(time).toString() : new Date().toString();
-
-
-        commit('UPDATE_CONFIG_VALUE', {
-          dID,
-          room,
-          type: type,
-          name: item_name,
-          value: item_value,
-          timestamp
-        });
-
-      } catch (error) {
-        logger.error('[Config] Ошибка обработки данных сенсора:', error);
-        //console.error('[Config] Ошибка обработки данных сенсора:', error);
-      }
-      console.groupEnd('[Config] - handleValueUpdate');
     },
 
     async ensureConfig({ dispatch }, dID) {
