@@ -231,7 +231,7 @@ export default {
       'UPDATE_LIMITS',
     ]),
     // ...mapActions('config', ['initialize']),
-    ...mapActions('settingsConfig', ['settingsConfigUpdate']),
+    ...mapActions('settingsConfig', ['settingsConfigUpdate', 'checkScheduleOverlap', 'createTimePoint']),
     ...mapActions(['initializeSetpointsManager', 'updateSettingsData','updatePayloadData', 'updateLimitsData', 'updateViewData']),
     
     handleSortTypeChange(sortType) {
@@ -270,7 +270,7 @@ export default {
     resetSelection() {
       this.$router.push({ name: 'DashboardMain' });
     },
-      sortingBack() {
+    sortingBack() {
       const sortType = this.$route.params.sortType;
       logger.info('[DashBoard] - sortingBack - Сортировка назад', sortType);
       //console.log('[DashBoard] - sortingBack - Сортировка назад', sortType);
@@ -371,8 +371,14 @@ export default {
       break;
       case 'schedules':
         console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - Расписание');
-        if (value_details) {
+        if (value_details === 'minutes' || value_details === 'hours') {
           console.log('[DashBoard] - editValueMainSetpoint - value_details-', value_details, '--ДОПИСЫВАЕМ ОБРАБОТКУ ИЗМЕНЕНИЯ ВРЕМЕНИ --');
+          
+          // const hasOverlap = await this.$store.dispatch('settingsConfig/checkScheduleOverlap', {
+          //     startTime,
+          //     endTime,
+          //     existingSchedules
+          // });
         }
         payload = {
           room: roomKey, 
@@ -452,12 +458,12 @@ export default {
       this.selectedItemData = event.data;
       this.selectedItemData.roomKey = settingsData?.payload?.room;
       this.selectedItemData.setpointKey = settingsData?.payload?.param;
-      console.log('[DashBoard] - getComponentData - Данные в settingsData ', settingsData, ' request:', settingsData.request);
+      //console.log('[DashBoard] - getComponentData - Данные в settingsData ', settingsData, ' request:', settingsData.request);
       // console.log('[DashBoard] - getComponentData - Данные в settingsData ', 
       //   JSON.parse(JSON.stringify(settingsData)), 
       //   ' request:', settingsData?.request
       // );
-      // console.log('[DashBoard] - getComponentData - Данные в event.request ', event.request);
+      console.log('[DashBoard] - getComponentData - Данные в event.request ', event.request, 'event.data.value-', event.data.value);
       if (event.request !== null && event.request !== undefined) {
         if (event.request !== settingsData?.request) {
           console.log('[DashBoard] - getComponentData - Обновляем request в settingsData. Текущее значение -  ', settingsData?.request, ' Новое значение - ', event.request);
@@ -465,6 +471,7 @@ export default {
               field: 'request', 
               value: event.request
           });
+          this.updatePayloadData({ value: event.data.value});
         }
         
       } else console.error ('[DashBoard] - getComponentData - request не определен:', event.request);

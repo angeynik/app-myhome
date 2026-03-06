@@ -148,9 +148,6 @@ export default {
       //editingSchedule: null, // Объект для редактируемого расписания
       isEditingSchedule: false, // Флаг режима редактирования
       editScheduleValue: null, // Текущее редактируемое значение
-
-
-
     };
   },
   computed: {
@@ -255,6 +252,7 @@ export default {
       'getCurrentDateTime',
       'formatDate',
       'checkScheduleOverlap',
+      'createTimePoint',
       'updateSchedule',
       'deleteSchedules',
     ]),
@@ -384,15 +382,15 @@ export default {
             // this.getSchedulesFromStore();
             // roomKey = this.settingsData.payload.room;
             // paramKey = this.effectiveParamKey;
-          this.defaultItemValues = {
-            roomKey: this.settingsData.payload.room,
-            paramKey: this.effectiveParamKey,
-            value: this.effectiveSetpointValue || 0,
-            unit: this.unit || '°C',
-            days: [1, 2, 3, 4, 5] // Пн-Пт по умолчанию
-          };
-          console.log('case Schedule - [MainBodySettings] - addNewItem - ', this.defaultItemValues);
-          this.addNewSchedule(this.settingsData.payload.room, this.effectiveParamKey);
+          // this.defaultItemValues = {
+          //   roomKey: this.settingsData.payload.room,
+          //   paramKey: this.effectiveParamKey,
+          //   value: this.effectiveSetpointValue || 0,
+          //   unit: this.unit || '°C',
+          //   days: [1, 2, 3, 4, 5] // Пн-Пт по умолчанию
+          // };
+          // console.log('case Schedule - [MainBodySettings] - addNewItem - ', this.defaultItemValues);
+          this.addNewSchedule();
           break;
         case 'notifications':
           this.defaultItemValues = {
@@ -419,41 +417,34 @@ export default {
       }
     },
   
-    async addNewSchedule(roomKey, paramKey) {
-      console.log('[MainBodySettings] - addNewSchedule - ', roomKey, paramKey); 
+    async addNewSchedule() {
+      const settingsData = this.$store.state.setpointsManager?.settingsData;
+      const room = settingsData?.payload?.room;
+      const param = settingsData?.payload?.param;
+      const value = settingsData?.payload?.value || 0;
+      console.log('[MainBodySettings] - addNewSchedule - ', room, param); 
 
       // Получаем текущие расписания для этой комнаты и параметра
       this.getSchedulesFromStore();
       const existingSchedules = this.schedules.filter(s => 
-        s.roomKey === roomKey && 
-        s.paramKey === paramKey
+        s.roomKey === room && 
+        s.paramKey === param
       );
       
       console.log('[MainBodySettings] - addNewSchedule - Существующие расписания:', existingSchedules);
       
-      // Создаем временные метки
-      const now = new Date();
-      const currentHours = now.getHours().toString().padStart(2, '0');
-      const currentMinutes = now.getMinutes().toString().padStart(2, '0');
-      let startTime = `${currentHours}:${currentMinutes}`;
-      
-      // Время окончания (+1 час от текущего времени)
-      const endTimeDate = new Date(now.getTime() + 60 * 60 * 1000);
-      const endHours = endTimeDate.getHours().toString().padStart(2, '0');
-      const endMinutes = endTimeDate.getMinutes().toString().padStart(2, '0');
-      let endTime = `${endHours}:${endMinutes}`;
-      
-      console.log('[MainBodySettings] - Проверяемое время:', { startTime, endTime });
-      
-      // Проверка пересечения с существующими расписаниями
+      let startTime, endTime;
       try {
+        const createTimePoint = await this.$store.dispatch('settingsConfig/createTimePoint');
+        startTime = createTimePoint.startTime;
+        endTime = createTimePoint.endTime;
         const hasOverlap = await this.$store.dispatch('settingsConfig/checkScheduleOverlap', {
           startTime,
           endTime,
           existingSchedules
         });
-        
-        console.log('[MainBodySettings] - Результат проверки пересечения:', hasOverlap);
+
+        console.log(' . 7777777777777777777 - - - - - -MainBodySettings] - Результат проверки пересечения:', createTimePoint);
         
         if (hasOverlap.massage) {
           alert(hasOverlap.massage);
@@ -484,21 +475,18 @@ export default {
         }
       }
       
-      // Получаем текущее значение уставки или используем значение по умолчанию
-      const defaultValue = this.effectiveSetpointValue || 0;
-      
       // Создаем новое расписание
       const newSchedule = {
         id: newId,
         startTime: startTime,
         endTime: endTime,
-        value: defaultValue,
+        value: value,
         valueType: 'absolute', // или 'deviation' - зависит от требований
         unit: this.unit || '',
-        roomKey: roomKey,
-        paramKey: paramKey,
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
+        roomKey: room,
+        paramKey: param,
+        createdAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
+        updatedAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
         // _modified: true, // Флаг для отслеживания изменений
         days: [1, 2, 3, 4, 5], // Пн-Пт по умолчанию
         
@@ -513,8 +501,8 @@ export default {
       try {
         console.log('[MainBodySettings] - addNewSchedule - Сохраняем расписание локально');
         await this.$store.dispatch('settingsConfig/addScheduleLocally', {
-          roomKey: roomKey,
-          paramKey: paramKey,
+          roomKey: room,
+          paramKey: param,
           schedule: newSchedule
         });
         
@@ -567,6 +555,7 @@ export default {
     },
   
   async addNewNotification(roomKey, paramKey) {
+    console.groupCollapsed('[MainBodySettings] - addNewNotification');
     // Получаем текущие уведомления для этой комнаты и параметра
     const existingNotifications = this.notifications.filter(n => 
       n.roomKey === roomKey && 
@@ -585,16 +574,14 @@ export default {
       }
     }
     
-    const threshold = this.effectiveSetpointValue || 0;
-    
     const newNotification = {
       id: newId,
       condition: 'greater_than', // 'greater_than', 'less_than', 'equals', 'changed'
-      threshold: threshold,
+      threshold: null,
       notificationType: 'email', // 'email', 'push', 'sms'
       roomKey: roomKey,
       paramKey: paramKey,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
     };
     
     // Добавляем уведомление
@@ -643,6 +630,7 @@ export default {
     // Сохраняем изменения
     await this.saveAnalyticBlock();
     console.log('[MainBodySettings] - addNewStatistic - Аналитика успешно сохранена');
+    console.groupEnd();
   },
   
   

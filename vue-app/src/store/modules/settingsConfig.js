@@ -233,7 +233,7 @@ export default {
         return '00:00';
       }
     },
-    formatDate(context, { dateString, locale = 'ru-RU' }) {
+    formatDate(context, { dateString, locale = 'ru-RU', timeZone = 'Europe/Moscow'  }) {
       try {
         if (!dateString) return '—';
         
@@ -245,6 +245,7 @@ export default {
         }
         
         return date.toLocaleDateString(locale, {
+          timeZone: timeZone,
           day: '2-digit',
           month: '2-digit',
           year: 'numeric',
@@ -333,7 +334,81 @@ export default {
           };
         }
     },
+    
+
+
+
+
+async createTimePoint({ dispatch }, { offset = 1, duration = 10 } = {}) {
+  console.groupCollapsed('[settingsConfig] - createTimePoint');
+  console.log('[settingsConfig] - createTimePoint - Создание временной точки:', { offset, duration });
+  
+  try {
+    // Шаг 1: Получаем текущее московское время с учетом смещения offset
+    const now = new Date();
+    
+    // Применяем смещение offset (в минутах) к текущему времени
+    const offsetDate = new Date(now.getTime() + offset * 60 * 1000);
+    
+    // Форматируем время начала в московском часовом поясе
+    const formattedStartTime = await dispatch('formatDate', { 
+      dateString: offsetDate, 
+      timeZone: 'Europe/Moscow',
+      returnTimeOnly: true // Предполагаем, что formatDate может возвращать только время
+    });
+    const startTime = formattedStartTime.split(', ')[1];
+    console.log('[settingsConfig] - createTimePoint - Время начала (с учетом offset):', startTime);
+    
+    // Шаг 2: Создаем время окончания, добавляя duration минут к offsetDate
+    const endDate = new Date(offsetDate.getTime() + duration * 60 * 1000);
+    
+    // Форматируем время окончания
+    const formattedEndTime = await dispatch('formatDate', { 
+      dateString: endDate, 
+      timeZone: 'Europe/Moscow',
+      returnTimeOnly: true
+    });
+    const endTime = formattedEndTime.split(', ')[1];
+    console.log('[settingsConfig] - createTimePoint - Время окончания:', endTime);
+  
+    // Шаг 3: Возвращаем результат
+    const result = {
+      startTime,
+      endTime,
+    };
+    
+    console.log('[settingsConfig] - createTimePoint - Результат:', result);
+    console.groupEnd();
+    return result;
+    
+  } catch (error) {
+    logger.error('[settingsConfig] - createTimePoint - Ошибка создания временной точки:', error);
+    console.groupEnd();
+    
+    // Возвращаем значения по умолчанию в случае ошибки
+    return {
+      startTime: '00:00',
+      endTime: '00:05'
+    };
+  }
+},
+
+
+
+
+
+
+
+
+
     async checkScheduleOverlap(context, { startTime, endTime, existingSchedules }) {
+      // this.getSchedulesFromStore();
+      // const existingSchedules = this.schedules.filter(s => 
+      //   s.roomKey === room && 
+      //   s.paramKey === param
+      // );
+
+
       console.log('[settingsConfig] - checkScheduleOverlap - Начало проверки', {
         startTime,
         endTime,
@@ -830,10 +905,10 @@ export default {
     },
 
     dateTimeUtils: () => ({
-      getCurrentDateTime: () => {
-        return new Date().toISOString();
-      },
-      formatDate: (dateString, locale = 'ru-RU') => {
+    getCurrentDateTime: () => {
+      return new Date().toISOString();
+    },
+    formatDate: (dateString, locale = 'ru-RU') => {
         try {
           if (!dateString) return '—';
           const date = new Date(dateString);
@@ -847,7 +922,9 @@ export default {
         } catch (error) {
           return dateString;
         }
-      },
+    },
+
+    
 
 
     }),
