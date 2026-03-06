@@ -57,6 +57,7 @@ const store = createStore({
       state.settingsData = data;
     },
     UPDATE_PAYLOAD_DATA(state, payload) {
+      console.log('[index] - UPDATE_PAYLOAD_DATA - Обновляем payload:', payload);
       if (state.setpointsManager) {
         // Частичное обновление - сохраняем существующие поля
         state.setpointsManager.settingsData.payload = {
@@ -67,6 +68,7 @@ const store = createStore({
           new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
         
         state.settingsData = { ...state.setpointsManager.settingsData };
+        console.log('[index] - UPDATE_PAYLOAD_DATA - Обновляем payload:', state.setpointsManager.settingsData.payload );
       }
     },
     UPDATE_LIMITS_DATA(state, limits) {
@@ -156,6 +158,7 @@ const store = createStore({
       commit('UPDATE_SETTINGS_DATA', { field, value });
     },
     updatePayloadData({ commit }, payload) {
+      console.log('[index] - updatePayloadData - Обновляем payload:', payload);
       commit('UPDATE_PAYLOAD_DATA', payload);
     },
     

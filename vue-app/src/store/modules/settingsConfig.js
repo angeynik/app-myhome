@@ -1,6 +1,7 @@
 // модуль работы с конфигурацией Расписания
 // store/modules/settingsConfig.js
 import logger from './logger';
+import { mapActions} from 'vuex';
 
 export default {
   namespaced: true,
@@ -55,6 +56,7 @@ export default {
   },
 
   actions: {
+    ...mapActions(['updatePayloadData']),
     async initialize({ commit, dispatch, rootGetters }) {
       logger
       //console.groupCollapsed('[settingsConfig] - initialize ');
@@ -393,6 +395,38 @@ async createTimePoint({ dispatch }, { offset = 1, duration = 10 } = {}) {
   }
 },
 
+getSchedulesFromStore({ rootState, rootGetters }) {
+  console.groupCollapsed('[settingsConfig] - getSchedulesFromStore');
+  const settingsData = rootGetters['getSetpointsManager']?.settingsData;
+  const dID = settingsData?.name;
+  const roomKey = settingsData?.payload?.room;
+  const paramKey = settingsData?.payload?.param;
+  console.log('[settingsConfig] - getSchedulesFromStore - Start', { dID, roomKey, paramKey });
+  
+  try {
+    if (!dID || !roomKey || !paramKey) {
+      console.groupEnd();
+      return [];
+    }
+    
+    // Получаем данные из rootState.config.schedules
+    const schedulesData = rootState.config?.schedules?.[dID] || {};
+    const roomData = schedulesData[roomKey] || {};
+    const paramSchedules = roomData[paramKey];
+    
+    const schedules = Array.isArray(paramSchedules) ? [...paramSchedules] : [];
+    
+    console.log('[settingsConfig] - getSchedulesFromStore - Найдено расписаний:', schedules.length);
+    console.groupEnd();
+    
+    return schedules;
+    
+  } catch (error) {
+    console.error('[settingsConfig] - getSchedulesFromStore - Ошибка:', error);
+    console.groupEnd();
+    return [];
+  }
+},
 
 
 
@@ -400,33 +434,40 @@ async createTimePoint({ dispatch }, { offset = 1, duration = 10 } = {}) {
 
 
 
-
-    async checkScheduleOverlap(context, { startTime, endTime, existingSchedules }) {
-      // this.getSchedulesFromStore();
-      // const existingSchedules = this.schedules.filter(s => 
-      //   s.roomKey === room && 
-      //   s.paramKey === param
-      // );
-
-
-      console.log('[settingsConfig] - checkScheduleOverlap - Начало проверки', {
-        startTime,
-        endTime,
-        existingSchedules
-      });
+    async checkScheduleOverlap({rootGetters, dispatch}, { startTime, endTime}) {
+      console.groupCollapsed('[settingsConfig] - checkScheduleOverlap');
       try {
+        const schedules = this.getSchedulesFromStore();
+        const settingsData = rootGetters['getSetpointsManager']?.settingsData;
+        const room = settingsData?.payload?.room;
+        const param = settingsData?.payload?.param;
+        const existingSchedules = schedules.filter(s => 
+          s.roomKey === room && 
+          s.paramKey === param
+        );
+        console.log('[settingsConfig] - checkScheduleOverlap - Существующие расписания:', existingSchedules);
+
+
+        console.log('[settingsConfig] - checkScheduleOverlap - Начало проверки', {
+          startTime,
+          endTime,
+          existingSchedules
+        });
+
         // Валидация входных параметров
         if (!startTime || !endTime) {
           const message = 'Отсутствует startTime или endTime';
           console.warn('[settingsConfig] - checkScheduleOverlap - ', message);
-          return message;
+          console.groupEnd();
+          return { message, hasOverlap: false };
         }
         if (!existingSchedules || !Array.isArray(existingSchedules)) {
-          return false;
+          console.groupEnd();
+          return { hasOverlap: false };
         }
 
-        const numStart = await context.dispatch('timeToMinutes', startTime);
-        const numEnd = await context.dispatch('timeToMinutes', endTime);
+        const numStart = await dispatch('timeToMinutes', startTime);
+        const numEnd = await dispatch('timeToMinutes', endTime);
         console.log('[settingsConfig] - checkScheduleOverlap - Новое время расписания:', {
           startTime,
           endTime,
@@ -438,7 +479,8 @@ async createTimePoint({ dispatch }, { offset = 1, duration = 10 } = {}) {
         if (numEnd <= numStart) {
           const message = 'Некорректное время нового расписания'
           logger.dev('[settingsConfig] - checkScheduleOverlap - ', message);
-          return message; // Считаем пересечением, т.к. время некорректно
+          console.groupEnd();
+          return { message, hasOverlap: true }; 
         }
         
         let hasOverlap = false;
@@ -446,8 +488,8 @@ async createTimePoint({ dispatch }, { offset = 1, duration = 10 } = {}) {
         
         // 1. Сначала проверяем все существующие расписания на пересечение
         for (const scheduleItem of existingSchedules) {
-          const existingStart = await context.dispatch('timeToMinutes', scheduleItem.startTime);
-          const existingEnd = await context.dispatch('timeToMinutes', scheduleItem.endTime);
+          const existingStart = await dispatch('timeToMinutes', scheduleItem.startTime);
+          const existingEnd = await dispatch('timeToMinutes', scheduleItem.endTime);
           
           console.log('[settingsConfig] - checkScheduleOverlap - Существующее время расписания:', {
             existingStart,
@@ -475,6 +517,7 @@ async createTimePoint({ dispatch }, { offset = 1, duration = 10 } = {}) {
           // Проверяем, что новое время не выходит за границы суток (1440 минут)
           if (newEndMinutes > 1440) {
             console.log('[settingsConfig] - checkScheduleOverlap - Новое время выходит за границы суток');
+            console.groupEnd();
             return { 
               hasOverlap: true,
               newStartTime: null,
@@ -484,8 +527,8 @@ async createTimePoint({ dispatch }, { offset = 1, duration = 10 } = {}) {
           }
           
           // Преобразуем минуты обратно в строковое время
-          const newStartTimeStr = await context.dispatch('minutesToTime', newStartMinutes);
-          const newEndTimeStr = await context.dispatch('minutesToTime', newEndMinutes);
+          const newStartTimeStr = await dispatch('minutesToTime', newStartMinutes);
+          const newEndTimeStr = await dispatch('minutesToTime', newEndMinutes);
 
           console.log('[settingsConfig] - checkScheduleOverlap - Предложено новое время:', {
             newStartTime: newStartTimeStr,
@@ -496,19 +539,27 @@ async createTimePoint({ dispatch }, { offset = 1, duration = 10 } = {}) {
           
           // Возвращаем информацию о пересечении и новом времени
           const message = `Предложено новое время от ${newStartTimeStr} до ${newEndTimeStr}`;
+          console.groupEnd();
           return {
             message,
             newStartTime: newStartTimeStr,
-            newEndTime: newEndTimeStr
+            newEndTime: newEndTimeStr,
+            hasOverlap: true
           };
         }
         
         // Если пересечения нет, возвращаем false
-        return false;
+        console.groupEnd();
+        return { hasOverlap: false };
         
       } catch (error) {
         logger.error('[settingsConfig] - checkScheduleOverlap - Ошибка проверки пересечения:', error);
-        return error; // В случае ошибки считаем, что есть пересечение для безопасности
+        console.groupEnd();
+        return { 
+          message: 'Ошибка при проверке пересечения',
+          hasOverlap: true,
+          error: error.message 
+        };
       }
     },
 
@@ -650,7 +701,7 @@ async createTimePoint({ dispatch }, { offset = 1, duration = 10 } = {}) {
  
 
 
-    async addScheduleLocally({ dispatch, rootGetters, rootState }, { roomKey, paramKey, schedule }) {
+    async addScheduleLocally({ rootGetters, rootState }, { roomKey, paramKey, schedule }) {
       console.log('[settingsConfig] - addScheduleLocally - Начинаем локальное сохранение расписания');
       const dID = rootGetters['dID'];
       if (!dID) {
@@ -680,10 +731,11 @@ async createTimePoint({ dispatch }, { offset = 1, duration = 10 } = {}) {
         // 4. Обновляем состояние в config.js через мутацию
         // Нам нужен commit, но у нас нет доступа к нему напрямую в action
         // Вместо этого используем dispatch
-        await dispatch('config/updateScheduleLocally', {
-          dID: dID,
-          schedules: currentSchedules
-        }, { root: true });
+        console.log('[settingsConfig] - addScheduleLocally - Обновляем состояние в config.js через НЕ СУЩЕСТВУЮЩУЮ мутацию updateScheduleLocally - НЕОБХОДИМО ДОПИСАТЬ !!!!!!');
+        // await dispatch('config/updateScheduleLocally', {
+        //   dID: dID,
+        //   schedules: currentSchedules
+        // }, { root: true });
         
         // 5. Также сохраняем в localStorage для резерва
         localStorage.setItem(`${dID}_schedules`, JSON.stringify(currentSchedules));
@@ -735,8 +787,35 @@ async createTimePoint({ dispatch }, { offset = 1, duration = 10 } = {}) {
 
 
 
-    settingsConfigUpdate({ dID, payload, type }) {
-       console.log(' [settingConfig] - settingsConfigUpdate - Параметры запроса:', { dID, payload, type });
+    settingsConfigUpdate({ dispatch, rootGetters }, { newValue, value_details }) {
+      console.log(' [settingConfig] - settingsConfigUpdate - Параметры запроса:', { newValue, value_details });
+      const settingsData = rootGetters['getSetpointsManager']?.settingsData;
+      const dID = settingsData?.name;
+      const value = settingsData?.payload?.value;
+      if (!dID || !newValue || !value || !value_details) {
+        logger.warn('[settingsConfig] - settingsConfigUpdate - Параметры обновления не определены');
+        return {updateStatus: false, message: 'Параметры обновления не определены'};
+      }
+      let updatedValue;
+      try {
+        const [hours, minutes] = value.split(':').map(Number);
+
+        if (value_details === 'hours') {
+          //console.log('[settingsConfig] - settingsConfigUpdate - Обновляем часы для', value, hours, minutes);
+          updatedValue = `${newValue}:${minutes}`;
+        } else if (value_details === 'minutes') {
+          //console.log('[settingsConfig] - settingsConfigUpdate - Обновляем минуты для', value);
+          updatedValue = `${hours}:${newValue}`;
+        }
+        console.log('[settingsConfig] - settingsConfigUpdate - Обновляем часы updatedValue', updatedValue);
+        dispatch('updatePayloadData', { 
+          value: updatedValue 
+        }, { root: true });
+        
+        return {updateStatus: true, updatedValue};
+      } catch (error) {
+        return {updateStatus: false, error};
+      }
 
     },
 
@@ -951,31 +1030,17 @@ async createTimePoint({ dispatch }, { offset = 1, duration = 10 } = {}) {
           
           return { valid: true };
         },
-       checkScheduleOverlap: (startTime, endTime, existingSchedules) => {
-          try {
-            console.log('[settingsConfig] - checkScheduleOverlap - Начало проверки', {
-              startTime,
-              endTime,
-              existingSchedules,
-              schedulesCount: existingSchedules?.length || 0
-            });
-          } catch (error) {
-            console.log('[settingsConfig] - checkScheduleOverlap - Ошибка валидации:', error);
-          }
-
-          // Синхронная версия для геттера
-          // const timeToMinutes = getters.dateTimeUtils.timeToMinutes;
-          // const newStart = timeToMinutes(startTime);
-          // const newEnd = timeToMinutes(endTime);
-          
-          // if (newEnd <= newStart) return true;
-          
-          // return existingSchedules.some(schedule => {
-          //   const existingStart = timeToMinutes(schedule.startTime);
-          //   const existingEnd = timeToMinutes(schedule.endTime);
-          //   return (newStart < existingEnd && newEnd > existingStart);
-          // });
-        }
+      //  checkScheduleOverlap: (startTime, endTime) => {
+      //     try {
+      //       console.log('[settingsConfig] - checkScheduleOverlap - Начало проверки', {
+      //         startTime,
+      //         endTime,
+      //         schedulesCount: existingSchedules?.length || 0
+      //       });
+      //     } catch (error) {
+      //       console.log('[settingsConfig] - checkScheduleOverlap - Ошибка валидации:', error);
+      //     }
+      //   }
     }),
 
   }

@@ -212,26 +212,22 @@ export default {
       currentType: this.title
     });
     this.initialize();
-    this.getSchedulesFromStore();
+    this.loadSchedulesFromStore();
   },
   watch: {
     title(newTitle, oldTitle) {
       if (newTitle !== oldTitle) {
-        console.log('[MainBodySettings] WATCH - this.title:', newTitle);
+        //console.log('[MainBodySettings] WATCH - this.title:', newTitle);
         this.loadCurrentSettings();
       }
     },
     // Отслеживаем изменения в store и обновляем локальные данные
     '$store.state.config.schedules': {
       handler() {
-        console.log('[MainBodySettings] - Watch - Расписания в store обновились');
+        //console.log('[MainBodySettings] - Watch - Расписания в store обновились');
         if (this.title === 'schedule') {
-          this.getSchedulesFromStore();
-          console.log('[MainBodySettings] - Watch - Обновленные Расписания:', this.schedules);
-          // const param = localStorage.getItem('paramKey');
-          // const setKey = localStorage.getItem('setpointKey');
-          // console.log(' *************** --  [MainBodySettings] - Watch - получаем ключ param из localStorage -', param, ' setpointKey:', setKey);
-          // this.SET_PARAM_KEY(param);
+          this.loadSchedulesFromStore();
+          //console.log('[MainBodySettings] - Watch - Обновленные Расписания:', this.schedules);
         }
       },
       deep: true,
@@ -255,6 +251,7 @@ export default {
       'createTimePoint',
       'updateSchedule',
       'deleteSchedules',
+      'getSchedulesFromStore',
     ]),
     ...mapActions(['updateSettingsData', 'updatePayloadData', 'updateLimitsData', 'updateViewData']),
     
@@ -293,6 +290,18 @@ export default {
       };
       this.$emit('getComponentData', message);
     },
+    async loadSchedulesFromStore() {
+      //console.log('[MainBodySettings] - loadSchedulesFromStore - Вызов функции');
+    try {
+      
+      const schedules = await this.$store.dispatch('settingsConfig/getSchedulesFromStore');
+      
+      this.schedules = schedules;
+    } catch (error) {
+      console.error('[MainBodySettings] - loadSchedulesFromStore - Ошибка:', error);
+      this.schedules = [];
+    }
+  },
   
     formattedValue(value) {
       if (typeof value === 'number') {
@@ -341,55 +350,44 @@ export default {
       this.$emit('title-changed', nextTitle);
     },
 
-    getSchedulesFromStore() {
-      console.groupCollapsed('[MainBodySettings] - getSchedulesFromStore ');
-      console.log('[MainBodySettings] - getSchedulesFromStore - Start');
-      try {
-        const dID = this.dID;
-        const roomKey = this.settingsData.payload.room;
-        const paramKey = this.effectiveParamKey;
+    // getSchedulesFromStore() {
+    //   console.groupCollapsed('[MainBodySettings] - getSchedulesFromStore ');
+    //   console.log('[MainBodySettings] - getSchedulesFromStore - Start');
+    //   try {
+    //     const dID = this.dID;
+    //     const roomKey = this.settingsData.payload.room;
+    //     const paramKey = this.effectiveParamKey;
         
-        if (!dID || !roomKey || !paramKey) {
-          this.schedules = [];
-          console.groupEnd();
-          return;
-        }
+    //     if (!dID || !roomKey || !paramKey) {
+    //       this.schedules = [];
+    //       console.groupEnd();
+    //       return;
+    //     }
         
-        // Получаем данные из store и извлекаем нужный массив
-        const schedulesData = this.$store.state.config.schedules[dID] || {};
-        const roomData = schedulesData[roomKey] || {};
-        const paramSchedules = roomData[paramKey];
+    //     // Получаем данные из store и извлекаем нужный массив
+    //     const schedulesData = this.$store.state.config.schedules[dID] || {};
+    //     const roomData = schedulesData[roomKey] || {};
+    //     const paramSchedules = roomData[paramKey];
         
-        this.schedules = Array.isArray(paramSchedules) ? [...paramSchedules] : [];
+    //     this.schedules = Array.isArray(paramSchedules) ? [...paramSchedules] : [];
         
-        //console.log('[MainBodySettings] - getSchedulesFromStore - Найдено расписаний:', this.schedules.length);
-        console.groupEnd();
+    //     //console.log('[MainBodySettings] - getSchedulesFromStore - Найдено расписаний:', this.schedules.length);
+    //     console.groupEnd();
         
-      } catch (error) {
-        console.error('[MainBodySettings] - getSchedulesFromStore - Ошибка:', error);
-        this.schedules = [];
-        console.groupEnd();
-      }
-    },
+    //   } catch (error) {
+    //     console.error('[MainBodySettings] - getSchedulesFromStore - Ошибка:', error);
+    //     this.schedules = [];
+    //     console.groupEnd();
+    //   }
+    // },
 
     addNewItem() {
-      console.log('[MainBodySettings] - addNewItem');
+      //console.log('[MainBodySettings] - addNewItem');
       const type = this.title; // 'schedule', 'notifications', 'statistics'
       this.currentItemType = type;
       // let roomKey, paramKey;
       switch(type) {
         case 'schedule':
-            // this.getSchedulesFromStore();
-            // roomKey = this.settingsData.payload.room;
-            // paramKey = this.effectiveParamKey;
-          // this.defaultItemValues = {
-          //   roomKey: this.settingsData.payload.room,
-          //   paramKey: this.effectiveParamKey,
-          //   value: this.effectiveSetpointValue || 0,
-          //   unit: this.unit || '°C',
-          //   days: [1, 2, 3, 4, 5] // Пн-Пт по умолчанию
-          // };
-          // console.log('case Schedule - [MainBodySettings] - addNewItem - ', this.defaultItemValues);
           this.addNewSchedule();
           break;
         case 'notifications':
@@ -418,6 +416,7 @@ export default {
     },
   
     async addNewSchedule() {
+      //console.groupCollapsed('[MainBodySettings] - addNewSchedule');
       const settingsData = this.$store.state.setpointsManager?.settingsData;
       const room = settingsData?.payload?.room;
       const param = settingsData?.payload?.param;
@@ -425,7 +424,7 @@ export default {
       console.log('[MainBodySettings] - addNewSchedule - ', room, param); 
 
       // Получаем текущие расписания для этой комнаты и параметра
-      this.getSchedulesFromStore();
+      await this.loadSchedulesFromStore();
       const existingSchedules = this.schedules.filter(s => 
         s.roomKey === room && 
         s.paramKey === param
@@ -441,13 +440,14 @@ export default {
         const hasOverlap = await this.$store.dispatch('settingsConfig/checkScheduleOverlap', {
           startTime,
           endTime,
-          existingSchedules
+          // existingSchedules
         });
 
         console.log(' . 7777777777777777777 - - - - - -MainBodySettings] - Результат проверки пересечения:', createTimePoint);
         
         if (hasOverlap.massage) {
           alert(hasOverlap.massage);
+          console.groupEnd();
           return;
         }
         if (hasOverlap.newStartTime || hasOverlap.newEndTime) {
@@ -459,6 +459,7 @@ export default {
         console.error('[MainBodySettings] - Ошибка проверки пересечения:', error);
         // Продолжаем создание с предупреждением
         if (!confirm('Ошибка проверки пересечения. Создать расписание вручную?')) {
+          console.groupEnd();
           return;
         }
       }
@@ -522,7 +523,7 @@ export default {
         
         // Если нужно, можно обновить список расписаний
         await this.loadData('schedule');
-        
+        console.groupEnd();
         return newSchedule;
       } catch (error) {
         console.error('[MainBodySettings] - addNewSchedule - Ошибка сохранения:', error);
@@ -532,6 +533,7 @@ export default {
         
         // Показываем сообщение об ошибке
         alert('Не удалось сохранить расписание на сервере. Попробуйте еще раз.');
+        console.groupEnd();
         throw error;
       }
     },

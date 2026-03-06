@@ -200,7 +200,7 @@ export default {
       state.deviceType = deviceType;
     },
     SET_TYPE_SETTINGS_ITEM(state, type) {
-      console.log(`[Config] - SET_TYPE_SETTINGS_ITEM - type: ${type}`);
+      //console.log(`[Config] - SET_TYPE_SETTINGS_ITEM - type: ${type}`);
       localStorage.setItem('typeSettingsKey', type);
       state.typeSettingsKey = type;
     },

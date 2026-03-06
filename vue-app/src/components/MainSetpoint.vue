@@ -170,14 +170,17 @@
       methods: {
       ...mapActions(['updateSettingsData']),
       sendEmitMessage(event, value) {
+        console.groupCollapsed('[MainSetpoint] - sendEmitMessage ');
         console.log('[MainSetpoint] - sendEmitMessage - Формируем сообщение для отправки на сервер - message: ', value, 'event: ', event);
         // Проверяем, что все параметры переданы
         if (!event ||!value) {
           console.error('sendEmitMessage - параметры не переданы:', { event, value });
           return;
-        }
-        // this.updateSettingsData({  field: 'value', value: value });
-        // this.updateSettingsData({  field: 'value_name', value: this.valueTitle });
+        }    
+        logger.dev('[MainSetpoint] - sendEmitMessage для Уставки - value:', value, 'title:', this.valueTitle, 'request:', this.request);
+        console.log('[MainSetpoint] - sendEmitMessage для Уставки - value:', value, 'title:', this.valueTitle, 'request:', this.request);
+        console.groupEnd();
+        
         this.$emit('eventsMainSetpoint', {
             [event]: {
               request: this.request,
@@ -185,10 +188,7 @@
               title: this.valueTitle,
             }
           });
-        console.groupCollapsed('[MainSetpoint] - sendEmitMessage ');
-        logger.dev('[MainSetpoint] - sendEmitMessage для Уставки - value:', value, 'event:', event);
-        //console.log('[MainSetpoint] - sendEmitMessage для Уставки - value:', value, 'event:', event);
-        console.groupEnd();
+
       },
 
 
@@ -228,7 +228,7 @@
     },
     calculateSetpoint(value, step, min, max) {
       logger.dev('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
-        console.log('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
+      console.log('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
         
         let newValue, currentSetPoint;
         if (this.setPoint === null || this.setPoint === undefined) {
@@ -240,20 +240,21 @@
           if (value > 5 && value < 120) {
           newValue = currentSetPoint + step;
           logger.dev('[MainSetpoint] - calculateSetpoint  Увеличили SetPoint:', newValue);
-        // console.log('Увеличили SetPoint:', newSetPointValue);
+          //console.log('Увеличили SetPoint:', newValue);
         } else if (value < -5 && value > -120) {
           newValue = currentSetPoint - step;
           logger.dev('[MainSetpoint] - calculateSetpoint  Уменьшили SetPoint:', newValue);
-          // console.log('Уменьшили SetPoint:', newSetPointValue);
+          //console.log('Уменьшили SetPoint:', newValue);
         } else if (value > 120) {
           newValue = currentSetPoint + (step*10);
           logger.dev('[MainSetpoint] - calculateSetpoint  Увеличили SetPoint:', newValue);
-          console.log('Увеличили SetPoint:', newValue);
+          //console.log('Увеличили SetPoint:', newValue);
         } else if (value < - 120) {
           newValue = currentSetPoint - (step*10);
           logger.dev('[MainSetpoint] - calculateSetpoint  Уменьшили SetPoint:', newValue);
-          console.log('Уменьшили SetPoint:', newValue);
+          //console.log('Уменьшили SetPoint:', newValue);
         }
+        console.log('[MainSetpoint] - calculateSetpoint  Обновленное значение:', newValue);
           try {
               if (newValue > max) {
               newValue = max;
@@ -265,7 +266,7 @@
               //console.log('[MainSetpoint] - calculateSetpoint  Ограничиваем Нижнюю границу Уставки', newValue);
             }
 
-            newValue = parseFloat(newValue.toFixed(1));
+            //newValue = parseFloat(newValue.toFixed(1));
             logger.dev('[MainSetpoint] - calculateSetpoint  Обновили значение Уставки:', newValue, 'request', this.request);
             //console.log('[MainSetpoint] - calculateSetpoint  Обновили значение Уставки:', newValue, 'request', this.request);
             this.sendEmitMessage('updateState', newValue);
@@ -285,8 +286,8 @@
        //this.sendSetPoint(newValue, min, max);
     },
     clickChangeSetpoint(value) {
-      logger.dev('[MainSetpoint] - clickChangeSetpoint value:', value);
-      console.log('[MainSetpoint] - clickChangeSetpoint value:', value);
+      logger.dev('[MainSetpoint] - clickChangeSetpoint Смещение скрола Клик или :', value);
+      //console.log('[MainSetpoint] - clickChangeSetpoint Смещение скрола Клик или :', value);
       this.calculateSetpoint(value, this.limStep, this.limLow, this.limHigh);
       //this.debouncedUpdatePermitions('updatePermission', 'permission', true);
     },
