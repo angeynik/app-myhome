@@ -503,10 +503,11 @@ export default {
       }
 
       const { room, param, value, time } = payload;
+      //console.log('[Config] - handleValueUpdate - Параметры запроса:', { dID, room, param, value, time });
       if (!dID || !room || !param || value === undefined) return;
       
       let settingsData = rootGetters.getSetpointsManager?.settingsData;
-
+      console.log('[Config] - handleValueUpdate - Текущие settingsData:', settingsData);
       if (type === 'setpoints') {
         try {
           commit('UPDATE_CONFIG_VALUE', {
@@ -525,7 +526,7 @@ export default {
         console.groupEnd('[Config] - handleSensorUpdate');
       }
       if (type === 'schedules') {
-        console.log(' ~~~~~~~~~~~~~~~~~~~  [Config] - handleSensorUpdate - Необходимо написать логику ОБНОВЛЕНИЯ локальной конфигурации Расписания');
+        //console.log('[Config] - handleSensorUpdate - Необходимо написать логику ОБНОВЛЕНИЯ локальной конфигурации Расписания');
         try {
           commit('UPDATE_SCHEDULE_VALUE', {
             dID: settingsData.name,

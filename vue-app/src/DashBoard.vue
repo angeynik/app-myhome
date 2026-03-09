@@ -328,6 +328,8 @@ export default {
     console.groupCollapsed('[DashBoard] - editValueMainSetpoint');
     console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения Уставки :', eventData);
     const settingsData = this.$store.state.setpointsManager?.settingsData;
+    console.log('[DashBoard] - editValueMainSetpoint - Текущие settingsData:', settingsData);
+
     let dID = this.dID;
     let roomKey = this.getRoomKey;
     let setpointKey = this.getSetpointKey;
@@ -356,15 +358,17 @@ export default {
     console.groupEnd();
 
     this.setpoint = value;
+    console.log('[DashBoard] - editValueMainSetpoint - Обновляем значение уставки:', this.setpoint);
     switch (requestName) {
       case 'setpoints':
         console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - Уставка');
         payload = {
           room: roomKey, 
           param: setpointKey,
-          value: eventData.updateState.value, 
+          value: value, 
           time: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
         };
+        
         this.updatePayloadData({ value: value });
       break;
       case 'schedules':
@@ -410,6 +414,8 @@ export default {
     logger.dev('[DashBoard] - editValueMainSetpoint - Формируем сообщение для отпраку на сервер:', payload);
     console.log('[DashBoard] - editValueMainSetpoint - Формируем сообщение для отпраку на сервер:', payload);
     console.groupEnd();
+
+    this.updatePayloadData({ value: value });
     await this.$store.dispatch('config/handleValueUpdate', { dID, payload, type: requestName });
 
      

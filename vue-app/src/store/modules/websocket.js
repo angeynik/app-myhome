@@ -133,7 +133,7 @@ export default {
       try {
         const response = JSON.parse(event.data);
         logger.dev(`[WebSocket] Received: ${JSON.stringify(response)}`);
-        //console.log('[WebSocket] Received:', response);
+        console.log('[WebSocket] Received:', response);
         const dID = response.name;
         const auth_dID = rootGetters['dID'];
         if (response.request === 'loginSuccess' && state.pendingResponse?.type === 'login') {

@@ -399,20 +399,20 @@ getSchedulesFromStore({ rootState, rootGetters }) {
   console.groupCollapsed('[settingsConfig] - getSchedulesFromStore');
   const settingsData = rootGetters['getSetpointsManager']?.settingsData;
   const dID = settingsData?.name;
-  const roomKey = settingsData?.payload?.room;
-  const paramKey = settingsData?.payload?.param;
-  console.log('[settingsConfig] - getSchedulesFromStore - Start', { dID, roomKey, paramKey });
+  const room = settingsData?.payload?.room;
+  const param = settingsData?.payload?.param;
+  console.log('[settingsConfig] - getSchedulesFromStore - Start', { dID, room, param });
   
   try {
-    if (!dID || !roomKey || !paramKey) {
+    if (!dID || !room || !param) {
       console.groupEnd();
       return [];
     }
     
     // Получаем данные из rootState.config.schedules
     const schedulesData = rootState.config?.schedules?.[dID] || {};
-    const roomData = schedulesData[roomKey] || {};
-    const paramSchedules = roomData[paramKey];
+    const roomData = schedulesData[room] || {};
+    const paramSchedules = roomData[param];
     
     const schedules = Array.isArray(paramSchedules) ? [...paramSchedules] : [];
     
@@ -427,23 +427,31 @@ getSchedulesFromStore({ rootState, rootGetters }) {
     return [];
   }
 },
+getScheduleTimeByID(id, title) {
+  console.groupCollapsed('[settingsConfig] - getScheduleTimeByID');
+  try {
+    const schedules = this.getSchedulesFromStore();
+    const schedule = schedules.find(s => s.id === id);
+    const findedTime = schedule?.[title];
+    console.log('[settingsConfig] - getScheduleTimeByID - Найдено расписание:', schedule, findedTime);
+    console.groupEnd();
+    return findedTime;
+  } catch (error) {
+    return error;
+  }
+},
 
-
-
-
-
-
-
-    async checkScheduleOverlap({rootGetters, dispatch}, { startTime, endTime}) {
+async checkScheduleOverlap({rootGetters, dispatch}, { startTime, endTime}) {
       console.groupCollapsed('[settingsConfig] - checkScheduleOverlap');
       try {
-        const schedules = this.getSchedulesFromStore();
+        //const schedules = this.getSchedulesFromStore();
+        const schedules = await dispatch('getSchedulesFromStore');
         const settingsData = rootGetters['getSetpointsManager']?.settingsData;
         const room = settingsData?.payload?.room;
         const param = settingsData?.payload?.param;
         const existingSchedules = schedules.filter(s => 
-          s.roomKey === room && 
-          s.paramKey === param
+          s.room === room && 
+          s.param === param
         );
         console.log('[settingsConfig] - checkScheduleOverlap - Существующие расписания:', existingSchedules);
 
@@ -561,7 +569,7 @@ getSchedulesFromStore({ rootState, rootGetters }) {
           error: error.message 
         };
       }
-    },
+},
 
     // async addScheduleLocally({ state, dispatch, rootGetters }, { roomKey, paramKey, schedule }) {
     //   console.log('[settingsConfig] - addScheduleLocally - Начинаем локальное сохранение расписания');
@@ -701,7 +709,7 @@ getSchedulesFromStore({ rootState, rootGetters }) {
  
 
 
-    async addScheduleLocally({ rootGetters, rootState }, { roomKey, paramKey, schedule }) {
+    async addScheduleLocally({ rootGetters, rootState }, { room, param, schedule }) {
       console.log('[settingsConfig] - addScheduleLocally - Начинаем локальное сохранение расписания');
       const dID = rootGetters['dID'];
       if (!dID) {
@@ -709,7 +717,7 @@ getSchedulesFromStore({ rootState, rootGetters }) {
         return;
       }
       
-      console.log('[settingsConfig] - addScheduleLocally - Добавляем расписание локально:', { dID, roomKey, paramKey, schedule });
+      console.log('[settingsConfig] - addScheduleLocally - Добавляем расписание локально:', { dID, room, param, schedule });
       
       try {
         // 1. Получаем текущие расписания из config.js
@@ -717,16 +725,16 @@ getSchedulesFromStore({ rootState, rootGetters }) {
         console.log('[settingsConfig] - addScheduleLocally - Текущие расписания из config.js:', currentSchedules);
         
         // 2. Инициализируем структуру если нужно
-        if (!currentSchedules[roomKey]) {
-          currentSchedules[roomKey] = {};
+        if (!currentSchedules[room]) {
+          currentSchedules[room] = {};
         }
         
-        if (!currentSchedules[roomKey][paramKey]) {
-          currentSchedules[roomKey][paramKey] = [];
+        if (!currentSchedules[room][param]) {
+          currentSchedules[room][param] = [];
         }
         
         // 3. Добавляем новое расписание
-        currentSchedules[roomKey][paramKey] = [...currentSchedules[roomKey][paramKey], schedule];
+        currentSchedules[room][param] = [...currentSchedules[room][param], schedule];
         
         // 4. Обновляем состояние в config.js через мутацию
         // Нам нужен commit, но у нас нет доступа к нему напрямую в action
@@ -748,9 +756,9 @@ getSchedulesFromStore({ rootState, rootGetters }) {
         throw error;
       }
     },
-    async deleteSchedules({ dispatch, rootGetters }, { roomKey, paramKey, scheduleIds }) {
+    async deleteSchedules({ dispatch, rootGetters }, { room, param, scheduleIds }) {
       console.groupCollapsed('[settingsConfig] - deleteSchedules');
-      console.log('[settingsConfig] - deleteSchedules - Удаляем расписания:', { roomKey, paramKey, scheduleIds });
+      console.log('[settingsConfig] - deleteSchedules - Удаляем расписания:', { room, param, scheduleIds });
       
       const dID = rootGetters['dID'];
       if (!dID) {
@@ -765,8 +773,8 @@ getSchedulesFromStore({ rootState, rootGetters }) {
           request: 'delSchedule',
           name: dID,
           payload: { 
-            roomKey, 
-            paramKey, 
+            room, 
+            param, 
             scheduleIds: Array.isArray(scheduleIds) ? scheduleIds : [scheduleIds] 
           }
         }, { root: true });
@@ -781,17 +789,16 @@ getSchedulesFromStore({ rootState, rootGetters }) {
       }
     },
 
-
-
-
-
-
-
     settingsConfigUpdate({ dispatch, rootGetters }, { newValue, value_details }) {
+      console.groupCollapsed('[settingsConfig] - settingsConfigUpdate');
       console.log(' [settingConfig] - settingsConfigUpdate - Параметры запроса:', { newValue, value_details });
       const settingsData = rootGetters['getSetpointsManager']?.settingsData;
       const dID = settingsData?.name;
       const value = settingsData?.payload?.value;
+      const value_name = settingsData?.payload?.value_name;
+      const id = settingsData?.payload?.id;
+      let startTime, endTime;
+
       if (!dID || !newValue || !value || !value_details) {
         logger.warn('[settingsConfig] - settingsConfigUpdate - Параметры обновления не определены');
         return {updateStatus: false, message: 'Параметры обновления не определены'};
@@ -805,9 +812,26 @@ getSchedulesFromStore({ rootState, rootGetters }) {
           updatedValue = `${newValue}:${minutes}`;
         } else if (value_details === 'minutes') {
           //console.log('[settingsConfig] - settingsConfigUpdate - Обновляем минуты для', value);
-          updatedValue = `${hours}:${newValue}`;
+          if (newValue < 10) {
+            updatedValue = `${hours}:0${newValue}`;
+          } else {
+            updatedValue = `${hours}:${newValue}`;
+          }
+          
         }
         console.log('[settingsConfig] - settingsConfigUpdate - Обновляем часы updatedValue', updatedValue);
+        console.log('[settingsConfig] - settingsConfigUpdate - value_name', value_name);
+
+        // if (value_name == 'startTime') {
+        //   startTime = updatedValue;
+        //   endTime = this.getScheduleTimeByID(id, 'endTime');
+        // } else {
+        //   startTime = this.getScheduleTimeByID(id, 'endTime');
+        //   endTime = updatedValue;
+        // }
+        console.log('[settingsConfig] - settingsConfigUpdate - Обновляем startTime', startTime, 'endTime', endTime, id);
+        console.groupEnd();
+
         dispatch('updatePayloadData', { 
           value: updatedValue 
         }, { root: true });
@@ -827,8 +851,8 @@ getSchedulesFromStore({ rootState, rootGetters }) {
 
 
 
-    async saveSchedules({ rootGetters, dispatch }, { roomKey, paramKey, schedules }) {
-      console.log('[settingsConfig] - saveSchedules - Сохраняем расписание:', { roomKey, paramKey, schedules });
+    async saveSchedules({ rootGetters, dispatch }, { room, param, schedules }) {
+      console.log('[settingsConfig] - saveSchedules - Сохраняем расписание:', { room, param, schedules });
 
       const dID = rootGetters['dID'];
       if (!dID) {
@@ -843,14 +867,14 @@ getSchedulesFromStore({ rootState, rootGetters }) {
             type: 'post',
             request: 'addSchedule',
             name: dID,
-            payload: { roomKey, paramKey, schedules }
+            payload: { room, param, schedules }
           }, { root: true });
           
           // После успешной отправки на сервер, обновляем локальное состояние
           await dispatch('config/handleConfigResponse', {
             name: dID,
             request: 'schedules',
-            payload: { [roomKey]: { [paramKey]: schedules } }
+            payload: { [room]: { [param]: schedules } }
           }, { root: true });
           
         } catch (error) {
@@ -859,8 +883,8 @@ getSchedulesFromStore({ rootState, rootGetters }) {
         }
         
         logger.info('[settingsConfig] - saveSchedules - Расписания сохранены:', {
-          roomKey,
-          paramKey,
+          room,
+          param,
           count: schedules.length
         });
         

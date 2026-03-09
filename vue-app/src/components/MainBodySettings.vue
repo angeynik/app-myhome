@@ -426,8 +426,8 @@ export default {
       // Получаем текущие расписания для этой комнаты и параметра
       await this.loadSchedulesFromStore();
       const existingSchedules = this.schedules.filter(s => 
-        s.roomKey === room && 
-        s.paramKey === param
+        s.room === room && 
+        s.param === param
       );
       
       console.log('[MainBodySettings] - addNewSchedule - Существующие расписания:', existingSchedules);
@@ -443,7 +443,7 @@ export default {
           // existingSchedules
         });
 
-        console.log(' . 7777777777777777777 - - - - - -MainBodySettings] - Результат проверки пересечения:', createTimePoint);
+        console.log('[MainBodySettings] - Результат проверки пересечения:', createTimePoint);
         
         if (hasOverlap.massage) {
           alert(hasOverlap.massage);
@@ -484,8 +484,8 @@ export default {
         value: value,
         valueType: 'absolute', // или 'deviation' - зависит от требований
         unit: this.unit || '',
-        roomKey: room,
-        paramKey: param,
+        room: room,
+        param: param,
         createdAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
         updatedAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
         // _modified: true, // Флаг для отслеживания изменений
@@ -502,8 +502,8 @@ export default {
       try {
         console.log('[MainBodySettings] - addNewSchedule - Сохраняем расписание локально');
         await this.$store.dispatch('settingsConfig/addScheduleLocally', {
-          roomKey: room,
-          paramKey: param,
+          room: room,
+          param: param,
           schedule: newSchedule
         });
         
@@ -512,8 +512,8 @@ export default {
 
         // await this.saveScheduleBlock();
         await this.saveSchedules({
-          roomKey: this.settingsData.payload.room,
-          paramKey: this.effectiveParamKey,
+          room: this.settingsData.payload.room,
+          param: this.effectiveParamKey,
           schedules: newSchedule
         });
         console.log('[MainBodySettings] - addNewSchedule - Расписание успешно сохранено');

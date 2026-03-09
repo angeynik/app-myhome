@@ -118,11 +118,12 @@
     },
     watch: {
       setPoint(newSetPoint) {
-        logger.dev('[MainSetpoint] - setPoint - Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
-        // console.log('Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
-        this.newSetPointValue = parseFloat(newSetPoint).toFixed(1);
+        //logger.dev('[MainSetpoint] - setPoint - Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
+        //console.log('Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
+        //this.newSetPointValue = parseFloat(newSetPoint).toFixed(1);
+        this.newSetPointValue = newSetPoint;
         logger.dev('[MainSetpoint] - setPoint - Обновили newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
-        //console.log('[MainSetpoint] - setPoint - Обновили newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
+        //console.log('[MainSetpoint] - setPoint - Преобразовали newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
       },
       '$store.state.settingsData.limits': {
         handler(newLimits) {
@@ -173,14 +174,14 @@
         console.groupCollapsed('[MainSetpoint] - sendEmitMessage ');
         console.log('[MainSetpoint] - sendEmitMessage - Формируем сообщение для отправки на сервер - message: ', value, 'event: ', event);
         // Проверяем, что все параметры переданы
-        if (!event ||!value) {
+        if (!event || value == undefined || value === null) {
           console.error('sendEmitMessage - параметры не переданы:', { event, value });
           return;
         }    
         logger.dev('[MainSetpoint] - sendEmitMessage для Уставки - value:', value, 'title:', this.valueTitle, 'request:', this.request);
         console.log('[MainSetpoint] - sendEmitMessage для Уставки - value:', value, 'title:', this.valueTitle, 'request:', this.request);
         console.groupEnd();
-        
+
         this.$emit('eventsMainSetpoint', {
             [event]: {
               request: this.request,
@@ -257,11 +258,11 @@
         console.log('[MainSetpoint] - calculateSetpoint  Обновленное значение:', newValue);
           try {
               if (newValue > max) {
-              newValue = max;
+              newValue = min;
               logger.dev('[MainSetpoint] - calculateSetpoint  Ограничиваем Верхняю границу Уставки', newValue);
               //console.log('[MainSetpoint] - calculateSetpoint  Ограничиваем Верхняю границу Уставки', newValue);
             } else if (newValue < min) {
-              newValue = min;
+              newValue = max;
               logger.dev('[MainSetpoint] - calculateSetpoint  Ограничиваем Нижнюю границу Уставки', newValue);
               //console.log('[MainSetpoint] - calculateSetpoint  Ограничиваем Нижнюю границу Уставки', newValue);
             }
