@@ -35,16 +35,18 @@ const store = createStore({
     },
     UPDATE_SETTINGS_DATA(state, { field, value }) { 
         if (state.setpointsManager) {
-            if (field === 'request' || field === 'type' || field === 'limits' || field === 'view') { // если поле field содержит имя объекта - заменяем весь объект иначе только параметр в payload
+            if (field === 'request' || field === 'type' || field === 'limits' ) { // если поле field содержит имя объекта - заменяем весь объект иначе только параметр в payload
               console.log('[index] - UPDATE_SETTINGS_DATA -  Обновляем весь объект', field, 'value:', value);  
               state.setpointsManager.settingsData[field] = value;
+
             } else{
-              console.log('[index] - UPDATE_SETTINGS_DATA -  Обновляем поле', field, 'в объекте payload значением:', value); 
+              //console.log('[index] - UPDATE_SETTINGS_DATA -  Обновляем поле', field, 'в объекте payload значением:', value); 
                 state.setpointsManager.settingsData.payload[field] = value;
                 state.setpointsManager.settingsData.payload.updated = 
                     new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
             }
             state.settingsData = { ...state.setpointsManager.settingsData };
+            console.log('[index] - UPDATE_SETTINGS_DATA - ', state.setpointsManager.settingsData);
         }
     },
     RESET_SETTINGS_DATA(state) { // Сброс settingsData manageSetpoints
@@ -57,7 +59,7 @@ const store = createStore({
       state.settingsData = data;
     },
     UPDATE_PAYLOAD_DATA(state, payload) {
-      console.log('[index] - UPDATE_PAYLOAD_DATA - Обновляем payload:', payload);
+      //console.log('[index] - UPDATE_PAYLOAD_DATA - Обновляем payload:', payload);
       if (state.setpointsManager) {
         // Частичное обновление - сохраняем существующие поля
         state.setpointsManager.settingsData.payload = {
@@ -158,7 +160,7 @@ const store = createStore({
       commit('UPDATE_SETTINGS_DATA', { field, value });
     },
     updatePayloadData({ commit }, payload) {
-      console.log('[index] - updatePayloadData - Обновляем payload:', payload);
+      //console.log('[index] - updatePayloadData - Обновляем payload:', payload);
       commit('UPDATE_PAYLOAD_DATA', payload);
     },
     

@@ -345,7 +345,7 @@ export default {
     }
     console.log('[DashBoard] - editValueMainSetpoint - REQUEST:', requestName, 'valueTitle -', valueTitle, 'value_details -', value_details);
 
-    let oldValue, payload;
+    let oldValue, newValue, payload;
     try {
       oldValue = this.setpoint;
       if (valueTitle === 'startTime' || valueTitle === 'endTime') {
@@ -353,12 +353,13 @@ export default {
       } else {
         value = parseFloat(eventData.updateState.value).toFixed(1);
       }
-    logger.dev('[DashBoard] - editValueMainSetpoint - Обновляем значение уставки:', value, ' oldValue -', oldValue);
-    console.log('[DashBoard] - editValueMainSetpoint - Обновляем значение уставки:', value, ' oldValue -', oldValue);
-    console.groupEnd();
-
     this.setpoint = value;
     console.log('[DashBoard] - editValueMainSetpoint - Обновляем значение уставки:', this.setpoint);
+    logger.dev('[DashBoard] - editValueMainSetpoint - Обновляем значение уставки:', value, ' oldValue -', oldValue);
+    //console.log('[DashBoard] - editValueMainSetpoint - Обновляем значение уставки:', value, ' oldValue -', oldValue);
+    console.groupEnd();
+
+    
     switch (requestName) {
       case 'setpoints':
         console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - Уставка');
@@ -368,8 +369,8 @@ export default {
           value: value, 
           time: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
         };
+        newValue = value;
         
-        this.updatePayloadData({ value: value });
       break;
       case 'schedules':
         console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - Расписание');
@@ -377,16 +378,18 @@ export default {
           console.log('[DashBoard] - editValueMainSetpoint - value_details-', value_details, '--ДОПИСЫВАЕМ ОБРАБОТКУ ИЗМЕНЕНИЯ ВРЕМЕНИ -- МИНУТЫ');
           const settingsConfigUpdate = await this.$store.dispatch('settingsConfig/settingsConfigUpdate', {newValue: value, value_details});
           console.log('[DashBoard] - editValueMainSetpoint - Результат проверки:', settingsConfigUpdate);
+          newValue = settingsConfigUpdate.updatedValue;
           payload = {
           room: roomKey, 
           param: setpointKey,
-          value: settingsConfigUpdate.updatedValue, 
+          value: newValue, 
           time: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
         };
           
         }
          else {
-          console.log('[DashBoard] - editValueMainSetpoint - -- ДОПИСЫВАЕМ ОБРАБОТКУ ИЗМЕНЕНИЯ ВРЕМЕНИ -- ДЛЯ', value_details);
+          //console.log('[DashBoard] - editValueMainSetpoint - -- ДОПИСЫВАЕМ ОБРАБОТКУ ИЗМЕНЕНИЯ ВРЕМЕНИ -- ДЛЯ', value_details);
+          newValue = value;
           payload = {
           room: roomKey, 
           param: setpointKey,
@@ -415,7 +418,7 @@ export default {
     console.log('[DashBoard] - editValueMainSetpoint - Формируем сообщение для отпраку на сервер:', payload);
     console.groupEnd();
 
-    this.updatePayloadData({ value: value });
+    this.updatePayloadData({ value: newValue });
     await this.$store.dispatch('config/handleValueUpdate', { dID, payload, type: requestName });
 
      
@@ -469,18 +472,6 @@ export default {
       //   JSON.parse(JSON.stringify(settingsData)), 
       //   ' request:', settingsData?.request
       // );
-      console.log('[DashBoard] - getComponentData - Данные в event.request ', event.request, 'event.data.value-', event.data.value);
-      if (event.request !== null && event.request !== undefined) {
-        if (event.request !== settingsData?.request) {
-          console.log('[DashBoard] - getComponentData - Обновляем request в settingsData. Текущее значение -  ', settingsData?.request, ' Новое значение - ', event.request);
-          this.updateSettingsData({ 
-              field: 'request', 
-              value: event.request
-          });
-          this.updatePayloadData({ value: event.data.value});
-        }
-        
-      } else console.error ('[DashBoard] - getComponentData - request не определен:', event.request);
 
       
       // Устанавливаем лимиты для MainSetpoint
@@ -492,18 +483,19 @@ export default {
         this.showSetpoint = true;
         this.request = request;
       console.log('[DashBoard] - getComponentData - Компонент MainSetpoint показан');
+      console.groupEnd();
       } else if (event.action === 'hide') {
         this.showSetpoint = false;
         this.selectedItemData = null;
         this.setpoint = null;
         this.request = '';
         console.log('[DashBoard] - getComponentData - Компонент MainSetpoint скрыт');
+        console.groupEnd();
       }
 
       // this.showSetpoint = true;
       // this.setpoint = event.currentValue;
 
-      console.groupEnd();
     },
 
 

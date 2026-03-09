@@ -229,7 +229,7 @@
     },
     calculateSetpoint(value, step, min, max) {
       logger.dev('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
-      console.log('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
+      //console.log('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
         
         let newValue, currentSetPoint;
         if (this.setPoint === null || this.setPoint === undefined) {

@@ -789,7 +789,7 @@ async checkScheduleOverlap({rootGetters, dispatch}, { startTime, endTime}) {
       }
     },
 
-    settingsConfigUpdate({ dispatch, rootGetters }, { newValue, value_details }) {
+    settingsConfigUpdate({ dispatch, rootGetters }, { newValue, value_details }) { //Функция возвращает преобразованное и проверенное на пересечение значение времени
       console.groupCollapsed('[settingsConfig] - settingsConfigUpdate');
       console.log(' [settingConfig] - settingsConfigUpdate - Параметры запроса:', { newValue, value_details });
       const settingsData = rootGetters['getSetpointsManager']?.settingsData;
@@ -808,8 +808,11 @@ async checkScheduleOverlap({rootGetters, dispatch}, { startTime, endTime}) {
         const [hours, minutes] = value.split(':').map(Number);
 
         if (value_details === 'hours') {
-          //console.log('[settingsConfig] - settingsConfigUpdate - Обновляем часы для', value, hours, minutes);
-          updatedValue = `${newValue}:${minutes}`;
+          if (newValue < 10) {
+            updatedValue = `0${newValue}:${minutes}`;
+          } else {
+            updatedValue = `${newValue}:${minutes}`;
+          }
         } else if (value_details === 'minutes') {
           //console.log('[settingsConfig] - settingsConfigUpdate - Обновляем минуты для', value);
           if (newValue < 10) {

@@ -257,11 +257,13 @@ export default {
     
     getComponentData(event) {
       console.log('[MainBodySettings] -  getComponentData - Данные от компонента MainBodySchedule value:', event.value, 'title: ', event.title);
-      //const settingsData = this.$store.state.setpointsManager?.settingsData;
-      // console.log('[MainBodySettings] -  getComponentData - Данные в settingsData:', settingsData);
+      const settingsData = this.$store.state.setpointsManager?.settingsData;
+      console.log('[MainBodySettings] -  getComponentData - Данные в settingsData:', settingsData);
       let action = "show";
 
-      const arrayTitle = this.settingsData?.request; // имя массива (например, "schedule")
+      const arrayTitle = this.settingsData?.payload?.config; // имя массива (например, "schedule")
+      console.log('[MainBodySettings] -  getComponentData - Название массива:', arrayTitle);
+
       if(!arrayTitle) return console.error('[MainBodySettings] -  getComponentData - Отсутствует массив', arrayTitle);
       const targetId = this.settingsData?.payload?.id; // id искомого объекта
       if(!targetId) return console.error('[MainBodySettings] - getComponentData - ID объекта не определен', targetId);
@@ -482,7 +484,7 @@ export default {
         startTime: startTime,
         endTime: endTime,
         value: value,
-        valueType: 'absolute', // или 'deviation' - зависит от требований
+        value_type: 'absolute', // или 'deviation' 
         unit: this.unit || '',
         room: room,
         param: param,
@@ -671,8 +673,8 @@ export default {
       // Если есть расписания для удаления, запрашиваем подтверждение
       if (this.schedulesToDelete.length > 0) {
         this.$store.dispatch('settingsConfig/deleteSchedules', {
-              roomKey: this.settingsData.payload.room,
-              paramKey: this.effectiveParamKey,
+              room: this.settingsData.payload.room,
+              param: this.effectiveParamKey,
               scheduleIds: [...this.schedulesToDelete] // создаем копию массива
             });
             

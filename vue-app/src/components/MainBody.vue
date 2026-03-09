@@ -194,26 +194,24 @@ export default {
             //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
         } else {
           this.selectedItem = item;
+          
           this.updateSettingsData({ field: 'param', value: clearParam});
+          this.updateSettingsData({ field: 'request', value: 'setpoints' });
           this.updatePayloadData({ 
             value: item.setValue,
             param: clearParam,
             id: item.roomId
           });
-          this.updateViewData({ 
-            value: item.setValue,
-            key: item.setpointKey,
-            unit: item.unit,
-            title: 'value'
-          });
+          
 
-        console.log('[MainBody] - selectItem - ОБНОВИЛИ payload в settingsData Param:',
-          this.$store.state.setpointsManager?.settingsData?.payload?.param, ' и значение:',
-          this.$store.state.setpointsManager?.settingsData?.payload?.value
+        // console.log('[MainBody] - selectItem - ОБНОВИЛИ payload в settingsData Param:',
+        //   this.$store.state.setpointsManager?.settingsData?.payload?.param, ' и значение:',
+        //   this.$store.state.setpointsManager?.settingsData?.payload?.value
+        // );
+        console.log('[MainBody] - selectItem - ОБНОВИЛИ settingsData:',
+          this.$store.state.setpointsManager?.settingsData, null, 2
         );
-        console.log('[MainBody] - selectItem - ОБНОВИЛИ view в settingsData:',
-          this.$store.state.setpointsManager?.settingsData?.view
-        );
+
         // Обновляем ключи в хранилище
           this.SET_ROOM_KEY(item.roomKey);
           this.SET_PARAM_KEY(clearParam);
@@ -230,8 +228,8 @@ export default {
           console.log('[MainBody] - selectItem - params:', params);
           console.groupEnd();
           this.setLimits(params);
-          //console.log(`[MainBody] - selectItem - setLimits установлены лимиты по ключу ${item.setpointKey}`);
 
+          console.log(`[MainBody] - selectItem - Формируем данные для передачи в DashBoard, value: ${item.setValue} и title: value`);
 
           // Отправляем событие с данными в DashBoard
           this.$emit('getComponentData', {
@@ -265,10 +263,11 @@ export default {
       console.groupCollapsed('[MainBody] - DclickSelectItem ');
       console.log('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', clearParam, ' и значение:', item);
       if (!clearParam) return `[MainBody] - DclickSelectItem - Отсутствуетлюч выбранного элемента:', ${clearParam}`;
+      this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
       this.updatePayloadData({ param: clearParam, room: item.roomKey, config: this.typeSettingsKey});
-      console.log('[MainBody] - DclickSelectItem - ОБНОВИЛИ КЛЮЧ param в settingsData:',
-        this.$store.state.setpointsManager?.settingsData?.payload?.param
-      );
+      // console.log('[MainBody] - DclickSelectItem - ОБНОВИЛИ КЛЮЧ param в settingsData:',
+      //   this.$store.state.setpointsManager?.settingsData?.payload?.param
+      // );
 
       // Обновляем ключи в хранилище
           this.SET_ROOM_KEY(item.roomKey);

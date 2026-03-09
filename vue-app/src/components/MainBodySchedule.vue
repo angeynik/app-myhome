@@ -145,7 +145,7 @@ export default {
     },
     
     valueTypeLabel() {
-      return this.scheduleData.valueType === 'absolute' ? 'Новое значение' : 'Отклонение от Уставки';
+      return this.scheduleData.value_type === 'absolute' ? 'Новое значение' : 'Отклонение от Уставки';
     },
     
     value() {
@@ -155,8 +155,8 @@ export default {
       }
       
       // Форматирование в зависимости от типа значения
-      if (this.scheduleData.valueType === 'deviation') {
-        const sign = this.scheduleData.value >= 0 ? '+' : '';
+      if (this.scheduleData.value_type === 'deviation') {
+        const sign = this.scheduleData.value >= 0 ? ' +' : '';
         return `${sign}${this.scheduleData.value.toFixed(1)}`;
       }
       
@@ -185,7 +185,25 @@ export default {
       },
       deep: true
     },
-    
+    // '$store.state.setpointsManager?.settingsData?.payload': {
+    //   handler(newPayload) {
+    //     // Если обновился value_type в store, обновляем локальные данные
+    //     if (newPayload && newPayload.id === this.scheduleData.id) {
+    //       // Можно обновить scheduleData если нужно
+    //       this.$emit('update-schedule', {
+    //         id: this.scheduleData.id,
+    //         valueType: newPayload.value_type
+    //       });
+    //     }
+    //   },
+    //   deep: true
+    // },
+  },
+  created() {
+    this.updateSettingsData({ field: 'type', value: 'post' });
+    this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
+    this.updatePayloadData({ config: 'schedules'});
+    console.log('[MainBodySchedule] - created component - ', this.scheduleData, null, 2);
   },
   mounted() {
     document.addEventListener('click', this.handleClickOutside);
@@ -204,6 +222,7 @@ export default {
     ...mapActions('sortParams', [
       'setLimits',
     ]),
+     ...mapActions(['updateSettingsData', 'updatePayloadData']),
    isFieldSelected(fieldName) {
       return this.selectedField === fieldName;
     },
@@ -234,78 +253,52 @@ export default {
       }
 
     },
-    setpointsManagerUpdate(type, request, payload) {
-      const setpointsManager = this.$store.getters.getSetpointsManager;
-       if (setpointsManager) { 
-        setpointsManager.updateSettingsData({
-          type: type, 
-          request: request,
-          payload: payload
-        });
-       } else {
-        console.error('[MainBodySchedule] - setpointsManagerUpdate - setpointsManager не нашелся');
-       }
-    },
 
 
 
 
     // Переключение типа значения
     toggleValueType(event) {
-      event.stopPropagation(); // Добавьте эту строку
-      console.log('[DashBoard] - toggleValueType - Данные в settingsData:',
-        this.$store.state.setpointsManager?.settingsData
-      );
-      this.selectedField = "valueType";
-    
-      console.log('DashBoard] - toggleValueType - Начало переключения типа значения', this.valueTypeLabel );
-      const newType = this.scheduleData.valueType === 'absolute' ? 'deviation' : 'absolute';
-      console.log('[DashBoard] - toggleValueType - oldType', this.scheduleData.valueType , '  newType:', newType);
-
-      this.setpointsManagerUpdate('post', 'schedules', {
-        config: 'schedules',
+      event.stopPropagation();
+      
+      // Определяем новый тип (переключаем)
+      const currentType = this.scheduleData.value_type;
+      const newType = currentType === 'absolute' ? 'deviation' : 'absolute';
+      const calcValue = newType === 'absolute' ? 20 : 0;
+      const defaultValue = Number(calcValue.toFixed(1));
+      // Обновляем в store
+      this.updatePayloadData({ 
         id: this.scheduleData.id,
-        value: newType,
-        value_name: this.selectedField,
-        value_details: ''
+        value_type: newType,
+        value: defaultValue
       });
-      console.log('[DashBoard] - toggleValueType - ID комнаты в settingsData.payload:',
-        this.$store.state.setpointsManager?.settingsData?.payload?.id
-      );
-      // Отправляем событие с данными в MainBodySettings
-          this.$emit('getComponentData', {
-              value: newType,
-              title: this.selectedField,
-          });
+      
+      // Обновляем локальный selectedField для визуального отклика
+      this.scheduleData.value_type= newType;
+      this.scheduleData.value = defaultValue;
+      this.selectedField = 'valueType';
       
     },
-   
     // Редактирование значения расписания
     editValue() {
-    //  const param = this.$store.state.setpointsManager?.settingsData?.payload.param;
-    //   console.log('[DashBoard] - editValue - Данные в settingsData:',
-    //     this.$store.state.setpointsManager?.settingsData?.payload, 'ключ - ', param
-    //   );
-       // Устанавливаем лимиты
-      const params = {
+      this.setLimits({
         param: this.$store.state.setpointsManager?.settingsData?.payload?.param, 
-        valueType: this.scheduleData.valueType, 
-      }
-      console.log('[MainBodySettings] - editValue - params:', params);
-      this.setLimits(params);
+        valueType: this.scheduleData.value_type, 
+      });
 
-      this.selectedField = "value";
+      this.selectedField = 'value';
       const currentValue = this.scheduleData.value !== null && this.scheduleData.value !== undefined
         ? this.scheduleData.value
-        : (this.scheduleData.valueType === 'absolute' ? 20 : 0);
+        : (this.$store.state.setpointsManager?.settingsData?.payload?.value_type === 'absolute' ? 20 : 0);
       //const currentValue = this.scheduleData.valueType === 'absolute' ? 20 : 0;
 
       logger.dev('[MainBodySchedule] - editValue - Начало редактирования значения');
-      this.setpointsManagerUpdate('post', 'schedules', {
+      this.updatePayloadData({ 
         id: this.scheduleData.id,
         value: currentValue,
         value_name: this.selectedField, 
-        value_details: ''
+        value_details: '',
+        value_type: 'absolute'
       });
 
       // this.$store.commit('UPDATE_SETTINGS_DATA', { 
@@ -339,9 +332,12 @@ export default {
     },
     
     editTimeFieldWithToggle(currentHours, currentMinutes) {
-        console.log('[MainBodySchedule] - Редактирование:', currentHours, currentMinutes);
-        this.setpointsManagerUpdate('post', 'schedules', {
-              config: 'schedules',
+      console.groupCollapsed('[MainBodySchedule] - editTimeFieldWithToggle');
+      if (this.scheduleData[this.selectedField] === undefined) {
+        this.scheduleData[this.selectedField] = `00:00`;
+      }
+        console.log('[MainBodySchedule] - Редактирование:', currentHours, currentMinutes, this.scheduleData[this.selectedField]);
+        this.updatePayloadData({ 
               id: this.scheduleData.id,
               value: this.scheduleData[this.selectedField],
               value_name: this.selectedField,
@@ -418,25 +414,6 @@ export default {
       return this.dateTimeUtils.formatDate(dateString, 'ru-RU');
     },
     
-    // validateScheduleTime(schedule) {
-    //   const timeToMinutes = (time) => {
-    //     const [hours, minutes] = time.split(':').map(Number);
-    //     return hours * 60 + minutes;
-    //   };
-      
-    //   const startMinutes = timeToMinutes(schedule.startTime);
-    //   const endMinutes = timeToMinutes(schedule.endTime);
-      
-    //   // Проверяем, что endTime > startTime
-    //   if (endMinutes <= startMinutes) {
-    //     return {
-    //       valid: false,
-    //       message: 'Время окончания должно быть позже времени начала'
-    //     };
-    //   }
-      
-    //   return { valid: true };
-    // },
     validateScheduleTimeSync(schedule) {
       // Используем синхронную логику через геттер
       const timeToMinutes = this.dateUtils.timeToMinutes;
