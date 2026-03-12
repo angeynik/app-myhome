@@ -58,8 +58,6 @@
             </div>
           </div>
 
-
-
           <div v-if="selectedTitle === 'Уведомления'">
             <div v-if="notifications.length > 0" class="notifications-list">
               <MainBodyNotifications
@@ -75,9 +73,6 @@
             <p>Уведомления для выбранного параметра не настроены.</p>
           </div>
         </div>
-
-
-
           <div v-if="selectedTitle === 'Аналитика'">
             <div v-if="analytics.length > 0" class="analytics-list">
               <MainBodyStatistic
@@ -212,13 +207,15 @@ export default {
       currentType: this.title
     });
     this.initialize();
-    this.loadSchedulesFromStore();
+    // this.loadSchedulesFromStore();
+    this.setComponentParam(this.selectedTitle);
   },
   watch: {
     title(newTitle, oldTitle) {
       if (newTitle !== oldTitle) {
         //console.log('[MainBodySettings] WATCH - this.title:', newTitle);
         this.loadCurrentSettings();
+        this.setComponentParam(this.selectedTitle);
       }
     },
     // Отслеживаем изменения в store и обновляем локальные данные
@@ -256,13 +253,13 @@ export default {
     ...mapActions(['updateSettingsData', 'updatePayloadData', 'updateLimitsData', 'updateViewData']),
     
     getComponentData(event) {
-      console.log('[MainBodySettings] -  getComponentData - Данные от компонента MainBodySchedule value:', event.value, 'title: ', event.title);
-      const settingsData = this.$store.state.setpointsManager?.settingsData;
-      console.log('[MainBodySettings] -  getComponentData - Данные в settingsData:', settingsData);
+      console.log('[MainBodySettings] -  getComponentData - Данные от компонента MainBodySchedule value:', event, null, 2);
+      // const settingsData = this.$store.state.setpointsManager?.settingsData;
+      // console.log('[MainBodySettings] -  getComponentData - Данные в settingsData:', settingsData);
       let action = "show";
 
       const arrayTitle = this.settingsData?.payload?.config; // имя массива (например, "schedule")
-      console.log('[MainBodySettings] -  getComponentData - Название массива:', arrayTitle);
+      //console.log('[MainBodySettings] -  getComponentData - Название массива:', arrayTitle);
 
       if(!arrayTitle) return console.error('[MainBodySettings] -  getComponentData - Отсутствует массив', arrayTitle);
       const targetId = this.settingsData?.payload?.id; // id искомого объекта
@@ -274,16 +271,18 @@ export default {
 
       const targetArray = this[arrayTitle];
       const targetObject = targetArray.find(item => item.id === targetId);
-        if (targetObject && fieldName === 'valueType') {
+      console.log(`[MainBodySettings] - getComponentData - Поле "${fieldName}" в объекте с id ${targetId}:`, targetObject);
+        if (targetObject && fieldName === 'value_type') {
           // Изменяем значение поля
           targetObject[fieldName] = newValue;
+          targetObject.value = this.settingsData?.payload?.value;
           
           console.log(`[MainBodySettings] - getComponentData - Обновлено поле "${fieldName}" в объекте с id ${targetId}:`, 
             targetObject);
         } else {
           console.warn(`[MainBodySettings] - getComponentData - Объект с id ${targetId} не найден в массиве ${arrayTitle}`);
         }
-        if (fieldName === 'valueType') action = "hide";
+        if (fieldName === 'value_type') action = "hide";
 
       const message = {
         action: action,
@@ -292,18 +291,35 @@ export default {
       };
       this.$emit('getComponentData', message);
     },
+
+    setComponentParam (selectedTitle) {
+      this.updateSettingsData({ field: 'type', value: 'post' });
+      if(selectedTitle === 'Расписание') {
+        this.updatePayloadData({ config: 'schedules'});
+
+        this.loadSchedulesFromStore();
+      } else if (selectedTitle === 'Уведомления') {
+        this.updatePayloadData({ config: 'notifications'});
+        console.log('[MainBodySettings] - setComponentParam - Пишем код для загрузки конфигурации Уведомлений и устанавливаем соответствующие ключи в state settingsData');
+      } else if (selectedTitle === 'Аналитика') {
+        this.updatePayloadData({ config: 'statistics'});
+        console.log('[MainBodySettings] - setComponentParam - Пишем код для загрузки конфигурации Аналитики и устанавливаем соответствующие ключи в state settingsData');
+      } else {
+        console.log('[MainBodySettings] - setComponentParam - Пишем обработку для неизвестного selectedTitle', selectedTitle);
+      }
+    },
+
     async loadSchedulesFromStore() {
       //console.log('[MainBodySettings] - loadSchedulesFromStore - Вызов функции');
-    try {
-      
-      const schedules = await this.$store.dispatch('settingsConfig/getSchedulesFromStore');
-      
-      this.schedules = schedules;
-    } catch (error) {
-      console.error('[MainBodySettings] - loadSchedulesFromStore - Ошибка:', error);
-      this.schedules = [];
-    }
-  },
+      try {
+        
+        const schedules = await this.$store.dispatch('settingsConfig/getSchedulesFromStore');    
+        this.schedules = schedules;
+      } catch (error) {
+        console.error('[MainBodySettings] - loadSchedulesFromStore - Ошибка:', error);
+        this.schedules = [];
+      }
+    },
   
     formattedValue(value) {
       if (typeof value === 'number') {
@@ -339,49 +355,16 @@ export default {
       const currentIndex = this.availableTitles.indexOf(this.title);
       const nextIndex = (currentIndex + 1) % this.availableTitles.length;
       const nextTitle = this.availableTitles[nextIndex];
-      
+      console.log(`[MainBodySettings] Title changed: ${this.title} → ${nextTitle}`);
+      logger.info(`[MainBodySettings] Title changed: ${this.title} →  ${nextTitle}`);
       this.title = nextTitle;
       
       // Обновляем в store
       this.SET_TYPE_SETTINGS_ITEM(nextTitle);
-      
-      console.log(`[MainBodySettings] Title changed: ${this.title} → ${nextTitle}`);
-      logger.info(`[MainBodySettings] Title changed to: ${nextTitle}`);
-      
+
       // Оповещаем родителя (если нужно)
       this.$emit('title-changed', nextTitle);
     },
-
-    // getSchedulesFromStore() {
-    //   console.groupCollapsed('[MainBodySettings] - getSchedulesFromStore ');
-    //   console.log('[MainBodySettings] - getSchedulesFromStore - Start');
-    //   try {
-    //     const dID = this.dID;
-    //     const roomKey = this.settingsData.payload.room;
-    //     const paramKey = this.effectiveParamKey;
-        
-    //     if (!dID || !roomKey || !paramKey) {
-    //       this.schedules = [];
-    //       console.groupEnd();
-    //       return;
-    //     }
-        
-    //     // Получаем данные из store и извлекаем нужный массив
-    //     const schedulesData = this.$store.state.config.schedules[dID] || {};
-    //     const roomData = schedulesData[roomKey] || {};
-    //     const paramSchedules = roomData[paramKey];
-        
-    //     this.schedules = Array.isArray(paramSchedules) ? [...paramSchedules] : [];
-        
-    //     //console.log('[MainBodySettings] - getSchedulesFromStore - Найдено расписаний:', this.schedules.length);
-    //     console.groupEnd();
-        
-    //   } catch (error) {
-    //     console.error('[MainBodySettings] - getSchedulesFromStore - Ошибка:', error);
-    //     this.schedules = [];
-    //     console.groupEnd();
-    //   }
-    // },
 
     addNewItem() {
       //console.log('[MainBodySettings] - addNewItem');
@@ -722,12 +705,8 @@ export default {
             configType: dataType
           });
 
-
-
-        
-        
         this.schedules = [...result];
-        console.log(' -- $$$$$$$$$ -- [MainBodySettings] - loadSchedules - для - ', dataType, ' Получена конфигурация: ', this.schedules, ' количество элементов:', this.schedules.length);
+        console.log('[MainBodySettings] - loadSchedules - для - ', dataType, ' Получена конфигурация: ', this.schedules, ' количество элементов:', this.schedules.length);
         
       } catch (error) {
         console.error('[MainBodySettings] - loadSchedules - Ошибка загрузки:', error);

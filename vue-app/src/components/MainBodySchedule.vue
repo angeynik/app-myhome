@@ -147,23 +147,55 @@ export default {
     valueTypeLabel() {
       return this.scheduleData.value_type === 'absolute' ? 'Новое значение' : 'Отклонение от Уставки';
     },
+   value() {
+    // Если данные еще не созданы
+    if (!this.scheduleData || this.scheduleData.value === null || this.scheduleData.value === undefined) {
+      return 'Не задано';
+    }
     
-    value() {
-      // Если данные еще не созданы
-      if (!this.scheduleData || this.scheduleData.value === null || this.scheduleData.value === undefined) {
-        return 'Не задано';
+    // Получаем значение и преобразуем в число для форматирования
+    const rawValue = this.scheduleData.value;
+    
+    // Функция для безопасного форматирования числа
+    const safeToFixed = (val, digits = 1) => {
+      if (typeof val === 'number') {
+        return val.toFixed(digits);
       }
-      
-      // Форматирование в зависимости от типа значения
-      if (this.scheduleData.value_type === 'deviation') {
-        const sign = this.scheduleData.value >= 0 ? ' +' : '';
-        return `${sign}${this.scheduleData.value.toFixed(1)}`;
+      if (typeof val === 'string' && !isNaN(parseFloat(val))) {
+        return parseFloat(val).toFixed(digits);
       }
+      return val; // Возвращаем как есть, если не число
+    };
+    
+    // Форматирование в зависимости от типа значения
+    if (this.scheduleData.value_type === 'deviation') {
+      const numericValue = typeof rawValue === 'number' ? rawValue : parseFloat(rawValue);
+      if (!isNaN(numericValue)) {
+        const sign = numericValue >= 0 ? ' +' : '';
+        return `${sign}${numericValue.toFixed(1)}`;
+      }
+      return rawValue; // Если не удалось преобразовать в число
+    }
+    
+    // Для absolute типа
+    return safeToFixed(rawValue, 1);
+  },
+    // value() {
+    //   // Если данные еще не созданы
+    //   if (!this.scheduleData || this.scheduleData.value === null || this.scheduleData.value === undefined) {
+    //     return 'Не задано';
+    //   }
       
-      return typeof this.scheduleData.value === 'number' 
-        ? this.scheduleData.value.toFixed(1)
-        : this.scheduleData.value;
-    },
+    //   // Форматирование в зависимости от типа значения
+    //   if (this.scheduleData.value_type === 'deviation') {
+    //     const sign = this.scheduleData.value >= 0 ? ' +' : '';
+    //     return `${sign}${this.scheduleData.value.toFixed(1)}`;
+    //   }
+      
+    //   return typeof this.scheduleData.value === 'number' 
+    //     ? this.scheduleData.value.toFixed(1)
+    //     : this.scheduleData.value;
+    // },
     displayStartTime() {
       //console.log('[MainBodySchedule] - displayStartTime - startTime:', this.scheduleData.startTime);
       return this.scheduleData.startTime || '00:00';
@@ -199,12 +231,12 @@ export default {
     //   deep: true
     // },
   },
-  created() {
-    this.updateSettingsData({ field: 'type', value: 'post' });
-    this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
-    this.updatePayloadData({ config: 'schedules'});
-    console.log('[MainBodySchedule] - created component - ', this.scheduleData, null, 2);
-  },
+  // created() {
+  //   this.updateSettingsData({ field: 'type', value: 'post' });
+  //   this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
+  //   this.updatePayloadData({ config: 'schedules'});
+  //   console.log('[MainBodySchedule] - created component - ', this.scheduleData, null, 2);
+  // },
   mounted() {
     document.addEventListener('click', this.handleClickOutside);
   },
@@ -260,27 +292,33 @@ export default {
     // Переключение типа значения
     toggleValueType(event) {
       event.stopPropagation();
-      
+      this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
       // Определяем новый тип (переключаем)
       const currentType = this.scheduleData.value_type;
       const newType = currentType === 'absolute' ? 'deviation' : 'absolute';
-      const calcValue = newType === 'absolute' ? 20 : 0;
-      const defaultValue = Number(calcValue.toFixed(1));
+      let defaultValue;
+      if (newType === 'absolute') {
+        // Берем текущее значение уставки из settingsData или используем 20
+        defaultValue = Number((this.$store.state.setpointsManager?.settingsData?.payload?.value || 20).toFixed(1));
+      } else {
+        defaultValue = 0;
+      }
+
       // Обновляем в store
       this.updatePayloadData({ 
         id: this.scheduleData.id,
         value_type: newType,
         value: defaultValue
       });
-      
-      // Обновляем локальный selectedField для визуального отклика
-      this.scheduleData.value_type= newType;
-      this.scheduleData.value = defaultValue;
-      this.selectedField = 'valueType';
+      this.$emit('getComponentData', {
+              value: newType,
+              title: 'value_type',          
+      });
       
     },
     // Редактирование значения расписания
     editValue() {
+      this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
       this.setLimits({
         param: this.$store.state.setpointsManager?.settingsData?.payload?.param, 
         valueType: this.scheduleData.value_type, 
@@ -297,17 +335,8 @@ export default {
         id: this.scheduleData.id,
         value: currentValue,
         value_name: this.selectedField, 
-        value_details: '',
-        value_type: 'absolute'
-      });
-
-      // this.$store.commit('UPDATE_SETTINGS_DATA', { 
-      //   field: 'id', 
-      //   value: this.scheduleData.id,
-      // });
-      // Устанавливаем текущее значение или 0 по умолчанию
-
-      
+        value_details: ''
+      });    
       this.$emit('getComponentData', {
               value: currentValue,
               title: this.selectedField,           
@@ -332,10 +361,11 @@ export default {
     },
     
     editTimeFieldWithToggle(currentHours, currentMinutes) {
+      this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
       console.groupCollapsed('[MainBodySchedule] - editTimeFieldWithToggle');
-      if (this.scheduleData[this.selectedField] === undefined) {
-        this.scheduleData[this.selectedField] = `00:00`;
-      }
+      // if (this.scheduleData[this.selectedField] === undefined) {
+      //   this.scheduleData[this.selectedField] = `00:00`;
+      // }
         console.log('[MainBodySchedule] - Редактирование:', currentHours, currentMinutes, this.scheduleData[this.selectedField]);
         this.updatePayloadData({ 
               id: this.scheduleData.id,

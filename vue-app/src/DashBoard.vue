@@ -62,6 +62,7 @@
         @eventsMainBody="handleMainBodyEvent"
         @eventsMainBodySettings="handleMainBodySettingsEvent"
         @getComponentData="getComponentData"
+        @updateTypeValue="editValueMainSetpoint"
         @swipe-forward="handleSwipeForward"
         @swipe-back="handleSwipeBack"
         :ref="currentRef"
@@ -108,7 +109,7 @@ export default {
       showSetpoint: false,
       request: null,
       setpoint: null,
-      selectedItemData: null
+      selectedItemData: {},
     }; 
   },
   async created() {
@@ -281,43 +282,6 @@ export default {
       this.switchSortKey({ sortingType: sortType, direction: 'next' });
     },
 
-   
-    // updateScheduleValue(eventData) {
-    //   console.groupCollapsed('[DashBoard] - updateSetpointValue -  ');
-    //   console.log('[DashBoard] - updateSetpointValue - Обработка данных от компонента MainSetpoint изменения элемента Расписания:', eventData);
-    //   this.setpoint = eventData.updateState.message;
-
-    //   console.groupEnd();
-    // },
-
-
-
-
-
-
-
-    // handleParamsChange(params) {
-    //   if (params.sortType) {
-    //     // Устанавливаем тип сортировки в store только для sortType
-    //     this.$store.commit('sortParams/SET_SORT_TYPE', params.sortType);
-    //     // Показываем стрелки для навигации (кроме уставок и на мобильных)
-    //     this.showHeaderArrow = ['rooms', 'params', 'devices', 'setpoints'].includes(params.sortType) && !this.getMobile;
-    //   } else if (params.settingsType) {
-    //     // Для настроек скрываем стрелки или настраиваем иначе
-    //     this.showHeaderArrow = false;
-    //   } else {
-    //     this.showHeaderArrow = false;
-    //   }
-    // },
-
-
-
-
-
-
-
-
-
 
 
     // Работа с компонентом настройки Расписания, Уведомлений и Статистики
@@ -337,13 +301,14 @@ export default {
     let valueTitle = eventData.updateState.title || '';
     let value = eventData.updateState.value || '';
     let value_details = settingsData.payload.value_details || null;
+    const value_type = settingsData.payload.value_type || 'absolute';
 
     if (!dID || !roomKey || !setpointKey) {
           logger.error(`[DashBoard] - editValueMainSetpoint - Не удалось обновить значение уставки: dID - ${dID}, roomKey - ${roomKey}, setpointKey - ${setpointKey} - не определены`);
           console.error('Не удалось обновить значение уставки: dID, roomKey или setpointKey не определены');
           return;
     }
-    console.log('[DashBoard] - editValueMainSetpoint - REQUEST:', requestName, 'valueTitle -', valueTitle, 'value_details -', value_details);
+    console.log('[DashBoard] - editValueMainSetpoint - REQUEST:', requestName, 'valueTitle -', valueTitle, 'value_type -', value_type);
 
     let oldValue, newValue, payload;
     try {
@@ -380,22 +345,22 @@ export default {
           console.log('[DashBoard] - editValueMainSetpoint - Результат проверки:', settingsConfigUpdate);
           newValue = settingsConfigUpdate.updatedValue;
           payload = {
-          room: roomKey, 
-          param: setpointKey,
-          value: newValue, 
-          time: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
-        };
-          
+            room: roomKey, 
+            param: setpointKey,
+            value: newValue, 
+            time: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+          };
+         
         }
          else {
           //console.log('[DashBoard] - editValueMainSetpoint - -- ДОПИСЫВАЕМ ОБРАБОТКУ ИЗМЕНЕНИЯ ВРЕМЕНИ -- ДЛЯ', value_details);
           newValue = value;
           payload = {
-          room: roomKey, 
-          param: setpointKey,
-          value: value, 
-          time: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
-        };
+            room: roomKey, 
+            param: setpointKey,
+            value: value, 
+            time: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+          };
         }
       break;
       case 'notifications':
@@ -450,51 +415,57 @@ export default {
         this.$store.commit('sortParams/SET_FORCE_UPDATE', Date.now());
         console.groupEnd();
   },
-
-
-
-
-
-
-
-
+  editValueType () {
+    console.log('[DashBoard] - editValueType - Обработка данных от компонента MainSetpoint изменения конфигурации - Тип уставки');
+  },
 
     getComponentData(event) {
+     
       console.groupCollapsed('[DashBoard] - getComponentData - Данные от компонента:');
       console.log('Полученные данные:', event);
       // let request = event.request;
-      const settingsData = this.$store.state.setpointsManager?.settingsData;
-      this.selectedItemData = event.data;
-      this.selectedItemData.roomKey = settingsData?.payload?.room;
-      this.selectedItemData.setpointKey = settingsData?.payload?.param;
+      let settingsData = this.$store.state.setpointsManager?.settingsData;
       //console.log('[DashBoard] - getComponentData - Данные в settingsData ', settingsData, ' request:', settingsData.request);
       // console.log('[DashBoard] - getComponentData - Данные в settingsData ', 
       //   JSON.parse(JSON.stringify(settingsData)), 
       //   ' request:', settingsData?.request
       // );
+      
+      this.selectedItemData = {
+        roomKey: settingsData?.payload?.room,
+        setpointKey: settingsData?.payload?.param,
+      };
+
 
       
-      // Устанавливаем лимиты для MainSetpoint
+       if (event.data.title === 'value_type') {
+          this.$store.dispatch('config/handleValueUpdate', { type: settingsData?.payload?.config });
+          return;
+      }
+      this.selectedItemData = event.data;
+      //this.aditValueMainSetpoint();
+
       const request = event.request;
       if (event.action === 'show') {
         
-        console.log('[DashBoard] - getComponentData - Показываем компонент MainSetpoint с данными:', this.selectedItemData);
+        //console.log('[DashBoard] - getComponentData - Показываем компонент MainSetpoint с данными:', this.selectedItemData);
         this.setpoint = event.data.value;
         this.showSetpoint = true;
         this.request = request;
-      console.log('[DashBoard] - getComponentData - Компонент MainSetpoint показан');
-      console.groupEnd();
+        //console.log('[DashBoard] - getComponentData - Компонент MainSetpoint показан');
+        console.groupEnd();
       } else if (event.action === 'hide') {
         this.showSetpoint = false;
         this.selectedItemData = null;
         this.setpoint = null;
         this.request = '';
-        console.log('[DashBoard] - getComponentData - Компонент MainSetpoint скрыт');
+        //console.log('[DashBoard] - getComponentData - Компонент MainSetpoint скрыт');
         console.groupEnd();
       }
+      // if(event.data.value_type === 'deviation') {
+      //   this.$store.dispatch('config/handleValueUpdate', { dID, payload, type: requestName });
 
-      // this.showSetpoint = true;
-      // this.setpoint = event.currentValue;
+      // }
 
     },
 

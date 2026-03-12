@@ -86,10 +86,10 @@ export default {
       logger.dev('[sortParams] - SET_ALL_SETPOINTS Обновлен список уставок: ', setpoints);
       //console.log('[sortParams] - SET_ALL_SETPOINTS Обновлен список уставок: ', setpoints);
     },
-    UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value, timestamp }) {
+    UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value }) {
       const config = state.configs[dID];
-      logger.dev('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value, timestamp });
-      //console.log('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value, timestamp });
+      logger.dev('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
+      //console.log('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
       console.log('[config] - UPDATE_CONFIG_VALUE - Конфиг:', config);
       if (!config) {
         logger.error(`[Config] - dID ${dID} не найден в конфигурации`);
@@ -118,7 +118,7 @@ export default {
       }
 
       roomObj[type][name].value = value;
-      roomObj[type][name].lastUpdate = timestamp || new Date().toString();
+      roomObj[type][name].lastUpdate = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
       logger.dev(`[Config] - Обновлено значение ${type}.${name} в комнате ${room}:`, roomObj[type][name]);
       logger.dev(`[Config] - UPDATE_CONFIG_VALUE - state.configs[${dID}] ${JSON.stringify(config, null, 2)}`);
       console.log(`[Config] - Обновлено значение ${type}.${name} в комнате ${room}:`, roomObj[type][name]);
@@ -156,34 +156,8 @@ export default {
           logger.dev('[config] - UPDATE_SCHEDULE_VALUE - Расписание обновлено');
           console.log('[config] - UPDATE_SCHEDULE_VALUE - Расписание обновлено', state.schedules[dID][room][param][index] );
         } 
-        // else {
-        //   // Добавляем новое расписание
-        //   state.schedules[dID][room][param].push({
-        //     ...scheduleData,
-        //     updatedAt: scheduleData.time || new Date().toISOString()
-        //   });
-        //   logger.dev('[config] - UPDATE_SCHEDULE_VALUE - Новое расписание добавлено');
-        // }
       } 
-      // else {
-      //   // Создаем структуру если её нет
-      //   if (!state.schedules[dID][room]) {
-      //     state.schedules[dID][room] = {};
-      //   }
-      //   if (!state.schedules[dID][room][param]) {
-      //     state.schedules[dID][room][param] = [];
-      //   }
-        
-      //   // Добавляем новое расписание
-      //   state.schedules[dID][room][param].push({
-      //     ...scheduleData,
-      //     updatedAt: scheduleData.time || new Date().toISOString()
-      //   });
-      //   logger.dev('[config] - UPDATE_SCHEDULE_VALUE - Создана новая структура и добавлено расписание');
-      // }
-      
-      // Сохраняем в localStorage
-      // localStorage.setItem(`${dID}_schedules`, JSON.stringify(state.schedules[dID]));
+
     },
 
 
@@ -492,31 +466,30 @@ export default {
 
 
 
-    handleValueUpdate({ commit, rootGetters}, { dID, payload, type }) {
+    handleValueUpdate({ commit, rootGetters}, { type }) {
       console.groupCollapsed('[Config] - handleValueUpdate');
-      logger.info('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
-      console.log('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
-      if (!dID || !payload || !type) {
-        logger.error('[Config] - handleValueUpdate - Невалидные параметры запроса:', { dID, payload, type });
-        console.error('[Config] - handleValueUpdate - Невалидные параметры запроса:', { dID, payload, type });
-        return;
-      }
+      // logger.info('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
+      // console.log('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
+      // if (!dID || !payload || !type) {
+      //   logger.error('[Config] - handleValueUpdate - Невалидные параметры запроса:', { dID, payload, type });
+      //   console.error('[Config] - handleValueUpdate - Невалидные параметры запроса:', { dID, payload, type });
+      //   return;
+      // }
 
-      const { room, param, value, time } = payload;
+      // const { room, param, value, time } = payload;
       //console.log('[Config] - handleValueUpdate - Параметры запроса:', { dID, room, param, value, time });
-      if (!dID || !room || !param || value === undefined) return;
+      // if (!dID || !room || !param || value === undefined) return;
       
       let settingsData = rootGetters.getSetpointsManager?.settingsData;
       console.log('[Config] - handleValueUpdate - Текущие settingsData:', settingsData);
       if (type === 'setpoints') {
         try {
           commit('UPDATE_CONFIG_VALUE', {
-            dID,
-            room,
+            dID: settingsData.name,
+            room: settingsData.payload.room,
             type: type,
-            name: param,
-            value: value,
-            timestamp: time
+            name: settingsData.payload.param,
+            value: settingsData.payload.value,
           });
 
         } catch (error) {
