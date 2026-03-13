@@ -347,7 +347,7 @@ export default {
     editStartTime() {
       this.selectedField = "startTime";
         const timeString = this.scheduleData.startTime || '00:00';
-        console.log('[MainBodySchedule] - Редактирование startTime:', timeString);
+        //console.log('[MainBodySchedule] - Редактирование startTime:', timeString);
         const [hours, minutes] = timeString.split(':').map(Number);
         
         this.editTimeFieldWithToggle( hours, minutes);
@@ -362,11 +362,11 @@ export default {
     
     editTimeFieldWithToggle(currentHours, currentMinutes) {
       this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
-      console.groupCollapsed('[MainBodySchedule] - editTimeFieldWithToggle');
+      //console.groupCollapsed('[MainBodySchedule] - editTimeFieldWithToggle');
       // if (this.scheduleData[this.selectedField] === undefined) {
       //   this.scheduleData[this.selectedField] = `00:00`;
       // }
-        console.log('[MainBodySchedule] - Редактирование:', currentHours, currentMinutes, this.scheduleData[this.selectedField]);
+        //console.log('[MainBodySchedule] - Редактирование:', currentHours, currentMinutes, this.scheduleData[this.selectedField]);
         this.updatePayloadData({ 
               id: this.scheduleData.id,
               value: this.scheduleData[this.selectedField],
@@ -379,7 +379,7 @@ export default {
             param: editMode, 
             valueType: '', 
           }
-          console.log('[MainBodySettings] - editValue - params:', params);
+          //console.log('[MainBodySettings] - editValue - params:', params);
           this.setLimits(params);
 
         if (editMode === 'minutes') {
@@ -396,6 +396,7 @@ export default {
         
         // Переключаем режим
         this.timeEditMode = this.timeEditMode === 'minutes' ? 'hours' : 'minutes';
+        //console.groupEnd();
     },
 
 

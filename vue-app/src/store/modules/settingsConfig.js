@@ -260,7 +260,7 @@ export default {
       }
     },
     timeToMinutes(_, timeString) {
-      console.log('[settingsConfig] - timeToMinutes - Преобразование времени:', timeString);
+      //console.log('[settingsConfig] - timeToMinutes - Преобразование времени:', timeString);
         try {
           if (!timeString || typeof timeString !== 'string') {
             logger.warn('[settingsConfig] - timeToMinutes - Неверный формат времени:', timeString);
@@ -285,7 +285,7 @@ export default {
         }
       },
     minutesToTime(_, minutes) {
-      console.log('[settingsConfig] - minutesToTime - Преобразование минут:', minutes);
+      //console.log('[settingsConfig] - minutesToTime - Преобразование минут:', minutes);
         try {
           if (typeof minutes !== 'number' || minutes < 0 || minutes > 1439) {
             logger.warn('[settingsConfig] - minutesToTime - Некорректное количество минут:', minutes);
@@ -573,7 +573,7 @@ getScheduleTimeByID(context, { id, title }) {
 async checkTimeOverlap({ dispatch, rootGetters},{ startTime, endTime, id }) {
   console.log('[settingsConfig] - checkTimeOverlap - Проверяем пересечение времени:', { startTime, endTime, id });
   try {
-    let numStart, numEnd;
+    let numStart, numEnd, finalStartTime, finalEndTime, message;
    const schedules = await dispatch('getSchedulesFromStore');
           const settingsData = rootGetters['getSetpointsManager']?.settingsData;
           const room = settingsData?.payload?.room;
@@ -585,24 +585,51 @@ async checkTimeOverlap({ dispatch, rootGetters},{ startTime, endTime, id }) {
           if (!startTime) {
           const findedSchedule = existingSchedules.find(s => s.id === id);
           if (findedSchedule) {
-            numStart = await dispatch('timeToMinutes', findedSchedule.startTime);
+            finalStartTime = findedSchedule.startTime;
+            numStart = await dispatch('timeToMinutes', finalStartTime);
             console.log('[settingsConfig] - checkTimeOverlap - startTime from schedule:', numStart);
           }
-        } else {
-          numStart = await dispatch('timeToMinutes', startTime);
-        }
-        
-        if (!endTime) {
-          const findedSchedule = existingSchedules.find(s => s.id === id);
-          if (findedSchedule) {
-            numEnd = await dispatch('timeToMinutes', findedSchedule.endTime);
-            console.log('[settingsConfig] - checkTimeOverlap - endTime from schedule:', numEnd);
+          } else {
+            finalStartTime = startTime;
+            numStart = await dispatch('timeToMinutes', startTime);
           }
-        } else {
-          numEnd = await dispatch('timeToMinutes', endTime);
-        }
-          console.log('[settingsConfig] - checkTimeOverlap - Существующие расписания:', existingSchedules, numStart, numEnd);
+        
+          if (!endTime) {
+            const findedSchedule = existingSchedules.find(s => s.id === id);
+            if (findedSchedule) {
+              finalEndTime = findedSchedule.endTime;
+              numEnd = await dispatch('timeToMinutes', finalEndTime);
+              console.log('[settingsConfig] - checkTimeOverlap - endTime from schedule:', numEnd);
+            }
+          } else {
+            finalEndTime = endTime;
+            numEnd = await dispatch('timeToMinutes', endTime);
+          }
+          console.log(`[settingsConfig] - checkTimeOverlap - Существующие расписания:', ${existingSchedules}, ${finalStartTime}-${numStart}, ${finalEndTime}-${numEnd}`);
 
+//Проверяем все существующие расписания на пересечение
+          for (const scheduleItem of existingSchedules) {
+            const existingStart = await dispatch('timeToMinutes', scheduleItem.startTime);
+            const existingEnd = await dispatch('timeToMinutes', scheduleItem.endTime);
+    
+            
+            // Проверяем пересечение интервалов
+            if (numStart < existingEnd && numEnd > existingStart) {
+              numStart = await dispatch('minutesToTime', (existingEnd + 1));
+              message = 'Обнаружено пересечение с существующими диапазонами Интервал пересчитан';
+            }
+          }
+
+// Проверяем порядок времени начала и окончания
+          if (numEnd <= numStart) {
+            message = 'Выбран некорректный диапазон времени';
+            logger.dev('[settingsConfig] - checkTimeOverlap - ', message);
+            numEnd = numStart + 10;
+          }
+          finalEndTime = await dispatch('minutesToTime', numEnd);
+          finalStartTime = await dispatch('minutesToTime', numStart);
+          console.log('[settingsConfig] - checkTimeOverlap - Итоговый интервал:', finalStartTime,":", finalEndTime);
+          return { message, hasOverlap: true, finalStartTime, finalEndTime }; 
 
   } catch (error) {
     console.log('[settingsConfig] - checkTimeOverlap - Ошибка проверки пересечения времени:', error);
@@ -696,7 +723,7 @@ async checkTimeOverlap({ dispatch, rootGetters},{ startTime, endTime, id }) {
       const settingsData = rootGetters['getSetpointsManager']?.settingsData;
       const dID = settingsData?.name;
       const value = settingsData?.payload?.value;
-      const value_name = settingsData?.payload?.value_name;
+      //const value_name = settingsData?.payload?.value_name;
       const id = settingsData?.payload?.id;
       
 
@@ -727,8 +754,11 @@ async checkTimeOverlap({ dispatch, rootGetters},{ startTime, endTime, id }) {
         dispatch('checkTimeOverlap', {
           startTime: updatedValue,
           id: id
-        }).then(checkedTime => {
-          console.log(`[settingsConfig] - settingsConfigUpdate - Обновляем ${value_name}: ${updatedValue}, результат проверки:`, checkedTime);
+        }).then(result => {
+          console.log('[settingsConfig] - settingsConfigUpdate - Результат проверки:', {
+          startTime: result.finalStartTime,
+          endTime: result.finalEndTime,
+        });
         });
 
 

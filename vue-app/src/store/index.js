@@ -70,7 +70,8 @@ const store = createStore({
           new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
         
         state.settingsData = { ...state.setpointsManager.settingsData };
-        console.log('[index] - UPDATE_PAYLOAD_DATA - Обновляем payload:', state.setpointsManager.settingsData.payload );
+        // Вернуть console.log
+        //console.log('[index] - UPDATE_PAYLOAD_DATA - Обновляем payload:', state.setpointsManager.settingsData.payload );
       }
     },
     UPDATE_LIMITS_DATA(state, limits) {
@@ -108,7 +109,7 @@ const store = createStore({
       if (typeof key === 'string' && state.paramKey !== key && key != null) {
         logger.dev(`[index] MUTATION SET_PARAM_KEY: ${state.paramKey} -> ${key}`);
         state.paramKey = key;
-        console.log(' -+++++++++++++ - [index] - SET_PARAM_KEY - Обновление ключа в paramKey localStorage:', key);
+        console.log('[index] - SET_PARAM_KEY - Обновление ключа в paramKey localStorage:', key);
         localStorage.setItem('paramKey', key);
       }
     },

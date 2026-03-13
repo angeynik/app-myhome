@@ -78,7 +78,7 @@
         :request="request"
         :roomKey="selectedItemData.roomKey"
         :setpointKey="selectedItemData.setpointKey"
-        :valueTitle="selectedItemData.title"
+        :valueTitle="selectedItemData.valueTitle"
         @eventsMainSetpoint="editValueMainSetpoint"
         @eventsSchedule="editValueMainSetpoint"
       />
@@ -421,8 +421,8 @@ export default {
 
     getComponentData(event) {
      
-      console.groupCollapsed('[DashBoard] - getComponentData - Данные от компонента:');
-      console.log('Полученные данные:', event);
+      //console.groupCollapsed('[DashBoard] - getComponentData - Данные от компонента:');
+      console.log('[DashBoard] - getComponentData - Данные от компонента:', event);
       // let request = event.request;
       let settingsData = this.$store.state.setpointsManager?.settingsData;
       //console.log('[DashBoard] - getComponentData - Данные в settingsData ', settingsData, ' request:', settingsData.request);
@@ -431,9 +431,11 @@ export default {
       //   ' request:', settingsData?.request
       // );
       
+      
       this.selectedItemData = {
         roomKey: settingsData?.payload?.room,
         setpointKey: settingsData?.payload?.param,
+        valueTitle: settingsData?.payload?.value_name
       };
 
 
@@ -442,8 +444,6 @@ export default {
           this.$store.dispatch('config/handleValueUpdate', { type: settingsData?.payload?.config });
           return;
       }
-      this.selectedItemData = event.data;
-      //this.aditValueMainSetpoint();
 
       const request = event.request;
       if (event.action === 'show') {
@@ -453,19 +453,15 @@ export default {
         this.showSetpoint = true;
         this.request = request;
         //console.log('[DashBoard] - getComponentData - Компонент MainSetpoint показан');
-        console.groupEnd();
+        //console.groupEnd();
       } else if (event.action === 'hide') {
         this.showSetpoint = false;
         this.selectedItemData = null;
         this.setpoint = null;
         this.request = '';
         //console.log('[DashBoard] - getComponentData - Компонент MainSetpoint скрыт');
-        console.groupEnd();
+        //console.groupEnd();
       }
-      // if(event.data.value_type === 'deviation') {
-      //   this.$store.dispatch('config/handleValueUpdate', { dID, payload, type: requestName });
-
-      // }
 
     },
 

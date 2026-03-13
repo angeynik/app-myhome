@@ -171,7 +171,7 @@
       methods: {
       ...mapActions(['updateSettingsData']),
       sendEmitMessage(event, value) {
-        console.groupCollapsed('[MainSetpoint] - sendEmitMessage ');
+        //console.groupCollapsed('[MainSetpoint] - sendEmitMessage ');
         console.log('[MainSetpoint] - sendEmitMessage - Формируем сообщение для отправки на сервер - message: ', value, 'event: ', event);
         // Проверяем, что все параметры переданы
         if (!event || value == undefined || value === null) {
@@ -179,8 +179,8 @@
           return;
         }    
         logger.dev('[MainSetpoint] - sendEmitMessage для Уставки - value:', value, 'title:', this.valueTitle, 'request:', this.request);
-        console.log('[MainSetpoint] - sendEmitMessage для Уставки - value:', value, 'title:', this.valueTitle, 'request:', this.request);
-        console.groupEnd();
+        // console.log('[MainSetpoint] - sendEmitMessage для Уставки - value:', value, 'title:', this.valueTitle, 'request:', this.request);
+        // console.groupEnd();
 
         this.$emit('eventsMainSetpoint', {
             [event]: {
@@ -255,7 +255,8 @@
           logger.dev('[MainSetpoint] - calculateSetpoint  Уменьшили SetPoint:', newValue);
           //console.log('Уменьшили SetPoint:', newValue);
         }
-        console.log('[MainSetpoint] - calculateSetpoint  Обновленное значение:', newValue);
+        // Вернуть console.log
+        //console.log('[MainSetpoint] - calculateSetpoint  Обновленное значение:', newValue);
           try {
               if (newValue > max) {
               newValue = min;

@@ -29,7 +29,8 @@ export default {
     SET_SCHEDULE(state, { name, config }) {
       state.schedules[name] = config;
       logger.dev('[sortParams] - SET_SCHEDULE Обновлен конфиг[' + name + ']: ', config);
-      console.log('[sortParams] - SET_SCHEDULE Обновлен конфиг[' + name + ']: ', config);
+      // Вернуть console.log
+      //console.log('[sortParams] - SET_SCHEDULE Обновлен конфиг[' + name + ']: ', config);
     },
     REMOVE_SCHEDULES(state, { dID, roomKey, paramKey, scheduleIds }) {
       console.log('[config] - REMOVE_SCHEDULES - Удаляем расписания:', { dID, roomKey, paramKey, scheduleIds });
@@ -56,12 +57,14 @@ export default {
     SET_NOTIFICATION(state, { name, config }) {
       state.notifications[name] = config;
       logger.dev('[sortParams] - SET_NOTIFICATION Обновлен конфиг[' + name + ']: ', config);
-      console.log('[sortParams] - SET_NOTIFICATION Обновлен конфиг[' + name + ']: ', config);
+      // Вернуть console.log
+      //console.log('[sortParams] - SET_NOTIFICATION Обновлен конфиг[' + name + ']: ', config);
     },
     SET_STATISTIC(state, { name, config }) {
       state.statistics[name] = config;
       logger.dev('[sortParams] - SET_STATISTIC Обновлен конфиг[' + name + ']: ', config);
-      console.log('[sortParams] - SET_STATISTIC Обновлен конфиг[' + name + ']: ', config);
+      // Вернуть console.log
+      //console.log('[sortParams] - SET_STATISTIC Обновлен конфиг[' + name + ']: ', config);
     },
 
 

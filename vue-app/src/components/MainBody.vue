@@ -264,7 +264,7 @@ export default {
       console.log('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', clearParam, ' и значение:', item);
       if (!clearParam) return `[MainBody] - DclickSelectItem - Отсутствуетлюч выбранного элемента:', ${clearParam}`;
       this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
-      this.updatePayloadData({ param: clearParam, room: item.roomKey, config: this.typeSettingsKey});
+      this.updatePayloadData({ param: clearParam, room: item.roomKey, config: this.typeSettingsKey, value: item.setValue,});
       // console.log('[MainBody] - DclickSelectItem - ОБНОВИЛИ КЛЮЧ param в settingsData:',
       //   this.$store.state.setpointsManager?.settingsData?.payload?.param
       // );

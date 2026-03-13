@@ -253,7 +253,7 @@ export default {
     ...mapActions(['updateSettingsData', 'updatePayloadData', 'updateLimitsData', 'updateViewData']),
     
     getComponentData(event) {
-      console.log('[MainBodySettings] -  getComponentData - Данные от компонента MainBodySchedule value:', event, null, 2);
+      console.log('[MainBodySettings] -  getComponentData - Данные от компонента MainBodySchedule:', event, null, 2);
       // const settingsData = this.$store.state.setpointsManager?.settingsData;
       // console.log('[MainBodySettings] -  getComponentData - Данные в settingsData:', settingsData);
       let action = "show";
@@ -271,7 +271,7 @@ export default {
 
       const targetArray = this[arrayTitle];
       const targetObject = targetArray.find(item => item.id === targetId);
-      console.log(`[MainBodySettings] - getComponentData - Поле "${fieldName}" в объекте с id ${targetId}:`, targetObject);
+      console.log(`[MainBodySettings] - getComponentData - Найден элемент расписания с id ${targetId} в массиве:`, targetObject);
         if (targetObject && fieldName === 'value_type') {
           // Изменяем значение поля
           targetObject[fieldName] = newValue;

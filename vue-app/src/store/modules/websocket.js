@@ -122,8 +122,8 @@ export default {
             resolve
           });
         }
-        
-        console.log('[WebSocket] Sending:', message);
+        // Вернуть console.log
+        //console.log('[WebSocket] Sending:', message);
         state.socket.send(JSON.stringify(message));
       });
     },
@@ -133,7 +133,8 @@ export default {
       try {
         const response = JSON.parse(event.data);
         logger.dev(`[WebSocket] Received: ${JSON.stringify(response)}`);
-        console.log('[WebSocket] Received:', response);
+        // Вернуть console.log
+        //console.log('[WebSocket] Received:', response);
         const dID = response.name;
         const auth_dID = rootGetters['dID'];
         if (response.request === 'loginSuccess' && state.pendingResponse?.type === 'login') {
