@@ -396,12 +396,12 @@ async createTimePoint({ dispatch }, { offset = 1, duration = 10 } = {}) {
 },
 
 getSchedulesFromStore({ rootState, rootGetters }) {
-  console.groupCollapsed('[settingsConfig] - getSchedulesFromStore');
+  //console.groupCollapsed('[settingsConfig] - getSchedulesFromStore');
   const settingsData = rootGetters['getSetpointsManager']?.settingsData;
   const dID = settingsData?.name;
   const room = settingsData?.payload?.room;
   const param = settingsData?.payload?.param;
-  console.log('[settingsConfig] - getSchedulesFromStore - Start', { dID, room, param });
+  //console.log('[settingsConfig] - getSchedulesFromStore - Start', { dID, room, param });
   
   try {
     if (!dID || !room || !param) {
@@ -416,8 +416,8 @@ getSchedulesFromStore({ rootState, rootGetters }) {
     
     const schedules = Array.isArray(paramSchedules) ? [...paramSchedules] : [];
     
-    console.log('[settingsConfig] - getSchedulesFromStore - Найдено расписаний:', schedules.length);
-    console.groupEnd();
+    // console.log('[settingsConfig] - getSchedulesFromStore - Найдено расписаний:', schedules.length);
+    // console.groupEnd();
     
     return schedules;
     
@@ -427,7 +427,7 @@ getSchedulesFromStore({ rootState, rootGetters }) {
     return [];
   }
 },
-getScheduleTimeByID(id, title) {
+getScheduleTimeByID(context, { id, title }) {
   console.groupCollapsed('[settingsConfig] - getScheduleTimeByID');
   try {
     const schedules = this.getSchedulesFromStore();
@@ -441,273 +441,174 @@ getScheduleTimeByID(id, title) {
   }
 },
 
-async checkScheduleOverlap({rootGetters, dispatch}, { startTime, endTime}) {
-      console.groupCollapsed('[settingsConfig] - checkScheduleOverlap');
-      try {
-        //const schedules = this.getSchedulesFromStore();
-        const schedules = await dispatch('getSchedulesFromStore');
-        const settingsData = rootGetters['getSetpointsManager']?.settingsData;
-        const room = settingsData?.payload?.room;
-        const param = settingsData?.payload?.param;
-        const existingSchedules = schedules.filter(s => 
-          s.room === room && 
-          s.param === param
-        );
-        console.log('[settingsConfig] - checkScheduleOverlap - Существующие расписания:', existingSchedules);
+  async checkScheduleOverlap({rootGetters, dispatch}, { startTime, endTime}) {
+        console.groupCollapsed('[settingsConfig] - checkScheduleOverlap');
+        try {
+          //const schedules = this.getSchedulesFromStore();
+          const schedules = await dispatch('getSchedulesFromStore');
+          const settingsData = rootGetters['getSetpointsManager']?.settingsData;
+          const room = settingsData?.payload?.room;
+          const param = settingsData?.payload?.param;
+          const existingSchedules = schedules.filter(s => 
+            s.room === room && 
+            s.param === param
+          );
+          console.log('[settingsConfig] - checkScheduleOverlap - Существующие расписания:', existingSchedules);
 
 
-        console.log('[settingsConfig] - checkScheduleOverlap - Начало проверки', {
-          startTime,
-          endTime,
-          existingSchedules
-        });
-
-        // Валидация входных параметров
-        if (!startTime || !endTime) {
-          const message = 'Отсутствует startTime или endTime';
-          console.warn('[settingsConfig] - checkScheduleOverlap - ', message);
-          console.groupEnd();
-          return { message, hasOverlap: false };
-        }
-        if (!existingSchedules || !Array.isArray(existingSchedules)) {
-          console.groupEnd();
-          return { hasOverlap: false };
-        }
-
-        const numStart = await dispatch('timeToMinutes', startTime);
-        const numEnd = await dispatch('timeToMinutes', endTime);
-        console.log('[settingsConfig] - checkScheduleOverlap - Новое время расписания:', {
-          startTime,
-          endTime,
-          numStart,
-          numEnd
-        });
-       
-        // Проверяем валидность нового времени
-        if (numEnd <= numStart) {
-          const message = 'Некорректное время нового расписания'
-          logger.dev('[settingsConfig] - checkScheduleOverlap - ', message);
-          console.groupEnd();
-          return { message, hasOverlap: true }; 
-        }
-        
-        let hasOverlap = false;
-        let allExistingEnds = [];
-        
-        // 1. Сначала проверяем все существующие расписания на пересечение
-        for (const scheduleItem of existingSchedules) {
-          const existingStart = await dispatch('timeToMinutes', scheduleItem.startTime);
-          const existingEnd = await dispatch('timeToMinutes', scheduleItem.endTime);
-          
-          console.log('[settingsConfig] - checkScheduleOverlap - Существующее время расписания:', {
-            existingStart,
-            existingEnd
+          console.log('[settingsConfig] - checkScheduleOverlap - Начало проверки', {
+            startTime,
+            endTime,
+            existingSchedules
           });
-          // Добавляем в массив всех времен окончаний
-          allExistingEnds.push(existingEnd);
-          
-          // Проверяем пересечение интервалов
-          if (numStart < existingEnd && numEnd > existingStart) {
-            hasOverlap = true;
-            console.log('[settingsConfig] - checkScheduleOverlap - Пересечение найдено', existingStart, existingEnd, numStart, numEnd);
-          }
-        }
 
-        // 2. Если есть пересечение, вычисляем новое время (этот блок должен быть ПОСЛЕ цикла)
-        if (hasOverlap) {
-          const latestEndTime = Math.max(...allExistingEnds);
-          // Вычисляем новый startTime: самый поздний existingEnd + 1 минута
-          const newStartMinutes = latestEndTime + 1;
-          
-          // Вычисляем новый endTime: newStart + 10 минут
-          const newEndMinutes = newStartMinutes + 10;
-          
-          // Проверяем, что новое время не выходит за границы суток (1440 минут)
-          if (newEndMinutes > 1440) {
-            console.log('[settingsConfig] - checkScheduleOverlap - Новое время выходит за границы суток');
+          // Валидация входных параметров
+          if (!startTime || !endTime) {
+            const message = 'Отсутствует startTime или endTime';
+            console.warn('[settingsConfig] - checkScheduleOverlap - ', message);
             console.groupEnd();
-            return { 
-              hasOverlap: true,
-              newStartTime: null,
-              newEndTime: null,
-              message: 'Невозможно найти свободный промежуток в течение суток'
+            return { message, hasOverlap: false };
+          }
+          if (!existingSchedules || !Array.isArray(existingSchedules)) {
+            console.groupEnd();
+            return { hasOverlap: false };
+          }
+
+          const numStart = await dispatch('timeToMinutes', startTime);
+          const numEnd = await dispatch('timeToMinutes', endTime);
+          console.log('[settingsConfig] - checkScheduleOverlap - Новое время расписания:', {
+            startTime,
+            endTime,
+            numStart,
+            numEnd
+          });
+        
+          // Проверяем валидность нового времени
+          if (numEnd <= numStart) {
+            const message = 'Некорректное время нового расписания'
+            logger.dev('[settingsConfig] - checkScheduleOverlap - ', message);
+            console.groupEnd();
+            return { message, hasOverlap: true }; 
+          }
+          
+          let hasOverlap = false;
+          let allExistingEnds = [];
+          
+          // 1. Сначала проверяем все существующие расписания на пересечение
+          for (const scheduleItem of existingSchedules) {
+            const existingStart = await dispatch('timeToMinutes', scheduleItem.startTime);
+            const existingEnd = await dispatch('timeToMinutes', scheduleItem.endTime);
+            
+            console.log('[settingsConfig] - checkScheduleOverlap - Существующее время расписания:', {
+              existingStart,
+              existingEnd
+            });
+            // Добавляем в массив всех времен окончаний
+            allExistingEnds.push(existingEnd);
+            
+            // Проверяем пересечение интервалов
+            if (numStart < existingEnd && numEnd > existingStart) {
+              hasOverlap = true;
+              console.log('[settingsConfig] - checkScheduleOverlap - Пересечение найдено', existingStart, existingEnd, numStart, numEnd);
+            }
+          }
+
+          // 2. Если есть пересечение, вычисляем новое время (этот блок должен быть ПОСЛЕ цикла)
+          if (hasOverlap) {
+            const latestEndTime = Math.max(...allExistingEnds);
+            // Вычисляем новый startTime: самый поздний existingEnd + 1 минута
+            const newStartMinutes = latestEndTime + 1;
+            
+            // Вычисляем новый endTime: newStart + 10 минут
+            const newEndMinutes = newStartMinutes + 10;
+            
+            // Проверяем, что новое время не выходит за границы суток (1440 минут)
+            if (newEndMinutes > 1440) {
+              console.log('[settingsConfig] - checkScheduleOverlap - Новое время выходит за границы суток');
+              console.groupEnd();
+              return { 
+                hasOverlap: true,
+                newStartTime: null,
+                newEndTime: null,
+                message: 'Невозможно найти свободный промежуток в течение суток'
+              };
+            }
+            
+            // Преобразуем минуты обратно в строковое время
+            const newStartTimeStr = await dispatch('minutesToTime', newStartMinutes);
+            const newEndTimeStr = await dispatch('minutesToTime', newEndMinutes);
+
+            console.log('[settingsConfig] - checkScheduleOverlap - Предложено новое время:', {
+              newStartTime: newStartTimeStr,
+              newEndTime: newEndTimeStr,
+              newStartMinutes,
+              newEndMinutes
+            });
+            
+            // Возвращаем информацию о пересечении и новом времени
+            const message = `Предложено новое время от ${newStartTimeStr} до ${newEndTimeStr}`;
+            console.groupEnd();
+            return {
+              message,
+              newStartTime: newStartTimeStr,
+              newEndTime: newEndTimeStr,
+              hasOverlap: true
             };
           }
           
-          // Преобразуем минуты обратно в строковое время
-          const newStartTimeStr = await dispatch('minutesToTime', newStartMinutes);
-          const newEndTimeStr = await dispatch('minutesToTime', newEndMinutes);
-
-          console.log('[settingsConfig] - checkScheduleOverlap - Предложено новое время:', {
-            newStartTime: newStartTimeStr,
-            newEndTime: newEndTimeStr,
-            newStartMinutes,
-            newEndMinutes
-          });
-          
-          // Возвращаем информацию о пересечении и новом времени
-          const message = `Предложено новое время от ${newStartTimeStr} до ${newEndTimeStr}`;
+          // Если пересечения нет, возвращаем false
           console.groupEnd();
-          return {
-            message,
-            newStartTime: newStartTimeStr,
-            newEndTime: newEndTimeStr,
-            hasOverlap: true
+          return { hasOverlap: false };
+          
+        } catch (error) {
+          logger.error('[settingsConfig] - checkScheduleOverlap - Ошибка проверки пересечения:', error);
+          console.groupEnd();
+          return { 
+            message: 'Ошибка при проверке пересечения',
+            hasOverlap: true,
+            error: error.message 
           };
         }
+  },
+async checkTimeOverlap({ dispatch, rootGetters},{ startTime, endTime, id }) {
+  console.log('[settingsConfig] - checkTimeOverlap - Проверяем пересечение времени:', { startTime, endTime, id });
+  try {
+    let numStart, numEnd;
+   const schedules = await dispatch('getSchedulesFromStore');
+          const settingsData = rootGetters['getSetpointsManager']?.settingsData;
+          const room = settingsData?.payload?.room;
+          const param = settingsData?.payload?.param;
+          const existingSchedules = schedules.filter(s => 
+            s.room === room && 
+            s.param === param
+          );
+          if (!startTime) {
+          const findedSchedule = existingSchedules.find(s => s.id === id);
+          if (findedSchedule) {
+            numStart = await dispatch('timeToMinutes', findedSchedule.startTime);
+            console.log('[settingsConfig] - checkTimeOverlap - startTime from schedule:', numStart);
+          }
+        } else {
+          numStart = await dispatch('timeToMinutes', startTime);
+        }
         
-        // Если пересечения нет, возвращаем false
-        console.groupEnd();
-        return { hasOverlap: false };
-        
-      } catch (error) {
-        logger.error('[settingsConfig] - checkScheduleOverlap - Ошибка проверки пересечения:', error);
-        console.groupEnd();
-        return { 
-          message: 'Ошибка при проверке пересечения',
-          hasOverlap: true,
-          error: error.message 
-        };
-      }
+        if (!endTime) {
+          const findedSchedule = existingSchedules.find(s => s.id === id);
+          if (findedSchedule) {
+            numEnd = await dispatch('timeToMinutes', findedSchedule.endTime);
+            console.log('[settingsConfig] - checkTimeOverlap - endTime from schedule:', numEnd);
+          }
+        } else {
+          numEnd = await dispatch('timeToMinutes', endTime);
+        }
+          console.log('[settingsConfig] - checkTimeOverlap - Существующие расписания:', existingSchedules, numStart, numEnd);
+
+
+  } catch (error) {
+    console.log('[settingsConfig] - checkTimeOverlap - Ошибка проверки пересечения времени:', error);
+  }
+  return true;
 },
-
-    // async addScheduleLocally({ state, dispatch, rootGetters }, { roomKey, paramKey, schedule }) {
-    //   console.log('[settingsConfig] - addScheduleLocally - Начинаем локальное сохранение расписания');
-    //   let configType = 'schedules';
-    //   const dID = rootGetters['dID'];
-    //   if (!dID) {
-    //     logger.warn('[settingsConfig] - addScheduleLocally - dID не определен');
-    //     return;
-    //   }
-      
-    //   console.log('[settingsConfig] - addScheduleLocally - Добавляем расписание локально:', { dID, roomKey, paramKey, schedule });
-      
-    //   try {
-    //     // 1. Получаем текущие расписания из config модуля
-    //     const currentSchedules = await dispatch('getConfigSettings', {
-    //       roomKey: roomKey,
-    //       paramKey: paramKey,
-    //       configType: configType
-    //     });
-    //     console.log('[settingsConfig] - addScheduleLocally - Текущие расписания:', currentSchedules);
-
-        
-    //     // 2. Инициализируем структуру если нужно
-    //     if (!currentSchedules[roomKey]) {
-    //       currentSchedules[roomKey] = {};
-    //     }
-        
-    //     if (!currentSchedules[roomKey][paramKey]) {
-    //       currentSchedules[roomKey][paramKey] = [];
-    //     }
-        
-    //     // 3. Добавляем новое расписание
-    //     const updatedSchedules = [...currentSchedules[roomKey][paramKey], schedule];
-    //     currentSchedules[roomKey][paramKey] = updatedSchedules;
-        
-    //     // 4. Обновляем состояние
-    //     state.schedules[configType] = { ...currentSchedules };
-        
-    //     // 5. Сохраняем в localStorage
-    //     localStorage.setItem(configType, JSON.stringify(currentSchedules));
-        
-    //     logger.info('[settingsConfig] - addScheduleLocally - Расписание добавлено локально');
-    //     return { success: true, schedule };
-        
-    //   } catch (error) {
-    //     logger.error('[settingsConfig] - addScheduleLocally - Ошибка:', error);
-    //     throw error;
-    //   }
-    // },
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-    // findAvailableTimeSlot(context, { currentTime, existingSchedules, minDuration = 60 }) {
-    //   try {
-    //     const timeToMinutes = context.dispatch('timeToMinutes');
-    //     const minutesToTime = context.dispatch('minutesToTime');
-        
-    //     // Сортируем расписания по времени начала
-    //     const sortedSchedules = [...existingSchedules].sort((a, b) => {
-    //       return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
-    //     });
-        
-    //     const currentMinutes = timeToMinutes(currentTime);
-    //     const endOfDay = 24 * 60; // 00:00 следующего дня
-        
-    //     // Если нет существующих расписаний
-    //     if (sortedSchedules.length === 0) {
-    //       const startTime = currentTime;
-    //       const endTime = minutesToTime(Math.min(currentMinutes + minDuration, endOfDay));
-    //       return { startTime, endTime, found: true };
-    //     }
-        
-    //     // Проверяем возможность вставить до первого расписания
-    //     const firstScheduleStart = timeToMinutes(sortedSchedules[0].startTime);
-    //     if (currentMinutes + minDuration <= firstScheduleStart) {
-    //       return {
-    //         startTime: currentTime,
-    //         endTime: minutesToTime(Math.min(currentMinutes + minDuration, firstScheduleStart - 1)),
-    //         found: true
-    //       };
-    //     }
-        
-    //     // Ищем слот между существующими расписаниями
-    //     for (let i = 0; i < sortedSchedules.length; i++) {
-    //       const currentSchedule = sortedSchedules[i];
-    //       const currentEnd = timeToMinutes(currentSchedule.endTime);
-          
-    //       // Время начала следующего расписания (или конец дня)
-    //       const nextStart = i < sortedSchedules.length - 1 
-    //         ? timeToMinutes(sortedSchedules[i + 1].startTime)
-    //         : endOfDay;
-          
-    //       // Максимальное возможное время начала в этом слоте
-    //       const maxPossibleStart = Math.max(currentMinutes, currentEnd + 1);
-          
-    //       // Проверяем, есть ли достаточно места
-    //       if (maxPossibleStart + minDuration <= nextStart) {
-    //         return {
-    //           startTime: minutesToTime(maxPossibleStart),
-    //           endTime: minutesToTime(maxPossibleStart + minDuration),
-    //           found: true
-    //         };
-    //       }
-    //     }
-        
-    //     // Пробуем вставить после последнего расписания в следующем дне
-    //     const lastScheduleEnd = timeToMinutes(sortedSchedules[sortedSchedules.length - 1].endTime);
-    //     const nextDayStart = Math.max(currentMinutes, lastScheduleEnd + 1);
-        
-    //     if (nextDayStart + minDuration <= endOfDay) {
-    //       return {
-    //         startTime: minutesToTime(nextDayStart),
-    //         endTime: minutesToTime(nextDayStart + minDuration),
-    //         found: true
-    //       };
-    //     }
-        
-    //     // Не нашли подходящего слота
-    //     return { startTime: null, endTime: null, found: false };
-        
-    //   } catch (error) {
-    //     console.error('[settingsConfig] - findAvailableTimeSlot - Ошибка:', error);
-    //     return { startTime: null, endTime: null, found: false };
-    //   }
-    // },
- 
-
 
     async addScheduleLocally({ rootGetters, rootState }, { room, param, schedule }) {
       console.log('[settingsConfig] - addScheduleLocally - Начинаем локальное сохранение расписания');
@@ -790,14 +691,14 @@ async checkScheduleOverlap({rootGetters, dispatch}, { startTime, endTime}) {
     },
 
     settingsConfigUpdate({ dispatch, rootGetters }, { newValue, value_details }) { //Функция возвращает преобразованное и проверенное на пересечение значение времени
-      console.groupCollapsed('[settingsConfig] - settingsConfigUpdate');
+      //console.groupCollapsed('[settingsConfig] - settingsConfigUpdate');
       console.log(' [settingConfig] - settingsConfigUpdate - Параметры запроса:', { newValue, value_details });
       const settingsData = rootGetters['getSetpointsManager']?.settingsData;
       const dID = settingsData?.name;
       const value = settingsData?.payload?.value;
       const value_name = settingsData?.payload?.value_name;
       const id = settingsData?.payload?.id;
-      let startTime, endTime;
+      
 
       if (!dID || !newValue || !value || !value_details) {
         logger.warn('[settingsConfig] - settingsConfigUpdate - Параметры обновления не определены');
@@ -822,18 +723,30 @@ async checkScheduleOverlap({rootGetters, dispatch}, { startTime, endTime}) {
           }
           
         }
-        console.log('[settingsConfig] - settingsConfigUpdate - Обновляем часы updatedValue', updatedValue);
-        console.log('[settingsConfig] - settingsConfigUpdate - value_name', value_name);
 
+        dispatch('checkTimeOverlap', {
+          startTime: updatedValue,
+          id: id
+        }).then(checkedTime => {
+          console.log(`[settingsConfig] - settingsConfigUpdate - Обновляем ${value_name}: ${updatedValue}, результат проверки:`, checkedTime);
+        });
+
+
+        // let startTime, endTime;
         // if (value_name == 'startTime') {
         //   startTime = updatedValue;
-        //   endTime = this.getScheduleTimeByID(id, 'endTime');
+        //   dispatch('getScheduleTimeByID', { id, title: 'endTime' }).then(endTimeValue => {
+        //     endTime = endTimeValue;
+        //     console.log('[settingsConfig] - settingsConfigUpdate - Обновляем startTime', startTime, 'endTime', endTime, id);
+        //   });
         // } else {
-        //   startTime = this.getScheduleTimeByID(id, 'endTime');
-        //   endTime = updatedValue;
+        //   dispatch('getScheduleTimeByID', { id, title: 'startTime' }).then(startTimeValue => {
+        //     startTime = startTimeValue;
+        //     console.log('[settingsConfig] - settingsConfigUpdate - Обновляем startTime', startTime, 'endTime', updatedValue, id);
+        //   });
         // }
-        console.log('[settingsConfig] - settingsConfigUpdate - Обновляем startTime', startTime, 'endTime', endTime, id);
-        console.groupEnd();
+        // console.log('[settingsConfig] - settingsConfigUpdate - Обновляем startTime', startTime, 'endTime', endTime, id);
+
 
         dispatch('updatePayloadData', { 
           value: updatedValue 
