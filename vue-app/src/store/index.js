@@ -75,13 +75,16 @@ const store = createStore({
       }
     },
     UPDATE_LIMITS_DATA(state, limits) {
+      console.log('[index] - UPDATE_LIMITS_DATA - limits:', limits);
       if (state.setpointsManager) {
-        console.log('[index] - UPDATE_LIMITS_DATA - Обновляем limits:', limits);
+        console.log('[index] - UPDATE_LIMITS_DATA - Before update:', JSON.stringify(state.setpointsManager.settingsData.limits));
         state.setpointsManager.settingsData.limits = {
           ...state.setpointsManager.settingsData.limits, // существующие данные лимитов
           ...limits // новые/обновленные поля лимитов
         };
+        console.log('[index] - UPDATE_LIMITS_DATA - After update:', JSON.stringify(state.setpointsManager.settingsData.limits));
         state.settingsData = { ...state.setpointsManager.settingsData };
+        console.log('[index] - UPDATE_LIMITS_DATA - state.settingsData.limits:', JSON.stringify(state.settingsData.limits));
       }
     },
 
@@ -156,6 +159,7 @@ const store = createStore({
     },
     
     updateLimitsData({ commit }, limits) {
+      console.log('[index] - updateLimitsData - limits:', limits);
       commit('UPDATE_LIMITS_DATA', limits);
     },
 
@@ -180,6 +184,7 @@ const store = createStore({
     typeSettingsKey: (state) => state.config.typeSettingsKey, // Тип конфигурации настроек 'schedule' 'notifications' 'statistics' 'setpoints'
     idSettingsKey: (state) => state.settingsConfig.idKey, // Идентификатор записи внутри конфигурации
     getSetpointsManager: (state) => state.setpointsManager, // Объект данных manageSetpoints
+    settingsDataLimits: (state) => state.settingsData?.limits, // Лимиты из settingsData
   }
 });
 

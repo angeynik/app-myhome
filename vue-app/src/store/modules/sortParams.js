@@ -238,12 +238,11 @@ export default {
 
 
     setLimits({ rootGetters, dispatch, commit }, params) {
-      //console.groupCollapsed('[sortParams] - setLimits');
+      //console.log('[sortParams] - setLimits - Начало, params:', params);
       logger.info(`[sortParams] - setLimits - Параметр -`, params);
-      //console.log('[sortParams] - setLimits - Параметр -', params);
 
       const { param, valueType } = params;
-      //console.log('[sortParams] - setLimits - Параметр -', param, valueType);
+      //console.log('[sortParams] - setLimits - param:', param, 'valueType:', valueType);
 
       let limits = null;
       try {
@@ -277,6 +276,7 @@ export default {
 
       logger.dev(`[sortParams] - setLimits Получены лимиты`, limits);
       //console.log('[sortParams] - setLimits Получены лимиты', limits);
+      //console.log('[sortParams] - setLimits - Dispatch updateLimitsData:', { limHigh: limits.high, limLow: limits.low, limStep: limits.step });
       dispatch('updateLimitsData', {
         limHigh: limits.high,
         limLow: limits.low,
@@ -284,7 +284,7 @@ export default {
       }, { root: true });
       const settingsDataLimits = store.state.setpointsManager?.settingsData.limits;
         logger.info('[sortParams] - setLimits - Обновили Limits в settingsData:', settingsDataLimits);
-        console.log('[sortParams] - setLimits - Обновили Limits в settingsData:');
+        //console.log('[sortParams] - setLimits - Обновили Limits в settingsData:', settingsDataLimits);
 
       commit('UPDATE_LIMITS', {
             limHigh: limits.high,

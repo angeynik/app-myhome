@@ -213,6 +213,11 @@ export default {
       try {
         if (!dateString) return '—';
         
+        // Если строка уже содержит запятую, значит уже отформатирована
+        if (typeof dateString === 'string' && dateString.includes(',')) {
+          return dateString;
+        }
+        
         const date = dateString instanceof Date ? dateString : new Date(dateString);
         
         // Проверка валидности даты
@@ -468,7 +473,7 @@ getScheduleTimeByID(context, { id, title }) {
   },
 
 
-    async addScheduleLocally({ rootGetters, rootState }, { room, param, schedule }) {
+    async addScheduleLocally({ rootGetters, rootState, dispatch }, { room, param, schedule }) {
       console.log('[settingsConfig] - addScheduleLocally - Начинаем локальное сохранение расписания');
       const dID = rootGetters['dID'];
       if (!dID) {
@@ -496,13 +501,11 @@ getScheduleTimeByID(context, { id, title }) {
         currentSchedules[room][param] = [...currentSchedules[room][param], schedule];
         
         // 4. Обновляем состояние в config.js через мутацию
-        // Нам нужен commit, но у нас нет доступа к нему напрямую в action
-        // Вместо этого используем dispatch
-        console.log('[settingsConfig] - addScheduleLocally - Обновляем состояние в config.js через НЕ СУЩЕСТВУЮЩУЮ мутацию updateScheduleLocally - НЕОБХОДИМО ДОПИСАТЬ !!!!!!');
-        // await dispatch('config/updateScheduleLocally', {
-        //   dID: dID,
-        //   schedules: currentSchedules
-        // }, { root: true });
+        console.log('[settingsConfig] - addScheduleLocally - Обновляем состояние в config.js через updateScheduleLocally');
+        await dispatch('config/updateScheduleLocally', {
+          dID: dID,
+          schedules: currentSchedules
+        }, { root: true });
         
         // 5. Также сохраняем в localStorage для резерва
         localStorage.setItem(`${dID}_schedules`, JSON.stringify(currentSchedules));
@@ -959,7 +962,19 @@ getScheduleTimeByID(context, { id, title }) {
     formatDate: (dateString, locale = 'ru-RU') => {
         try {
           if (!dateString) return '—';
+          
+          // Если строка уже содержит запятую, значит уже отформатирована
+          if (typeof dateString === 'string' && dateString.includes(',')) {
+            console.log('[settingsConfig] - dateTimeUtils.formatDate - Уже отформатирована:', dateString);
+            return dateString;
+          }
+          
           const date = new Date(dateString);
+          if (isNaN(date.getTime())) {
+            console.log('[settingsConfig] - dateTimeUtils.formatDate - Invalid date:', dateString);
+            return dateString;
+          }
+          
           return date.toLocaleDateString(locale, {
             day: '2-digit',
             month: '2-digit',
@@ -968,6 +983,7 @@ getScheduleTimeByID(context, { id, title }) {
             minute: '2-digit'
           });
         } catch (error) {
+          console.log('[settingsConfig] - dateTimeUtils.formatDate - Error:', error, 'for dateString:', dateString);
           return dateString;
         }
     },

@@ -315,6 +315,9 @@ export default {
         
         const schedules = await this.$store.dispatch('settingsConfig/getSchedulesFromStore');    
         console.log('[MainBodySettings] - loadSchedulesFromStore - Полученные расписания из store:', schedules);
+        schedules.forEach((schedule, index) => {
+          console.log(`[MainBodySettings] - loadSchedulesFromStore - schedule[${index}] createdAt:`, schedule.createdAt, 'typeof:', typeof schedule.createdAt);
+        });
         this.schedules = schedules;
       } catch (error) {
         console.error('[MainBodySettings] - loadSchedulesFromStore - Ошибка:', error);
@@ -478,6 +481,8 @@ export default {
         days: [1, 2, 3, 4, 5], // Пн-Пт по умолчанию
         
       };
+      
+      console.log('[MainBodySettings] - addNewSchedule - createdAt:', newSchedule.createdAt, 'typeof:', typeof newSchedule.createdAt);
       
       // Добавляем расписание в массив
       this.schedules = [...this.schedules, newSchedule];

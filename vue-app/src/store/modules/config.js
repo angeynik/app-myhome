@@ -27,6 +27,7 @@ export default {
       //console.log('[sortParams] - SET_CONFIG Обновлен конфиг[' + name + ']: ', config);
     },
     SET_SCHEDULE(state, { name, config }) {
+      console.log('[config] - SET_SCHEDULE - name:', name, 'config keys:', Object.keys(config));
       state.schedules[name] = config;
       logger.dev('[sortParams] - SET_SCHEDULE Обновлен конфиг[' + name + ']: ', config);
       // Вернуть console.log
@@ -180,6 +181,10 @@ export default {
       //console.log(`[Config] - SET_TYPE_SETTINGS_ITEM - type: ${type}`);
       localStorage.setItem('typeSettingsKey', type);
       state.typeSettingsKey = type;
+    },
+    UPDATE_SCHEDULE_LOCALLY(state, { dID, schedules }) {
+      console.log('[config] - UPDATE_SCHEDULE_LOCALLY - dID:', dID, 'schedules keys:', Object.keys(schedules));
+      state.schedules[dID] = schedules;
     },
   },
   
@@ -346,6 +351,11 @@ export default {
         //console.error('[Config] - handleConfigResponse - Ошибка обработки ответа:', error);
         throw error;
       }
+    },
+
+    updateScheduleLocally({ commit }, { dID, schedules }) {
+      console.log('[config] - updateScheduleLocally - dID:', dID);
+      commit('UPDATE_SCHEDULE_LOCALLY', { dID, schedules });
     },
 
 
