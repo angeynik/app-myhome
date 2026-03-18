@@ -16,13 +16,6 @@ export default class ManageSetpoints {
                 id: null,
                 updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
             },
-            view: {
-                value: null,
-                value_details: null,
-                title: null,
-                key: null,
-                unit: null
-            },
             limits: {
               limHigh: null,
               limLow: null,

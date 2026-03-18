@@ -198,12 +198,12 @@ export default {
     // },
     displayStartTime() {
       //console.log('[MainBodySchedule] - displayStartTime - startTime:', this.scheduleData.startTime);
-      return this.scheduleData.startTime || '00:00';
+      return String(this.scheduleData.startTime || '00:00');
     },
     
     // Единое свойство для отображения времени окончания
     displayEndTime() {
-      return this.scheduleData.endTime || '00:05';
+      return String(this.scheduleData.endTime || '00:05');
     },
 
 
@@ -265,10 +265,14 @@ export default {
     },
     formattedTime(timeProperty) {
       //console.log('[MainBodySchedule] - formattedTime - ', timeProperty);
-      const timeString = this[timeProperty];
+      let timeString = this[timeProperty];
       //console.log('[MainBodySchedule] - formattedTime - timeString:', timeString);
-      if (!timeString || !timeString.includes(':')) {
-        return timeString || '00:00';
+      
+      // Убедимся, что timeString - строка
+      timeString = typeof timeString === 'string' ? timeString : String(timeString || '00:00');
+      
+      if (!timeString.includes(':')) {
+        return timeString;
       }
 
       const [hours, minutes] = timeString.split(':');

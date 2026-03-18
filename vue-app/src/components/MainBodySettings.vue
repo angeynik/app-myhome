@@ -224,7 +224,7 @@ export default {
         //console.log('[MainBodySettings] - Watch - Расписания в store обновились');
         if (this.title === 'schedule') {
           this.loadSchedulesFromStore();
-          //console.log('[MainBodySettings] - Watch - Обновленные Расписания:', this.schedules);
+          console.log('[MainBodySettings] - Watch - Обновленные Расписания:', this.schedules);
         }
       },
       deep: true,
@@ -314,6 +314,7 @@ export default {
       try {
         
         const schedules = await this.$store.dispatch('settingsConfig/getSchedulesFromStore');    
+        console.log('[MainBodySettings] - loadSchedulesFromStore - Полученные расписания из store:', schedules);
         this.schedules = schedules;
       } catch (error) {
         console.error('[MainBodySettings] - loadSchedulesFromStore - Ошибка:', error);

@@ -84,16 +84,6 @@ const store = createStore({
         state.settingsData = { ...state.setpointsManager.settingsData };
       }
     },
-    UPDATE_VIEW_DATA(state, view) {
-      if (state.setpointsManager) {
-        console.log('[index] - UPDATE_VIEW_DATA - Обновляем view:', view);
-        state.setpointsManager.settingsData.view = {
-          ...state.setpointsManager.settingsData.view, // существующие данные view
-          ...view // новые/обновленные поля view
-        };
-        state.settingsData = { ...state.setpointsManager.settingsData };
-      }
-    },
 
 
 
@@ -167,10 +157,6 @@ const store = createStore({
     
     updateLimitsData({ commit }, limits) {
       commit('UPDATE_LIMITS_DATA', limits);
-    },
-    
-    updateViewData({ commit }, view) {
-      commit('UPDATE_VIEW_DATA', view);
     },
 
 
