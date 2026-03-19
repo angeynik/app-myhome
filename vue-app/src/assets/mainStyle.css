@@ -681,16 +681,22 @@ form button:active {
 
 
 /* MainBodySettings.vue */
- .mainBodySettings {
-  width: 96vw;
-  /* background-color: blueviolet; */
+.mainBodySettings {
+  width: 95vw;  /* Занимает почти всю ширину для лучшего распределения */
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between;  /* Оставлено, но теперь с width: 98vw будет лучше распределять */
   align-items: center;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  /* margin: 1rem 0; */
-  padding: 0.6rem 0.2rem; 
+  margin: 0.3rem 0;
+  padding: 0.3rem 0.2rem;
   text-align: center;
+}
+/* .mainBodySettings-message {
+  width: 100vw;
+} */
+.mainBodySettings-content-body {
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 .mainBodySettings-header {
   max-width: 7.4rem;
@@ -699,15 +705,40 @@ form button:active {
 .mainBodySettings-header-button {
   background: none; 
   border: none; 
-  width: 60%;
+  width: 64%;
   padding: 0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-
-
+.schedule-item {
+  width: 90vw;  /* Ширина компонентов при <900px */
+  margin: 0 auto;  /* Центрирование */
+  max-width: 600px; 
+}
+.schedules-list,
+.notifications-list,
+.analytics-list {
+  /* margin-top: 0.1rem; */
+  display: grid;
+  grid-template-columns: 1fr;  /* Одна колонка по умолчанию */
+  gap: 0.1rem;
+  place-items: start center;
+  width: 90vw;  /* Уменьшено для предотвращения переполнения */
+  max-width: 90vw;  /* Ограничение максимальной ширины */
+  margin-left: auto;
+  margin-right: auto;
+  overflow-x: hidden;
+}
+.schedules-list-title {
+  color: var(--light_font);
+  font-size: 1.2rem;
+  margin-bottom: 0.2rem;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid rgba(224, 223, 231, 0.3);
+  text-align: left;
+}
 .mainBodySettings-header-title {
   font-size: 1.8rem;
   font-weight: bold;
@@ -724,15 +755,17 @@ form button:active {
 
 
 /* MainBodySchedule.vue */
-
 .settings-block {
-  margin: 2rem 0;
-  padding: 0.4rem;
+  margin: 0.6rem 0;
+  padding: 0.6rem;
   text-align: center;
   color: rgba(224, 223, 231, 0.6);
   background: rgba(0, 0, 0, 0.1);
   border-radius: 4px;
   border: 1px dashed rgba(224, 223, 231, 0.3);
+  width: 90vw;  /* Ширина при <900px */
+  margin-left: auto;
+  margin-right: auto;  /* Центрирование */
 }
 .settings-block p {
   font-size: 1rem;
@@ -814,25 +847,12 @@ form button:active {
   font-weight: 400;
 }
 
-
-
-.schedules-list {
-  margin-top: 2rem;
-}
-.schedules-list-title {
-  color: var(--light_font);
-  font-size: 1.2rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(224, 223, 231, 0.3);
-  text-align: left;
-}
 .settings-info{
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  margin-bottom: 0.4rem;
-  padding-bottom: 0.3rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.2rem;
   border-bottom: 1px solid rgba(224, 223, 231, 0.2);
 }
 .settings-info-item {
@@ -840,8 +860,11 @@ form button:active {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.5rem;
-  font-size: 0.8rem;
-  font-weight: 400;
+  font-size: clamp(0.5rem, 2vw, 0.75rem);
+  font-weight: 350;
+  white-space: nowrap;
+  overflow: hidden;  /* Обрезает текст, если он не помещается */
+  text-overflow: ellipsis; 
   color: var(--light_font);
   opacity: 0.6;
 }
@@ -867,11 +890,18 @@ form button:active {
   padding: 0 0.4rem;
 }
 .settings-col-second{
-  flex: 0 0 14%;
-  min-width: 10%;
+  flex: 0 0 12%;
+  width: 8%;
+  max-width: 14%;  /* Добавлено для строгого ограничения ширины */
+  overflow: hidden;  /* Обрезка содержимого, если оно шире */
+  box-sizing: border-box; 
 }
-
-
+.settings-col-second .icon-settings.item {
+  width: 100%;  /* Занимает всю ширину .settings-col-second */
+}
+.icon-settings.item .mainBodySettings-header-button {
+  width: 90%;  /* Занимает всю ширину .icon-settings.item */
+}
 
 
 
@@ -905,6 +935,12 @@ form button:active {
   color: var(--orange);
   background: rgba(249, 123, 0, 0.1);
   transform: translateY(-1px);
+}
+
+.time-input {
+  width: 25vw;
+  max-width: 200px; /* Ограничение максимальной ширины */
+  min-width: 100px; /* Минимальная ширина */
 }
 
 
@@ -943,16 +979,49 @@ form button:active {
 
 
 /* Адаптация для узких экранов */
-@media (max-width: 800px) {
+@media (min-width: 900px) {
   .introduce-button {
     max-width: 500px; /* Максимальная ширина кнопки */
   }
-}
-@media (max-width: 600px) {
-  .introduce-button {
-    max-width: 380px; /* Максимальная ширина кнопки */
+  .schedule-item {
+    width: 44vw;  /* Ширина компонентов при >900px */
   }
-  .error {
-    color: red;
+  .settings-block {
+    width: 42vw;  /* Ширина при >900px */
+  }
+  .schedules-list,
+  .notifications-list,
+  .analytics-list {
+    grid-template-columns: 1fr 1fr;  /* Две колонки при >900px */
+    place-items: center;
+    gap: 0.1rem;
+    max-width: 94vw;
+    margin: 0.4rem auto 0;
+    overflow-x: hidden;
+  }
+  .settings-col-first {
+  flex: 0 0 80%;
+  min-width: 50%;
+}
+.settings-col-second{
+  flex: 0 0 16%;
+  width: 12%;
+  max-width: 14%;
+  overflow: hidden;  
+  box-sizing: border-box; 
+}
+.settings-col-second .icon-settings.item {
+  width: 100%;
+  max-width: 70px;
+}
+.icon-settings.item .mainBodySettings-header-button {
+  width: 100%;
+}
+}
+@media (max-width: 900px) {
+  .time-input {
+    width: auto;
+    flex: 1;
+    max-width: none;
   }
 }

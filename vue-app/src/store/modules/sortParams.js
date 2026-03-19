@@ -72,9 +72,6 @@ export default {
     getSetpointTitle: state => state.setpointTitle,
     getSensorTitle: () => (key) => getSensorTitle(key),
     getUnit: () => (key) => getUnit(key),
-    limHigh: state => state.limHigh,
-    limLow: state => state.limLow,
-    limStep: state => state.limStep,
   },
   state: () => ({
     sortType: 'rooms',
@@ -83,9 +80,6 @@ export default {
     paramTitle: '',
     deviceTitle: '',
     setpointTitle: '',
-    limHigh: 32,
-    limLow: 10,
-    limStep: 1,
     forceUpdate: 0,
   }),
 

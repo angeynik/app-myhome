@@ -38,7 +38,6 @@
         </div>
       </div>
 
-      <div class="mainBodySettings-message">
         <div class="mainBodySettings-content-body">
 
           <div v-if="selectedTitle === 'Расписание' && schedules.length > 0" class="schedules-list">
@@ -49,11 +48,12 @@
               :visible="true"
               :scheduleData="schedule"
               :scheduleUnit="unit"
+              class="schedule-item"  
               @delete-schedule="handleDeleteSchedule(schedule.id)"
               @getComponentData="getComponentData"
             />
           </div>
-            <div v-if="selectedTitle === 'Расписание' && schedules.length === 0" class="settings-block">
+            <div v-if="selectedTitle === 'Расписание' && schedules.length === 0" class="schedule-item">
               <p>Расписания для этого параметра не настроены.</p>
             </div>
           </div>
@@ -64,12 +64,13 @@
                 v-for="(notification, index) in notifications"
                 :key="notification.id || `notification-${index}`"
                 :notificationData="notification"
+                class="schedule-item"  
                 @edit-notification="handleEditNotification(notification.id, $event)"
                 @delete-notification="handleDeleteNotification(notification.id)"
               />
             </div>
           
-          <div v-if="notifications.length === 0" class="settings-block">
+          <div v-if="notifications.length === 0" class="schedule-item">
             <p>Уведомления для выбранного параметра не настроены.</p>
           </div>
         </div>
@@ -79,18 +80,16 @@
                 v-for="(analytic, index) in analytics"
                 :key="analytic.id || `analytic-${index}`"
                 :analyticData="analytic"
+                class="schedule-item"  
                 @edit-analytic="handleEditAnalytic(analytic.id, $event)"
                 @delete-analytic="handleDeleteAnalytic(analytic.id)"
               />
             </div>
           
-          <div v-if="analytics.length === 0" class="settings-block">
+          <div v-if="analytics.length === 0" class="schedule-item">
             <p>Отсутствует Аналитика для выбранного параметра.</p>
           </div>
         </div>
-
-        
-      </div>
 
       <div>
         <button type="submit" @click="closeMainBodySettings">Закрыть</button>

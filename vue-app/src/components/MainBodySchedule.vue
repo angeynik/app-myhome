@@ -24,15 +24,14 @@
 
 
     <div class="settings-row">
-        <!-- Первый столбец -->
-        <!-- <p> Первый столбец </p> -->
+        <!-- Первая строка -->
           <div  class="settings-block-title clickable" 
           :class="{ 'selected': isFieldSelected('valueType') }"
           @click.stop="toggleValueType" >
             <p> {{ valueTypeLabel }} </p>
           </div>
 
-           <div style="width: 25vw;" class="settings-block clickable"
+           <div class="settings-block clickable time-input"
            :class="{ 'selected': isFieldSelected('value') }"
             @click.stop="editValue" >
             <div class="settings-value">
@@ -45,37 +44,28 @@
         </div>
 
         <div class="settings-row">
-        <!-- Второй столбец -->
-        <!-- <p> Второй столбец </p> -->
+        <!-- Вторая строка -->
           
             <div class="settings-block-title">
               <p> Период </p>
             </div>
-            <div style="width: 25vw;"
-              class="settings-block clickable" 
+            <div class="settings-block clickable time-input" 
               :class="{ 'selected': isFieldSelected('startTime') }"
               @click.stop="editStartTime"
             >
-            <!-- <div class="settings-value">
-              {{ displayStartTime }}
-            </div> -->
             <div class="settings-value" v-html="formattedTime('displayStartTime')"></div>
               
             </div>
             <div class="settings_item-separator">—</div>
-            <div style="width: 25vw;"
-              class="settings-block clickable" 
+            <div class="settings-block clickable time-input" 
               :class="{ 'selected': isFieldSelected('endTime') }"
               @click.stop="editEndTime"
             >
-            <!-- <div class="settings-value">
-              {{ displayEndTime }}
-              </div> -->
               <div class="settings-value" v-html="formattedTime('displayEndTime')"></div>
             </div>
           </div>
 
-      </div>
+    </div>
       <!-- Вторая колонка (20%) -->
        <div class="settings-col-second">
         <div class="icon-settings item">
