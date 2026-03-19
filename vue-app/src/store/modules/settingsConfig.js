@@ -843,18 +843,6 @@ getScheduleTimeByID(context, { id, title }) {
         throw error;
       }
     },
-    // async deleteSchedules (roomKey, paramKey, id ) {
-    //   console.log('[settingsConfig] - deleteSchedules - Удаляем элемент расписания:', { roomKey, paramKey, id });
-
-    //   // await dispatch('websocket/send', {
-    //   //       type: 'post',
-    //   //       request: 'delSchedule',
-    //   //       name: dID,
-    //   //       payload: { roomKey, paramKey, schedules }
-    //   //     }, { root: true });
-
-      
-    // },
 
     async saveNotifications({ commit, rootGetters, dispatch }, { roomKey, paramKey, notifications }) {
       const dID = rootGetters['dID'];
@@ -965,13 +953,13 @@ getScheduleTimeByID(context, { id, title }) {
           
           // Если строка уже содержит запятую, значит уже отформатирована
           if (typeof dateString === 'string' && dateString.includes(',')) {
-            console.log('[settingsConfig] - dateTimeUtils.formatDate - Уже отформатирована:', dateString);
+            //console.log('[settingsConfig] - dateTimeUtils.formatDate - Уже отформатирована:', dateString);
             return dateString;
           }
           
           const date = new Date(dateString);
           if (isNaN(date.getTime())) {
-            console.log('[settingsConfig] - dateTimeUtils.formatDate - Invalid date:', dateString);
+            //console.log('[settingsConfig] - dateTimeUtils.formatDate - Invalid date:', dateString);
             return dateString;
           }
           
@@ -983,7 +971,7 @@ getScheduleTimeByID(context, { id, title }) {
             minute: '2-digit'
           });
         } catch (error) {
-          console.log('[settingsConfig] - dateTimeUtils.formatDate - Error:', error, 'for dateString:', dateString);
+          //console.log('[settingsConfig] - dateTimeUtils.formatDate - Error:', error, 'for dateString:', dateString);
           return dateString;
         }
     },

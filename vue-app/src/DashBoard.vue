@@ -73,6 +73,7 @@
     <footer class="footer"> 
       <MainFooter v-show="!showFooterSetpoint"/>
       <MainSetpoint
+        ref="mainSetpoint" 
         v-if="showFooterSetpoint"
         :setPoint="setpoint" 
         :request="request"
@@ -103,6 +104,11 @@ export default {
     MainFooter,
     MainSetpoint
   }, 
+  provide() {
+    return {
+      getMainSetpointEl: () => this.$refs.mainSetpoint?.$el ?? null
+    };
+  },
   data() { 
     return {
       showHeaderArrow: false,

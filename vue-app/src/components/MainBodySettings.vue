@@ -48,9 +48,11 @@
               :visible="true"
               :scheduleData="schedule"
               :scheduleUnit="unit"
+              :activeSelection="activeSelection"
               class="schedule-item"  
               @delete-schedule="handleDeleteSchedule(schedule.id)"
               @getComponentData="getComponentData"
+              @field-selected="handleFieldSelected"
             />
           </div>
             <div v-if="selectedTitle === 'Расписание' && schedules.length === 0" class="schedule-item">
@@ -64,9 +66,11 @@
                 v-for="(notification, index) in notifications"
                 :key="notification.id || `notification-${index}`"
                 :notificationData="notification"
+                :activeSelection="activeSelection"
                 class="schedule-item"  
                 @edit-notification="handleEditNotification(notification.id, $event)"
                 @delete-notification="handleDeleteNotification(notification.id)"
+                @field-selected="handleFieldSelected"
               />
             </div>
           
@@ -80,9 +84,11 @@
                 v-for="(analytic, index) in analytics"
                 :key="analytic.id || `analytic-${index}`"
                 :analyticData="analytic"
+                :activeSelection="activeSelection"
                 class="schedule-item"  
                 @edit-analytic="handleEditAnalytic(analytic.id, $event)"
                 @delete-analytic="handleDeleteAnalytic(analytic.id)"
+                @field-selected="handleFieldSelected"
               />
             </div>
           
@@ -108,15 +114,25 @@ import MainBodyStatistic from './MainBodyStatistic.vue';
 
 export default {
   name: 'MainBodySettings',
+  inject: {
+    getMainSetpointEl: { 
+      default: () => () => null  // fallback если provide не доступен
+    }
+  },
   components: { MainBodySchedule, MainBodyStatistic, MainBodyNotifications },
   props: {
     setting_Type: {
       type: String,
       required: true
     },
+    keepActiveRefs: {  // ← новый prop: массив внешних $el которые не сбрасывают выделение
+      type: Array,
+      default: () => []
+    },
   },
   data() {
     return {
+      activeSelection: null,
       availableTitles: ['schedule', 'notifications', 'statistics'],
       typeToTitleMap: {
         'schedule': 'Расписание',
@@ -231,7 +247,12 @@ export default {
     },
 
   },
-
+  mounted() {
+    document.addEventListener('click', this.handleClickOutside);
+  },
+  beforeUnmount() {
+    document.removeEventListener('click', this.handleClickOutside);
+  },
   methods: {
     ...mapMutations('config', ['SET_TYPE_SETTINGS_ITEM']),
     ...mapMutations({
@@ -314,9 +335,9 @@ export default {
         
         const schedules = await this.$store.dispatch('settingsConfig/getSchedulesFromStore');    
         console.log('[MainBodySettings] - loadSchedulesFromStore - Полученные расписания из store:', schedules);
-        schedules.forEach((schedule, index) => {
-          console.log(`[MainBodySettings] - loadSchedulesFromStore - schedule[${index}] createdAt:`, schedule.createdAt, 'typeof:', typeof schedule.createdAt);
-        });
+        // schedules.forEach((schedule, index) => {
+        //   console.log(`[MainBodySettings] - loadSchedulesFromStore - schedule[${index}] createdAt:`, schedule.createdAt, 'typeof:', typeof schedule.createdAt);
+        // });
         this.schedules = schedules;
       } catch (error) {
         console.error('[MainBodySettings] - loadSchedulesFromStore - Ошибка:', error);
@@ -720,6 +741,23 @@ export default {
 
     },
     
+
+    // Вызывается из MainBodySchedule через emit
+    handleFieldSelected({ scheduleId, field }) {
+      this.activeSelection = { scheduleId, field };
+    },
+
+    handleClickOutside(event) {
+      // Клик внутри самого MainBodySettings — не сбрасываем
+      if (this.$el && this.$el.contains(event.target)) return;
+      
+      // Клик по MainSetpoint (footer) — не сбрасываем
+      const setpointEl = this.getMainSetpointEl();
+      if (setpointEl && setpointEl.contains(event.target)) return;
+      
+      // Клик снаружи — сбрасываем
+      this.activeSelection = null;
+    },
 
 
 

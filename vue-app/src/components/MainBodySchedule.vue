@@ -116,13 +116,17 @@ export default {
     scheduleUnit: {
       type: String,
       default: null
-    }
+    },
+    activeSelection: {
+      type: Object,
+      default: null
+    },
   },
  
   data() {
     return {
       timeEditMode: 'hours',
-      selectedField: null,
+      // selectedField: null,
     };
   },
   
@@ -245,8 +249,9 @@ export default {
       'setLimits',
     ]),
      ...mapActions(['updateSettingsData', 'updatePayloadData']),
-   isFieldSelected(fieldName) {
-      return this.selectedField === fieldName;
+    isFieldSelected(fieldName) {
+      return this.activeSelection?.scheduleId === this.scheduleData.id 
+          && this.activeSelection?.field === fieldName;
     },
     handleClickOutside(event) {
       if (this.$el && !this.$el.contains(event.target)) {
@@ -267,7 +272,8 @@ export default {
 
       const [hours, minutes] = timeString.split(':');
       const fieldName = timeProperty === 'displayStartTime' ? 'startTime' : 'endTime';
-      const isSelected = this.selectedField === fieldName;
+      const isSelected = this.activeSelection?.scheduleId === this.scheduleData.id 
+                && this.activeSelection?.field === fieldName;
 
       if (!isSelected) {
         return `${hours}:${minutes}`;
@@ -292,8 +298,9 @@ export default {
       const newType = currentType === 'absolute' ? 'deviation' : 'absolute';
       let defaultValue;
       if (newType === 'absolute') {
-        // Берем текущее значение уставки из settingsData или используем 20
-        defaultValue = Number((this.$store.state.setpointsManager?.settingsData?.payload?.value || 20).toFixed(1));
+        const rawValue = this.$store.state.setpointsManager?.settingsData?.payload?.value;
+        const numValue = parseFloat(rawValue);
+        defaultValue = isNaN(numValue) ? 20 : parseFloat(numValue.toFixed(1));
       } else {
         defaultValue = 0;
       }
@@ -308,17 +315,20 @@ export default {
               value: newType,
               title: 'value_type',          
       });
+      this.$emit('field-selected', { scheduleId: this.scheduleData.id, field: 'valueType' });
       
     },
     // Редактирование значения расписания
     editValue() {
+      const field = 'value';
       this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
       this.setLimits({
         param: this.$store.state.setpointsManager?.settingsData?.payload?.param, 
         valueType: this.scheduleData.value_type, 
       });
 
-      this.selectedField = 'value';
+      this.$emit('field-selected', { scheduleId: this.scheduleData.id, field: 'value' });
+
       const currentValue = this.scheduleData.value !== null && this.scheduleData.value !== undefined
         ? this.scheduleData.value
         : (this.$store.state.setpointsManager?.settingsData?.payload?.value_type === 'absolute' ? 20 : 0);
@@ -328,33 +338,33 @@ export default {
       this.updatePayloadData({ 
         id: this.scheduleData.id,
         value: currentValue,
-        value_name: this.selectedField, 
+        value_name: field, 
         value_details: ''
       });    
       this.$emit('getComponentData', {
               value: currentValue,
-              title: this.selectedField,           
+              title: field,           
       });
     },
     
 
     editStartTime() {
-      this.selectedField = "startTime";
+      this.$emit('field-selected', { scheduleId: this.scheduleData.id, field: 'startTime' });
         const timeString = this.scheduleData.startTime || '00:00';
         //console.log('[MainBodySchedule] - Редактирование startTime:', timeString);
         const [hours, minutes] = timeString.split(':').map(Number);
         
-        this.editTimeFieldWithToggle( hours, minutes);
+        this.editTimeFieldWithToggle('startTime', hours, minutes);
     },
     
     editEndTime() {
-      this.selectedField = "endTime";
+      this.$emit('field-selected', { scheduleId: this.scheduleData.id, field: 'endTime' });
         const timeString = this.scheduleData.endTime || '00:05';
         const [hours, minutes] = timeString.split(':').map(Number);      
-        this.editTimeFieldWithToggle(hours, minutes);
+        this.editTimeFieldWithToggle('endTime', hours, minutes);
     },
     
-    editTimeFieldWithToggle(currentHours, currentMinutes) {
+    editTimeFieldWithToggle(selectedField, currentHours, currentMinutes) {
       this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
       //console.groupCollapsed('[MainBodySchedule] - editTimeFieldWithToggle');
       // if (this.scheduleData[this.selectedField] === undefined) {
@@ -363,8 +373,8 @@ export default {
         //console.log('[MainBodySchedule] - Редактирование:', currentHours, currentMinutes, this.scheduleData[this.selectedField]);
         this.updatePayloadData({ 
               id: this.scheduleData.id,
-              value: this.scheduleData[this.selectedField],
-              value_name: this.selectedField,
+              value: this.scheduleData[selectedField],
+              value_name: selectedField,
               value_details: this.timeEditMode
             });
         const editMode = this.timeEditMode;
@@ -379,12 +389,12 @@ export default {
         if (editMode === 'minutes') {
             this.$emit('getComponentData', {
                 value: currentMinutes,
-                title: this.selectedField,
+                title: selectedField,
             });
         } else {
             this.$emit('getComponentData', {
                 value: currentHours,
-                title: this.selectedField,
+                title: selectedField,
             });
         }
         
