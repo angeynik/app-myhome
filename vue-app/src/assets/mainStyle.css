@@ -1,4 +1,4 @@
-/* Создание переменных  */
+/* Создание переменных mainStyle.css */
 :root {
   --light_font: #E0DFE7;
   --dark_font: #1E1E31;
@@ -381,9 +381,10 @@ form div {
   height: 4vh; */
 }
 .icon-settings.item {
-  max-width: 9rem;
+  /* max-width: 9rem; */
   margin: 0;
   height: 100%;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -681,22 +682,28 @@ form button:active {
 
 
 /* MainBodySettings.vue */
-.mainBodySettings {
-  width: 95vw;  /* Занимает почти всю ширину для лучшего распределения */
+ .mainBodySettings {
+  width: 96vw;
+  /* background-color: blueviolet; */
   display: flex;
-  justify-content: space-between;  /* Оставлено, но теперь с width: 98vw будет лучше распределять */
+  justify-content: space-between;
   align-items: center;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  margin: 0.3rem 0;
-  padding: 0.3rem 0.2rem;
+  /* grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); */
+  /* margin: 1rem 0; */
+  padding: 0.6rem 0.2rem; 
   text-align: center;
+  box-sizing: border-box;
+  overflow: hidden;
 }
-/* .mainBodySettings-message {
-  width: 100vw;
-} */
+.mainBodySettings-message {
+  width: 100%;
+}
 .mainBodySettings-content-body {
+  width: 100%;
   max-width: 100vw;
+  min-width: 0;
   overflow-x: hidden;
+  box-sizing: border-box;
 }
 .mainBodySettings-header {
   max-width: 7.4rem;
@@ -705,40 +712,16 @@ form button:active {
 .mainBodySettings-header-button {
   background: none; 
   border: none; 
-  width: 64%;
+  width: 100%;
+  max-width: 64px;
   padding: 0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.schedule-item {
-  width: 90vw;  /* Ширина компонентов при <900px */
-  margin: 0 auto;  /* Центрирование */
-  max-width: 600px; 
-}
-.schedules-list,
-.notifications-list,
-.analytics-list {
-  /* margin-top: 0.1rem; */
-  display: grid;
-  grid-template-columns: 1fr;  /* Одна колонка по умолчанию */
-  gap: 0.1rem;
-  place-items: start center;
-  width: 90vw;  /* Уменьшено для предотвращения переполнения */
-  max-width: 90vw;  /* Ограничение максимальной ширины */
-  margin-left: auto;
-  margin-right: auto;
-  overflow-x: hidden;
-}
-.schedules-list-title {
-  color: var(--light_font);
-  font-size: 1.2rem;
-  margin-bottom: 0.2rem;
-  padding-bottom: 0.2rem;
-  border-bottom: 1px solid rgba(224, 223, 231, 0.3);
-  text-align: left;
-}
+
+
 .mainBodySettings-header-title {
   font-size: 1.8rem;
   font-weight: bold;
@@ -755,17 +738,15 @@ form button:active {
 
 
 /* MainBodySchedule.vue */
+
 .settings-block {
-  margin: 0.6rem 0;
-  padding: 0.6rem;
+  margin: 2rem 0;
+  padding: 0.4rem;
   text-align: center;
   color: rgba(224, 223, 231, 0.6);
   background: rgba(0, 0, 0, 0.1);
   border-radius: 4px;
   border: 1px dashed rgba(224, 223, 231, 0.3);
-  width: 90vw;  /* Ширина при <900px */
-  margin-left: auto;
-  margin-right: auto;  /* Центрирование */
 }
 .settings-block p {
   font-size: 1rem;
@@ -777,6 +758,7 @@ form button:active {
   align-items: center; /* Вертикальное центрирование */
   justify-content: center; /* Горизонтальное центрирование */
   min-height: 2rem;
+  margin-right: 1rem;
 }
 /* Стили для выделенного элемента */
 .settings-block.selected {
@@ -799,7 +781,15 @@ form button:active {
   color: var(--orange) !important;
 }
 
-.settings-block.clickable,
+.settings-block.clickable {
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: 2rem;
+  max-width: 26vw;
+}
 .settings-block-title.clickable {
   margin: 0;
   padding: 0;
@@ -824,6 +814,16 @@ form button:active {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   background: rgba(0, 0, 0, 0.25);
 }
+.settings-separator {
+  width: 40%;
+  max-width: 35px;
+  height: 2.6px;
+  background-color: rgba(242, 242, 244, 0.4); /* как в .settings-info */
+  border: none;
+  margin: auto;
+  box-sizing: border-box;
+  display: block;
+}
 .settings-value {
   font-size: 1.8rem;
   text-align: center;
@@ -847,12 +847,63 @@ form button:active {
   font-weight: 400;
 }
 
+.schedule-item {
+  width: 100%;
+  max-width: 100%;         /* ← добавить */
+  min-width: 0;            /* ← ключевое: запрещает растяжение за пределы grid */
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.schedules-list {
+  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  place-items: start center; /* Вертикальное выравнивание по верхней границе, горизонтальное центрирование */
+  width: 95%; /* Занимает 90% ширины */
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
+  box-sizing: border-box;
+}
+.schedules-list-title {
+  color: var(--light_font);
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(224, 223, 231, 0.3);
+  text-align: left;
+}
+.notifications-list {
+  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  place-items: start center; /* Вертикальное выравнивание по верхней границе, горизонтальное центрирование */
+  width: 90%; /* Занимает 90% ширины */
+  margin-left: auto;
+  margin-right: auto;
+  overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
+}
+.analytics-list {
+  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  place-items: start center; /* Вертикальное выравнивание по верхней границе, горизонтальное центрирование */
+  width: 90%; /* Занимает 90% ширины */
+  margin-left: auto;
+  margin-right: auto;
+  overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
+}
 .settings-info{
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
-  padding-bottom: 0.2rem;
+  margin-bottom: 0.4rem;
+  padding-bottom: 0.3rem;
   border-bottom: 1px solid rgba(224, 223, 231, 0.2);
 }
 .settings-info-item {
@@ -860,11 +911,8 @@ form button:active {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.5rem;
-  font-size: clamp(0.5rem, 2vw, 0.75rem);
-  font-weight: 350;
-  white-space: nowrap;
-  overflow: hidden;  /* Обрезает текст, если он не помещается */
-  text-overflow: ellipsis; 
+  font-size: 0.8rem;
+  font-weight: 400;
   color: var(--light_font);
   opacity: 0.6;
 }
@@ -877,8 +925,9 @@ form button:active {
   align-items: center;
   justify-content: space-between;
   align-items: stretch;
-  gap: 1rem;
+  /* gap: 1rem; */
   width: 100%;
+  min-width: 0;
   margin-bottom: 0.4rem;
   overflow: hidden;
 }
@@ -888,20 +937,19 @@ form button:active {
   display: flex;
   flex-direction: column;
   padding: 0 0.4rem;
+  gap: 1rem;
 }
 .settings-col-second{
-  flex: 0 0 12%;
-  width: 8%;
-  max-width: 14%;  /* Добавлено для строгого ограничения ширины */
-  overflow: hidden;  /* Обрезка содержимого, если оно шире */
-  box-sizing: border-box; 
+  flex: 0 0 14%;
+  min-width: 10%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;        /* обрезаем всё что выходит за пределы */
+  box-sizing: border-box
 }
-.settings-col-second .icon-settings.item {
-  width: 100%;  /* Занимает всю ширину .settings-col-second */
-}
-.icon-settings.item .mainBodySettings-header-button {
-  width: 90%;  /* Занимает всю ширину .icon-settings.item */
-}
+
+
 
 
 
@@ -979,49 +1027,31 @@ form button:active {
 
 
 /* Адаптация для узких экранов */
-@media (min-width: 900px) {
+@media (max-width: 800px) {
   .introduce-button {
     max-width: 500px; /* Максимальная ширина кнопки */
   }
-  .schedule-item {
-    width: 44vw;  /* Ширина компонентов при >900px */
-  }
-  .settings-block {
-    width: 42vw;  /* Ширина при >900px */
-  }
+}
+@media (min-width: 920px) {
   .schedules-list,
   .notifications-list,
   .analytics-list {
-    grid-template-columns: 1fr 1fr;  /* Две колонки при >900px */
-    place-items: center;
-    gap: 0.1rem;
-    max-width: 94vw;
-    margin: 0.4rem auto 0;
-    overflow-x: hidden;
+    grid-template-columns: 1fr 1fr;
+    place-items: center; /* Вертикальное и горизонтальное центрирование в видимой области */
+    gap: 0.5rem; /* Уменьшенный gap для предотвращения overflow */
+    max-width: 90%; /* Уменьшенное ограничение ширины для предотвращения полосы прокрутки */
+    margin: 2rem auto 0; /* Центрирование контейнера */
+    overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
   }
-  .settings-col-first {
-  flex: 0 0 80%;
-  min-width: 50%;
+  .settings-block.clickable {
+    max-width: 11vw;
+  }
 }
-.settings-col-second{
-  flex: 0 0 16%;
-  width: 12%;
-  max-width: 14%;
-  overflow: hidden;  
-  box-sizing: border-box; 
-}
-.settings-col-second .icon-settings.item {
-  width: 100%;
-  max-width: 70px;
-}
-.icon-settings.item .mainBodySettings-header-button {
-  width: 100%;
-}
-}
-@media (max-width: 900px) {
-  .time-input {
-    width: auto;
-    flex: 1;
-    max-width: none;
+@media (max-width: 600px) {
+  .introduce-button {
+    max-width: 380px; /* Максимальная ширина кнопки */
+  }
+  .error {
+    color: red;
   }
 }

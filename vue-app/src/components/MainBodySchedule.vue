@@ -56,7 +56,7 @@
             <div class="settings-value" v-html="formattedTime('displayStartTime')"></div>
               
             </div>
-            <div class="settings_item-separator">—</div>
+            <div class="settings-separator"></div>
             <div class="settings-block clickable time-input" 
               :class="{ 'selected': isFieldSelected('endTime') }"
               @click.stop="editEndTime"
