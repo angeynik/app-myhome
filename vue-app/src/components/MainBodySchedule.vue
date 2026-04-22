@@ -321,7 +321,7 @@ export default {
     },
     // Редактирование значения расписания
     editValue() {
-      console.log('[MainBodySchedule] - editValue - Текущее значение value_type:', this.scheduleData?.value_type);
+      console.log('[MainBodySchedule] - editValue - Текущее значение value_type:', this.scheduleData);
       let currentValueType = this.scheduleData.value_type;
       if ( currentValueType === undefined) {
         console.error('[MainBodySchedule] - editValue - value_type не задан', currentValueType);

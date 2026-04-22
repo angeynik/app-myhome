@@ -168,6 +168,7 @@
       ...mapActions(['updateSettingsData']),
       sendEmitMessage(event, value) {
         //console.groupCollapsed('[MainSetpoint] - sendEmitMessage ');
+        value = parseFloat(value).toFixed(3);
         console.log('[MainSetpoint] - sendEmitMessage - Формируем сообщение для отправки на сервер - message: ', value, 'event: ', event);
         // Проверяем, что все параметры переданы
         if (!event || value == undefined || value === null) {
