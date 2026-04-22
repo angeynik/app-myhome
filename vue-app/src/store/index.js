@@ -46,7 +46,7 @@ const store = createStore({
                     new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
             }
             state.settingsData = { ...state.setpointsManager.settingsData };
-            //console.log('[index] - UPDATE_SETTINGS_DATA - ', state.setpointsManager.settingsData);
+            console.log('[index] - UPDATE_SETTINGS_DATA - ', state.setpointsManager.settingsData);
         }
     },
     RESET_SETTINGS_DATA(state) { // Сброс settingsData manageSetpoints

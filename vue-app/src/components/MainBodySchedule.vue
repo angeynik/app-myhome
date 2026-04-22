@@ -292,6 +292,7 @@ export default {
     // Переключение типа значения
     toggleValueType(event) {
       event.stopPropagation();
+      
       this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
       // Определяем новый тип (переключаем)
       const currentType = this.scheduleData.value_type;
@@ -309,7 +310,7 @@ export default {
       this.updatePayloadData({ 
         id: this.scheduleData.id,
         value_type: newType,
-        value: defaultValue
+        value: defaultValue,
       });
       this.$emit('getComponentData', {
               value: newType,
@@ -320,11 +321,18 @@ export default {
     },
     // Редактирование значения расписания
     editValue() {
+      console.log('[MainBodySchedule] - editValue - Текущее значение value_type:', this.scheduleData?.value_type);
+      let currentValueType = this.scheduleData.value_type;
+      if ( currentValueType === undefined) {
+        console.error('[MainBodySchedule] - editValue - value_type не задан', currentValueType);
+        currentValueType = 'absolute';
+        this.updateSettingsData({ field: 'value_type', value: 'absolute' });
+      }
       const field = 'value';
       this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
       this.setLimits({
         param: this.$store.state.setpointsManager?.settingsData?.payload?.param, 
-        valueType: this.scheduleData.value_type, 
+        valueType: currentValueType, 
       });
 
       this.$emit('field-selected', { scheduleId: this.scheduleData.id, field: 'value' });

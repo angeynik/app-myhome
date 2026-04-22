@@ -166,11 +166,10 @@ export default {
     },
     
     selectItem(item) {
-      
       const clearParam = 'd' + this.clearKeySync(item.paramKey);
-      //console.log('%%%%%%%%%%%%% ------- [MainBody] - selectItem - Исходный ключ -', item.paramKey, ' Очищенный ключ -', clearParam);
+      //console.log('[MainBody] - selectItem - Исходный ключ -', item.paramKey, ' Очищенный ключ -', clearParam);
       // localStorage.setItem('paramKey', clearParam);
-      //console.log(' %%%%%%%%%%%%% ------- [MainBody] - selectItem - Обновили localStorage paramKey:', clearParam);
+      //console.log('[MainBody] - selectItem - Обновили localStorage paramKey:', clearParam);
 
       if (this.clickTimer) {
         clearTimeout(this.clickTimer);
@@ -217,12 +216,11 @@ export default {
           this.SET_PARAM_KEY(clearParam);
           this.SET_DEVICE_KEY(item.deviceKey);
           this.SET_SETPOINT_KEY(item.setpointKey);
-
           //console.log (`[MainBody] - selectItem - Обновлены ключи выбранного элемента: ${JSON.stringify(item)}`);
           
-          // Устанавливаем лимиты - по ключу вида sTemp
+          // Устанавливаем лимиты - по ключу вида dTemp (по этому ключу определена конфигурация лимитов)
           const params = { 
-            param: item.setpointKey, 
+            param: clearParam, 
             valueType: 'absolute', 
           }
           console.log('[MainBody] - selectItem - params:', params);

@@ -321,7 +321,10 @@ export default {
       oldValue = this.setpoint;
       if (valueTitle === 'startTime' || valueTitle === 'endTime') {
         value = parseFloat(eventData.updateState.value).toFixed(0);
-      } else {
+      } else if (value_type === 'deviation') {
+        value = parseFloat(eventData.updateState.value).toFixed(3);
+      }
+      else {
         value = parseFloat(eventData.updateState.value).toFixed(1);
       }
     this.setpoint = value;

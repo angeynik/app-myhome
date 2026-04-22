@@ -36,6 +36,7 @@ export default class ManageSetpoints {
             param: '',
             value: '',
             value_name: '',
+            value_type: 'absolute',
             id: null,
             updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
         };

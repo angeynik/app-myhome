@@ -134,11 +134,6 @@
       }
     },
     computed: {
-      // ...mapGetters('sortParams', [
-      //   'limHigh',
-      //   'limLow', 
-      //   'limStep'
-      // ]),
       limHigh() {
         return this.$store.state.settingsData?.limits?.limHigh ?? 36;
       },
@@ -158,7 +153,8 @@
         roomKey: this.roomKey,
         setpointKey: this.setpointKey,
         valueTitle: this.valueTitle
-      })
+      });
+       console.log('[MainSetpoint] - created - Полученные props', JSON.stringify(this.$store.state.settingsData, null, 2));
       },
       
     props: {   // Переменные полученные в компонент
