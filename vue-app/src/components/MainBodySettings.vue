@@ -273,7 +273,7 @@ export default {
     ...mapActions(['updateSettingsData', 'updatePayloadData', 'updateLimitsData', 'updateViewData']),
     
     getComponentData(event) {
-      console.log('[MainBodySettings] -  getComponentData - Данные от компонента MainBodySchedule:', event, null, 2);
+      //console.log('[MainBodySettings] -  getComponentData - Данные от компонента MainBodySchedule:', event, null, 2);
       // const settingsData = this.$store.state.setpointsManager?.settingsData;
       // console.log('[MainBodySettings] -  getComponentData - Данные в settingsData:', settingsData);
       let action = "show";
@@ -291,14 +291,13 @@ export default {
 
       const targetArray = this[arrayTitle];
       const targetObject = targetArray.find(item => item.id === targetId);
-      console.log(`[MainBodySettings] - getComponentData - Найден элемент расписания с id ${targetId} в массиве:`, targetObject);
+      //console.log(`[MainBodySettings] - getComponentData - Найден элемент расписания с id ${targetId} в массиве:`, targetObject);
         if (targetObject && fieldName === 'value_type') {
           // Изменяем значение поля
           targetObject[fieldName] = newValue;
           targetObject.value = this.settingsData?.payload?.value;
           
-          console.log(`[MainBodySettings] - getComponentData - Обновлено поле "${fieldName}" в объекте с id ${targetId}:`, 
-            targetObject);
+          //console.log(`[MainBodySettings] - getComponentData - Обновлено поле "${fieldName}" в объекте с id ${targetId}:`, targetObject);
         } else {
           console.warn(`[MainBodySettings] - getComponentData - Объект с id ${targetId} не найден в массиве ${arrayTitle}`);
         }
@@ -334,7 +333,7 @@ export default {
       try {
         
         const schedules = await this.$store.dispatch('settingsConfig/getSchedulesFromStore');    
-        console.log('[MainBodySettings] - loadSchedulesFromStore - Полученные расписания из store:', schedules);
+        //console.log('[MainBodySettings] - loadSchedulesFromStore - Полученные расписания из store:', schedules);
         // schedules.forEach((schedule, index) => {
         //   console.log(`[MainBodySettings] - loadSchedulesFromStore - schedule[${index}] createdAt:`, schedule.createdAt, 'typeof:', typeof schedule.createdAt);
         // });
@@ -718,29 +717,92 @@ export default {
 
 
     
+    // async loadData(dataType) {
+    //   const roomKey = this.settingsData.payload.room;
+    //   const paramKey = this.settingsData.payload.param;
+    //   console.log('[MainBodySettings] Loading ', dataType, ' data for ', roomKey, paramKey);
+      
+    //   try {
+    //     let result;
+    //     result = await this.$store.dispatch('settingsConfig/getConfigSettings', {
+    //         roomKey: roomKey,
+    //         paramKey: paramKey,
+    //         configType: dataType
+    //       });
+
+    //     this.schedules = [...result];
+    //     console.log('[MainBodySettings] - loadSchedules - для - ', dataType, ' Получена конфигурация: ', this.schedules, ' количество элементов:', this.schedules.length);
+        
+    //   } catch (error) {
+    //     console.error('[MainBodySettings] - loadSchedules - Ошибка загрузки:', error);
+    //     this.schedules = [];
+    //   }
+
+    // },
+    
     async loadData(dataType) {
       const roomKey = this.settingsData.payload.room;
       const paramKey = this.settingsData.payload.param;
       console.log('[MainBodySettings] Loading ', dataType, ' data for ', roomKey, paramKey);
       
       try {
-        let result;
-        result = await this.$store.dispatch('settingsConfig/getConfigSettings', {
-            roomKey: roomKey,
-            paramKey: paramKey,
-            configType: dataType
-          });
-
-        this.schedules = [...result];
-        console.log('[MainBodySettings] - loadSchedules - для - ', dataType, ' Получена конфигурация: ', this.schedules, ' количество элементов:', this.schedules.length);
+        let result = [];
+        const dID = this.dID;
+        
+        // Прямой доступ к rootState.config
+        const configData = this.$store.state.config?.[dataType]?.[dID];
+        
+        if (configData && configData[roomKey] && configData[roomKey][paramKey]) {
+          result = configData[roomKey][paramKey];
+          console.log(`[MainBodySettings] - loadData - Данные из store для ${dataType}:`, result);
+        } else {
+          // Fallback на localStorage (как было в getConfigSettings)
+          const localKey = `${dID}_${dataType}`;
+          const localConfig = localStorage.getItem(localKey);
+          if (localConfig) {
+            try {
+              const parsedConfig = JSON.parse(localConfig);
+              if (parsedConfig[roomKey] && parsedConfig[roomKey][paramKey]) {
+                result = parsedConfig[roomKey][paramKey];
+                console.log(`[MainBodySettings] - loadData - Данные из localStorage для ${dataType}:`, result);
+              }
+            } catch (error) {
+              console.error('[MainBodySettings] - loadData - Ошибка парсинга localStorage:', error);
+            }
+          }
+        }
+        
+        // Сохраняем в соответствующий массив
+        switch(dataType) {
+          case 'schedules':
+            this.schedules = [...result];
+            break;
+          case 'notifications':
+            this.notifications = [...result];
+            break;
+          case 'statistics':
+            this.analytics = [...result];
+            break;
+        }
+        
+        console.log(`[MainBodySettings] - loadData - Загружено ${result.length} элементов для ${dataType}`);
         
       } catch (error) {
-        console.error('[MainBodySettings] - loadSchedules - Ошибка загрузки:', error);
-        this.schedules = [];
+        console.error('[MainBodySettings] - loadData - Ошибка загрузки:', error);
+        // Сбрасываем соответствующий массив при ошибке
+        switch(dataType) {
+          case 'schedules':
+            this.schedules = [];
+            break;
+          case 'notifications':
+            this.notifications = [];
+            break;
+          case 'statistics':
+            this.analytics = [];
+            break;
+        }
       }
-
     },
-    
 
     // Вызывается из MainBodySchedule через emit
     handleFieldSelected({ scheduleId, field }) {

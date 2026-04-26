@@ -154,7 +154,7 @@
         setpointKey: this.setpointKey,
         valueTitle: this.valueTitle
       });
-       console.log('[MainSetpoint] - created - Полученные props', JSON.stringify(this.$store.state.settingsData, null, 2));
+       //console.log('[MainSetpoint] - created - Полученные props', JSON.stringify(this.$store.state.settingsData, null, 2));
       },
       
     props: {   // Переменные полученные в компонент

@@ -232,20 +232,20 @@ export default {
 
 
     setLimits({ rootGetters, dispatch, commit }, params) {
-      console.log('[sortParams] - setLimits - Начало, params:', params);
+      //console.log('[sortParams] - setLimits - Начало, params:', params);
       logger.info(`[sortParams] - setLimits - Параметр -`, params);
 
       const { param, valueType } = params;
-      console.log('[sortParams] - setLimits - param:', param, 'valueType:', valueType);
+      //console.log('[sortParams] - setLimits - param:', param, 'valueType:', valueType);
 
       let limits = null;
       try {
         const dID = rootGetters['dID'];
           const config = rootGetters['config/getConfig'](dID);
           //console.log('[sortParams] - setLimits - Получен конфиг', JSON.stringify(config?.init?.limits, null, 2));
-          console.log('[sortParams] - setLimits - Получен конфиг для параметра - ', param, 'valueType:', valueType);
+          //console.log('[sortParams] - setLimits - Получен конфиг для параметра - ', param, 'valueType:', valueType);
           limits = config?.init?.limits?.[param] || config?.init?.limits?.Default;
-          console.log('[sortParams] - setLimits - Получены лимиты', limits);
+          //console.log('[sortParams] - setLimits - Получены лимиты', limits);
           if (!limits) {
             logger.error(`[sortParams] - setLimits - Не удалось получить лимиты - Устанавливаем по умолчанию`);
             //console.log('[sortParams] - setLimits - Не удалось получить лимиты - Устанавливаем по умолчанию');
@@ -261,14 +261,14 @@ export default {
           //console.error('[sortParams] - setLimits - Ошибка при виборе лимитов:', error);
       }
       if (valueType === 'deviation') { // Задаем лимиты для диапазона значений отклонения Уставки
-        console.log('[sortParams] - setLimits - valueType deviation, пересчитываем лимиты для отклонения от уставки valueType:', valueType);
+        //console.log('[sortParams] - setLimits - valueType deviation, пересчитываем лимиты для отклонения от уставки valueType:', valueType);
             const { high, step } = limits;
             limits = {
               low: -(Math.round(high/4)),
               high: Math.round(high/4),
               step: step/10,
             };
-            console.log('[sortParams] - setLimits - valueType deviation, пересчитанные лимиты для отклонения от уставки:', limits);
+            //console.log('[sortParams] - setLimits - valueType deviation, пересчитанные лимиты для отклонения от уставки:', limits);
       }
 
       logger.dev(`[sortParams] - setLimits Получены лимиты`, limits);

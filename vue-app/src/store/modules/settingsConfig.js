@@ -22,9 +22,6 @@ export default {
     permitSchedule: false,
     permitNotifications: false,
     permitStatistics: false,
-    schedules: {},
-    notifications: {},
-    statistics: {},
   }),
 
   mutations: {
@@ -120,51 +117,52 @@ export default {
       }
       
     },
-    async getConfigSettings({ rootState, rootGetters }, { configType, roomKey, paramKey }) {
-      const dID = rootGetters['dID'];
-      logger.dev('[settingsConfig] - getConfigSettings - Получаем конфигурацию для:', {dID, roomKey, paramKey, configType});
+    // async getConfigSettings({ rootState, rootGetters }, { configType, roomKey, paramKey }) {
+    //   const dID = rootGetters['dID'];
+    //   logger.dev('[settingsConfig] - getConfigSettings - Получаем конфигурацию для:', {dID, roomKey, paramKey, configType});
 
-      if (!dID) {
-        logger.warn('[settingsConfig] - getConfigSettings - dID не определен');
-        return [];
-      }
+    //   if (!dID) {
+    //     logger.warn('[settingsConfig] - getConfigSettings - dID не определен');
+    //     return [];
+    //   }
      
-      // Используем состояние из config.js
-      let configData;
-      switch(configType) {
-        case 'schedules':
-          configData = rootState.config.schedules[dID];
-          break;
-        case 'notifications':
-          configData = rootState.config.notifications[dID];
-          break;
-        case 'statistics':
-          configData = rootState.config.statistics[dID];
-          break;
-        default:
-          return [];
-      }
+    //   // Используем состояние из config.js
+    //   let configData;
+    //   switch(configType) {
+    //     case 'schedules':
+    //       configData = rootState.config.schedules[dID];
+    //       break;
+    //     case 'notifications':
+    //       configData = rootState.config.notifications[dID];
+    //       break;
+    //     case 'statistics':
+    //       configData = rootState.config.statistics[dID];
+    //       break;
+    //     default:
+    //       return [];
+    //   }
       
-      if (configData && configData[roomKey] && configData[roomKey][paramKey]) {
-        return configData[roomKey][paramKey];
-      }
+    //   if (configData && configData[roomKey] && configData[roomKey][paramKey]) {
+    //     console.log('[settingsConfig] - getConfigSettings - Возвращает ', configData[roomKey][paramKey]);
+    //     return configData[roomKey][paramKey];
+    //   }
       
-      // Если нет в state, проверяем localStorage
-      const localKey = dID + '_' + configType;
-      const localConfig = localStorage.getItem(localKey);
-      if (localConfig) {
-        try {
-          const parsedConfig = JSON.parse(localConfig);
-          if (parsedConfig[roomKey] && parsedConfig[roomKey][paramKey]) {
-            return parsedConfig[roomKey][paramKey];
-          }
-        } catch (error) {
-          logger.error('[settingsConfig] - getConfigSettings - Ошибка парсинга localStorage:', error);
-        }
-      }
+    //   // Если нет в state, проверяем localStorage
+    //   const localKey = dID + '_' + configType;
+    //   const localConfig = localStorage.getItem(localKey);
+    //   if (localConfig) {
+    //     try {
+    //       const parsedConfig = JSON.parse(localConfig);
+    //       if (parsedConfig[roomKey] && parsedConfig[roomKey][paramKey]) {
+    //         return parsedConfig[roomKey][paramKey];
+    //       }
+    //     } catch (error) {
+    //       logger.error('[settingsConfig] - getConfigSettings - Ошибка парсинга localStorage:', error);
+    //     }
+    //   }
       
-      return [];
-    },
+    //   return [];
+    // },
     
     async requestToServer({dispatch, rootGetters},{ configType}) {
       const dID = rootGetters['dID'];
@@ -407,6 +405,7 @@ getSchedulesFromStore({ rootState, rootGetters }) {
   }
 },
 getScheduleTimeByID(context, { id, title }) {
+  // const dID = rootGetters['dID'];
   console.groupCollapsed('[settingsConfig] - getScheduleTimeByID');
   try {
     const schedules = this.getSchedulesFromStore();
@@ -421,6 +420,7 @@ getScheduleTimeByID(context, { id, title }) {
 },
 
   async checkScheduleOverlap({rootGetters, dispatch}, { startTime, endTime}) {
+      // const dID = rootGetters['dID'];
         console.groupCollapsed('[settingsConfig] - checkScheduleOverlap');
         try {
           const schedules = await dispatch('getSchedulesFromStore');
@@ -922,11 +922,15 @@ getScheduleTimeByID(context, { id, title }) {
 },
   
   getters: {
-    getSchedules: state => dID => state.schedules[dID + '_schedules'] || {},
-    getNotifications: (state) => (dID) => { return state.notifications[dID] || {}; },
-    getAnalytics: (state) => (dID) => {return state.statistics[dID] || {}; },
-    // getNotifications: state => dID => state.schedules[dID + 'notifications'] || {},
-    // getAnalitics: state => dID => state.schedules[dID + 'statistics'] || {},
+    getSchedules: (state, getters, rootState) => (dID) => {
+      return rootState.config?.schedules?.[dID] || {};
+    },
+    getNotifications: (state, getters, rootState) => (dID) => {
+      return rootState.config?.notifications?.[dID] || {};
+    },
+    getAnalytics: (state, getters, rootState) => (dID) => {
+      return rootState.config?.statistics?.[dID] || {};
+    },
     getPermitSchedule: state => state.permitSchedule,
     getPermitNotifications: state => state.permitNotifications,
     getPermitStatistics: state => state.permitStatistics,
@@ -934,14 +938,14 @@ getScheduleTimeByID(context, { id, title }) {
 
     isLoading: state => state.loading,
     error: state => state.error,
-    getConfigSettings: (state) => (dID, roomKey, paramKey, configType) => {
-      console.log('[settingsConfig] - getConfigSettings - roomKey:', roomKey, 'paramKey:', paramKey, 'configType:', configType);
-      const nameConfig = dID + '_schedules';
-      const schedules = state.schedules[nameConfig] || [];
-      return schedules.filter(schedule => 
-        schedule.roomKey === roomKey && schedule.paramKey === paramKey
-      );
-    },
+    // getConfigSettings: (state) => (dID, roomKey, paramKey, configType) => {
+    //   console.log('[settingsConfig] - getConfigSettings - roomKey:', roomKey, 'paramKey:', paramKey, 'configType:', configType);
+    //   const nameConfig = dID + '_schedules';
+    //   const schedules = state.schedules[nameConfig] || [];
+    //   return schedules.filter(schedule => 
+    //     schedule.roomKey === roomKey && schedule.paramKey === paramKey
+    //   );
+    // },
 
     dateTimeUtils: () => ({
     getCurrentDateTime: () => {
