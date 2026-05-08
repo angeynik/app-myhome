@@ -199,6 +199,7 @@ export default {
           this.updatePayloadData({ 
             value: item.setValue,
             param: clearParam,
+            setKey: item.setpointKey,
             id: item.roomId
           });
           

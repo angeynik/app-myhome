@@ -371,6 +371,7 @@ export default {
             time: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
           };
         }
+        
       break;
       case 'notifications':
         console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - Уведомления');
@@ -383,6 +384,7 @@ export default {
         console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - ?????');
         break;
     }
+    console.log('[DashBoard] - editValueMainSetpoint - Сформирован payload', payload);
       
     } catch (error) {
       return error;

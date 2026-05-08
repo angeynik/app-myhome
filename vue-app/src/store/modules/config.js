@@ -93,8 +93,8 @@ export default {
     UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value }) {
       const config = state.configs[dID];
       logger.dev('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
-      //console.log('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
-      console.log('[config] - UPDATE_CONFIG_VALUE - Конфиг:', config);
+      console.log('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
+      //console.log('[config] - UPDATE_CONFIG_VALUE - Конфиг:', config);
       if (!config) {
         logger.error(`[Config] - dID ${dID} не найден в конфигурации`);
         console.warn(`[Config] - dID ${dID} не найден в конфигурации`);
@@ -112,12 +112,13 @@ export default {
       // Автоматически создаём контейнер типа, если он отсутствует
       if (!roomObj[type]) {
         logger.error(`[Config] - Тип ${type} не найден в комнате ${room}, создаём...`);
-        //console.warn(`[Config] - Тип ${type} не найден в комнате ${room}, создаём...`);
+        console.warn(`[Config] - Тип ${type} не найден в комнате ${room}, создаём...`);
         roomObj[type] = {};
       }
 
       // Автоматически создаём сенсор/уставку/элемент, если он отсутствует
       if (!roomObj[type][name]) {
+        console.warn(`[Config] - "Элемент" ${name} не найден в комнате ${room}, создаём...`);
         roomObj[type][name] = {};
       }
 
@@ -501,7 +502,7 @@ export default {
             dID: settingsData.name,
             room: settingsData.payload.room,
             type: type,
-            name: settingsData.payload.param,
+            name: settingsData.payload.setKey,
             value: settingsData.payload.value,
           });
 
