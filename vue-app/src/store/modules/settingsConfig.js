@@ -393,7 +393,7 @@ getSchedulesFromStore({ rootState, rootGetters }) {
     
     const schedules = Array.isArray(paramSchedules) ? [...paramSchedules] : [];
     
-    console.log('[settingsConfig] - getSchedulesFromStore - Найдено расписаний:', schedules.length);
+    //console.log('[settingsConfig] - getSchedulesFromStore - Найдено расписаний:', schedules.length);
     // console.groupEnd();
     
     return schedules;

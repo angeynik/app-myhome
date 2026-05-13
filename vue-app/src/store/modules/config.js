@@ -27,7 +27,7 @@ export default {
       //console.log('[sortParams] - SET_CONFIG Обновлен конфиг[' + name + ']: ', config);
     },
     SET_SCHEDULE(state, { name, config }) {
-      console.log('[config] - SET_SCHEDULE - name:', name, 'config keys:', Object.keys(config));
+      //console.log('[config] - SET_SCHEDULE - name:', name, 'config keys:', Object.keys(config));
       state.schedules[name] = config;
       logger.dev('[sortParams] - SET_SCHEDULE Обновлен конфиг[' + name + ']: ', config);
       // Вернуть console.log
@@ -93,7 +93,7 @@ export default {
     UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value }) {
       const config = state.configs[dID];
       logger.dev('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
-      console.log('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
+      //console.log('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
       //console.log('[config] - UPDATE_CONFIG_VALUE - Конфиг:', config);
       if (!config) {
         logger.error(`[Config] - dID ${dID} не найден в конфигурации`);
@@ -137,19 +137,19 @@ export default {
     // Добавьте эту мутацию в объект mutations после существующих мутаций
     UPDATE_SCHEDULE_VALUE(state, { dID, room, param, config, id, title, value }) {
       logger.dev('[config] - UPDATE_SCHEDULE_VALUE - Обновляем расписание:', { dID, room, param, config, id, title, value });
-      console.log('[config] - UPDATE_SCHEDULE_VALUE - Обновляем расписание:', { dID, room, param, config, id, title, value });
+      //console.log('[config] - UPDATE_SCHEDULE_VALUE - Обновляем расписание:', { dID, room, param, config, id, title, value });
       
       if (!state.schedules[dID]) {
         logger.error(`[Config] - schedules для dID ${dID} не найден`);
         return;
       }
-      console.log('[config] - UPDATE_SCHEDULE_VALUE - Найдена конфигурация ',config,':', state.schedules[dID]);
+      //console.log('[config] - UPDATE_SCHEDULE_VALUE - Найдена конфигурация ',config,':', state.schedules[dID]);
 
       // Ищем расписание по id в массиве
       if (state.schedules[dID][room] && state.schedules[dID][room][param]) {
         const schedules = state.schedules[dID][room][param];
         const index = schedules.findIndex(s => (s.id || s._id) === id);
-        console.log('[config] - UPDATE_SCHEDULE_VALUE - Найдено расписание :', index);
+        //console.log('[config] - UPDATE_SCHEDULE_VALUE - Найдено расписание :', index);
         
         if (index !== -1) {
           // Обновляем существующее расписание
@@ -481,7 +481,7 @@ export default {
 
 
     handleValueUpdate({ commit, rootGetters}, { type }) {
-      console.groupCollapsed('[Config] - handleValueUpdate');
+      //console.groupCollapsed('[Config] - handleValueUpdate');
       // logger.info('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
       // console.log('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
       // if (!dID || !payload || !type) {
@@ -495,7 +495,7 @@ export default {
       // if (!dID || !room || !param || value === undefined) return;
       
       let settingsData = rootGetters.getSetpointsManager?.settingsData;
-      console.log('[Config] - handleValueUpdate - Текущие settingsData:', settingsData);
+      //console.log('[Config] - handleValueUpdate - Текущие settingsData:', settingsData);
       if (type === 'setpoints') {
         try {
           commit('UPDATE_CONFIG_VALUE', {
@@ -510,10 +510,10 @@ export default {
           logger.error('[Config] Ошибка обработки данных сенсора:', error);
           //console.error('[Config] Ошибка обработки данных сенсора:', error);
         }
-        console.groupEnd('[Config] - handleSensorUpdate');
+        //console.groupEnd('[Config] - handleSensorUpdate');
       }
       if (type === 'schedules') {
-        //console.log('[Config] - handleSensorUpdate - Необходимо написать логику ОБНОВЛЕНИЯ локальной конфигурации Расписания');
+        console.log('[Config] - handleSensorUpdate - выполняем ОБНОВЛЕНИЕ локальной конфигурации Расписания');
         try {
           commit('UPDATE_SCHEDULE_VALUE', {
             dID: settingsData.name,

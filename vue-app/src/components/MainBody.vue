@@ -235,7 +235,7 @@ export default {
             action: 'show',
             request: 'setpoints',
             // editType: 'value-setpoint',
-            data: {
+            updateState: {
               value: item.setValue,
               title: 'value',
             }
@@ -281,7 +281,7 @@ export default {
           this.$emit('getComponentData', {
             action: 'hide',
             request: settingsType,
-            data: {
+            updateState: {
               value: item.setValue,
               title: 'value',
             }

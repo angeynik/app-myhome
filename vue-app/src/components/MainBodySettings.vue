@@ -1,4 +1,5 @@
 <!-- components/MainBodySettings.vue -->
+ <!-- $emit'getComponentData' - передает измененное значение параметра в экземпляре MainBodySchedule с добавлением флага action = show/hide -->
 <template>
   <!-- <h3 class="schedules-list-title">Настроенные расписания:</h3> -->
   <div>
@@ -51,7 +52,7 @@
               :activeSelection="activeSelection"
               class="schedule-item"  
               @delete-schedule="handleDeleteSchedule(schedule.id)"
-              @getComponentData="getComponentData"
+              @getDataScheduleItem="checkDataScheduleItem"
               @field-selected="handleFieldSelected"
             />
           </div>
@@ -216,13 +217,13 @@ export default {
     
   },
   created() {
-    console.log('[MainBodySettings] - created', {
-      settingsData: this.settingsData,
-      level: this.userLevel,
-      currentType: this.title
-    });
+    // console.log('[MainBodySettings] - created', {
+    //   settingsData: this.settingsData,
+    //   level: this.userLevel,
+    //   currentType: this.title
+    // });
     this.initialize();
-    // this.loadSchedulesFromStore();
+    this.schedules = this.loadSchedulesFromStore();
     this.setComponentParam(this.selectedTitle);
   },
   watch: {
@@ -272,43 +273,63 @@ export default {
     ]),
     ...mapActions(['updateSettingsData', 'updatePayloadData', 'updateLimitsData', 'updateViewData']),
     
-    getComponentData(event) {
-      //console.log('[MainBodySettings] -  getComponentData - Данные от компонента MainBodySchedule:', event, null, 2);
-      // const settingsData = this.$store.state.setpointsManager?.settingsData;
-      // console.log('[MainBodySettings] -  getComponentData - Данные в settingsData:', settingsData);
+    checkDataScheduleItem(event) {
+      // Функция получает измененный параметр от экземплара MainBodySchedule 
+      // Проверяет event.value_type и устанвливает флаг action
+
+      console.log('[MainBodySettings] -  checkDataScheduleItem - Данные от компонента MainBodySchedule:', event, null, 2);
+      
       let action = "show";
-
+      if (event.value_type === 'deviation' & event.title === 'value_type') action = "hide";
       const arrayTitle = this.settingsData?.payload?.config; // имя массива (например, "schedule")
-      //console.log('[MainBodySettings] -  getComponentData - Название массива:', arrayTitle);
-
-      if(!arrayTitle) return console.error('[MainBodySettings] -  getComponentData - Отсутствует массив', arrayTitle);
-      const targetId = this.settingsData?.payload?.id; // id искомого объекта
-      if(!targetId) return console.error('[MainBodySettings] - getComponentData - ID объекта не определен', targetId);
-      const fieldName = event.title; // имя поля для изменения
-      if(!fieldName) return console.error('[MainBodySettings] - getComponentData - Название поля не определено', fieldName);
-      const newValue = event.value;
-      if(newValue === undefined || newValue === null) return console.error('[MainBodySettings] - getComponentData - Значение поля не определено', newValue);
-
-      const targetArray = this[arrayTitle];
-      const targetObject = targetArray.find(item => item.id === targetId);
-      //console.log(`[MainBodySettings] - getComponentData - Найден элемент расписания с id ${targetId} в массиве:`, targetObject);
-        if (targetObject && fieldName === 'value_type') {
-          // Изменяем значение поля
-          targetObject[fieldName] = newValue;
-          targetObject.value = this.settingsData?.payload?.value;
-          
-          //console.log(`[MainBodySettings] - getComponentData - Обновлено поле "${fieldName}" в объекте с id ${targetId}:`, targetObject);
-        } else {
-          console.warn(`[MainBodySettings] - getComponentData - Объект с id ${targetId} не найден в массиве ${arrayTitle}`);
-        }
-        if (fieldName === 'value_type') action = "hide";
-
       const message = {
         action: action,
-        data: event,
+        updateState: event,
         request: arrayTitle,
       };
+      console.log('[MainBodySettings] -  checkDataScheduleItem - Формируем сообщение для DashBoard - emit getComponentData', message);
       this.$emit('getComponentData', message);
+
+
+      // const arrayTitle = this.settingsData?.payload?.config; // имя массива (например, "schedule")
+      // //console.log('[MainBodySettings] -  checkDataScheduleItem - Название массива:', arrayTitle);
+
+      // if(!arrayTitle) return console.error('[MainBodySettings] -  checkDataScheduleItem - Отсутствует массив', arrayTitle);
+      // const targetId = this.settingsData?.payload?.id; // id искомого объекта
+      // if(!targetId) return console.error('[MainBodySettings] - checkDataScheduleItem - ID объекта не определен', targetId);
+      // const fieldName = event.title; // имя поля для изменения
+      // if(!fieldName) return console.error('[MainBodySettings] - checkDataScheduleItem - Название поля не определено', fieldName);
+      // const newValue = event.value;
+      // if(newValue === undefined || newValue === null) return console.error('[MainBodySettings] - checkDataScheduleItem - Значение поля не определено', newValue);
+
+      // const targetArray = this[arrayTitle];
+      // const targetObject = targetArray.find(item => item.id === targetId);
+      // //console.log(`[MainBodySettings] - checkDataScheduleItem - Найден элемент расписания с id ${targetId} в массиве:`, targetObject);
+      //   if (targetObject && fieldName === 'value_type') {
+      //     // Изменяем значение поля
+      //     targetObject[fieldName] = newValue;
+      //     targetObject.value = this.settingsData?.payload?.value;
+          
+      //     //console.log(`[MainBodySettings] - checkDataScheduleItem - Обновлено поле "${fieldName}" в объекте с id ${targetId}:`, targetObject);
+      //   } else {
+      //     console.warn(`[MainBodySettings] - checkDataScheduleItem - Объект с id ${targetId} не найден в массиве ${arrayTitle}`);
+      //   }
+      //   if (fieldName === 'value_type') action = "hide";
+
+      // const message = {
+      //   action: action,
+      //   updateState: event,
+      //   request: arrayTitle,
+      // };
+      // this.$emit('getComponentData', message);
+
+          // this.$emit('eventsMainSetpoint', {
+          //   'updateState': {
+          //     request: arrayTitle,
+          //     action: action,
+          //     payload: event
+          //   }
+          // });
     },
 
     setComponentParam (selectedTitle) {
@@ -329,11 +350,11 @@ export default {
     },
 
     async loadSchedulesFromStore() {
-      //console.log('[MainBodySettings] - loadSchedulesFromStore - Вызов функции');
+      console.log('[MainBodySettings] - loadSchedulesFromStore - Вызов функции');
       try {
         
         const schedules = await this.$store.dispatch('settingsConfig/getSchedulesFromStore');    
-        //console.log('[MainBodySettings] - loadSchedulesFromStore - Полученные расписания из store:', schedules);
+        console.log('[MainBodySettings] - loadSchedulesFromStore - Полученные расписания из store:', schedules);
         // schedules.forEach((schedule, index) => {
         //   console.log(`[MainBodySettings] - loadSchedulesFromStore - schedule[${index}] createdAt:`, schedule.createdAt, 'typeof:', typeof schedule.createdAt);
         // });
@@ -709,37 +730,6 @@ export default {
 
     },
 
-
-
-
-
-
-
-
-    
-    // async loadData(dataType) {
-    //   const roomKey = this.settingsData.payload.room;
-    //   const paramKey = this.settingsData.payload.param;
-    //   console.log('[MainBodySettings] Loading ', dataType, ' data for ', roomKey, paramKey);
-      
-    //   try {
-    //     let result;
-    //     result = await this.$store.dispatch('settingsConfig/getConfigSettings', {
-    //         roomKey: roomKey,
-    //         paramKey: paramKey,
-    //         configType: dataType
-    //       });
-
-    //     this.schedules = [...result];
-    //     console.log('[MainBodySettings] - loadSchedules - для - ', dataType, ' Получена конфигурация: ', this.schedules, ' количество элементов:', this.schedules.length);
-        
-    //   } catch (error) {
-    //     console.error('[MainBodySettings] - loadSchedules - Ошибка загрузки:', error);
-    //     this.schedules = [];
-    //   }
-
-    // },
-    
     async loadData(dataType) {
       const roomKey = this.settingsData.payload.room;
       const paramKey = this.settingsData.payload.param;

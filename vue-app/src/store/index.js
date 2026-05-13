@@ -71,7 +71,7 @@ const store = createStore({
         
         state.settingsData = { ...state.setpointsManager.settingsData };
         // Вернуть console.log
-        //console.log('[index] - UPDATE_PAYLOAD_DATA - Обновляем payload:', state.setpointsManager.settingsData.payload );
+        console.log('[index] - UPDATE_PAYLOAD_DATA - Обновляем payload:', state.setpointsManager.settingsData.payload );
       }
     },
     UPDATE_LIMITS_DATA(state, limits) {

@@ -1,4 +1,6 @@
 <!-- components/MainBodySchedule.vue -->
+ <!-- $emit'getDataScheduleItem' - передает измененное значение параметра в экземпляре MainBodySchedule -->
+
 <template>
   <div class="settings-block" v-if="visible">
 
@@ -126,6 +128,7 @@ export default {
   data() {
     return {
       timeEditMode: 'hours',
+      localValueType: this.scheduleData.value_type || 'absolute',
       // selectedField: null,
     };
   },
@@ -139,7 +142,7 @@ export default {
     },
     
     valueTypeLabel() {
-      return this.scheduleData.value_type === 'absolute' ? 'Новое значение' : 'Отклонение от Уставки';
+      return this.localValueType === 'absolute' ? 'Новое значение' : 'Отклонение от Уставки';
     },
    value() {
     // Если данные еще не созданы
@@ -162,7 +165,7 @@ export default {
     };
     
     // Форматирование в зависимости от типа значения
-    if (this.scheduleData.value_type === 'deviation') {
+    if (this.localValueType === 'deviation') {
       const numericValue = typeof rawValue === 'number' ? rawValue : parseFloat(rawValue);
       if (!isNaN(numericValue)) {
         const sign = numericValue >= 0 ? ' +' : '';
@@ -295,8 +298,9 @@ export default {
       
       this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
       // Определяем новый тип (переключаем)
-      const currentType = this.scheduleData.value_type;
+      const currentType = this.localValueType;
       const newType = currentType === 'absolute' ? 'deviation' : 'absolute';
+      this.localValueType = newType;
       let defaultValue;
       if (newType === 'absolute') {
         const rawValue = this.$store.state.setpointsManager?.settingsData?.payload?.value;
@@ -309,22 +313,27 @@ export default {
       // Обновляем в store
       this.updatePayloadData({ 
         id: this.scheduleData.id,
-        value_type: newType,
         value: defaultValue,
+        value_type: newType
       });
-      this.$emit('getComponentData', {
-              value: newType,
-              title: 'value_type',          
+      this.$emit('getDataScheduleItem', {
+              value: defaultValue,
+              title: 'value_type',
+              value_type: newType
+                        
       });
-      this.$emit('field-selected', { scheduleId: this.scheduleData.id, field: 'valueType' });
+      //this.$emit('field-selected', { scheduleId: this.scheduleData.id, field: 'valueType' });
       
     },
     // Редактирование значения расписания
     editValue() {
+      if (!this.scheduleData) console.error('[MainBodySchedule] - editValue Значение scheduleData не определено', this.scheduleData);
+      logger.dev('[MainBodySchedule] - editValue - Начало редактирования значения  - scheduleData', this.scheduleData);
+
       console.log('[MainBodySchedule] - editValue - Текущее значение value_type:', this.scheduleData);
-      let currentValueType = this.scheduleData.value_type;
+      let currentValueType = this.localValueType;
       if ( currentValueType === undefined) {
-        console.error('[MainBodySchedule] - editValue - value_type не задан', currentValueType);
+        //console.error('[MainBodySchedule] - editValue - value_type не задан', currentValueType);
         currentValueType = 'absolute';
         this.updateSettingsData({ field: 'value_type', value: 'absolute' });
       }
@@ -339,19 +348,22 @@ export default {
 
       const currentValue = this.scheduleData.value !== null && this.scheduleData.value !== undefined
         ? this.scheduleData.value
-        : (this.$store.state.setpointsManager?.settingsData?.payload?.value_type === 'absolute' ? 20 : 0);
+        : (this.localValueType === 'absolute' ? 20 : 0);
       //const currentValue = this.scheduleData.valueType === 'absolute' ? 20 : 0;
 
       logger.dev('[MainBodySchedule] - editValue - Начало редактирования значения');
       this.updatePayloadData({ 
         id: this.scheduleData.id,
         value: currentValue,
+        value_type: currentValueType,
         value_name: field, 
         value_details: ''
       });    
-      this.$emit('getComponentData', {
+      console.log ('[MainBodySchedule] - editValue - Начало редактирования значения');
+      this.$emit('getDataScheduleItem', {
               value: currentValue,
-              title: field,           
+              title: field,
+              value_type: currentValueType           
       });
     },
     
@@ -395,12 +407,12 @@ export default {
           this.setLimits(params);
 
         if (editMode === 'minutes') {
-            this.$emit('getComponentData', {
+            this.$emit('getDataScheduleItem', {
                 value: currentMinutes,
                 title: selectedField,
             });
         } else {
-            this.$emit('getComponentData', {
+            this.$emit('getDataScheduleItem', {
                 value: currentHours,
                 title: selectedField,
             });
