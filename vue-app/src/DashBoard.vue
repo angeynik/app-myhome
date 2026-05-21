@@ -352,6 +352,10 @@ export default {
           console.log('[DashBoard] - editValueMainSetpoint - value_details-', value_details, '--ДОПИСЫВАЕМ ОБРАБОТКУ ИЗМЕНЕНИЯ ВРЕМЕНИ -- МИНУТЫ');
           const settingsConfigUpdate = await this.$store.dispatch('settingsConfig/settingsConfigUpdate', {newValue: value, value_details});
           console.log('[DashBoard] - editValueMainSetpoint - Результат проверки:', settingsConfigUpdate);
+          if (settingsConfigUpdate.hasOverlap) {
+            this.showNotification(settingsConfigUpdate.message || 'Время скорректировано из-за пересечения с другими расписаниями');
+            this.setpoint = oldValue;
+          }
           newValue = settingsConfigUpdate.updatedValue;
           payload = {
             room: roomKey, 
@@ -482,7 +486,27 @@ export default {
       
 
   },
-
+  showNotification(message, duration = 2000) {
+    // Создаём элемент уведомления
+    const notification = document.createElement('div');
+    notification.textContent = message;
+    notification.style.position = 'fixed';
+    notification.style.bottom = '200px';
+    notification.style.left = '50%';
+    notification.style.transform = 'translateX(-50%)';
+    notification.style.backgroundColor = '#ff9800';
+    notification.style.color = '#fff';
+    notification.style.padding = '10px 20px';
+    notification.style.borderRadius = '8px';
+    notification.style.zIndex = '9999';
+    notification.style.fontSize = '18px';
+    //notification.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.remove();
+    }, duration);
+  },
 
   }
 };

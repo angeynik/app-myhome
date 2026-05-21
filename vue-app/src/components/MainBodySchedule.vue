@@ -492,19 +492,19 @@ export default {
       
       return { valid: true };
     },
-    async checkScheduleOverlap(startTime, endTime, existingSchedules) {
-      try {
-        const result = await this.checkScheduleOverlap({
-          startTime,
-          endTime,
-          existingSchedules
-        });
-        return result;
-      } catch (error) {
-        logger.error('[MainBodySchedule] - checkScheduleOverlap - Ошибка проверки:', error);
-        return true; // В случае ошибки считаем, что есть пересечение
-      }
-    },
+    // async checkScheduleOverlap(startTime, endTime, existingSchedules) {
+    //   try {
+    //     const result = await this.checkScheduleOverlap({
+    //       startTime,
+    //       endTime,
+    //       existingSchedules
+    //     });
+    //     return result;
+    //   } catch (error) {
+    //     logger.error('[MainBodySchedule] - checkScheduleOverlap - Ошибка проверки:', error);
+    //     return true; // В случае ошибки считаем, что есть пересечение
+    //   }
+    // },
   
   }
 };
