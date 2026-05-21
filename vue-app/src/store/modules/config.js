@@ -480,37 +480,39 @@ export default {
 
 
 
-    handleValueUpdate({ commit, rootGetters}, { type }) {
-      //console.groupCollapsed('[Config] - handleValueUpdate');
-      // logger.info('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
+    handleValueUpdate({ commit, rootGetters}, { dID, payload, type }) {
+      logger.info('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
       // console.log('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
-      // if (!dID || !payload || !type) {
-      //   logger.error('[Config] - handleValueUpdate - Невалидные параметры запроса:', { dID, payload, type });
-      //   console.error('[Config] - handleValueUpdate - Невалидные параметры запроса:', { dID, payload, type });
-      //   return;
-      // }
+
+      const settingsData = rootGetters.getSetpointsManager?.settingsData;
+      //console.log('[Config] - handleValueUpdate - Текущие settingsData:', settingsData);
+      if (!dID || !payload || !type || !settingsData) {
+        logger.error('[Config] - handleValueUpdate - Невалидные параметры запроса:', { dID, payload, type, settingsData });
+        console.error('[Config] - handleValueUpdate - Невалидные параметры запроса:', { dID, payload, type, settingsData });
+        return;
+      }
 
       // const { room, param, value, time } = payload;
       //console.log('[Config] - handleValueUpdate - Параметры запроса:', { dID, room, param, value, time });
       // if (!dID || !room || !param || value === undefined) return;
       
-      let settingsData = rootGetters.getSetpointsManager?.settingsData;
-      //console.log('[Config] - handleValueUpdate - Текущие settingsData:', settingsData);
+
+      
       if (type === 'setpoints') {
         try {
           commit('UPDATE_CONFIG_VALUE', {
-            dID: settingsData.name,
-            room: settingsData.payload.room,
+            dID: dID || settingsData.name,
+            room: payload?.room || settingsData.payload.room,
             type: type,
-            name: settingsData.payload.setKey,
-            value: settingsData.payload.value,
+            name: payload?.param || settingsData.payload.setKey,
+            value: payload?.value || settingsData.payload.value,
           });
 
         } catch (error) {
           logger.error('[Config] Ошибка обработки данных сенсора:', error);
           //console.error('[Config] Ошибка обработки данных сенсора:', error);
         }
-        //console.groupEnd('[Config] - handleSensorUpdate');
+
       }
       if (type === 'schedules') {
         console.log('[Config] - handleSensorUpdate - выполняем ОБНОВЛЕНИЕ локальной конфигурации Расписания');

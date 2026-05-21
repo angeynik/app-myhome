@@ -1,3 +1,4 @@
+<!-- components/MainBodyValue.vue -->
 <template>
   <!-- <div 
     class="sensor-card"

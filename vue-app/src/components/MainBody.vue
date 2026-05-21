@@ -180,7 +180,7 @@ export default {
         console.groupCollapsed('[MainBody] - selectItem ');
         logger.dev(`[MainBody] - selectItem - Выбран параметр:  ${JSON.stringify(item, null, 2)}`);
         //console.log(`[MainBody] - selectItem - setpointKey: ${item.setpointKey}, deviceKey: ${item.deviceKey}, paramKey: ${item.paramKey}, roomKey: ${item.roomKey}`);
-        //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item, null, 2)}`);
+        console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item, null, 2)}`);
 
         // Если за это время не было двойного клика, выполняем selectItem
         if (this.selectedItem === item) {
@@ -200,7 +200,8 @@ export default {
             value: item.setValue,
             param: clearParam,
             setKey: item.setpointKey,
-            id: item.roomId
+            id: item.roomId,
+            room: item.roomKey
           });
           
 
@@ -238,6 +239,8 @@ export default {
             updateState: {
               value: item.setValue,
               title: 'value',
+              roomKey: item.roomKey,
+              setpointKey: item.setpointKey
             }
           });
           console.log(`[MainBody] - selectItem - Отправляем событие с данными в DashBoard, value: ${item.setValue}, title: value`);
