@@ -1,11 +1,21 @@
 <template>
   <div id="app">
     <router-view />
+    <PopupMenu
+      :visible="popup.visible"
+      :message="popup.message"
+      :type="popup.type"
+      :duration="popup.duration"
+      @close="closePopup"
+      @auto-close="closePopup"
+    />
   </div>
 </template>
 
 <script>
 import logger from './store/modules/logger.js';
+import { mapState, mapMutations } from 'vuex';
+import PopupMenu from '@/components/PopupMenu.vue';
 
 export default {
   name: 'App',
@@ -17,7 +27,13 @@ export default {
       serverPort: process.env.VUE_APP_SERVER_PORT,
     };
   },
- 
+ components: { PopupMenu },
+  computed: {
+    ...mapState('popup', ['visible', 'message', 'type', 'duration']),
+    popup() {
+      return this;
+    }
+  },
   async mounted() {
     try {
       // 1. Восстанавливаем сессию из localStorage
@@ -68,6 +84,10 @@ export default {
     async sendLogToServer(type, message) {
       await this.$store.dispatch('sendLogToServer', { type, message });
     },
+    ...mapMutations('popup', ['HIDE']),
+    closePopup() {
+      this.HIDE();
+    }
   },
 };
 </script>

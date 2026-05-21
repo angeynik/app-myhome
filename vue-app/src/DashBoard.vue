@@ -353,7 +353,14 @@ export default {
           const settingsConfigUpdate = await this.$store.dispatch('settingsConfig/settingsConfigUpdate', {newValue: value, value_details});
           console.log('[DashBoard] - editValueMainSetpoint - Результат проверки:', settingsConfigUpdate);
           if (settingsConfigUpdate.hasOverlap) {
-            this.showNotification(settingsConfigUpdate.message || 'Время скорректировано из-за пересечения с другими расписаниями');
+          
+            // Отображаем Уведомление для пользователя - PopupMenu.vue 
+          this.$store.dispatch('popup/show', {
+            message: `Время скорректировано из-за пересечения с другими расписаниями `,
+            type: 'warning',
+            duration: 3000
+          });
+
             this.setpoint = oldValue;
           }
           newValue = settingsConfigUpdate.updatedValue;
@@ -458,7 +465,7 @@ export default {
             console.error('Ошибка при отправке уставки на сервер:', error);
             return false;
           }
-        }, 2500);
+        }, 1500);
   },
 
   getComponentData(event) {
@@ -481,31 +488,8 @@ export default {
         this.showSetpoint = false;
         this.setpoint = event.updateState.value;
         //console.log('[DashBoard] - getComponentData - Компонент MainSetpoint скрыт');
-        this.sendChangedData(event);
       }
-      
 
-  },
-  showNotification(message, duration = 2000) {
-    // Создаём элемент уведомления
-    const notification = document.createElement('div');
-    notification.textContent = message;
-    notification.style.position = 'fixed';
-    notification.style.bottom = '200px';
-    notification.style.left = '50%';
-    notification.style.transform = 'translateX(-50%)';
-    notification.style.backgroundColor = '#ff9800';
-    notification.style.color = '#fff';
-    notification.style.padding = '10px 20px';
-    notification.style.borderRadius = '8px';
-    notification.style.zIndex = '9999';
-    notification.style.fontSize = '18px';
-    //notification.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-      notification.remove();
-    }, duration);
   },
 
   }

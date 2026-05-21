@@ -8,6 +8,7 @@ import sortParams from './modules/sortParams';
 import config from './modules/config';
 import settingsConfig from './modules/settingsConfig';
 import logger from './modules/logger';
+import popup from './modules/popup';
 
 
 const store = createStore({
@@ -27,6 +28,7 @@ const store = createStore({
     sortParams,
     config,
     settingsConfig,
+    popup,
   },
   mutations: {
     INIT_SETPOINTS_MANAGER(state, { dID, config }) { // Инициализация менеджера сетпоинтов manageSetpoints
@@ -87,10 +89,6 @@ const store = createStore({
         //console.log('[index] - UPDATE_LIMITS_DATA - state.settingsData.limits:', JSON.stringify(state.settingsData.limits));
       }
     },
-
-
-
-
     SET_ROOM_KEY(state, key) {
       if (typeof key === 'string' && state.roomKey !== key && key != null) {
         logger.dev(`[index] MUTATION SET_ROOM_KEY: ${state.roomKey} -> ${key}`);
@@ -139,7 +137,6 @@ const store = createStore({
       }
     },
 
-
 // Работа с manageSetpoints ////////////////////////////////////////
     initializeSetpointsManager({ commit, getters }) {
       const dID = getters.dID;
@@ -162,8 +159,6 @@ const store = createStore({
       //console.log('[index] - updateLimitsData - limits:', limits);
       commit('UPDATE_LIMITS_DATA', limits);
     },
-
-
 
     resetSettingsData({ commit }) { // Action для сброса данных настроек manageSetpoints
       commit('RESET_SETTINGS_DATA');

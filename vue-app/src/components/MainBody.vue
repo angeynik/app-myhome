@@ -256,15 +256,35 @@ export default {
     DclickSelectItem(item) {
       const clearParam = 'd' + this.clearKeySync(item.paramKey);
 
+      
       if (this.clickTimer) {
         clearTimeout(this.clickTimer);
         this.clickTimer = null;
       }
 
+      const config = this.getConfig(this.dID);
+      if (!config) {
+        console.error('Конфигурация не загружена');
+        return;
+      }
+      const roomConfig = config[item.roomKey];
+      console.log(roomConfig.setpoints , null, 2);
+
+      if (!roomConfig || !roomConfig.setpoints || !item.setpointKey || !roomConfig.setpoints[item.setpointKey].value) {
+        this.$store.dispatch('popup/show', {
+          message: `Уставка для параметра "${item.paramTitle}" в комнате "${item.roomTitle}" не настроена.`,
+          type: 'warning',
+          duration: 3000
+        });
+        return;
+      }
+
       logger.dev('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', clearParam, ' и значение:', item.setValue);
       console.groupCollapsed('[MainBody] - DclickSelectItem ');
       console.log('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', clearParam, ' и значение:', item);
-      if (!clearParam) return `[MainBody] - DclickSelectItem - Отсутствуетлюч выбранного элемента:', ${clearParam}`;
+      if (!clearParam) return `[MainBody] - DclickSelectItem - Отсутствует ключ выбранного элемента:', ${clearParam}`;
+
+
       this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
       this.updatePayloadData({ param: clearParam, room: item.roomKey, config: this.typeSettingsKey, value: item.setValue,});
       // console.log('[MainBody] - DclickSelectItem - ОБНОВИЛИ КЛЮЧ param в settingsData:',

@@ -410,11 +410,13 @@ export default {
             this.$emit('getDataScheduleItem', {
                 value: currentMinutes,
                 title: selectedField,
+                value_details: 'minutes'
             });
         } else {
             this.$emit('getDataScheduleItem', {
                 value: currentHours,
                 title: selectedField,
+                value_details: 'hours'
             });
         }
         
@@ -422,19 +424,6 @@ export default {
         this.timeEditMode = this.timeEditMode === 'minutes' ? 'hours' : 'minutes';
         //console.groupEnd();
     },
-
-
-
-
-
-
-
-
-
-
-
-
-
     
     // Удаление расписания
     deleteScheduleItem() {
