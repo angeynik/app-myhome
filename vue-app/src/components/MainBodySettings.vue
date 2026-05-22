@@ -51,7 +51,7 @@
               :scheduleUnit="unit"
               :activeSelection="activeSelection"
               class="schedule-item"  
-              @delete-schedule="handleDeleteSchedule(schedule.id)"
+              @delete-schedule="handleDeleteConfigItem(schedule.id, 'schedules')"
               @getDataScheduleItem="checkDataScheduleItem"
               @field-selected="handleFieldSelected"
             />
@@ -70,7 +70,7 @@
                 :activeSelection="activeSelection"
                 class="schedule-item"  
                 @edit-notification="handleEditNotification(notification.id, $event)"
-                @delete-notification="handleDeleteNotification(notification.id)"
+                @delete-notification="handleDeleteConfigItem(notification.id, 'notifications')"
                 @field-selected="handleFieldSelected"
               />
             </div>
@@ -80,20 +80,20 @@
           </div>
         </div>
           <div v-if="selectedTitle === 'Аналитика'">
-            <div v-if="analytics.length > 0" class="analytics-list">
+            <div v-if="statistics.length > 0" class="statistics-list">
               <MainBodyStatistic
-                v-for="(analytic, index) in analytics"
-                :key="analytic.id || `analytic-${index}`"
-                :analyticData="analytic"
+                v-for="(statistic, index) in statistics"
+                :key="statistic.id || `statistic-${index}`"
+                :analyticData="statistic"
                 :activeSelection="activeSelection"
                 class="schedule-item"  
-                @edit-analytic="handleEditAnalytic(analytic.id, $event)"
-                @delete-analytic="handleDeleteAnalytic(analytic.id)"
+                @edit-analytic="handleEditAnalytic(statistic.id, $event)"
+                @delete-analytic="handleDeleteConfigItem(statistic.id, 'statistics')"
                 @field-selected="handleFieldSelected"
               />
             </div>
           
-          <div v-if="analytics.length === 0" class="schedule-item">
+          <div v-if="statistics.length === 0" class="schedule-item">
             <p>Отсутствует Аналитика для выбранного параметра.</p>
           </div>
         </div>
@@ -134,13 +134,13 @@ export default {
   data() {
     return {
       activeSelection: null,
-      availableTitles: ['schedule', 'notifications', 'statistics'],
+      availableTitles: ['schedules', 'notifications', 'statistics'],
       typeToTitleMap: {
-        'schedule': 'Расписание',
+        'schedules': 'Расписание',
         'notifications': 'Уведомления',
         'statistics': 'Аналитика'
       },
-      title: localStorage.getItem('typeSettingsKey') || this.typeSettingsKey || 'schedule',
+      title: localStorage.getItem('typeSettingsKey') || this.typeSettingsKey || 'schedules',
 
       showAddDialog: false, // Добавьте это
       currentItemType: '',
@@ -148,11 +148,11 @@ export default {
 
       schedules: [],
       notifications: [],
-      analytics: [],
+      statistics: [],
 
       unit: '', // единица измерения
 
-      schedulesToDelete: [], // Массив ID расписаний для удаления
+      configDataToDelete: [], // Массив ID расписаний для удаления
       pendingDeletions: {}, // Объект с данными для удаления {id: scheduleData}
       editedSchedules: {}, // Объект с данными для редактирования {id: scheduleData}
 
@@ -223,7 +223,7 @@ export default {
     //   currentType: this.title
     // });
     this.initialize();
-    this.schedules = this.loadSchedulesFromStore();
+    this.schedules = this.loadConfigDataFromStore('schedules');
     this.setComponentParam(this.selectedTitle);
   },
   watch: {
@@ -235,13 +235,23 @@ export default {
       }
     },
     // Отслеживаем изменения в store и обновляем локальные данные
-    '$store.state.config.schedules': {
+    '$store.state.config': {
       handler() {
-        //console.log('[MainBodySettings] - Watch - Расписания в store обновились');
-        if (this.title === 'schedule') {
-          this.loadSchedulesFromStore();
-          console.log('[MainBodySettings] - Watch - Обновленные Расписания:', this.schedules);
-        }
+        console.log('[MainBodySettings] - Watch - Расписания в store обновились');
+        this.loadConfigDataFromStore(this.title);
+
+        // if (this.title === 'schedules') {
+        //   this.loadConfigDataFromStore('schedules');
+        //   //console.log('[MainBodySettings] - Watch - Обновленные Расписания:', this.schedules);
+        // }
+        // if (this.title === 'notifications') {
+        //   this.loadConfigDataFromStore('notifications');
+        //   //console.log('[MainBodySettings] - Watch - Обновленные Уведомления:', this.notifications);
+        // }
+        // if (this.title === 'statistics') {
+        //   this.loadConfigDataFromStore('statistics');
+        //   //console.log('[MainBodySettings] - Watch - Обновленные Аналитика:', this.statistics);
+        // }
       },
       deep: true,
       immediate: false
@@ -262,14 +272,14 @@ export default {
     ...mapActions('settingsConfig', [
       'initialize',
       'updateTypePopupItem', 
-      'saveSchedules',
+      'saveConfigItems',
       'getCurrentDateTime',
       'formatDate',
       'checkScheduleOverlap',
       'createTimePoint',
       'updateSchedule',
-      'deleteSchedules',
-      'getSchedulesFromStore',
+      'deleteConfigItems',
+      'getConfigDataFromStore',
     ]),
     ...mapActions(['updateSettingsData', 'updatePayloadData', 'updateLimitsData', 'updateViewData']),
     
@@ -289,47 +299,6 @@ export default {
       };
       console.log('[MainBodySettings] -  checkDataScheduleItem - Формируем сообщение для DashBoard - emit getComponentData', message);
       this.$emit('getComponentData', message);
-
-
-      // const arrayTitle = this.settingsData?.payload?.config; // имя массива (например, "schedule")
-      // //console.log('[MainBodySettings] -  checkDataScheduleItem - Название массива:', arrayTitle);
-
-      // if(!arrayTitle) return console.error('[MainBodySettings] -  checkDataScheduleItem - Отсутствует массив', arrayTitle);
-      // const targetId = this.settingsData?.payload?.id; // id искомого объекта
-      // if(!targetId) return console.error('[MainBodySettings] - checkDataScheduleItem - ID объекта не определен', targetId);
-      // const fieldName = event.title; // имя поля для изменения
-      // if(!fieldName) return console.error('[MainBodySettings] - checkDataScheduleItem - Название поля не определено', fieldName);
-      // const newValue = event.value;
-      // if(newValue === undefined || newValue === null) return console.error('[MainBodySettings] - checkDataScheduleItem - Значение поля не определено', newValue);
-
-      // const targetArray = this[arrayTitle];
-      // const targetObject = targetArray.find(item => item.id === targetId);
-      // //console.log(`[MainBodySettings] - checkDataScheduleItem - Найден элемент расписания с id ${targetId} в массиве:`, targetObject);
-      //   if (targetObject && fieldName === 'value_type') {
-      //     // Изменяем значение поля
-      //     targetObject[fieldName] = newValue;
-      //     targetObject.value = this.settingsData?.payload?.value;
-          
-      //     //console.log(`[MainBodySettings] - checkDataScheduleItem - Обновлено поле "${fieldName}" в объекте с id ${targetId}:`, targetObject);
-      //   } else {
-      //     console.warn(`[MainBodySettings] - checkDataScheduleItem - Объект с id ${targetId} не найден в массиве ${arrayTitle}`);
-      //   }
-      //   if (fieldName === 'value_type') action = "hide";
-
-      // const message = {
-      //   action: action,
-      //   updateState: event,
-      //   request: arrayTitle,
-      // };
-      // this.$emit('getComponentData', message);
-
-          // this.$emit('eventsMainSetpoint', {
-          //   'updateState': {
-          //     request: arrayTitle,
-          //     action: action,
-          //     payload: event
-          //   }
-          // });
     },
 
     setComponentParam (selectedTitle) {
@@ -337,31 +306,33 @@ export default {
       if(selectedTitle === 'Расписание') {
         this.updatePayloadData({ config: 'schedules'});
 
-        this.loadSchedulesFromStore();
+        this.loadConfigDataFromStore('schedules');
       } else if (selectedTitle === 'Уведомления') {
         this.updatePayloadData({ config: 'notifications'});
+        this.loadConfigDataFromStore('notifications');
         console.log('[MainBodySettings] - setComponentParam - Пишем код для загрузки конфигурации Уведомлений и устанавливаем соответствующие ключи в state settingsData');
       } else if (selectedTitle === 'Аналитика') {
         this.updatePayloadData({ config: 'statistics'});
+        this.loadConfigDataFromStore('statistics');
         console.log('[MainBodySettings] - setComponentParam - Пишем код для загрузки конфигурации Аналитики и устанавливаем соответствующие ключи в state settingsData');
       } else {
         console.log('[MainBodySettings] - setComponentParam - Пишем обработку для неизвестного selectedTitle', selectedTitle);
       }
     },
 
-    async loadSchedulesFromStore() {
-      console.log('[MainBodySettings] - loadSchedulesFromStore - Вызов функции');
+    async loadConfigDataFromStore(configName) {
+      console.log('[MainBodySettings] - loadConfigDataFromStore - Вызов функции для конфигурации - ', configName);
       try {
         
-        const schedules = await this.$store.dispatch('settingsConfig/getSchedulesFromStore');    
-        console.log('[MainBodySettings] - loadSchedulesFromStore - Полученные расписания из store:', schedules);
+        const configData = await this.$store.dispatch('settingsConfig/getConfigDataFromStore', { configName });    
+        console.log('[MainBodySettings] - loadConfigDataFromStore - Полученные расписания из store:', configData);
         // schedules.forEach((schedule, index) => {
-        //   console.log(`[MainBodySettings] - loadSchedulesFromStore - schedule[${index}] createdAt:`, schedule.createdAt, 'typeof:', typeof schedule.createdAt);
+        //   console.log(`[MainBodySettings] - loadConfigDataFromStore - schedule[${index}] createdAt:`, schedule.createdAt, 'typeof:', typeof schedule.createdAt);
         // });
-        this.schedules = schedules;
+        this[configName] = configData;
       } catch (error) {
-        console.error('[MainBodySettings] - loadSchedulesFromStore - Ошибка:', error);
-        this.schedules = [];
+        console.error('[MainBodySettings] - loadConfigDataFromStore - Ошибка:', error);
+        this[configName] = [];
       }
     },
   
@@ -377,7 +348,7 @@ export default {
         //console.log(`[MainBodySettings] Loading ${type} data`);
         
         switch(type) {
-          case 'schedule':
+          case 'schedules':
             await this.loadData('schedule');
             break;
           case 'notifications':
@@ -412,11 +383,11 @@ export default {
 
     addNewItem() {
       //console.log('[MainBodySettings] - addNewItem');
-      const type = this.title; // 'schedule', 'notifications', 'statistics'
+      const type = this.title; // 'schedules', 'notifications', 'statistics'
       this.currentItemType = type;
       // let roomKey, paramKey;
       switch(type) {
-        case 'schedule':
+        case 'schedules':
           this.addNewSchedule();
           break;
         case 'notifications':
@@ -443,6 +414,46 @@ export default {
           console.warn(`Unknown settings type: ${type}`);
       }
     },
+
+
+    async generationTime(configName) {
+      console.log('[MainBodySettings] - generationTime - Создание временного интервала для нового элемента');
+            let startTime, endTime;
+      try {
+        const createTimePoint = await this.$store.dispatch('settingsConfig/createTimePoint');
+        startTime = createTimePoint.startTime;
+        endTime = createTimePoint.endTime;
+        const hasOverlap = await this.$store.dispatch('settingsConfig/checkScheduleOverlap', {
+          startTime,
+          endTime,
+          configName: configName,
+          // existingSchedules
+        });
+
+        console.log('[MainBodySettings] - generationTime - Результат проверки пересечения:', hasOverlap);
+        
+          if (hasOverlap.massage) {
+            alert(hasOverlap.massage);
+            return;
+          }
+          if (hasOverlap.newStartTime || hasOverlap.newEndTime) {
+            startTime = hasOverlap.newStartTime;
+            endTime = hasOverlap.newEndTime;
+            console.log('[MainBodySettings] - generationTime - Обновлено время расписания:', { startTime, endTime });
+          }
+        } catch (error) {
+          console.error('[MainBodySettings] - generationTime - Ошибка проверки пересечения:', error);
+          // Продолжаем создание с предупреждением
+          if (!confirm('Ошибка проверки пересечения. Создать расписание вручную?')) {
+            return;
+          }
+        }
+        // console.log('[MainBodySettings] - generationTime - Обновлено время расписания:', { startTime, endTime });
+        if (startTime != undefined && endTime != undefined ) return({ startTime, endTime });
+        return;
+    },
+
+
   
     async addNewSchedule() {
       //console.groupCollapsed('[MainBodySettings] - addNewSchedule');
@@ -453,7 +464,7 @@ export default {
       console.log('[MainBodySettings] - addNewSchedule - ', room, param); 
 
       // Получаем текущие расписания для этой комнаты и параметра
-      await this.loadSchedulesFromStore();
+      await this.loadConfigDataFromStore('schedules');
       const existingSchedules = this.schedules.filter(s => 
         s.room === room && 
         s.param === param
@@ -461,37 +472,11 @@ export default {
       
       console.log('[MainBodySettings] - addNewSchedule - Существующие расписания:', existingSchedules);
       
-      let startTime, endTime;
-      try {
-        const createTimePoint = await this.$store.dispatch('settingsConfig/createTimePoint');
-        startTime = createTimePoint.startTime;
-        endTime = createTimePoint.endTime;
-        const hasOverlap = await this.$store.dispatch('settingsConfig/checkScheduleOverlap', {
-          startTime,
-          endTime,
-          // existingSchedules
-        });
+      const newTime = await this.generationTime('schedules');
+      console.log('[MainBodySettings] - addNewSchedule - Получен временной интервал:', newTime);
+      const startTime = newTime.startTime;
+      const endTime = newTime.endTime;
 
-        console.log('[MainBodySettings] - Результат проверки пересечения:', createTimePoint);
-        
-        if (hasOverlap.massage) {
-          alert(hasOverlap.massage);
-          console.groupEnd();
-          return;
-        }
-        if (hasOverlap.newStartTime || hasOverlap.newEndTime) {
-          startTime = hasOverlap.newStartTime;
-          endTime = hasOverlap.newEndTime;
-          console.log('[MainBodySettings] - Обновлено время расписания:', { startTime, endTime });
-        }
-      } catch (error) {
-        console.error('[MainBodySettings] - Ошибка проверки пересечения:', error);
-        // Продолжаем создание с предупреждением
-        if (!confirm('Ошибка проверки пересечения. Создать расписание вручную?')) {
-          console.groupEnd();
-          return;
-        }
-      }
       
       // Определяем ID нового расписания
       let newId = 1;
@@ -532,19 +517,21 @@ export default {
       // Сохраняем изменения на сервер
       try {
         console.log('[MainBodySettings] - addNewSchedule - Сохраняем расписание локально');
-        await this.$store.dispatch('settingsConfig/addScheduleLocally', {
+        await this.$store.dispatch('settingsConfig/addConfigLocally', {
           room: room,
           param: param,
-          schedule: newSchedule
+          configName: 'schedules',
+          configData: newSchedule
         });
         
         console.log('[MainBodySettings] - addNewSchedule - Расписание сохранено локально');
 
 
         // await this.saveScheduleBlock();
-        await this.saveSchedules({
+        await this.saveConfigItems({
           room: this.settingsData.payload.room,
           param: this.effectiveParamKey,
+          configName: 'schedules',
           schedules: newSchedule
         });
         console.log('[MainBodySettings] - addNewSchedule - Расписание успешно сохранено');
@@ -568,147 +555,162 @@ export default {
         throw error;
       }
     },
-    handleDeleteSchedule(id) {
-      console.log('[MainBodySettings] - handleDeleteSchedule - Добавляем в список на удаление ID:', id);
+    handleDeleteConfigItem(id, configName) {
+      console.log('[MainBodySettings] - handleDeleteConfigItem - Добавляем в список на удаление ID:', id, configName);
   
       // Сохраняем данные для удаления
       this.pendingDeletions[id] = id;
-      console.log('[MainBodySettings] - handleDeleteSchedule - Массив на удаление:', this.pendingDeletions);
+      console.log('[MainBodySettings] - handleDeleteConfigItem - Массив на удаление:', this.pendingDeletions);
       
       // Добавляем ID в массив для отслеживания
-      if (!this.schedulesToDelete.includes(id)) {
-        this.schedulesToDelete.push(id);
+      if (!this.configDataToDelete.includes(id)) {
+        this.configDataToDelete.push(id);
       }
-      console.log('[MainBodySettings] - handleDeleteSchedule - Массив на удаление:', this.schedulesToDelete);
+      console.log('[MainBodySettings] - handleDeleteConfigItem - Массив на удаление:', this.configDataToDelete);
       // Немедленно обновляем локальный список (скрываем удаленный элемент)
-      this.schedules = this.schedules.filter(s => s.id !== id);
+      this[configName] = this[configName].filter(s => s.id !== id);
       
-      logger.info(`[MainBodySettings] - handleDeleteSchedule - Расписание c ${id} добавлено в список на удаление`);
+      logger.info(`[MainBodySettings] - handleDeleteConfigItem - Расписание c ${id} добавлено в список на удаление`);
 
     },
   
-  async addNewNotification(roomKey, paramKey) {
-    console.groupCollapsed('[MainBodySettings] - addNewNotification');
-    // Получаем текущие уведомления для этой комнаты и параметра
-    const existingNotifications = this.notifications.filter(n => 
-      n.roomKey === roomKey && 
-      n.paramKey === paramKey
-    );
-    
-    // Определяем ID нового уведомления
-    let newId = 1;
-    if (existingNotifications.length > 0) {
-      const existingIds = existingNotifications
-        .map(n => n.id)
-        .filter(id => id != null && typeof id === 'number');
+
+
+    async addNewNotification() {
+      console.groupCollapsed('[MainBodySettings] - addNewNotification');
+      const roomKey = this.settingsData.payload.room;
+      const paramKey = this.effectiveParamKey;
+      // Получаем текущие уведомления для этой комнаты и параметра
+      const existingNotifications = this.notifications.filter(n => 
+        n.roomKey === roomKey && 
+        n.paramKey === paramKey
+      );
       
-      if (existingIds.length > 0) {
-        newId = Math.max(...existingIds) + 1;
+      // Определяем ID нового уведомления
+      let newId = 1;
+      if (existingNotifications.length > 0) {
+        const existingIds = existingNotifications
+          .map(n => n.id)
+          .filter(id => id != null && typeof id === 'number');
+        
+        if (existingIds.length > 0) {
+          newId = Math.max(...existingIds) + 1;
+          console.log('[MainBodySettings] - addNewNotification - Номер новой записи-', newId);
+        }
       }
-    }
-    
-    const newNotification = {
-      id: newId,
-      condition: 'greater_than', // 'greater_than', 'less_than', 'equals', 'changed'
-      threshold: null,
-      notificationType: 'email', // 'email', 'push', 'sms'
-      roomKey: roomKey,
-      paramKey: paramKey,
-      createdAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
-    };
-    
-    // Добавляем уведомление
-    this.notifications = [...this.notifications, newNotification];
-    
-    console.log('[MainBodySettings] - addNewNotification - Новое уведомление создано:', newNotification);
-    
-    // Сохраняем изменения
-    await this.saveNotificationBlock();
-    console.log('[MainBodySettings] - addNewNotification - Уведомление успешно сохранено');
-  },
-  
-  async addNewStatistic(roomKey, paramKey) {
-    // Получаем текущую аналитику для этой комнаты и параметра
-    const existingAnalytics = this.analytics.filter(a => 
-      a.roomKey === roomKey && 
-      a.paramKey === paramKey
-    );
-    
-    // Определяем ID новой аналитики
-    let newId = 1;
-    if (existingAnalytics.length > 0) {
-      const existingIds = existingAnalytics
-        .map(a => a.id)
-        .filter(id => id != null && typeof id === 'number');
       
-      if (existingIds.length > 0) {
-        newId = Math.max(...existingIds) + 1;
+        const newTime = await this.generationTime('notifications');
+        const startTime = newTime.startTime;
+        const endTime = newTime.endTime;
+
+      const newNotification = {
+        id: newId,
+        condition: 'greater_than', // 'greater_than', 'less_than', 'equals', 'changed'
+        threshold_value: null,
+        notificationType: 0, //  0 - 'web', 1 - 'telegram', 2 'web' + 'telegram'
+        frequency: 0, // 0 - 'once' ; число - интервал в минутах
+        startDate: startTime,
+        endDate: endTime,
+        roomKey: roomKey,
+        paramKey: paramKey,
+        createdAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
+        updatedAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
+      };
+      
+      // Добавляем уведомление
+      this.notifications = [...this.notifications, newNotification];
+      
+      console.log('[MainBodySettings] - addNewNotification - Новое уведомление создано:', newNotification);
+      
+      // Сохраняем изменения
+      await this.saveNotificationBlock();
+      console.log('[MainBodySettings] - addNewNotification - Уведомление успешно сохранено');
+    },
+  
+    async addNewStatistic(roomKey, paramKey) {
+      // Получаем текущую аналитику для этой комнаты и параметра
+      const existingAnalytics = this.statistics.filter(a => 
+        a.roomKey === roomKey && 
+        a.paramKey === paramKey
+      );
+      
+      // Определяем ID новой аналитики
+      let newId = 1;
+      if (existingAnalytics.length > 0) {
+        const existingIds = existingAnalytics
+          .map(a => a.id)
+          .filter(id => id != null && typeof id === 'number');
+        
+        if (existingIds.length > 0) {
+          newId = Math.max(...existingIds) + 1;
+        }
       }
-    }
-    
-    const newStatistic = {
-      id: newId,
-      chartType: 'line', // 'line', 'bar', 'pie'
-      period: 'day', // 'hour', 'day', 'week', 'month'
-      aggregation: 'average', // 'average', 'sum', 'min', 'max'
-      roomKey: roomKey,
-      paramKey: paramKey,
-    };
-    
-    // Добавляем аналитику
-    this.analytics = [...this.analytics, newStatistic];
-    
-    console.log('[MainBodySettings] - addNewStatistic - Новая аналитика создана:', newStatistic);
-    
-    // Сохраняем изменения
-    await this.saveAnalyticBlock();
-    console.log('[MainBodySettings] - addNewStatistic - Аналитика успешно сохранена');
-    console.groupEnd();
-  },
-  
-  
-  async saveNotificationBlock() {
-    try {
-      // Если нет соответствующего action в store, сохраняем в localStorage
-      const key = `notifications_${this.dID}_${this.settingsData.payload.room}_${this.effectiveParamKey}`;
-      localStorage.setItem(key, JSON.stringify(this.notifications));
       
-      // Или вызываем action если он есть
-      // await this.saveNotifications({...});
-    } catch (error) {
-      console.error('[MainBodySettings] - saveNotificationBlock - Ошибка сохранения:', error);
-      throw error;
-    }
-  },
-  
-  async saveAnalyticBlock() {
-    try {
-      // Если нет соответствующего action в store, сохраняем в localStorage
-      const key = `analytics_${this.dID}_${this.settingsData.payload.room}_${this.effectiveParamKey}`;
-      localStorage.setItem(key, JSON.stringify(this.analytics));
+      const newStatistic = {
+        id: newId,
+        chartType: 'line', // 'line', 'bar', 'pie'
+        period: 'day', // 'hour', 'day', 'week', 'month'
+        aggregation: 'average', // 'average', 'sum', 'min', 'max'
+        roomKey: roomKey,
+        paramKey: paramKey,
+      };
       
-      // Или вызываем action если он есть
-      // await this.saveAnalytics({...});
-    } catch (error) {
-      console.error('[MainBodySettings] - saveAnalyticBlock - Ошибка сохранения:', error);
-      throw error;
-    }
-  },
+      // Добавляем аналитику
+      this.statistics = [...this.statistics, newStatistic];
+      
+      console.log('[MainBodySettings] - addNewStatistic - Новая аналитика создана:', newStatistic);
+      
+      // Сохраняем изменения
+      await this.saveAnalyticBlock();
+      console.log('[MainBodySettings] - addNewStatistic - Аналитика успешно сохранена');
+      console.groupEnd();
+    },
+    
+    
+    async saveNotificationBlock() {
+      try {
+        // Если нет соответствующего action в store, сохраняем в localStorage
+        const key = `notifications_${this.dID}_${this.settingsData.payload.room}_${this.effectiveParamKey}`;
+        localStorage.setItem(key, JSON.stringify(this.notifications));
+        
+        // Или вызываем action если он есть
+        // await this.saveNotifications({...});
+      } catch (error) {
+        console.error('[MainBodySettings] - saveNotificationBlock - Ошибка сохранения:', error);
+        throw error;
+      }
+    },
+    
+    async saveAnalyticBlock() {
+      try {
+        // Если нет соответствующего action в store, сохраняем в localStorage
+        const key = `statistics_${this.dID}_${this.settingsData.payload.room}_${this.effectiveParamKey}`;
+        localStorage.setItem(key, JSON.stringify(this.statistics));
+        
+        // Или вызываем action если он есть
+        // await this.saveAnalytics({...});
+      } catch (error) {
+        console.error('[MainBodySettings] - saveAnalyticBlock - Ошибка сохранения:', error);
+        throw error;
+      }
+    },
 
     async closeMainBodySettings() {
       console.groupCollapsed('[MainBodySettings] - closeMainBodySettings');
-      console.log('[MainBodySettings] - closeMainBodySettings - Начинаем закрытие');
+      console.log('[MainBodySettings] - closeMainBodySettings - Начинаем закрытие', this.title);
+
       
       // Если есть расписания для удаления, запрашиваем подтверждение
-      if (this.schedulesToDelete.length > 0) {
-        this.$store.dispatch('settingsConfig/deleteSchedules', {
+      if (this.configDataToDelete.length > 0) {
+        this.$store.dispatch('settingsConfig/deleteConfigItems', {
               room: this.settingsData.payload.room,
               param: this.effectiveParamKey,
-              scheduleIds: [...this.schedulesToDelete] // создаем копию массива
+              configName: this.title,
+              scheduleIds: [...this.configDataToDelete] // создаем копию массива
             });
             
             // Очищаем массивы после успешной отправки
-            this.schedulesToDelete = [];
+            this.configDataToDelete = [];
             this.pendingDeletions = {};
       }
 
@@ -771,7 +773,7 @@ export default {
             this.notifications = [...result];
             break;
           case 'statistics':
-            this.analytics = [...result];
+            this.statistics = [...result];
             break;
         }
         
@@ -788,7 +790,7 @@ export default {
             this.notifications = [];
             break;
           case 'statistics':
-            this.analytics = [];
+            this.statistics = [];
             break;
         }
       }
@@ -811,6 +813,16 @@ export default {
       this.activeSelection = null;
     },
 
+
+
+
+
+    handleEditNotification(id, event) {
+      console.log('[MainBodySettings] - handleEditNotification', id, event);
+    },
+    handleEditAnalytic(id, event) {
+      console.log('[MainBodySettings] - handleEditAnalytic', id, event);
+    },
 
 
   }

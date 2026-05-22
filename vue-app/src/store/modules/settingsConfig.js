@@ -25,10 +25,7 @@ export default {
   }),
 
   mutations: {
-    [MUTATION_TYPES.SET_NOTIFICATIONS](state, { name, config }) {
-      state.notifications[name] = config;
-      logger.dev('[settingsConfig] - SET_NOTIFICATIONS - Конфигурация уведомлений обновлена:', name);
-    },
+
     [MUTATION_TYPES.SET_STATISTICS](state, { name, config }) {
       state.statistics[name] = config;
       logger.dev('[settingsConfig] - SET_STATISTICS - Конфигурация аналитики обновлена:', name);
@@ -53,10 +50,45 @@ export default {
       state.permitSchedule = value;
       logger.dev('[settingsConfig] - SET_PERMIT_SCHEDULE - установлено:', value);
     },
+
+
+
+
+
+
+    
+    [MUTATION_TYPES.SET_NOTIFICATIONS](state, { name, config }) {
+      state.notifications[name] = config;
+      logger.dev('[settingsConfig] - SET_NOTIFICATIONS - Конфигурация уведомлений обновлена:', name);
+    },
+    [MUTATION_TYPES.ADD_NOTIFICATIONS](state, { dID, notifications }) {
+      const nameNotifications = dID + '_notifications';
+      if (!state.notifications[nameNotifications]) {
+        state.snotifications[nameNotifications] = [];
+      }
+      state.notifications[nameNotifications].push(notifications);
+      logger.dev('[settingsConfig] - ADD_NOTIFICATIONS - Расписание добавлено:', notifications);
+    },
+    [MUTATION_TYPES.DELETE_NOTIFICATIONS](state, { dID, notificationsId }) {
+      const nameNotifications = dID + 'notifications';
+      const notifications = state.schedules[nameNotifications];
+      if (notifications) {
+        state.notifications[nameNotifications] = notifications.filter(s => s.id !== notificationsId);
+        logger.dev('[settingsConfig] - DELETE_SCHEDULE - Расписание удалено:', notificationsId);
+      }
+    },
     [MUTATION_TYPES.SET_PERMIT_NOTIFICATIONS](state, value) {
       state.permitNotifications = value;
       logger.dev('[settingsConfig] - SET_PERMIT_NOTIFICATIONS - установлено:', value);
     },
+
+
+
+
+
+
+
+
     [MUTATION_TYPES.SET_PERMIT_STATISTICS](state, value) {
       state.permitStatistics = value;
       logger.dev('[settingsConfig] - SET_PERMIT_STATISTICS - установлено:', value);
@@ -313,130 +345,140 @@ export default {
           };
         }
     },
-    
+    async createTimePoint({ dispatch }, { offset = 1, duration = 10 } = {}) {
+      console.groupCollapsed('[settingsConfig] - createTimePoint');
+      logger.dev('[settingsConfig] - createTimePoint - Создание временной точки:', { offset, duration });
+      
+      try {
+        // Шаг 1: Получаем текущее московское время с учетом смещения offset
+        const now = new Date();
+        
+        // Применяем смещение offset (в минутах) к текущему времени
+        const offsetDate = new Date(now.getTime() + offset * 60 * 1000);
+        
+        // Форматируем время начала в московском часовом поясе
+        const formattedStartTime = await dispatch('formatDate', { 
+          dateString: offsetDate, 
+          timeZone: 'Europe/Moscow',
+          returnTimeOnly: true // Предполагаем, что formatDate может возвращать только время
+        });
+        const startTime = formattedStartTime.split(', ')[1];
+        logger.dev('[settingsConfig] - createTimePoint - Время начала (с учетом offset):', startTime);
+        
+        // Шаг 2: Создаем время окончания, добавляя duration минут к offsetDate
+        const endDate = new Date(offsetDate.getTime() + duration * 60 * 1000);
+        
+        // Форматируем время окончания
+        const formattedEndTime = await dispatch('formatDate', { 
+          dateString: endDate, 
+          timeZone: 'Europe/Moscow',
+          returnTimeOnly: true
+        });
+        const endTime = formattedEndTime.split(', ')[1];
+        console.log('[settingsConfig] - createTimePoint - Время окончания:', endTime);
+      
+        // Шаг 3: Возвращаем результат
+        const result = {
+          startTime,
+          endTime,
+        };
+        
+        console.log('[settingsConfig] - createTimePoint - Результат:', result);
+        console.groupEnd();
+        return result;
+        
+      } catch (error) {
+        logger.error('[settingsConfig] - createTimePoint - Ошибка создания временной точки:', error);
+        console.groupEnd();
+        
+        // Возвращаем значения по умолчанию в случае ошибки
+        return {
+          startTime: '00:00',
+          endTime: '00:05'
+        };
+      }
+    },
 
 
 
 
-async createTimePoint({ dispatch }, { offset = 1, duration = 10 } = {}) {
-  console.groupCollapsed('[settingsConfig] - createTimePoint');
-  logger.dev('[settingsConfig] - createTimePoint - Создание временной точки:', { offset, duration });
-  
-  try {
-    // Шаг 1: Получаем текущее московское время с учетом смещения offset
-    const now = new Date();
-    
-    // Применяем смещение offset (в минутах) к текущему времени
-    const offsetDate = new Date(now.getTime() + offset * 60 * 1000);
-    
-    // Форматируем время начала в московском часовом поясе
-    const formattedStartTime = await dispatch('formatDate', { 
-      dateString: offsetDate, 
-      timeZone: 'Europe/Moscow',
-      returnTimeOnly: true // Предполагаем, что formatDate может возвращать только время
-    });
-    const startTime = formattedStartTime.split(', ')[1];
-    logger.dev('[settingsConfig] - createTimePoint - Время начала (с учетом offset):', startTime);
-    
-    // Шаг 2: Создаем время окончания, добавляя duration минут к offsetDate
-    const endDate = new Date(offsetDate.getTime() + duration * 60 * 1000);
-    
-    // Форматируем время окончания
-    const formattedEndTime = await dispatch('formatDate', { 
-      dateString: endDate, 
-      timeZone: 'Europe/Moscow',
-      returnTimeOnly: true
-    });
-    const endTime = formattedEndTime.split(', ')[1];
-    console.log('[settingsConfig] - createTimePoint - Время окончания:', endTime);
-  
-    // Шаг 3: Возвращаем результат
-    const result = {
-      startTime,
-      endTime,
-    };
-    
-    console.log('[settingsConfig] - createTimePoint - Результат:', result);
-    console.groupEnd();
-    return result;
-    
-  } catch (error) {
-    logger.error('[settingsConfig] - createTimePoint - Ошибка создания временной точки:', error);
-    console.groupEnd();
-    
-    // Возвращаем значения по умолчанию в случае ошибки
-    return {
-      startTime: '00:00',
-      endTime: '00:05'
-    };
-  }
-},
 
-getSchedulesFromStore({ rootState, rootGetters }) {
-  //console.groupCollapsed('[settingsConfig] - getSchedulesFromStore');
-  const settingsData = rootGetters['getSetpointsManager']?.settingsData;
-  const dID = settingsData?.name;
-  const room = settingsData?.payload?.room;
-  const param = settingsData?.payload?.param;
-  //console.log('[settingsConfig] - getSchedulesFromStore - Start', { dID, room, param });
-  
-  try {
-    if (!dID || !room || !param) {
+
+
+  getConfigDataFromStore({ rootState, rootGetters }, { configName }) {
+    console.log('[settingsConfig] - getConfigDataFromStore - configName', configName);
+    const settingsData = rootGetters['getSetpointsManager']?.settingsData;
+    const dID = settingsData?.name;
+    const room = settingsData?.payload?.room;
+    const param = settingsData?.payload?.param;
+    //console.log('[settingsConfig] - getConfigDataFromStore - Start', { dID, room, param });
+    
+    try {
+      if (!dID || !room || !param) {
+        console.groupEnd();
+        return [];
+      }
+      
+      // Получаем данные из rootState.config.schedules
+      //const configData = rootState.config?.schedules?.[dID] || {};
+      const configData = rootState.config?.[configName]?.[dID] || {};
+      const roomData = configData[room] || {};
+      const paramData = roomData[param];
+      
+      const findedConfig = Array.isArray(paramData) ? [...paramData] : [];
+      
+      console.log('[settingsConfig] - getConfigDataFromStore - Найдено в конфигурации', findedConfig.length);
+      // console.groupEnd();
+      
+      return findedConfig;
+      
+    } catch (error) {
+      console.error('[settingsConfig] - getConfigDataFromStore - Ошибка:', error);
       console.groupEnd();
       return [];
     }
-    
-    // Получаем данные из rootState.config.schedules
-    const schedulesData = rootState.config?.schedules?.[dID] || {};
-    const roomData = schedulesData[room] || {};
-    const paramSchedules = roomData[param];
-    
-    const schedules = Array.isArray(paramSchedules) ? [...paramSchedules] : [];
-    
-    //console.log('[settingsConfig] - getSchedulesFromStore - Найдено расписаний:', schedules.length);
-    // console.groupEnd();
-    
-    return schedules;
-    
-  } catch (error) {
-    console.error('[settingsConfig] - getSchedulesFromStore - Ошибка:', error);
-    console.groupEnd();
-    return [];
-  }
-},
-getScheduleTimeByID(context, { id, title }) {
-  // const dID = rootGetters['dID'];
-  console.groupCollapsed('[settingsConfig] - getScheduleTimeByID');
-  try {
-    const schedules = this.getSchedulesFromStore();
-    const schedule = schedules.find(s => s.id === id);
-    const findedTime = schedule?.[title];
-    console.log('[settingsConfig] - getScheduleTimeByID - Найдено расписание:', schedule, findedTime);
-    console.groupEnd();
-    return findedTime;
-  } catch (error) {
-    return error;
-  }
-},
+  },
+  getScheduleTimeByID(context, { id, title }) {
+    // const dID = rootGetters['dID'];
+    console.groupCollapsed('[settingsConfig] - getScheduleTimeByID');
+    try {
+      const schedules = this.getConfigDataFromStore('schedules');
+      const schedule = schedules.find(s => s.id === id);
+      const findedTime = schedule?.[title];
+      console.log('[settingsConfig] - getScheduleTimeByID - Найдено расписание:', schedule, findedTime);
+      console.groupEnd();
+      return findedTime;
+    } catch (error) {
+      return error;
+    }
+  },
 
-  async checkScheduleOverlap({rootGetters, dispatch}, { startTime, endTime}) {
+  async checkScheduleOverlap({rootGetters, dispatch}, { startTime, endTime, configName}) {
       // const dID = rootGetters['dID'];
-        console.groupCollapsed('[settingsConfig] - checkScheduleOverlap');
+        console.groupCollapsed('[settingsConfig] - checkScheduleOverlap - configName:', configName);
         try {
-          const schedules = await dispatch('getSchedulesFromStore');
+          // const config = await dispatch('getConfigDataFromStore', {configName});
+
+          // let config;
+          // if (configName == 'schedules') config = await dispatch('getConfigDataFromStore', configName);
+          // if (configName == 'notifications') config = await dispatch('getConfigDataFromStore');
+          // if (configName == 'statistics') config = await dispatch('getConfigDataFromStore');
+
+          const configData = await dispatch('getConfigDataFromStore', {configName});
+          console.log('[settingsConfig] - checkScheduleOverlap - Получаем конфигурацию для', configName, ' : ', configData);
           const settingsData = rootGetters['getSetpointsManager']?.settingsData;
           const room = settingsData?.payload?.room;
           const param = settingsData?.payload?.param;
-          const existingSchedules = schedules.filter(s => 
+          const existingConfigData = configData.filter(s => 
             s.room === room && 
             s.param === param
           );
-          console.log('[settingsConfig] - checkScheduleOverlap - Существующие расписания:', existingSchedules);
+          console.log('[settingsConfig] - checkScheduleOverlap - Существующие расписания:', existingConfigData);
 
           console.log('[settingsConfig] - checkScheduleOverlap - Начало проверки', {
             startTime,
             endTime,
-            existingSchedules
+            existingConfigData
           });
 
           // Валидация входных параметров
@@ -446,7 +488,7 @@ getScheduleTimeByID(context, { id, title }) {
             console.groupEnd();
             return { message, hasOverlap: false };
           }
-          if (!existingSchedules || !Array.isArray(existingSchedules)) {
+          if (!existingConfigData || !Array.isArray(existingConfigData)) {
             console.groupEnd();
             return { hasOverlap: false };
           }
@@ -455,7 +497,8 @@ getScheduleTimeByID(context, { id, title }) {
           const result = await dispatch('checkOverlap', {
             startTime,
             endTime,
-            mode: 'new'
+            mode: 'new',
+            configName
           });
 
           console.groupEnd();
@@ -473,20 +516,20 @@ getScheduleTimeByID(context, { id, title }) {
   },
 
 
-    async addScheduleLocally({ rootGetters, rootState, dispatch }, { room, param, schedule }) {
-      console.log('[settingsConfig] - addScheduleLocally - Начинаем локальное сохранение расписания');
+  async addConfigLocally({ rootGetters, rootState, dispatch }, { room, param, configName, configData }) {
+      console.log('[settingsConfig] - addConfigLocally - Начинаем локальное сохранение для ', configName);
       const dID = rootGetters['dID'];
       if (!dID) {
-        logger.warn('[settingsConfig] - addScheduleLocally - dID не определен');
+        logger.warn('[settingsConfig] - addConfigLocally - dID не определен');
         return;
       }
       
-      console.log('[settingsConfig] - addScheduleLocally - Добавляем расписание локально:', { dID, room, param, schedule });
+      console.log('[settingsConfig] - addConfigLocally - Добавляем', configName, ' локально:', { dID, room, param, configData });
       
       try {
         // 1. Получаем текущие расписания из config.js
         const currentSchedules = { ...(rootState.config.schedules[dID] || {}) };
-        console.log('[settingsConfig] - addScheduleLocally - Текущие расписания из config.js:', currentSchedules);
+        console.log('[settingsConfig] - addConfigLocally - Текущие расписания из config.js:', currentSchedules);
         
         // 2. Инициализируем структуру если нужно
         if (!currentSchedules[room]) {
@@ -498,10 +541,10 @@ getScheduleTimeByID(context, { id, title }) {
         }
         
         // 3. Добавляем новое расписание
-        currentSchedules[room][param] = [...currentSchedules[room][param], schedule];
+        currentSchedules[room][param] = [...currentSchedules[room][param], configData];
         
         // 4. Обновляем состояние в config.js через мутацию
-        console.log('[settingsConfig] - addScheduleLocally - Обновляем состояние в config.js через updateScheduleLocally');
+        console.log('[settingsConfig] - addConfigLocally - Обновляем состояние в config.js через updateScheduleLocally');
         await dispatch('config/updateScheduleLocally', {
           dID: dID,
           schedules: currentSchedules
@@ -510,21 +553,23 @@ getScheduleTimeByID(context, { id, title }) {
         // 5. Также сохраняем в localStorage для резерва
         localStorage.setItem(`${dID}_schedules`, JSON.stringify(currentSchedules));
         
-        logger.info('[settingsConfig] - addScheduleLocally - Расписание добавлено локально');
-        return { success: true, schedule };
+        logger.info('[settingsConfig] - addConfigLocally - Расписание добавлено локально');
+        return { success: true, configData };
         
       } catch (error) {
-        logger.error('[settingsConfig] - addScheduleLocally - Ошибка:', error);
+        logger.error('[settingsConfig] - addConfigLocally - Ошибка:', error);
         throw error;
       }
-    },
-    async deleteSchedules({ dispatch, rootGetters }, { room, param, scheduleIds }) {
-      console.groupCollapsed('[settingsConfig] - deleteSchedules');
-      console.log('[settingsConfig] - deleteSchedules - Удаляем расписания:', { room, param, scheduleIds });
+  },
+  async deleteConfigItems({ dispatch, rootGetters }, { room, param, configName, scheduleIds }) {
+      console.groupCollapsed('[settingsConfig] - deleteConfigItems');
+      console.log('[settingsConfig] - deleteConfigItems - Удаляем расписания:', { room, param, configName, scheduleIds });
       
       const dID = rootGetters['dID'];
+      const request = 'del'+configName;
+      console.log('[settingsConfig] - deleteConfigItems - request', request);
       if (!dID) {
-        logger.warn('[settingsConfig] - deleteSchedules - dID не определен');
+        logger.warn('[settingsConfig] - deleteConfigItems - dID не определен');
         return;
       }
       console.groupEnd();
@@ -532,7 +577,7 @@ getScheduleTimeByID(context, { id, title }) {
         // Отправляем на сервер
         await dispatch('websocket/send', {
           type: 'post',
-          request: 'delSchedule',
+          request: request,
           name: dID,
           payload: { 
             room, 
@@ -541,20 +586,27 @@ getScheduleTimeByID(context, { id, title }) {
           }
         }, { root: true });
         
-        logger.info('[settingsConfig] - deleteSchedules - Запрос на удаление отправлен');
+        logger.info('[settingsConfig] - deleteConfigItems - Запрос на удаление отправлен');
 
         return { success: true };
         
       } catch (error) {
-        logger.error('[settingsConfig] - deleteSchedules - Ошибка отправки:', error);
+        logger.error('[settingsConfig] - deleteConfigItems - Ошибка отправки:', error);
         throw error;
       }
-    },
+  },
 
 
-    checkOverlap: async ({ dispatch, rootGetters }, { startTime, endTime, valueToCheck, id, value_name, mode }) => {
+
+
+
+
+
+    checkOverlap: async ({ dispatch, rootGetters }, { startTime, endTime, configName, valueToCheck, id, value_name, mode }) => {
       try {
-        const schedules = await dispatch('getSchedulesFromStore');
+        console.log('[settingsConfig] - checkOverlap - Начинаем проверку для - ', configName, 'startTime-', startTime, 'endTime', endTime);
+
+        const schedules = await dispatch('getConfigDataFromStore', {configName});
         const settingsData = rootGetters['getSetpointsManager']?.settingsData;
         const room = settingsData?.payload?.room;
         const param = settingsData?.payload?.param;
@@ -799,12 +851,12 @@ getScheduleTimeByID(context, { id, title }) {
 
 
 
-    async saveSchedules({ rootGetters, dispatch }, { room, param, schedules }) {
-      console.log('[settingsConfig] - saveSchedules - Сохраняем расписание:', { room, param, schedules });
+    async saveConfigItems({ rootGetters, dispatch }, { room, param, configName, schedules }) {
+      console.log('[settingsConfig] - saveConfigItems - Сохраняем расписание:', { room, param, configName, schedules });
 
       const dID = rootGetters['dID'];
       if (!dID) {
-        logger.warn('[settingsConfig] - saveSchedules - dID не определен');
+        logger.warn('[settingsConfig] - saveConfigItems - dID не определен');
         return;
       }
       
@@ -826,11 +878,11 @@ getScheduleTimeByID(context, { id, title }) {
           }, { root: true });
           
         } catch (error) {
-          logger.error('[settingsConfig] - saveSchedules - Ошибка отправки на сервер:', error);
+          logger.error('[settingsConfig] - saveConfigItems - Ошибка отправки на сервер:', error);
           throw error;
         }
         
-        logger.info('[settingsConfig] - saveSchedules - Расписания сохранены:', {
+        logger.info('[settingsConfig] - saveConfigItems - Расписания сохранены:', {
           room,
           param,
           count: schedules.length
@@ -839,48 +891,65 @@ getScheduleTimeByID(context, { id, title }) {
         return { success: true };
         
       } catch (error) {
-        logger.error('[settingsConfig] - saveSchedules - Общая ошибка сохранения:', error);
+        logger.error('[settingsConfig] - saveConfigItems - Общая ошибка сохранения:', error);
         throw error;
       }
     },
 
-    async saveNotifications({ commit, rootGetters, dispatch }, { roomKey, paramKey, notifications }) {
-      const dID = rootGetters['dID'];
-      if (!dID) {
-        logger.warn('[settingsConfig] - saveNotifications - dID не определен');
-        return;
-      }
+    // async saveNotifications({ commit, rootGetters, dispatch }, { roomKey, paramKey, notifications }) {
+    //   const dID = rootGetters['dID'];
+    //   if (!dID) {
+    //     logger.warn('[settingsConfig] - saveNotifications - dID не определен');
+    //     return;
+    //   }
       
-      try {
-        // Обновляем в хранилище
-        const key = `${dID}_notifications`;
-        const allNotifications = { ...(this.state.notifications[key] || {}) };
+    //   try {
+    //     // Обновляем в хранилище
+    //     const key = `${dID}_notifications`;
+    //     const allNotifications = { ...(this.state.notifications[key] || {}) };
         
-        if (!allNotifications[roomKey]) {
-          allNotifications[roomKey] = {};
-        }
-        allNotifications[roomKey][paramKey] = notifications;
+    //     if (!allNotifications[roomKey]) {
+    //       allNotifications[roomKey] = {};
+    //     }
+    //     allNotifications[roomKey][paramKey] = notifications;
         
-        commit('SET_NOTIFICATIONS', { name: dID, config: allNotifications });
+    //     commit('SET_NOTIFICATIONS', { name: dID, config: allNotifications });
         
-        // Отправляем на сервер
-        await dispatch('websocket/send', {
-          type: 'post',
-          request: 'notifications',
-          name: dID,
-          payload: { roomKey, paramKey, notifications }
-        }, { root: true });
+    //     // Отправляем на сервер
+    //     await dispatch('websocket/send', {
+    //       type: 'post',
+    //       request: 'notifications',
+    //       name: dID,
+    //       payload: { roomKey, paramKey, notifications }
+    //     }, { root: true });
         
-        logger.info('[settingsConfig] - saveNotifications - Уведомления сохранены');
+    //     logger.info('[settingsConfig] - saveNotifications - Уведомления сохранены');
         
-        return { success: true };
+    //     return { success: true };
         
-      } catch (error) {
-        logger.error('[settingsConfig] - saveNotifications - Ошибка сохранения:', error);
-        throw error;
-      }
+    //   } catch (error) {
+    //     logger.error('[settingsConfig] - saveNotifications - Ошибка сохранения:', error);
+    //     throw error;
+    //   }
+    // },
+    async saveNotifications({ rootGetters, dispatch }, { room, param, notifications }) {
+      const dID = rootGetters['dID'];
+      if (!dID) throw new Error('[settingsConfig] saveNotifications: dID не определен');
+      console.log('[settingsConfig] - saveNotifications - отправка на сервер:', { room, param, notifications });
+      await dispatch('websocket/send', {
+        type: 'post',
+        request: 'notifications',
+        name: dID,
+        payload: { room, param, notifications }
+      }, { root: true });
+      // также обновляем локальное состояние через мутацию config
+      dispatch('config/handleConfigResponse', {
+        name: dID,
+        request: 'notifications',
+        payload: { [room]: { [param]: notifications } }
+      }, { root: true });
     },
-    
+
     async saveAnalytics({ commit, rootGetters, dispatch }, { roomKey, paramKey, analytics }) {
       const dID = rootGetters['dID'];
       if (!dID) {

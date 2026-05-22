@@ -61,6 +61,7 @@ export default {
       // Вернуть console.log
       //console.log('[sortParams] - SET_NOTIFICATION Обновлен конфиг[' + name + ']: ', config);
     },
+
     SET_STATISTIC(state, { name, config }) {
       state.statistics[name] = config;
       logger.dev('[sortParams] - SET_STATISTIC Обновлен конфиг[' + name + ']: ', config);
@@ -90,6 +91,8 @@ export default {
       logger.dev('[sortParams] - SET_ALL_SETPOINTS Обновлен список уставок: ', setpoints);
       //console.log('[sortParams] - SET_ALL_SETPOINTS Обновлен список уставок: ', setpoints);
     },
+
+
     UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value }) {
       const config = state.configs[dID];
       logger.dev('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
@@ -131,10 +134,6 @@ export default {
       // const updatedRoom = config[room];
       // console.log(`[Config] - UPDATE_CONFIG_VALUE - state.configs[${dID}] Обновляем комнату ${room} - ${JSON.stringify(updatedRoom, null, 2)}`);
     },
-
-
-
-    // Добавьте эту мутацию в объект mutations после существующих мутаций
     UPDATE_SCHEDULE_VALUE(state, { dID, room, param, config, id, title, value }) {
       logger.dev('[config] - UPDATE_SCHEDULE_VALUE - Обновляем расписание:', { dID, room, param, config, id, title, value });
       //console.log('[config] - UPDATE_SCHEDULE_VALUE - Обновляем расписание:', { dID, room, param, config, id, title, value });
@@ -164,7 +163,21 @@ export default {
       } 
 
     },
-
+    UPDATE_NOTIFICATION_VALUE(state, { dID, room, param, id, title, value }) {
+      console.log('[config] - UPDATE_NOTIFICATION_VALUE - Обновляем уведомление:', { dID, room, param, id, title, value });
+      if (!state.notifications[dID]) return;
+      if (state.notifications[dID][room] && state.notifications[dID][room][param]) {
+        const notifications = state.notifications[dID][room][param];
+        const index = notifications.findIndex(n => n.id === id);
+        if (index !== -1) {
+          state.notifications[dID][room][param][index] = {
+            ...notifications[index],
+            [title]: value,
+            updatedAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+          };
+        }
+      }
+    },
 
     SET_LOADING(state, value) {
       state.loading = value;
@@ -532,7 +545,15 @@ export default {
         }
       }
       if (type === 'notifications') {
-        console.log(' ~~~~~~~~~~~~~~~~~~~  [Config] - handleSensorUpdate - Необходимо написать логику ОБНОВЛЕНИЯ локальной конфигурации УВЕДОМЛЕНИЙ');
+       console.log('[Config] - handleValueUpdate - обновление уведомления');
+        commit('UPDATE_NOTIFICATION_VALUE', {
+          dID: settingsData.name,
+          room: settingsData.payload.room,
+          param: settingsData.payload.param,
+          id: settingsData.payload.id,
+          title: settingsData.payload.value_name,
+          value: settingsData.payload.value,
+        });
       }
       if (type === 'statistics') {
         console.log(' ~~~~~~~~~~~~~~~~~~~  [Config] - handleSensorUpdate - Необходимо написать логику ОБНОВЛЕНИЯ локальной конфигурации АНАЛИТИКИ');

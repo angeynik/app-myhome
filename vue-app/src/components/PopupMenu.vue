@@ -1,3 +1,4 @@
+<!-- components/PopupMenu.vue -->
 <template>
   <div class="popup-overlay" v-show="visible" @click.self="closePopup">
     <div class="popup-content" :class="popupTypeClass">

@@ -271,6 +271,7 @@ export default {
       console.log(roomConfig.setpoints , null, 2);
 
       if (!roomConfig || !roomConfig.setpoints || !item.setpointKey || !roomConfig.setpoints[item.setpointKey].value) {
+        // Отображаем Уведомление для пользователя - PopupMenu.vue 
         this.$store.dispatch('popup/show', {
           message: `Уставка для параметра "${item.paramTitle}" в комнате "${item.roomTitle}" не настроена.`,
           type: 'warning',
