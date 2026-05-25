@@ -232,7 +232,7 @@ export default {
 
 
     setLimits({ rootGetters, dispatch, commit }, params) {
-      //console.log('[sortParams] - setLimits - Начало, params:', params);
+      console.groupCollapsed('[sortParams] - setLimits - Начало, params:', params);
       logger.info(`[sortParams] - setLimits - Параметр -`, params);
 
       const { param, valueType } = params;
@@ -240,6 +240,13 @@ export default {
 
       let limits = null;
       try {
+        if (param === 'threshold') {
+          limits = {
+              low: 0,
+              high: 1440,
+              step: 1,
+            };
+        } else {
         const dID = rootGetters['dID'];
           const config = rootGetters['config/getConfig'](dID);
           //console.log('[sortParams] - setLimits - Получен конфиг', JSON.stringify(config?.init?.limits, null, 2));
@@ -255,10 +262,11 @@ export default {
               step: 0.5
             };
           }
-          
+        }
       } catch (error) {
           logger.error(`[sortParams] - setLimits - Ошибка при виборе лимитов:`, error);
           //console.error('[sortParams] - setLimits - Ошибка при виборе лимитов:', error);
+          console.groupEnd();
       }
       if (valueType === 'deviation') { // Задаем лимиты для диапазона значений отклонения Уставки
         //console.log('[sortParams] - setLimits - valueType deviation, пересчитываем лимиты для отклонения от уставки valueType:', valueType);
@@ -270,6 +278,7 @@ export default {
             };
             //console.log('[sortParams] - setLimits - valueType deviation, пересчитанные лимиты для отклонения от уставки:', limits);
       }
+
 
       logger.dev(`[sortParams] - setLimits Получены лимиты`, limits);
       //console.log('[sortParams] - setLimits Получены лимиты', limits);
@@ -288,7 +297,7 @@ export default {
             limLow: limits.low,
             limStep: limits.step
       });
-      //console.groupEnd();
+      console.groupEnd();
 
     },
 

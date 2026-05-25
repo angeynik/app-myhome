@@ -16,6 +16,20 @@
         <span class="settings-info-value">Обновлено:</span>
         <span class="settings-info-value">{{ formatDate(notificationData.updatedAt) }}</span>
       </div>
+      <div class="settings-col-second">
+        <div class="icon-settings item">
+          <button class="mainBodySettings-header-button" @click="deleteNotificationItem">
+            <svg class="icon-settings close" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle class="hover-bg" cx="44" cy="44" r="42" fill="#CC0000" opacity="0"/>
+              <circle cx="44" cy="44" r="42" fill="#FF4747"/>
+              <circle cx="44" cy="44" r="42" stroke="#FF4747" stroke-width="4"/>
+              <line x1="28" y1="28" x2="60" y2="60" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
+              <line x1="60" y1="28" x2="28" y2="60" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
     </div>
 
     <div class="settings-row">
@@ -26,8 +40,8 @@
         <div class="settings-row">
           <div
             class="settings-block-title clickable"
-            :class="{ 'selected': isFieldSelected('condition') }"
-            @click.stop="editCondition"
+            :class="{ 'selected': isFieldSelected('value_type') }"
+            @click.stop="toggleCondition"
           >
             <p>{{ conditionLabel }}</p>
           </div>
@@ -41,19 +55,6 @@
           </div>
         </div>
 
-        <!-- Строка 2: Канал уведомления -->
-        <!-- <div class="settings-row">
-          <div class="settings-block-title">
-            <p>Канал</p>
-          </div>
-          <div
-            class="settings-block clickable time-input"
-            :class="{ 'selected': isFieldSelected('notificationType') }"
-            @click.stop="editNotificationType"
-          >
-            <div class="settings-value">{{ notificationTypeLabel }}</div>
-          </div>
-        </div> -->
 
         <!-- Строка 3: Период действия (даты) -->
         <div class="settings-row">
@@ -78,7 +79,27 @@
         </div>
 
         <!-- Строка 4: Периодичность -->
-        <div class="settings-row">
+         <div class="settings-row">
+          <div class="settings-block-title">
+            <p>Периодичность</p>
+          </div>
+          <div
+            v-if="notificationData.frequency === 0"
+            class="settings-block-title"
+          >
+            <p>Однократно</p>
+          </div>
+          <div
+            v-else
+            class="settings-block clickable time-input"
+            :class="{ 'selected': isFieldSelected('frequency') }"
+            @click.stop="editFrequency"
+          >
+            <div class="settings-value">{{ frequencyLabel }}</div>
+            <span>мин</span>
+          </div>
+        </div>
+        <!-- <div class="settings-row">
           <div class="settings-block-title">
             <p>Периодичность</p>
           </div>
@@ -89,26 +110,43 @@
           >
             <div class="settings-value">{{ frequencyLabel }}</div>
           </div>
-        </div>
+        </div> -->
 
+        <!-- Строка 2: Канал уведомления -->
+        <div class="settings-row">
+          <div class="settings-block-title">
+            <p>Канал</p>
+          </div>
+          <div
+            class="settings-block-title clickable"
+            :class="{ 'selected': isFieldSelected('notifСhannel') }"
+            @click.stop="toggleNotificationСhannel"
+          >
+            <p>{{ notificationСhannelLabel }}</p>
+          </div>
+
+        </div>
+        
         <!-- Строка 5: Активность -->
         <div class="settings-row">
           <div class="settings-block-title">
             <p>Статус</p>
           </div>
+
           <div
-            class="settings-block clickable time-input"
-            :class="{ 'selected': isFieldSelected('enabled') }"
-            @click.stop="toggleEnabled"
+            class="settings-block-title clickable"
+            :class="{ 'selected': isFieldSelected('permission') }"
+            @click.stop="togglePermission"
           >
-            <div class="settings-value">{{ enabledLabel }}</div>
+            <p>{{ enabledLabel }}</p>
           </div>
+
         </div>
 
       </div>
 
       <!-- Вторая колонка: кнопка удаления (20%) -->
-      <div class="settings-col-second">
+      <!-- <div class="settings-col-second">
         <div class="icon-settings item">
           <button class="mainBodySettings-header-button" @click="deleteNotificationItem">
             <svg class="icon-settings close" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -120,7 +158,7 @@
             </svg>
           </button>
         </div>
-      </div>
+      </div> -->
 
     </div>
   </div>
@@ -131,8 +169,8 @@ import logger from '../store/modules/logger.js';
 import { mapGetters, mapActions } from 'vuex';
 
 const CONDITIONS = ['greater_than', 'less_than', 'equal', 'not_equal', 'greater_equal', 'less_equal'];
-const NOTIFICATION_TYPES = ['email', 'sms', 'push', 'telegram'];
-const FREQUENCY_MODES = ['once', 'every_5min', 'every_10min', 'every_15min', 'every_30min', 'every_60min'];
+// const NOTIFICATION_TYPES = ['Web', 'telegram'];
+//const FREQUENCY_MODES = ['once', 'every_5min', 'every_10min', 'every_15min', 'every_30min', 'every_60min'];
 
 const CONDITION_LABELS = {
   greater_than:  'Больше',
@@ -144,20 +182,19 @@ const CONDITION_LABELS = {
 };
 
 const TYPE_LABELS = {
-  email:    'E-mail',
-  sms:      'SMS',
-  push:     'Push',
-  telegram: 'Telegram',
+  0: 'Web',
+  1: 'Telegram',
+  2: 'Web + Telegram'
 };
 
-const FREQUENCY_LABELS = {
-  once:         'Однократно',
-  every_5min:   'Каждые 5 мин',
-  every_10min:  'Каждые 10 мин',
-  every_15min:  'Каждые 15 мин',
-  every_30min:  'Каждые 30 мин',
-  every_60min:  'Каждый час',
-};
+// const FREQUENCY_LABELS = {
+//   once:         'Однократно',
+//   every_5min:   'Каждые 5 мин',
+//   every_10min:  'Каждые 10 мин',
+//   every_15min:  'Каждые 15 мин',
+//   every_30min:  'Каждые 30 мин',
+//   every_60min:  'Каждый час',
+// };
 
 export default {
   name: 'MainBodyNotifications',
@@ -177,7 +214,7 @@ export default {
     },
   },
 
-  emits: ['delete-notification', 'edit-notification', 'field-selected'],
+  emits: ['delete-notification', 'getDataNotificationItem', 'field-selected'],
 
   computed: {
     ...mapGetters(['level']),
@@ -192,33 +229,36 @@ export default {
     },
 
     conditionLabel() {
-      return CONDITION_LABELS[this.notificationData.condition] ?? this.notificationData.condition ?? '—';
+      return CONDITION_LABELS[this.notificationData.value_type] ?? this.notificationData.value_type ?? '???';
     },
 
-    notificationTypeLabel() {
-      return TYPE_LABELS[this.notificationData.notificationType] ?? this.notificationData.notificationType ?? '—';
+    notificationСhannelLabel() {
+      return TYPE_LABELS[this.notificationData.notificationСhannel] ?? this.notificationData.notificationСhannel ?? '???';
     },
 
     thresholdDisplay() {
-      const v = this.notificationData.threshold;
-      if (v === null || v === undefined) return 'Не задано';
+      const v = this.notificationData.value;
+      if (v === null || v === undefined) return '???';
       return typeof v === 'number' ? v.toFixed(1) : v;
     },
 
     enabledLabel() {
-      return this.notificationData.enabled === false ? 'Отключено' : 'Активно';
+      return this.notificationData.permission === false ? 'Отключено' : 'Активно';
     },
 
     formattedStartDate() {
-      return this.notificationData.startDate || '—';
+      return this.notificationData.startDate || '???';
     },
 
     formattedEndDate() {
-      return this.notificationData.endDate || '—';
+      return this.notificationData.endDate || '???';
     },
 
     frequencyLabel() {
-      return FREQUENCY_LABELS[this.notificationData.frequency] ?? this.notificationData.frequency ?? '—';
+      const freq = this.notificationData.frequency;
+      if (freq && typeof freq === 'number') return freq;
+      return '???';
+      //return FREQUENCY_LABELS[this.notificationData.frequency] ?? this.notificationData.frequency ?? '???';
     },
   },
 
@@ -247,63 +287,74 @@ export default {
       }
     },
 
-    editCondition(event) {
+
+
+
+
+
+
+
+    toggleCondition(event) {
+      console.log('[MainBodyNotifications] - toggleCondition - Изменяем Условие срабатывания');
       event.stopPropagation();
-      this.updateSettingsData({ field: 'request', value: 'updateNotifications' });
-
-      const currentIndex = CONDITIONS.indexOf(this.notificationData.condition);
+      const currentIndex = CONDITIONS.indexOf(this.notificationData.value_type);
       const nextCondition = CONDITIONS[(currentIndex + 1) % CONDITIONS.length];
+      console.log('[MainBodyNotifications] - toggleCondition - Новое Условие-', nextCondition);
 
-      this.updatePayloadData({
+      this.updatePayloadData({ 
         id: this.notificationData.id,
         value: nextCondition,
-        value_name: 'condition',
+        value_type: 'condition',
       });
 
-      this.$emit('field-selected', { scheduleId: this.notificationData.id, field: 'condition' });
-      this.$emit('edit-notification', { field: 'condition', value: nextCondition });
+      // Отправляем событие родителю для немедленного обновления
+      this.$emit('getDataNotificationItem', {
+        title: 'value_type',
+        value_type: 'condition',
+        value: nextCondition,
+      });
+
+      // Визуально выделяем поле
+      this.$emit('field-selected', { scheduleId: this.notificationData.id, field: 'value_type' });
     },
 
     editThreshold(event) {
+      console.log('[MainBodyNotifications] - editThreshold - Изменяем Значение срабатывания');
       event.stopPropagation();
       this.updateSettingsData({ field: 'request', value: 'updateNotifications' });
 
       this.setLimits({
-        param: this.$store.state.setpointsManager?.settingsData?.payload?.param,
+        param: 'threshold',
         valueType: 'absolute',
       });
 
       const currentValue =
-        this.notificationData.threshold !== null && this.notificationData.threshold !== undefined
-          ? this.notificationData.threshold
+        this.notificationData.value !== null && this.notificationData.value !== undefined
+          ? this.notificationData.value
           : 0;
 
       this.updatePayloadData({
         id: this.notificationData.id,
         value: currentValue,
-        value_name: 'threshold',
+        value_type: 'value',
       });
-
+      this.$emit('getDataNotificationItem', {
+        title: 'value',
+        value_type: 'threshold',
+        value: currentValue,
+      });
       this.$emit('field-selected', { scheduleId: this.notificationData.id, field: 'threshold' });
-      this.$emit('edit-notification', { field: 'threshold', value: currentValue });
+
     },
 
-    editNotificationType(event) {
-      event.stopPropagation();
-      this.updateSettingsData({ field: 'request', value: 'updateNotifications' });
 
-      const currentIndex = NOTIFICATION_TYPES.indexOf(this.notificationData.notificationType);
-      const nextType = NOTIFICATION_TYPES[(currentIndex + 1) % NOTIFICATION_TYPES.length];
 
-      this.updatePayloadData({
-        id: this.notificationData.id,
-        value: nextType,
-        value_name: 'notificationType',
-      });
 
-      this.$emit('field-selected', { scheduleId: this.notificationData.id, field: 'notificationType' });
-      this.$emit('edit-notification', { field: 'notificationType', value: nextType });
-    },
+
+
+
+
+
 
     editStartDate(event) {
       event.stopPropagation();
@@ -328,7 +379,6 @@ export default {
           value_name: fieldName,
         });
         this.$emit('field-selected', { scheduleId: this.notificationData.id, field: fieldName });
-        this.$emit('edit-notification', { field: fieldName, value: newDate });
       } else if (newDate) {
         alert('Неверный формат даты. Используйте ГГГГ-ММ-ДД');
       }
@@ -337,35 +387,69 @@ export default {
     editFrequency(event) {
       event.stopPropagation();
       this.updateSettingsData({ field: 'request', value: 'updateNotifications' });
+      this.setLimits({
+        param: this.$store.state.setpointsManager?.settingsData?.payload?.param,
+        valueType: 'absolute',
+      });
 
-      const currentIndex = FREQUENCY_MODES.indexOf(this.notificationData.frequency);
-      const nextIndex = (currentIndex + 1) % FREQUENCY_MODES.length;
-      const nextFrequency = FREQUENCY_MODES[nextIndex];
+      const currentValue = this.notificationData.frequency || 1;
+
+      this.updatePayloadData({ 
+        id: this.notificationData.id,
+        value: currentValue,
+        value_type: 'frequency',
+      });
+
+      // Отправляем событие родителю для немедленного обновления
+      this.$emit('getDataNotificationItem', {
+        title: 'frequency',
+        value_type: 'value',
+        value: currentValue,
+      });
+
+      // Визуально выделяем поле
+      this.$emit('field-selected', { scheduleId: this.notificationData.id, field: 'frequency' });
+
+    },
+    toggleNotificationСhannel(event) {
+      event.stopPropagation();
+      const types = ['web', 'telegram', 'web + telegram']; // порядок как в NOTIFICATION_TYPES
+      const currentIndex = types.indexOf(this.notificationData.notificationСhannel);
+      const nextType = types[(currentIndex + 1) % types.length];
 
       this.updatePayloadData({
         id: this.notificationData.id,
-        value: nextFrequency,
-        value_name: 'frequency',
+        value: nextType,
+        value_type: 'notifСhannel',
       });
 
-      this.$emit('field-selected', { scheduleId: this.notificationData.id, field: 'frequency' });
-      this.$emit('edit-notification', { field: 'frequency', value: nextFrequency });
+      this.$emit('getDataNotificationItem', {
+        title: 'enabled',
+        value_type: 'notifСhannel',
+        value: nextType,
+      });
+
+      this.$emit('field-selected', { scheduleId: this.notificationData.id, field: 'notifСhannel' });
     },
 
-    toggleEnabled(event) {
+    togglePermission(event) {
       event.stopPropagation();
-      this.updateSettingsData({ field: 'request', value: 'updateNotifications' });
-
-      const newEnabled = this.notificationData.enabled === false ? true : false;
+      const newEnabled = this.notificationData.permission === false ? true : false;
 
       this.updatePayloadData({
         id: this.notificationData.id,
         value: newEnabled,
-        value_name: 'enabled',
+        value_type: 'permission',
+      });
+      // Отправляем событие родителю для немедленного обновления
+      this.$emit('getDataNotificationItem', {
+        title: 'permission',
+        value_type: 'permission',
+        value: newEnabled,
       });
 
-      this.$emit('field-selected', { scheduleId: this.notificationData.id, field: 'enabled' });
-      this.$emit('edit-notification', { field: 'enabled', value: newEnabled });
+      // Визуально выделяем поле
+      this.$emit('field-selected', { scheduleId: this.notificationData.id, field: 'permission' });
     },
 
     deleteNotificationItem() {

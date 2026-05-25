@@ -707,7 +707,8 @@ form button:active {
 }
 .mainBodySettings-header {
   max-width: 7.4rem;
-  width: 22%;
+  width: 20%;
+  display: flex;
 }
 .mainBodySettings-header-button {
   background: none; 
@@ -719,6 +720,7 @@ form button:active {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 

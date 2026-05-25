@@ -14,7 +14,23 @@
               <line x1="23" y1="44" x2="65" y2="44" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
             </svg>
           </button>
+
+
+          <button class="mainBodySettings-header-button" @click="handlePermit">
+          <svg class="icon-settings hand" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="44" cy="44" r="42" 
+              :fill="handleInputPermit ? '#FFA500' : '#E0E0E0'"
+              :fill-opacity="handleInputPermit ? 1 : 0.35"
+              />
+              <path d="M52 38V28C52 26.9 51.1 26 50 26C48.9 26 48 26.9 48 28V38H46V24C46 22.9 45.1 22 44 22C42.9 22 42 22.9 42 24V38H40V26C40 24.9 39.1 24 38 24C36.9 24 36 24.9 36 26V42L30 36C29.1 35.1 27.7 35.1 26.8 36C25.9 36.9 25.9 38.3 26.8 39.2L38 50.4V56C38 61.6 42.4 66 48 66H56C61.6 66 66 61.6 66 56V46C66 44.9 65.1 44 64 44C62.9 44 62 44.9 62 46V52H60V38C60 36.9 59.1 36 58 36C56.9 36 56 36.9 56 38V44H54V36C54 34.9 53.1 34 52 34C50.9 34 50 34.9 50 36V44H48V38H52Z" 
+              fill="#E0DFE7"
+              :fill-opacity="handleInputPermit ? 1 : 0.5"/>
+            </svg>
+          </button>
+
         </div>
+
+
         <div class="mainBodySettings-title-container" @click="cycleTitle">
           <div class="mainBodySettings-header-title">{{ selectedTitle }}</div>
           <div class="mainBodySettings-header-title-others">
@@ -50,6 +66,7 @@
               :scheduleData="schedule"
               :scheduleUnit="unit"
               :activeSelection="activeSelection"
+              :handleInputPermit="handleInputPermit"
               class="schedule-item"  
               @delete-schedule="handleDeleteConfigItem(schedule.id, 'schedules')"
               @getDataScheduleItem="checkDataScheduleItem"
@@ -68,7 +85,9 @@
                 :key="notification.id || `notification-${index}`"
                 :notificationData="notification"
                 :activeSelection="activeSelection"
+                :handleInputPermit="handleInputPermit"
                 class="schedule-item"  
+                @getDataNotificationItem="checkDataNotificationItem"
                 @edit-notification="handleEditNotification(notification.id, $event)"
                 @delete-notification="handleDeleteConfigItem(notification.id, 'notifications')"
                 @field-selected="handleFieldSelected"
@@ -86,6 +105,7 @@
                 :key="statistic.id || `statistic-${index}`"
                 :analyticData="statistic"
                 :activeSelection="activeSelection"
+                :handleInputPermit="handleInputPermit"
                 class="schedule-item"  
                 @edit-analytic="handleEditAnalytic(statistic.id, $event)"
                 @delete-analytic="handleDeleteConfigItem(statistic.id, 'statistics')"
@@ -151,6 +171,7 @@ export default {
       statistics: [],
 
       unit: '', // единица измерения
+      handleInputPermit: false, 
 
       configDataToDelete: [], // Массив ID расписаний для удаления
       pendingDeletions: {}, // Объект с данными для удаления {id: scheduleData}
@@ -237,7 +258,7 @@ export default {
     // Отслеживаем изменения в store и обновляем локальные данные
     '$store.state.config': {
       handler() {
-        console.log('[MainBodySettings] - Watch - Расписания в store обновились');
+        //console.log('[MainBodySettings] - Watch - Расписания в store обновились');
         this.loadConfigDataFromStore(this.title);
 
         // if (this.title === 'schedules') {
@@ -300,6 +321,21 @@ export default {
       console.log('[MainBodySettings] -  checkDataScheduleItem - Формируем сообщение для DashBoard - emit getComponentData', message);
       this.$emit('getComponentData', message);
     },
+    checkDataNotificationItem(event){
+      // Функция получает измененный параметр от экземплара MainBodyNotifications 
+      // Проверяет event.value_type и устанвливает флаг action
+      console.log('[MainBodySettings] -  checkDataNotificationItem - Данные от компонента MainBodySchedule:', event, null, 2);
+      let action = "show";
+      if (event.value_type === 'condition' & event.title === 'value_type') action = "hide";
+      const arrayTitle = this.settingsData?.payload?.config; // имя массива (например, "schedule")
+      const message = {
+        action: action,
+        updateState: event,
+        request: arrayTitle,
+      };
+      console.log('[MainBodySettings] -  checkDataNotificationItem - Формируем сообщение для DashBoard - emit getComponentData', message);
+      this.$emit('getComponentData', message);
+    },
 
     setComponentParam (selectedTitle) {
       this.updateSettingsData({ field: 'type', value: 'post' });
@@ -321,11 +357,12 @@ export default {
     },
 
     async loadConfigDataFromStore(configName) {
-      console.log('[MainBodySettings] - loadConfigDataFromStore - Вызов функции для конфигурации - ', configName);
+      //console.log('[MainBodySettings] - loadConfigDataFromStore - Вызов функции для конфигурации - ', configName);
       try {
         
         const configData = await this.$store.dispatch('settingsConfig/getConfigDataFromStore', { configName });    
-        console.log('[MainBodySettings] - loadConfigDataFromStore - Полученные расписания из store:', configData);
+        //console.log('[MainBodySettings] - loadConfigDataFromStore - Полученные расписания из store:', configData);
+       
         // schedules.forEach((schedule, index) => {
         //   console.log(`[MainBodySettings] - loadConfigDataFromStore - schedule[${index}] createdAt:`, schedule.createdAt, 'typeof:', typeof schedule.createdAt);
         // });
@@ -415,6 +452,10 @@ export default {
       }
     },
 
+    handlePermit() {
+      this.handleInputPermit = !this.handleInputPermit;
+      console.log('[MainBodySettings] - handlePermit - Ручное редактирование значения:', this.handleInputPermit);
+    },
 
     async generationTime(configName) {
       console.log('[MainBodySettings] - generationTime - Создание временного интервала для нового элемента');
@@ -578,6 +619,8 @@ export default {
 
     async addNewNotification() {
       console.groupCollapsed('[MainBodySettings] - addNewNotification');
+      const settingsData = this.$store.state.setpointsManager?.settingsData;
+      const value = settingsData?.payload?.value || 0;
       const roomKey = this.settingsData.payload.room;
       const paramKey = this.effectiveParamKey;
       // Получаем текущие уведомления для этой комнаты и параметра
@@ -605,14 +648,14 @@ export default {
 
       const newNotification = {
         id: newId,
-        condition: 'greater_than', // 'greater_than', 'less_than', 'equals', 'changed'
-        threshold_value: null,
-        notificationType: 0, //  0 - 'web', 1 - 'telegram', 2 'web' + 'telegram'
+        value_type: 'greater_than', // 'greater_than', 'less_than', 'equals', 'changed'
+        value: value,
+        notificationСhannel: 0, //  0 - 'web', 1 - 'telegram', 2 'web' + 'telegram'
         frequency: 0, // 0 - 'once' ; число - интервал в минутах
+        permission: false,
+        status: 'active',
         startDate: startTime,
         endDate: endTime,
-        roomKey: roomKey,
-        paramKey: paramKey,
         createdAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
         updatedAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
       };
@@ -625,6 +668,7 @@ export default {
       // Сохраняем изменения
       await this.saveNotificationBlock();
       console.log('[MainBodySettings] - addNewNotification - Уведомление успешно сохранено');
+     console.groupEnd();
     },
   
     async addNewStatistic(roomKey, paramKey) {
