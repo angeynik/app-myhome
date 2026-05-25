@@ -12,13 +12,24 @@
       </div>
       <div class="settings-info-item" v-if="scheduleData.createdAt">
         <span class="settings-info-value">Создано:</span>
-        <span class="settings-info-value">{{ formatDate(scheduleData.createdAt) }}</span>
+        <span class="settings-info-value">{{ dateTimeUtils.formatDate(scheduleData.createdAt) }}</span>
       </div>
       <div class="settings-info-item" v-if="scheduleData.updatedAt">
         <span class="settings-info-value">Обновлено:</span>
-        <span class="settings-info-value">{{ formatDate(scheduleData.updatedAt) }}</span>
+        <span class="settings-info-value">{{ dateTimeUtils.formatDate(scheduleData.updatedAt) }}</span>
       </div>
-    </div>
+      <button class="mainBodySettings-header-button" @click="deleteScheduleItem">
+      <svg class="icon-settings close" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle class="hover-bg" cx="33" cy="33" r="31" fill="#CC0000" opacity="0"/>
+        <circle cx="33" cy="33" r="31" fill="#FF4747"/>
+        <circle cx="33" cy="33" r="31" stroke="#FF4747" stroke-width="3"/>
+        <line x1="21" y1="21" x2="45" y2="45" stroke="#E0DFE7" stroke-width="6" stroke-linecap="round"/>
+        <line x1="45" y1="21" x2="21" y2="45" stroke="#E0DFE7" stroke-width="6" stroke-linecap="round"/>
+      </svg>
+      </button>
+      </div>
+
+    
     <div class="settings-row">
      
     <!-- Первая колонка (80%) -->
@@ -43,9 +54,9 @@
           </div>
 
 
-        </div>
+    </div>
 
-        <div class="settings-row">
+    <div class="settings-row">
         <!-- Вторая строка -->
           
             <div class="settings-block-title">
@@ -55,7 +66,7 @@
               :class="{ 'selected': isFieldSelected('startTime') }"
               @click.stop="editStartTime"
             >
-            <div class="settings-value" v-html="formattedTime('displayStartTime')"></div>
+            <div class="settings-value" v-html="formattedDisplay('displayStartTime')"></div>
               
             </div>
             <div class="settings-separator"></div>
@@ -63,40 +74,34 @@
               :class="{ 'selected': isFieldSelected('endTime') }"
               @click.stop="editEndTime"
             >
-              <div class="settings-value" v-html="formattedTime('displayEndTime')"></div>
+              <div class="settings-value" v-html="formattedDisplay('displayEndTime')"></div>
             </div>
-          </div>
+    </div>
 
     </div>
       <!-- Вторая колонка (20%) -->
-       <div class="settings-col-second">
+       <!-- <div class="settings-col-second">
         <div class="icon-settings item">
           <button class="mainBodySettings-header-button" @click="deleteScheduleItem">
             <svg class="icon-settings close" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <!-- Темно-красный фон (появляется при наведении) -->
+
               <circle class="hover-bg" cx="44" cy="44" r="42" fill="#CC0000" opacity="0"/>
-              <!-- Красный фон (по умолчанию) -->
+
               <circle cx="44" cy="44" r="42" fill="#FF4747"/>
-              <!-- Красная обводка -->
+
               <circle cx="44" cy="44" r="42" stroke="#FF4747" stroke-width="4"/>
-              <!-- Белый крестик -->
+
               <line x1="28" y1="28" x2="60" y2="60" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
               <line x1="60" y1="28" x2="28" y2="60" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
             </svg>
           </button>
         </div>
-        <!-- <button 
-          class="settings-delete-button"
-          @click="handleDelete"
-          :title="`Удалить расписание для ${scheduleData.paramTitle}`"
-        >
-          Удалить
-        </button> -->
         
-      </div>  
+      </div>   -->
 
     </div>
   </div>
+  
 </template>
 
 <script>
@@ -123,6 +128,10 @@ export default {
       type: Object,
       default: null
     },
+    handleInputPermit: {
+      type: Boolean,
+      default: false
+    }
   },
  
   data() {
@@ -176,23 +185,7 @@ export default {
     
     // Для absolute типа
     return safeToFixed(rawValue, 1);
-  },
-    // value() {
-    //   // Если данные еще не созданы
-    //   if (!this.scheduleData || this.scheduleData.value === null || this.scheduleData.value === undefined) {
-    //     return 'Не задано';
-    //   }
-      
-    //   // Форматирование в зависимости от типа значения
-    //   if (this.scheduleData.value_type === 'deviation') {
-    //     const sign = this.scheduleData.value >= 0 ? ' +' : '';
-    //     return `${sign}${this.scheduleData.value.toFixed(1)}`;
-    //   }
-      
-    //   return typeof this.scheduleData.value === 'number' 
-    //     ? this.scheduleData.value.toFixed(1)
-    //     : this.scheduleData.value;
-    // },
+    },
     displayStartTime() {
       //console.log('[MainBodySchedule] - displayStartTime - startTime:', this.scheduleData.startTime);
       return String(this.scheduleData.startTime || '00:00');
@@ -202,6 +195,7 @@ export default {
     displayEndTime() {
       return String(this.scheduleData.endTime || '00:05');
     },
+
 
 
     
@@ -261,33 +255,33 @@ export default {
         this.selectedField = null;
       }
     },
-    formattedTime(timeProperty) {
-      //console.log('[MainBodySchedule] - formattedTime - ', timeProperty);
-      let timeString = this[timeProperty];
-      //console.log('[MainBodySchedule] - formattedTime - timeString:', timeString);
+    // formattedTime(timeProperty) {
+    //   //console.log('[MainBodySchedule] - formattedTime - ', timeProperty);
+    //   let timeString = this[timeProperty];
+    //   //console.log('[MainBodySchedule] - formattedTime - timeString:', timeString);
       
-      // Убедимся, что timeString - строка
-      timeString = typeof timeString === 'string' ? timeString : String(timeString || '00:00');
+    //   // Убедимся, что timeString - строка
+    //   timeString = typeof timeString === 'string' ? timeString : String(timeString || '00:00');
       
-      if (!timeString.includes(':')) {
-        return timeString;
-      }
+    //   if (!timeString.includes(':')) {
+    //     return timeString;
+    //   }
 
-      const [hours, minutes] = timeString.split(':');
-      const fieldName = timeProperty === 'displayStartTime' ? 'startTime' : 'endTime';
-      const isSelected = this.activeSelection?.scheduleId === this.scheduleData.id 
-                && this.activeSelection?.field === fieldName;
+    //   const [hours, minutes] = timeString.split(':');
+    //   const fieldName = timeProperty === 'displayStartTime' ? 'startTime' : 'endTime';
+    //   const isSelected = this.activeSelection?.scheduleId === this.scheduleData.id 
+    //             && this.activeSelection?.field === fieldName;
 
-      if (!isSelected) {
-        return `${hours}:${minutes}`;
-      }
-      if (this.timeEditMode === 'minutes') {
-        return `<span class="time-highlight-simple">${hours}</span> <span class="time-dimmed"> :${minutes}</span>`;
-      } else {
-        return `<span class="time-dimmed">${hours}:</span> <span class="time-highlight-simple">${minutes}</span>`;
-      }
+    //   if (!isSelected) {
+    //     return `${hours}:${minutes}`;
+    //   }
+    //   if (this.timeEditMode === 'minutes') {
+    //     return `<span class="time-highlight-simple">${hours}</span> <span class="time-dimmed"> :${minutes}</span>`;
+    //   } else {
+    //     return `<span class="time-dimmed">${hours}:</span> <span class="time-highlight-simple">${minutes}</span>`;
+    //   }
 
-    },
+    // },
 
 
 
@@ -365,6 +359,13 @@ export default {
               title: field,
               value_type: currentValueType           
       });
+    },
+
+
+    formattedDisplay(fieldName) {
+      const time = fieldName === 'startTime' ? this.displayStartTime : this.displayEndTime;
+      const isSelected = this.isFieldSelected(fieldName);
+      return this.dateTimeUtils.formatTimeWithHighlight(time, this.timeEditMode, isSelected);
     },
     
 
@@ -453,10 +454,6 @@ export default {
       console.log('[MainBodySchedule] - deleteScheduleItem - Расписание добавлено в список для удаления:', this.scheduleData.id);
     },
    
-    // Форматирование даты
-    formatDate(dateString) {
-      return this.dateTimeUtils.formatDate(dateString, 'ru-RU');
-    },
     
     validateScheduleTimeSync(schedule) {
       // Используем синхронную логику через геттер

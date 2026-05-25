@@ -455,6 +455,8 @@ export default {
     handlePermit() {
       this.handleInputPermit = !this.handleInputPermit;
       console.log('[MainBodySettings] - handlePermit - Ручное редактирование значения:', this.handleInputPermit);
+
+      this.$emit('eventsMainBodySettings', {handlePermit: this.handleInputPermit});
     },
 
     async generationTime(configName) {

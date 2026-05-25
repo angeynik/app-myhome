@@ -1017,42 +1017,110 @@ export default {
     // },
 
     dateTimeUtils: () => ({
-    getCurrentDateTime: () => {
-      return new Date().toISOString();
-    },
-    formatDate: (dateString, locale = 'ru-RU') => {
-        try {
-          if (!dateString) return '—';
-          
-          // Если строка уже содержит запятую, значит уже отформатирована
-          if (typeof dateString === 'string' && dateString.includes(',')) {
-            //console.log('[settingsConfig] - dateTimeUtils.formatDate - Уже отформатирована:', dateString);
-            return dateString;
-          }
-          
-          const date = new Date(dateString);
-          if (isNaN(date.getTime())) {
-            //console.log('[settingsConfig] - dateTimeUtils.formatDate - Invalid date:', dateString);
-            return dateString;
-          }
-          
-          return date.toLocaleDateString(locale, {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-        } catch (error) {
-          //console.log('[settingsConfig] - dateTimeUtils.formatDate - Error:', error, 'for dateString:', dateString);
-          return dateString;
+        getCurrentDateTime: () => {
+          return new Date().toISOString();
+        },
+        // formatDate: (dateString, locale = 'ru-RU') => {
+        //     try {
+        //       if (!dateString) return '—';
+              
+        //       // Если строка уже содержит запятую, значит уже отформатирована
+        //       if (typeof dateString === 'string' && dateString.includes(',')) {
+        //         //console.log('[settingsConfig] - dateTimeUtils.formatDate - Уже отформатирована:', dateString);
+        //         return dateString;
+        //       }
+              
+        //       const date = new Date(dateString);
+        //       if (isNaN(date.getTime())) {
+        //         //console.log('[settingsConfig] - dateTimeUtils.formatDate - Invalid date:', dateString);
+        //         return dateString;
+        //       }
+              
+        //       return date.toLocaleDateString(locale, {
+        //         day: '2-digit',
+        //         month: '2-digit',
+        //         year: 'numeric',
+        //         hour: '2-digit',
+        //         minute: '2-digit'
+        //       });
+        //     } catch (error) {
+        //       //console.log('[settingsConfig] - dateTimeUtils.formatDate - Error:', error, 'for dateString:', dateString);
+        //       return dateString;
+        //     }
+        // },
+formatDate: (dateString, locale = 'ru-RU') => {
+  try {
+    if (!dateString) return '—';
+
+    // Пытаемся привести к объекту Date
+    let date = null;
+
+    // 1. Если строка похожа на ISO (YYYY-MM-DDTHH:MM:SS)
+    if (typeof dateString === 'string' && dateString.includes('-') && !dateString.includes(',')) {
+      date = new Date(dateString);
+    }
+    // 2. Если строка в русском формате "DD.MM.YYYY, HH:MM:SS"
+    else if (typeof dateString === 'string' && dateString.includes(',')) {
+      const parts = dateString.split(', ');
+      if (parts.length === 2) {
+        const dateParts = parts[0].split('.');
+        const timeParts = parts[1].split(':');
+        if (dateParts.length === 3 && timeParts.length === 3) {
+          const day = parseInt(dateParts[0], 10);
+          const month = parseInt(dateParts[1], 10) - 1;
+          const year = parseInt(dateParts[2], 10);
+          const hours = parseInt(timeParts[0], 10);
+          const minutes = parseInt(timeParts[1], 10);
+          const seconds = parseInt(timeParts[2], 10);
+          date = new Date(year, month, day, hours, minutes, seconds);
         }
-    },
+      }
+    }
+    // 3. Если не удалось распарсить – возвращаем исходную строку
+    if (!date || isNaN(date.getTime())) {
+      return dateString;
+    }
+
+    const now = new Date();
+    const isToday =
+      date.getDate() === now.getDate() &&
+      date.getMonth() === now.getMonth() &&
+      date.getFullYear() === now.getFullYear();
+
+    if (isToday) {
+      // Сегодня – показываем только время
+      return date.toLocaleTimeString(locale, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+    } else {
+      // Не сегодня – показываем только дату в формате ДД:ММ:ГГ
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}:${month}:${year}`;
+    }
+  } catch (error) {
+    return dateString;
+  }
+},
+        formatTimeWithHighlight: (timeString, editMode, isSelected) => {
+          if (!timeString) timeString = '00:00';
+          if (!timeString.includes(':')) return timeString;
+          const [hours, minutes] = timeString.split(':');
+          if (!isSelected) return `${hours}:${minutes}`;
+          if (editMode === 'minutes') {
+            return `<span class="time-highlight-simple">${hours}</span> <span class="time-dimmed"> :${minutes}</span>`;
+          } else {
+            return `<span class="time-dimmed">${hours}:</span> <span class="time-highlight-simple">${minutes}</span>`;
+          }
+        },
 
     
-
-
     }),
+
+
     validationUtils: ( getters) => ({
         validateScheduleTime: (schedule) => {
           // Синхронная версия валидации

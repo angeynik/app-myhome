@@ -10,25 +10,21 @@
       </div>
       <div class="settings-info-item" v-if="notificationData.createdAt">
         <span class="settings-info-value">Создано:</span>
-        <span class="settings-info-value">{{ formatDate(notificationData.createdAt) }}</span>
+        <span class="settings-info-value">{{ dateTimeUtils.formatDate(notificationData.createdAt) }}</span>
       </div>
       <div class="settings-info-item" v-if="notificationData.updatedAt">
         <span class="settings-info-value">Обновлено:</span>
-        <span class="settings-info-value">{{ formatDate(notificationData.updatedAt) }}</span>
+        <span class="settings-info-value">{{ dateTimeUtils.formatDate(notificationData.updatedAt) }}</span>
       </div>
-      <div class="settings-col-second">
-        <div class="icon-settings item">
-          <button class="mainBodySettings-header-button" @click="deleteNotificationItem">
-            <svg class="icon-settings close" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle class="hover-bg" cx="44" cy="44" r="42" fill="#CC0000" opacity="0"/>
-              <circle cx="44" cy="44" r="42" fill="#FF4747"/>
-              <circle cx="44" cy="44" r="42" stroke="#FF4747" stroke-width="4"/>
-              <line x1="28" y1="28" x2="60" y2="60" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
-              <line x1="60" y1="28" x2="28" y2="60" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
-            </svg>
-          </button>
-        </div>
-      </div>
+      <button class="mainBodySettings-header-button" @click="deleteScheduleItem">
+      <svg class="icon-settings close" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle class="hover-bg" cx="33" cy="33" r="31" fill="#CC0000" opacity="0"/>
+        <circle cx="33" cy="33" r="31" fill="#FF4747"/>
+        <circle cx="33" cy="33" r="31" stroke="#FF4747" stroke-width="3"/>
+        <line x1="21" y1="21" x2="45" y2="45" stroke="#E0DFE7" stroke-width="6" stroke-linecap="round"/>
+        <line x1="45" y1="21" x2="21" y2="45" stroke="#E0DFE7" stroke-width="6" stroke-linecap="round"/>
+      </svg>
+      </button>
 
     </div>
 
@@ -59,12 +55,12 @@
         <!-- Строка 3: Период действия (даты) -->
         <div class="settings-row">
           <div class="settings-block-title">
-            <p>Период</p>
+            <p>Интервал</p>
           </div>
           <div
             class="settings-block clickable time-input"
             :class="{ 'selected': isFieldSelected('startDate') }"
-            @click.stop="editStartDate"
+            @click.stop="editStartTime"
           >
             <div class="settings-value">{{ formattedStartDate }}</div>
           </div>
@@ -72,7 +68,7 @@
           <div
             class="settings-block clickable time-input"
             :class="{ 'selected': isFieldSelected('endDate') }"
-            @click.stop="editEndDate"
+            @click.stop="editEndTime"
           >
             <div class="settings-value">{{ formattedEndDate }}</div>
           </div>
@@ -86,6 +82,8 @@
           <div
             v-if="notificationData.frequency === 0"
             class="settings-block-title"
+            :class="{ 'selected': isFieldSelected('frequency') }"
+            @click.stop="editFrequency"
           >
             <p>Однократно</p>
           </div>
@@ -99,18 +97,6 @@
             <span>мин</span>
           </div>
         </div>
-        <!-- <div class="settings-row">
-          <div class="settings-block-title">
-            <p>Периодичность</p>
-          </div>
-          <div
-            class="settings-block clickable time-input"
-            :class="{ 'selected': isFieldSelected('frequency') }"
-            @click.stop="editFrequency"
-          >
-            <div class="settings-value">{{ frequencyLabel }}</div>
-          </div>
-        </div> -->
 
         <!-- Строка 2: Канал уведомления -->
         <div class="settings-row">
@@ -213,6 +199,11 @@ export default {
       default: null,
     },
   },
+  data() {
+    return {
+      timeEditMode: 'hours',
+    };
+  },
 
   emits: ['delete-notification', 'getDataNotificationItem', 'field-selected'],
 
@@ -276,7 +267,7 @@ export default {
 
     isFieldSelected(fieldName) {
       return (
-        this.activeSelection?.scheduleId === this.notificationData.id &&
+        this.activeSelection?.notificationId === this.notificationData.id &&
         this.activeSelection?.field === fieldName
       );
     },
@@ -315,7 +306,7 @@ export default {
       });
 
       // Визуально выделяем поле
-      this.$emit('field-selected', { scheduleId: this.notificationData.id, field: 'value_type' });
+      this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'value_type' });
     },
 
     editThreshold(event) {
@@ -343,7 +334,7 @@ export default {
         value_type: 'threshold',
         value: currentValue,
       });
-      this.$emit('field-selected', { scheduleId: this.notificationData.id, field: 'threshold' });
+      this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'threshold' });
 
     },
 
@@ -356,17 +347,61 @@ export default {
 
 
 
-    editStartDate(event) {
+    editStartTime(event) {
       event.stopPropagation();
-      this.editDateField('startDate');
+      this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'startTime' });
+      const timeString = this.notificationData.startTime || '00:00';
+      //console.log('[MainBodyNotifications] - Редактирование startTime:', timeString);
+      const [hours, minutes] = timeString.split(':').map(Number);
+      this.editTimeFieldWithToggle('startTime', hours, minutes);
     },
 
-    editEndDate(event) {
+    editEndTime(event) {
       event.stopPropagation();
-      this.editDateField('endDate');
+      const timeString = this.notificationData.endTime || '00:05';
+      const [hours, minutes] = timeString.split(':').map(Number);      
+      this.editTimeFieldWithToggle('endTime', hours, minutes);
+
     },
 
-    editDateField(fieldName) {
+    editTimeFieldWithToggle(selectedField, currentHours, currentMinutes) {
+      this.updateSettingsData({ field: 'request', value: 'updateNotifications' });
+        //console.log('[MainBodyNotifications] - Редактирование:', currentHours, currentMinutes, this.scheduleData[this.selectedField]);
+        this.updatePayloadData({ 
+              id: this.notificationData.id,
+              value: this.notificationData[selectedField],
+              value_name: selectedField,
+              value_details: this.timeEditMode
+            });
+        const editMode = this.timeEditMode;
+        // Устанавливаем лимиты
+          const params = {
+            param: editMode, 
+            valueType: '', 
+          }
+          //console.log('[MainBodyNotifications] - editValue - params:', params);
+          this.setLimits(params);
+
+        if (editMode === 'minutes') {
+            this.$emit('getDataNotificationItem', {
+                value: currentMinutes,
+                title: selectedField,
+                value_details: 'minutes'
+            });
+        } else {
+            this.$emit('getDataNotificationItem', {
+                value: currentHours,
+                title: selectedField,
+                value_details: 'hours'
+            });
+        }
+        
+        // Переключаем режим
+        this.timeEditMode = this.timeEditMode === 'minutes' ? 'hours' : 'minutes';
+        //console.groupEnd();
+    },
+
+    _editDateField(fieldName) {
       this.updateSettingsData({ field: 'request', value: 'updateNotifications' });
 
       // Используем нативный date picker
@@ -378,7 +413,7 @@ export default {
           value: newDate,
           value_name: fieldName,
         });
-        this.$emit('field-selected', { scheduleId: this.notificationData.id, field: fieldName });
+        this.$emit('field-selected', { notificationId: this.notificationData.id, field: fieldName });
       } else if (newDate) {
         alert('Неверный формат даты. Используйте ГГГГ-ММ-ДД');
       }
@@ -388,7 +423,7 @@ export default {
       event.stopPropagation();
       this.updateSettingsData({ field: 'request', value: 'updateNotifications' });
       this.setLimits({
-        param: this.$store.state.setpointsManager?.settingsData?.payload?.param,
+        param: 'frequency',
         valueType: 'absolute',
       });
 
@@ -408,7 +443,7 @@ export default {
       });
 
       // Визуально выделяем поле
-      this.$emit('field-selected', { scheduleId: this.notificationData.id, field: 'frequency' });
+      this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'frequency' });
 
     },
     toggleNotificationСhannel(event) {
@@ -429,7 +464,7 @@ export default {
         value: nextType,
       });
 
-      this.$emit('field-selected', { scheduleId: this.notificationData.id, field: 'notifСhannel' });
+      this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'notifСhannel' });
     },
 
     togglePermission(event) {
@@ -449,7 +484,7 @@ export default {
       });
 
       // Визуально выделяем поле
-      this.$emit('field-selected', { scheduleId: this.notificationData.id, field: 'permission' });
+      this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'permission' });
     },
 
     deleteNotificationItem() {
@@ -472,9 +507,6 @@ export default {
       logger.info('[MainBodyNotifications] - deleteNotificationItem - id:', this.notificationData.id);
     },
 
-    formatDate(dateString) {
-      return this.dateTimeUtils.formatDate(dateString, 'ru-RU');
-    },
   },
 };
 </script>

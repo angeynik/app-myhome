@@ -1038,20 +1038,21 @@ form button:active {
   .schedules-list,
   .notifications-list,
   .analytics-list {
-    grid-template-columns: 1fr 1fr;
+    /* grid-template-columns: 1fr 1fr; */
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
     place-items: center; /* Вертикальное и горизонтальное центрирование в видимой области */
-    gap: 0.5rem; /* Уменьшенный gap для предотвращения overflow */
+    gap: 1rem; /* Уменьшенный gap для предотвращения overflow */
     max-width: 90%; /* Уменьшенное ограничение ширины для предотвращения полосы прокрутки */
-    margin: 2rem auto 0; /* Центрирование контейнера */
+    margin: 1rem auto 0; /* Центрирование контейнера */
     overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
   }
   .settings-block.clickable {
-    max-width: 11vw;
+    max-width: 12vw;
   }
 }
 @media (max-width: 600px) {
   .introduce-button {
-    max-width: 380px; /* Максимальная ширина кнопки */
+    max-width: 340px; /* Максимальная ширина кнопки */
   }
   .error {
     color: red;

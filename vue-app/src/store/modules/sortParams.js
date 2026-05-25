@@ -240,7 +240,7 @@ export default {
 
       let limits = null;
       try {
-        if (param === 'threshold') {
+        if (param === 'frequency') {
           limits = {
               low: 0,
               high: 1440,
