@@ -1,6 +1,6 @@
 // store/modules/config.js
 import logger from './logger';
-import store from '@/store';
+//import store from '@/store';
 
 export default {
   namespaced: true,
@@ -528,7 +528,7 @@ export default {
 
       }
       if (type === 'schedules') {
-        console.log('[Config] - handleSensorUpdate - выполняем ОБНОВЛЕНИЕ локальной конфигурации Расписания');
+        console.log('[Config] - handleSensorUpdate - выполняем ОБНОВЛЕНИЕ локальной конфигурации Расписания', payload);
         try {
           commit('UPDATE_SCHEDULE_VALUE', {
             dID: settingsData.name,
@@ -545,7 +545,7 @@ export default {
         }
       }
       if (type === 'notifications') {
-       console.log('[Config] - handleValueUpdate - обновление уведомления');
+       console.log('[Config] - handleValueUpdate - обновление уведомления', payload);
         commit('UPDATE_NOTIFICATION_VALUE', {
           dID: settingsData.name,
           room: settingsData.payload.room,
@@ -728,7 +728,7 @@ export default {
     //   ));
     // },
     async updateSetpointServer( {rootGetters}) {
-      const settingsData = store.state.setpointsManager?.settingsData;
+      const settingsData = rootGetters['getSetpointsManager']?.settingsData;
         logger.info('[config] - updateSetpointServer - Готовим уставку для отправки на сервер');
         console.log('[config] - updateSetpointServer - Готовим уставку для отправки на сервер', settingsData);
         const dID = rootGetters.dID;

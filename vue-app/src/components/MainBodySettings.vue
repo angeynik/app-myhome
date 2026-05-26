@@ -367,6 +367,7 @@ export default {
         //   console.log(`[MainBodySettings] - loadConfigDataFromStore - schedule[${index}] createdAt:`, schedule.createdAt, 'typeof:', typeof schedule.createdAt);
         // });
         this[configName] = configData;
+        return configData;
       } catch (error) {
         console.error('[MainBodySettings] - loadConfigDataFromStore - Ошибка:', error);
         this[configName] = [];
@@ -625,11 +626,14 @@ export default {
       const value = settingsData?.payload?.value || 0;
       const room = this.settingsData.payload.room;
       const param = this.effectiveParamKey;
+
+      console.log('[MainBodySettings] - addNewNotification - Текущая конфигурация Уведомлений - ', this.notifications);
       // Получаем текущие уведомления для этой комнаты и параметра
       const existingNotifications = this.notifications.filter(n => 
         n.roomKey === room && 
         n.paramKey === param
       );
+      console.log('[MainBodySettings] - addNewNotification - Конфигурация Уведомлений для комнаты -', room, ' , параметра -', param, ' :', this.notifications);
       
       // Определяем ID нового уведомления
       let newId = 1;
@@ -654,8 +658,8 @@ export default {
         value: value,
         notificationСhannel: 0, //  0 - 'web', 1 - 'telegram', 2 'web' + 'telegram'
         frequency: 0, // 0 - 'once' ; число - интервал в минутах
-        permission: false,
-        status: 'active',
+        permission: true,
+        status: false,
         startTime: startTime,
         endTime: endTime,
         createdAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
@@ -665,9 +669,10 @@ export default {
       // Добавляем уведомление
       this.notifications = [...this.notifications, newNotification];
       console.log('[MainBodySettings] - addNewNotification - Новое Уведомления создано:', newNotification);
-            // Сохраняем изменения на сервер
+      console.log('[MainBodySettings] - addNewNotification - Новое Уведомления добавлено в конфигурацию Уведомлений:', this.notifications);
+    // Сохраняем изменения на сервер
       try {
-        console.log('[MainBodySettings] - addNewNotification - Сохраняем Уведомления локально');
+        //console.log('[MainBodySettings] - addNewNotification - Сохраняем Уведомления локально');
         await this.$store.dispatch('settingsConfig/addConfigLocally', {
           room: room,
           param: param,

@@ -7,6 +7,10 @@ const MUTATION_TYPES = {
   SET_STATISTICS: 'SET_STATISTICS',
   ADD_SCHEDULE: 'ADD_SCHEDULE',
   DELETE_SCHEDULE: 'DELETE_SCHEDULE',
+  ADD_NOTIFICATIONS: 'ADD_NOTIFICATIONS',
+  DELETE_NOTIFICATIONS: 'DELETE_NOTIFICATIONS',
+  ADD_STATISTICS: 'ADD_STATISTICS',
+  DELETE_STATISTICS: 'DELETE_STATISTICS',
   SET_PERMIT_SCHEDULE: 'SET_PERMIT_SCHEDULE',
   SET_PERMIT_NOTIFICATIONS: 'SET_PERMIT_NOTIFICATIONS',
   SET_PERMIT_STATISTICS: 'SET_PERMIT_STATISTICS',
@@ -26,10 +30,6 @@ export default {
 
   mutations: {
 
-    [MUTATION_TYPES.SET_STATISTICS](state, { name, config }) {
-      state.statistics[name] = config;
-      logger.dev('[settingsConfig] - SET_STATISTICS - Конфигурация аналитики обновлена:', name);
-    },
     [MUTATION_TYPES.ADD_SCHEDULE](state, { dID, schedule }) {
       const nameSchedules = dID + '_schedules';
       if (!state.schedules[nameSchedules]) {
@@ -59,22 +59,22 @@ export default {
     
     [MUTATION_TYPES.SET_NOTIFICATIONS](state, { name, config }) {
       state.notifications[name] = config;
-      logger.dev('[settingsConfig] - SET_NOTIFICATIONS - Конфигурация уведомлений обновлена:', name);
+      logger.dev('[settingsConfig] - SET_NOTIFICATIONS - Конфигурация Уведомлений обновлена:', name);
     },
     [MUTATION_TYPES.ADD_NOTIFICATIONS](state, { dID, notifications }) {
       const nameNotifications = dID + '_notifications';
       if (!state.notifications[nameNotifications]) {
-        state.snotifications[nameNotifications] = [];
+        state.notifications[nameNotifications] = [];
       }
       state.notifications[nameNotifications].push(notifications);
-      logger.dev('[settingsConfig] - ADD_NOTIFICATIONS - Расписание добавлено:', notifications);
+      logger.dev('[settingsConfig] - ADD_NOTIFICATIONS - Уведомление добавлено:', notifications);
     },
     [MUTATION_TYPES.DELETE_NOTIFICATIONS](state, { dID, notificationsId }) {
-      const nameNotifications = dID + 'notifications';
-      const notifications = state.schedules[nameNotifications];
+      const nameNotifications = dID + '_notifications';
+      const notifications = state.notifications[nameNotifications];
       if (notifications) {
         state.notifications[nameNotifications] = notifications.filter(s => s.id !== notificationsId);
-        logger.dev('[settingsConfig] - DELETE_SCHEDULE - Расписание удалено:', notificationsId);
+        logger.dev('[settingsConfig] - DELETE_NOTIFICATIONS - Уведомление удалено:', notificationsId);
       }
     },
     [MUTATION_TYPES.SET_PERMIT_NOTIFICATIONS](state, value) {
@@ -89,6 +89,26 @@ export default {
 
 
 
+    [MUTATION_TYPES.ADD_STATISTICS](state, { dID, statistics }) {
+      const nameStatistics = dID + '_statistics';
+      if (!state.statistics[nameStatistics]) {
+        state.statistics[nameStatistics] = [];
+      }
+      state.statistics[nameStatistics].push(statistics);
+      logger.dev('[settingsConfig] - ADD_STATISTICS - Аналитика добавлена:', statistics);
+    },
+    [MUTATION_TYPES.DELETE_STATISTICS](state, { dID, statisticsId }) {
+      const nameStatistics = dID + '_statistics';
+      const statistics = state.statistics[nameStatistics];
+      if (statistics) {
+        state.statistics[nameStatistics] = statistics.filter(s => s.id !== statisticsId);
+        logger.dev('[settingsConfig] - DELETE_STATISTICS - Аналитика удалена:', statisticsId);
+      }
+    },
+    [MUTATION_TYPES.SET_STATISTICS](state, { name, config }) {
+      state.statistics[name] = config;
+      logger.dev('[settingsConfig] - SET_STATISTICS - Конфигурация аналитики обновлена:', name);
+    },
     [MUTATION_TYPES.SET_PERMIT_STATISTICS](state, value) {
       state.permitStatistics = value;
       logger.dev('[settingsConfig] - SET_PERMIT_STATISTICS - установлено:', value);
@@ -517,7 +537,7 @@ export default {
 
 
   async addConfigLocally({ rootGetters, rootState, dispatch }, { room, param, configName, configData }) {
-      console.log('[settingsConfig] - addConfigLocally - Начинаем локальное сохранение для ', configName);
+      //console.log('[settingsConfig] - addConfigLocally - Начинаем локальное сохранение для ', configName);
       const dID = rootGetters['dID'];
       if (!dID) {
         logger.warn('[settingsConfig] - addConfigLocally - dID не определен');
@@ -851,54 +871,43 @@ export default {
 
 
 
-
-
-
     async saveConfigItems({ rootGetters, dispatch }, { room, param, configName, configData }) {
-      const schedules = configData;
-      console.log('[settingsConfig] - saveConfigItems - Сохраняем расписание:', { room, param, configName, schedules });
-      const serverRequest = 'add'+configName;
+      console.log('[settingsConfig] - saveConfigItems - Сохраняем конфигурацию:', { room, param, configName, configData });
+      const serverRequest = 'add' + configName;
       const dID = rootGetters['dID'];
       if (!dID) {
         logger.warn('[settingsConfig] - saveConfigItems - dID не определен');
         return;
       }
-      
+
       try {
+      // Обновляем локальное состояние
+        // await dispatch('config/handleConfigResponse', {
+        //   name: dID,
+        //   request: configName,
+        //   payload: { [room]: { [param]: configData } }
+        // }, { root: true });
+
         // Отправляем на сервер
-        try {
-          await dispatch('websocket/send', {
-            type: 'post',
-            request: serverRequest,
-            name: dID,
-            payload: { room, param, schedules }
-          }, { root: true });
-          
-          // После успешной отправки на сервер, обновляем локальное состояние
-          await dispatch('config/handleConfigResponse', {
-            name: dID,
-            request: configName,
-            payload: { [room]: { [param]: schedules } }
-          }, { root: true });
-          
-        } catch (error) {
-          logger.error('[settingsConfig] - saveConfigItems - Ошибка отправки на сервер:', error);
-          throw error;
-        }
-        
-        logger.info('[settingsConfig] - saveConfigItems - Расписания сохранены:', {
+        await dispatch('websocket/send', {
+          type: 'post',
+          request: serverRequest,
+          name: dID,
+          payload: { room, param, configData } 
+        }, { root: true });
+        logger.info('[settingsConfig] - saveConfigItems - Конфигурация сохранена:', {
           room,
           param,
-          count: schedules.length
+          count: Array.isArray(configData) ? configData.length : 1
         });
-        
+
         return { success: true };
-        
       } catch (error) {
-        logger.error('[settingsConfig] - saveConfigItems - Общая ошибка сохранения:', error);
+        logger.error('[settingsConfig] - saveConfigItems - Ошибка сохранения:', error);
         throw error;
       }
     },
+
 
     // async saveNotifications({ commit, rootGetters, dispatch }, { roomKey, paramKey, notifications }) {
     //   const dID = rootGetters['dID'];
