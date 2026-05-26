@@ -71,7 +71,7 @@ const store = createStore({
         state.setpointsManager.settingsData.payload.updated = nowMoscow();
         state.settingsData = { ...state.setpointsManager.settingsData };
         // Вернуть console.log
-        console.log('[index] - UPDATE_PAYLOAD_DATA - Обновляем payload:', state.setpointsManager.settingsData.payload );
+        console.log('[index] - UPDATE_PAYLOAD_DATA - Обновили state.setpointsManager.settingsData:', state.setpointsManager.settingsData);
       }
     },
     UPDATE_LIMITS_DATA(state, limits) {

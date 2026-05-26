@@ -104,6 +104,7 @@ import MainHeader from './components/MainHeader.vue';
 import MainFooter from './components/MainFooter.vue';
 import MainSetpoint from './components/MainSetpoint.vue';
 import InputDialog from './components/InputDialog.vue';
+import { nowMoscow, createTimePoint } from '@/utils/timeUtils';
 
 export default { 
   name: 'DashBoard',
@@ -251,12 +252,14 @@ export default {
     }
   },
   methods: {
+    createTimePoint,
+    nowMoscow,
     ...mapActions('sortParams', [
       'switchSortKey',
       'UPDATE_LIMITS',
     ]),
     // ...mapActions('config', ['initialize']),
-    ...mapActions('settingsConfig', ['settingsConfigUpdate', 'checkScheduleOverlap', 'createTimePoint']),
+    ...mapActions('settingsConfig', ['settingsConfigUpdate', 'checkScheduleOverlap']),
     ...mapActions(['initializeSetpointsManager', 'updateSettingsData','updatePayloadData', 'updateLimitsData', 'updateViewData']),
     
     handleSortTypeChange(sortType) {
@@ -340,7 +343,7 @@ export default {
       if (valueTitle === 'startTime' || valueTitle === 'endTime') {
         value = parseFloat(eventData.updateState.value).toFixed(0);
       } else if (value_type === 'deviation') {
-        value = parseFloat(eventData.updateState.value).toFixed(3);
+        value = parseFloat(eventData.updateState.value).toFixed(2);
       }
       else {
         value = parseFloat(eventData.updateState.value).toFixed(1);
@@ -359,24 +362,24 @@ export default {
           room: roomKey, 
           param: setpointKey,
           value: value, 
-          time: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+          time: nowMoscow()
         };
         newValue = value;
         
       break;
       case 'schedules':
-        console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - Расписание');
+        console.log('[DashBoard] - editValueMainSetpoint -- case schedules -- Обработка данных от компонента MainSetpoint изменения конфигурации - Расписание');
         if (value_details === 'minutes' || value_details === 'hours') {
-          console.log('[DashBoard] - editValueMainSetpoint - value_details-', value_details, '--ДОПИСЫВАЕМ ОБРАБОТКУ ИЗМЕНЕНИЯ ВРЕМЕНИ -- МИНУТЫ');
+          //console.log('[DashBoard] - editValueMainSetpoint - value_details -', value_details);
           const settingsConfigUpdate = await this.$store.dispatch('settingsConfig/settingsConfigUpdate', {newValue: value, value_details});
-          console.log('[DashBoard] - editValueMainSetpoint - Результат проверки:', settingsConfigUpdate);
+          console.log('[DashBoard] - editValueMainSetpoint -- case schedules -- Результат проверки:', settingsConfigUpdate);
           if (settingsConfigUpdate.hasOverlap) {
           
             // Отображаем Уведомление для пользователя - PopupMenu.vue 
           this.$store.dispatch('popup/show', {
-            message: `Время скорректировано из-за пересечения с другими расписаниями `,
+            message: `-- case schedules -- Время скорректировано из-за пересечения с другими расписаниями `,
             type: 'warning',
-            duration: 3000
+            duration: 1000
           });
 
             this.setpoint = oldValue;
@@ -386,7 +389,46 @@ export default {
             room: roomKey, 
             param: setpointKey,
             value: newValue, 
-            time: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+            time: nowMoscow()
+          };
+         
+        }
+         else {
+          //console.log('[DashBoard] - editValueMainSetpoint - ', value_details);
+          newValue = value;
+          payload = {
+            room: roomKey, 
+            param: setpointKey,
+            value: value, 
+            value_type: value_type,
+            time: nowMoscow()
+          };
+        }
+        
+      break;
+      case 'notifications':
+        console.log('[DashBoard] - editValueMainSetpoint -- case notifications --  Обработка данных от компонента MainSetpoint изменения конфигурации - Уведомления');
+                if (value_details === 'minutes' || value_details === 'hours') {
+          console.log('[DashBoard] - editValueMainSetpoint -- case notifications -- value_details-', value_details);
+          const settingsConfigUpdate = await this.$store.dispatch('settingsConfig/settingsConfigUpdate', {newValue: value, value_details});
+          console.log('[DashBoard] - editValueMainSetpoint -- case notifications -- Результат проверки:', settingsConfigUpdate);
+          if (settingsConfigUpdate.hasOverlap) {
+          
+            // Отображаем Уведомление для пользователя - PopupMenu.vue 
+          this.$store.dispatch('popup/show', {
+            message: `-- case notifications -- Время скорректировано из-за пересечения с другими расписаниями `,
+            type: 'warning',
+            duration: 1000
+          });
+
+            this.setpoint = oldValue;
+          }
+          newValue = settingsConfigUpdate.updatedValue;
+          payload = {
+            room: roomKey, 
+            param: setpointKey,
+            value: newValue, 
+            time: nowMoscow()
           };
          
         }
@@ -398,14 +440,10 @@ export default {
             param: setpointKey,
             value: value, 
             value_type: value_type,
-            time: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+            time: nowMoscow()
           };
         }
-        
-      break;
-      case 'notifications':
-        console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - Уведомления');
-      break;
+        break;
       case 'statistics':
         console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - Статистика');
       break;
@@ -483,7 +521,7 @@ export default {
             console.error('Ошибка при отправке уставки на сервер:', error);
             return false;
           }
-        }, 1500);
+        }, 200);
   },
 
   getComponentData(event) {
@@ -506,6 +544,12 @@ export default {
         this.showSetpoint = false;
         this.setpoint = event.updateState.value;
         //console.log('[DashBoard] - getComponentData - Компонент MainSetpoint скрыт');
+          this.sendChangedData(
+            {updateState : {
+              request: event.request,
+              title: event.updateState.title,
+              value: event.updateState.value
+            }});
       }
 
   },

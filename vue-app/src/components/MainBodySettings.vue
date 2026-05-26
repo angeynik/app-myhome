@@ -323,7 +323,7 @@ export default {
       // Проверяет event.value_type и устанвливает флаг action
       console.log('[MainBodySettings] -  checkDataNotificationItem - Данные от компонента MainBodySchedule:', event, null, 2);
       let action = "show";
-      if (event.value_type === 'condition' & event.title === 'value_type') action = "hide";
+      if (event.title === 'condition' || event.title === 'notifСhannel' || event.title === 'permission') action = "hide";
       const arrayTitle = this.settingsData?.payload?.config; // имя массива (например, "schedule")
       const message = {
         action: action,
@@ -659,7 +659,7 @@ export default {
 
       const newNotification = {
         id: newId,
-        value_type: 'greater_than', // 'greater_than', 'less_than', 'equals', 'changed'
+        condition: 'greater_than', // 'greater_than', 'less_than', 'equals', 'changed'
         value: value,
         notificationСhannel: 0, //  0 - 'web', 1 - 'telegram', 2 'web' + 'telegram'
         frequency: 0, // 0 - 'once' ; число - интервал в минутах

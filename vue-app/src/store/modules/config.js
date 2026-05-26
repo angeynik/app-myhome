@@ -495,7 +495,7 @@ export default {
 
     handleValueUpdate({ commit, rootGetters}, { dID, payload, type }) {
       logger.info('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
-      // console.log('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
+      console.log('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
 
       const settingsData = rootGetters.getSetpointsManager?.settingsData;
       //console.log('[Config] - handleValueUpdate - Текущие settingsData:', settingsData);

@@ -233,7 +233,7 @@ export default {
   },
   // created() {
   //   this.updateSettingsData({ field: 'type', value: 'post' });
-  //   this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
+  //   this.updateSettingsData({ field: 'request', value: 'updateschedules' });
   //   this.updatePayloadData({ config: 'schedules'});
   //   console.log('[MainBodySchedule] - created component - ', this.scheduleData, null, 2);
   // },
@@ -300,7 +300,7 @@ export default {
     toggleValueType(event) {
       event.stopPropagation();
       
-      this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
+      this.updateSettingsData({ field: 'request', value: 'updateschedules' });
       // Определяем новый тип (переключаем)
       const currentType = this.localValueType;
       const newType = currentType === 'absolute' ? 'deviation' : 'absolute';
@@ -342,7 +342,7 @@ export default {
         this.updateSettingsData({ field: 'value_type', value: 'absolute' });
       }
       const field = 'value';
-      this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
+      this.updateSettingsData({ field: 'request', value: 'updateschedules' });
       this.setLimits({
         param: this.$store.state.setpointsManager?.settingsData?.payload?.param, 
         valueType: currentValueType, 
@@ -390,7 +390,7 @@ export default {
     },
     
     editTimeFieldWithToggle(selectedField, currentHours, currentMinutes) {
-      this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
+      this.updateSettingsData({ field: 'request', value: 'updateschedules' });
       //console.groupCollapsed('[MainBodySchedule] - editTimeFieldWithToggle');
       // if (this.scheduleData[this.selectedField] === undefined) {
       //   this.scheduleData[this.selectedField] = `00:00`;

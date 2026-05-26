@@ -36,7 +36,7 @@
         <div class="settings-row">
           <div
             class="settings-block-title clickable"
-            :class="{ 'selected': isFieldSelected('value_type') }"
+            :class="{ 'selected': isFieldSelected('condition') }"
             @click.stop="toggleCondition"
           >
             <p>{{ conditionLabel }}</p>
@@ -194,7 +194,7 @@ export default {
     },
 
     conditionLabel() {
-      return CONDITION_LABELS[this.notificationData.value_type] ?? this.notificationData.value_type ?? '???';
+      return CONDITION_LABELS[this.notificationData.condition] ?? this.notificationData.condition ?? '???';
     },
 
     notificationСhannelLabel() {
@@ -261,42 +261,39 @@ export default {
       }
     },
 
-
-
-
-
-
-
-
+// Обработка событий изменения компонента
     toggleCondition(event) {
+      this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
+      // Изменения Условия срабатывания - condition 
       if (!this.notificationData) return;
       console.log('[MainBodyNotifications] - toggleCondition - Изменяем Условие срабатывания');
       event.stopPropagation();
-      const currentIndex = CONDITIONS.indexOf(this.notificationData.value_type);
+      const currentIndex = CONDITIONS.indexOf(this.notificationData.condition);
+      const currentCondition = CONDITIONS[(currentIndex)];
       const nextCondition = CONDITIONS[(currentIndex + 1) % CONDITIONS.length];
-      console.log('[MainBodyNotifications] - toggleCondition - Новое Условие-', nextCondition);
+      console.log('[MainBodyNotifications] - toggleCondition - текущее Условие - ', currentCondition,' новое Условие -', nextCondition);
 
       this.updatePayloadData({ 
         id: this.notificationData.id,
         value: nextCondition,
-        value_type: 'condition',
+        value_name: 'condition',
       });
 
       // Отправляем событие родителю для немедленного обновления
       this.$emit('getDataNotificationItem', {
-        title: 'value_type',
-        value_type: 'condition',
+        title: 'condition',
+        value_type: '',
         value: nextCondition,
       });
 
       // Визуально выделяем поле
-      this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'value_type' });
+      this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'condition' });
     },
 
     editThreshold(event) {
       console.log('[MainBodyNotifications] - editThreshold - Изменяем Значение срабатывания');
       event.stopPropagation();
-      this.updateSettingsData({ field: 'request', value: 'updateNotifications' });
+      this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
 
       this.setLimits({
         param: 'threshold',
@@ -312,24 +309,16 @@ export default {
         id: this.notificationData.id,
         value: currentValue,
         value_type: 'value',
+        value_name: 'value'
       });
       this.$emit('getDataNotificationItem', {
         title: 'value',
-        value_type: 'threshold',
+        value_type: 'value',
         value: currentValue,
       });
       this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'threshold' });
 
     },
-
-
-
-
-
-
-
-
-
 
     editStartTime(event) {
       event.stopPropagation();
@@ -349,12 +338,13 @@ export default {
     },
 
     editTimeFieldWithToggle(selectedField, currentHours, currentMinutes) {
-      this.updateSettingsData({ field: 'request', value: 'updateNotifications' });
+      this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
         //console.log('[MainBodyNotifications] - Редактирование:', currentHours, currentMinutes, this.scheduleData[this.selectedField]);
         this.updatePayloadData({ 
               id: this.notificationData.id,
               value: this.notificationData[selectedField],
               value_name: selectedField,
+              value_type: '',
               value_details: this.timeEditMode
             });
         const editMode = this.timeEditMode;
@@ -385,27 +375,10 @@ export default {
         //console.groupEnd();
     },
 
-    _editDateField(fieldName) {
-      this.updateSettingsData({ field: 'request', value: 'updateNotifications' });
-
-      // Используем нативный date picker
-      const currentDate = this.notificationData[fieldName] || new Date().toISOString().slice(0, 10);
-      const newDate = prompt(`Введите дату в формате ГГГГ-ММ-ДД (текущее: ${currentDate})`, currentDate);
-      if (newDate && /^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
-        this.updatePayloadData({
-          id: this.notificationData.id,
-          value: newDate,
-          value_name: fieldName,
-        });
-        this.$emit('field-selected', { notificationId: this.notificationData.id, field: fieldName });
-      } else if (newDate) {
-        alert('Неверный формат даты. Используйте ГГГГ-ММ-ДД');
-      }
-    },
 
     editFrequency(event) {
       event.stopPropagation();
-      this.updateSettingsData({ field: 'request', value: 'updateNotifications' });
+      this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
       this.setLimits({
         param: 'frequency',
         valueType: 'absolute',
@@ -416,7 +389,8 @@ export default {
       this.updatePayloadData({ 
         id: this.notificationData.id,
         value: currentValue,
-        value_type: 'frequency',
+        value_type: 'value',
+        value_name: 'frequency',
       });
 
       // Отправляем событие родителю для немедленного обновления
@@ -439,12 +413,13 @@ export default {
       this.updatePayloadData({
         id: this.notificationData.id,
         value: nextType,
-        value_type: 'notifСhannel',
+        value_name: 'notifСhannel',
+        value_type: '',
       });
 
       this.$emit('getDataNotificationItem', {
-        title: 'enabled',
-        value_type: 'notifСhannel',
+        title: 'notifСhannel',
+        value_type: '',
         value: nextType,
       });
 
@@ -458,12 +433,13 @@ export default {
       this.updatePayloadData({
         id: this.notificationData.id,
         value: newEnabled,
-        value_type: 'permission',
+        value_name: 'permission',
+        value_type: '',
       });
       // Отправляем событие родителю для немедленного обновления
       this.$emit('getDataNotificationItem', {
         title: 'permission',
-        value_type: 'permission',
+        value_type: '',
         value: newEnabled,
       });
 
