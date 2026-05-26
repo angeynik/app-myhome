@@ -493,7 +493,7 @@ export default {
             // Откат значения при ошибке
             this.setpoint = oldValue;
           }
-        }, 2500);
+        }, 500);
 
         // Запускаем повторную сортировку через изменение флага Обновления updateView
         this.$store.commit('sortParams/SET_FORCE_UPDATE', Date.now());
