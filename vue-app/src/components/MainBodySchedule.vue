@@ -19,13 +19,12 @@
         <span class="settings-info-value">{{ formatDate(scheduleData.updatedAt) }}</span>
       </div>
       <button class="mainBodySettings-header-button" @click="deleteScheduleItem">
-      <svg class="icon-settings close" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle class="hover-bg" cx="33" cy="33" r="31" fill="#CC0000" opacity="0"/>
-        <circle cx="33" cy="33" r="31" fill="#FF4747"/>
-        <circle cx="33" cy="33" r="31" stroke="#FF4747" stroke-width="3"/>
-        <line x1="21" y1="21" x2="45" y2="45" stroke="#E0DFE7" stroke-width="6" stroke-linecap="round"/>
-        <line x1="45" y1="21" x2="21" y2="45" stroke="#E0DFE7" stroke-width="6" stroke-linecap="round"/>
-      </svg>
+            <svg class="icon-settings close" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="44" cy="44" r="42" fill="#CC0000"/>
+              <!-- Белый крестик -->
+              <line x1="28" y1="28" x2="60" y2="60" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
+              <line x1="60" y1="28" x2="28" y2="60" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
+            </svg>
       </button>
       </div>
 

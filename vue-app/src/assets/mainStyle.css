@@ -722,7 +722,14 @@ form button:active {
   justify-content: center;
   flex-shrink: 0;
 }
-
+.settings-info .mainBodySettings-header-button {
+  max-width: 48px;
+  max-height: 30px;
+}
+.settings-info .mainBodySettings-header-button .icon-settings.close {
+  width: 100%;
+  height: auto;
+}
 
 .mainBodySettings-header-title {
   font-size: 1.8rem;
@@ -798,21 +805,23 @@ form button:active {
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
-  min-height: 2rem;
+  min-height: 1.5rem;
 }
 .settings-block.clickable:hover,
 .settings-block-title.clickable:hover {
   /* background: rgba(0, 0, 0, 0.2);
   border-color: rgba(224, 223, 231, 0.5); */
-  font-weight: 900;
-  color: #34B534;
-  /* transform: translateY(-2px); */
+  font-weight: 800;
+  /* font-size: 44px; */
+  color: #F97B00;
+  /* min-height: 4rem; */
+  /* transform: translateY(-3px); */
   border-color: var(--violet);
   /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); */
 }
 .settings-block.clickable:active,
 .settings-block-title.clickable:active {
-  transform: translateY(0);
+  /* transform: translateY(0); */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   background: rgba(0, 0, 0, 0.25);
 }
@@ -1024,6 +1033,11 @@ form button:active {
   
   .button-text {
     font-size: clamp(1.3rem, 3vw, 1.5rem);
+  }
+  .frequency-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 }
 

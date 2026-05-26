@@ -318,12 +318,14 @@ export default {
       console.log('[MainBodySettings] -  checkDataScheduleItem - Формируем сообщение для DashBoard - emit getComponentData', message);
       this.$emit('getComponentData', message);
     },
+
+
     checkDataNotificationItem(event){
       // Функция получает измененный параметр от экземплара MainBodyNotifications 
       // Проверяет event.value_type и устанвливает флаг action
       console.log('[MainBodySettings] -  checkDataNotificationItem - Данные от компонента MainBodySchedule:', event, null, 2);
       let action = "show";
-      if (event.title === 'condition' || event.title === 'notifСhannel' || event.title === 'permission') action = "hide";
+      if (event.title === 'condition' || event.title === 'notificationСhannel' || event.title === 'permission') action = "hide";
       const arrayTitle = this.settingsData?.payload?.config; // имя массива (например, "schedule")
       const message = {
         action: action,

@@ -343,10 +343,13 @@ export default {
       if (valueTitle === 'startTime' || valueTitle === 'endTime') {
         value = parseFloat(eventData.updateState.value).toFixed(0);
       } else if (value_type === 'deviation') {
-        value = parseFloat(eventData.updateState.value).toFixed(2);
-      }
-      else {
-        value = parseFloat(eventData.updateState.value).toFixed(1);
+        //value = parseFloat(eventData.updateState.value).toFixed(2);
+        value = Math.round(parseFloat(eventData.updateState.value) * 100) / 100;
+      } else if (valueTitle === 'frequency') {
+        value = parseInt(eventData.updateState.value, 10);
+      } else {
+        //value = parseFloat(eventData.updateState.value).toFixed(1);
+        value = Math.round(parseFloat(eventData.updateState.value) * 10) / 10;
       }
     this.setpoint = value;
     console.log('[DashBoard] - editValueMainSetpoint - Обновляем значение уставки:', this.setpoint);

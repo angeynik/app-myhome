@@ -81,53 +81,52 @@
           </div>
           <div
             v-if="notificationData.frequency === 0"
-            class="settings-block-title"
+            class="settings-block-title clickable"
             :class="{ 'selected': isFieldSelected('frequency') }"
             @click.stop="editFrequency"
           >
             <p>Однократно</p>
           </div>
+        <div v-else class="frequency-wrapper">
+          
           <div
-            v-else
-            class="settings-block clickable time-input"
+            class="settings-block-title clickable"
             :class="{ 'selected': isFieldSelected('frequency') }"
             @click.stop="editFrequency"
           >
             <div class="settings-value">{{ frequencyLabel }}</div>
-            <span>мин</span>
           </div>
+          <span class="frequency-unit">мин</span>
+        </div>
         </div>
 
-        <!-- Строка 2: Канал уведомления -->
-        <div class="settings-row">
-          <div class="settings-block-title">
-            <p>Канал</p>
-          </div>
-          <div
-            class="settings-block-title clickable"
-            :class="{ 'selected': isFieldSelected('notifСhannel') }"
-            @click.stop="toggleNotificationСhannel"
-          >
-            <p>{{ notificationСhannelLabel }}</p>
-          </div>
-
-        </div>
-        
-        <!-- Строка 5: Активность -->
-        <div class="settings-row">
-          <div class="settings-block-title">
-            <p>Статус</p>
-          </div>
-
-          <div
-            class="settings-block-title clickable"
-            :class="{ 'selected': isFieldSelected('permission') }"
-            @click.stop="togglePermission"
-          >
-            <p>{{ enabledLabel }}</p>
-          </div>
-
-        </div>
+<!-- Строка: Канал и Статус -->
+<div class="settings-row">
+  <!-- Канал -->
+  <div class="settings-block-title">
+    <p>Канал</p>
+  </div>
+  <div
+    class="settings-block-title clickable"
+    :class="{ 'selected': isFieldSelected('notifСhannel') }"
+    @click.stop="toggleNotificationСhannel"
+  >
+    <p>{{ notificationСhannelLabel }}</p>
+  </div>
+  <!-- Разделитель или отступ -->
+  <div class="settings-separator"></div>
+  <!-- Статус -->
+  <div class="settings-block-title">
+    <p>Статус</p>
+  </div>
+  <div
+    class="settings-block-title clickable"
+    :class="{ 'selected': isFieldSelected('permission') }"
+    @click.stop="togglePermission"
+  >
+    <p>{{ enabledLabel }}</p>
+  </div>
+</div>
 
       </div>
 
@@ -210,12 +209,12 @@ export default {
     enabledLabel() {
       return this.notificationData.permission === false ? 'Отключено' : 'Активно';
     },
-
     frequencyLabel() {
-      const freq = this.notificationData.frequency;
-      if (freq && typeof freq === 'number') return freq;
-      return '???';
-      //return FREQUENCY_LABELS[this.notificationData.frequency] ?? this.notificationData.frequency ?? '???';
+      let freq = this.notificationData.frequency;
+      if (freq === null || freq === undefined) return '???';
+      const numFreq = Number(freq);
+      if (isNaN(numFreq)) return '???';
+      return numFreq;
     },
     displayStartTime() {
       return this.notificationData?.startTime ?? '00:00';
@@ -384,7 +383,7 @@ export default {
         valueType: 'absolute',
       });
 
-      const currentValue = this.notificationData.frequency || 1;
+      const currentValue = this.notificationData.frequency || 0;
 
       this.updatePayloadData({ 
         id: this.notificationData.id,
@@ -404,30 +403,41 @@ export default {
       this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'frequency' });
 
     },
+
     toggleNotificationСhannel(event) {
       event.stopPropagation();
-      const types = ['web', 'telegram', 'web + telegram']; // порядок как в NOTIFICATION_TYPES
-      const currentIndex = types.indexOf(this.notificationData.notificationСhannel);
-      const nextType = types[(currentIndex + 1) % types.length];
+      this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
+      if (!this.notificationData) return;
+      console.log('[MainBodyNotifications] - toggleNotificationСhannel - Изменяем Канал уведомления');
+      
+      const typesCount = Object.keys(TYPE_LABELS).length; // 3
+      const currentValue = this.notificationData.notificationСhannel;
+      // Убедимся, что currentValue число
+      const currentIndex = Number(currentValue);
+      const nextIndex = (currentIndex + 1) % typesCount;
+      const nextValue = nextIndex; // 0,1,2
 
       this.updatePayloadData({
         id: this.notificationData.id,
-        value: nextType,
-        value_name: 'notifСhannel',
-        value_type: '',
+        value: nextValue,
+        value_name: 'notificationСhannel',
+        value_type: 'value',
       });
 
       this.$emit('getDataNotificationItem', {
-        title: 'notifСhannel',
-        value_type: '',
-        value: nextType,
+        id: this.notificationData.id,
+        title: 'notificationСhannel',
+        value_type: 'value',
+        value: nextValue,
       });
 
       this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'notifСhannel' });
     },
 
+
     togglePermission(event) {
       event.stopPropagation();
+      this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
       const newEnabled = this.notificationData.permission === false ? true : false;
 
       this.updatePayloadData({
