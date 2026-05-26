@@ -60,7 +60,7 @@
         v-else 
         :key="componentKey"
         @eventsMainBody="handleMainBodyEvent"
-        @eventsMainBodySettings="handleMainBodySettingsEvent"
+        @eventsMainBodySettings="handlePermitEvent"
         @getComponentData="getComponentData"
         @updateTypeValue="editValueMainSetpoint"
         @swipe-forward="handleSwipeForward"
@@ -126,6 +126,7 @@ export default {
       request: null,
       setpoint: null,
       selectedItemData: {},
+      handlePermit: false,
       manualInputDialog: {
         visible: false,
         title: '',
@@ -511,66 +512,79 @@ export default {
 
 
 
-  handleMainBodySettingsEvent(event) {
-    if (event.handlePermit === true) {
-      this.openManualInputDialog({
-        title: event.title,
-        initialValue: event.currentValue,
-        type: event.inputType,
-        callback: (newValue) => {
-          // После подтверждения вызываем метод, который обновит данные через store и дочерние компоненты
-          this.processManualInputUpdate({
-            id: event.id,
-            field: event.field,
-            newValue: newValue,
-            scheduleData: event.scheduleData,
+
+
+
+
+
+
+  
+
+// Блок для управления ручным редактированием значения
+      changeeventHandlePermit (event) {
+        if (!event.handlePermit) this.handlePermit = event.handlePermit;
+        console.log('[DashBoard] - handlePermitEvent', event.handlePermit);
+      },
+      handlePermitEvent(event) {
+        
+        if (event.handlePermit === true) {
+          this.openManualInputDialog({
+            title: event.title,
+            initialValue: event.currentValue,
+            type: event.inputType,
+            callback: (newValue) => {
+              // После подтверждения вызываем метод, который обновит данные через store и дочерние компоненты
+              this.processManualInputUpdate({
+                id: event.id,
+                field: event.field,
+                newValue: newValue,
+                scheduleData: event.scheduleData,
+              });
+            },
           });
-        },
-      });
-    } else {
-      // остальная логика обработки событий MainBodySettings
-    }
-  },
-
-  processManualInputUpdate({ id, field, newValue, scheduleData }) {
-    console.log('[DashBoard] - processManualInputUpdate - Получены данные с ручной формы ввода InputDialog', newValue, scheduleData);
-    // Обновляем через существующие механизмы
-    // this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
-    this.updatePayloadData({
-      id: id,
-      value: newValue,
-      value_name: field,
-      value_details: '',
-    });
-    // Эмитим событие вниз (через ref) для обновления UI
-    // this.$refs.mainBodySettings?.$emit('getDataScheduleItem', {
-    //   value: newValue,
-    //   title: field,
-    //   value_type: scheduleData?.value_type,
-    // });
-  },
-// Открыть диалог ручного ввода InputDialog.vue
-  openManualInputDialog({ title, initialValue, type, callback }) {
-    this.manualInputDialog = {
-      visible: true,
-      title,
-      initialValue,
-      type,
-      callback,
-    };
-  },
-  // Закрыть диалог InputDialog.vue
-  closeManualInputDialog() {
-    this.manualInputDialog.visible = false;
-  },
-
-  // Подтверждение ввода InputDialog.vue
-  onManualInputConfirm(newValue) {
-    if (this.manualInputDialog.callback) {
-      this.manualInputDialog.callback(newValue);
-    }
-    this.closeManualInputDialog();
-  },
+        } else {
+          // остальная логика обработки событий MainBodySettings
+        }
+      },
+      processManualInputUpdate({ id, field, newValue, scheduleData }) {
+        console.log('[DashBoard] - processManualInputUpdate - Получены данные с ручной формы ввода InputDialog', newValue, scheduleData);
+        // Обновляем через существующие механизмы
+        // this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
+        this.updatePayloadData({
+          id: id,
+          value: newValue,
+          value_name: field,
+          value_details: '',
+        });
+        // Эмитим событие вниз (через ref) для обновления UI
+        // this.$refs.mainBodySettings?.$emit('getDataScheduleItem', {
+        //   value: newValue,
+        //   title: field,
+        //   value_type: scheduleData?.value_type,
+        // });
+      },
+    // Открыть диалог ручного ввода InputDialog.vue
+      openManualInputDialog({ title, initialValue, type, callback }) {
+        this.manualInputDialog = {
+          visible: true,
+          title,
+          initialValue,
+          type,
+          callback,
+        };
+      },
+      // Закрыть диалог InputDialog.vue
+      closeManualInputDialog() {
+        this.manualInputDialog.visible = false;
+      },
+      // Подтверждение ввода InputDialog.vue
+      onManualInputConfirm(newValue) {
+        if (this.manualInputDialog.callback) {
+          this.manualInputDialog.callback(newValue);
+        }
+        this.closeManualInputDialog();
+      },
+// Окончание Блока для управления ручным редактированием значения
 
   }
 };

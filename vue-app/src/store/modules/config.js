@@ -196,9 +196,9 @@ export default {
       localStorage.setItem('typeSettingsKey', type);
       state.typeSettingsKey = type;
     },
-    UPDATE_SCHEDULE_LOCALLY(state, { dID, schedules }) {
-      console.log('[config] - UPDATE_SCHEDULE_LOCALLY - dID:', dID, 'schedules keys:', Object.keys(schedules));
-      state.schedules[dID] = schedules;
+    UPDATE_CONFIGDATA_LOCALLY(state, { dID, configName, configData }) {
+      console.log('[config] - UPDATE_CONFIGDATA_LOCALLY - dID:', dID, configName,' keys:', Object.keys(configData));
+      state[configName][dID] = configData;
     },
   },
   
@@ -367,9 +367,9 @@ export default {
       }
     },
 
-    updateScheduleLocally({ commit }, { dID, schedules }) {
-      console.log('[config] - updateScheduleLocally - dID:', dID);
-      commit('UPDATE_SCHEDULE_LOCALLY', { dID, schedules });
+    updateScheduleLocally({ commit }, { dID, configName, configData }) {
+      console.log('[config] - updateScheduleLocally - dID:', dID, 'configName-', configName, 'configData: ', configData);
+      commit('UPDATE_CONFIGDATA_LOCALLY', { dID, configName, configData });
     },
 
 

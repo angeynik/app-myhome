@@ -528,7 +528,7 @@ export default {
       
       try {
         // 1. Получаем текущие расписания из config.js
-        const currentSchedules = { ...(rootState.config.schedules[dID] || {}) };
+        const currentSchedules = { ...(rootState.config[configName][dID] || {}) };
         console.log('[settingsConfig] - addConfigLocally - Текущие расписания из config.js:', currentSchedules);
         
         // 2. Инициализируем структуру если нужно
@@ -542,16 +542,19 @@ export default {
         
         // 3. Добавляем новое расписание
         currentSchedules[room][param] = [...currentSchedules[room][param], configData];
+        console.log('[settingsConfig] - addConfigLocally - Добавляем новый объект ', configName, ' в ', currentSchedules);
         
         // 4. Обновляем состояние в config.js через мутацию
-        console.log('[settingsConfig] - addConfigLocally - Обновляем состояние в config.js через updateScheduleLocally');
+        console.log('[settingsConfig] - addConfigLocally - Обновляем состояние в config.js через updateScheduleLocally для ', configName);
         await dispatch('config/updateScheduleLocally', {
           dID: dID,
-          schedules: currentSchedules
+          configName: configName,
+          configData: currentSchedules
         }, { root: true });
         
         // 5. Также сохраняем в localStorage для резерва
-        localStorage.setItem(`${dID}_schedules`, JSON.stringify(currentSchedules));
+        const localKey = `${dID}_${configName}`;
+        localStorage.setItem(localKey, JSON.stringify(currentSchedules));
         
         logger.info('[settingsConfig] - addConfigLocally - Расписание добавлено локально');
         return { success: true, configData };
@@ -851,9 +854,10 @@ export default {
 
 
 
-    async saveConfigItems({ rootGetters, dispatch }, { room, param, configName, schedules }) {
+    async saveConfigItems({ rootGetters, dispatch }, { room, param, configName, configData }) {
+      const schedules = configData;
       console.log('[settingsConfig] - saveConfigItems - Сохраняем расписание:', { room, param, configName, schedules });
-
+      const serverRequest = 'add'+configName;
       const dID = rootGetters['dID'];
       if (!dID) {
         logger.warn('[settingsConfig] - saveConfigItems - dID не определен');
@@ -865,7 +869,7 @@ export default {
         try {
           await dispatch('websocket/send', {
             type: 'post',
-            request: 'addSchedule',
+            request: serverRequest,
             name: dID,
             payload: { room, param, schedules }
           }, { root: true });
@@ -873,7 +877,7 @@ export default {
           // После успешной отправки на сервер, обновляем локальное состояние
           await dispatch('config/handleConfigResponse', {
             name: dID,
-            request: 'schedules',
+            request: configName,
             payload: { [room]: { [param]: schedules } }
           }, { root: true });
           

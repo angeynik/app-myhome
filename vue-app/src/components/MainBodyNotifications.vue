@@ -59,18 +59,18 @@
           </div>
           <div
             class="settings-block clickable time-input"
-            :class="{ 'selected': isFieldSelected('startDate') }"
+            :class="{ 'selected': isFieldSelected('startTime') }"
             @click.stop="editStartTime"
           >
-            <div class="settings-value">{{ formattedStartDate }}</div>
+            <div class="settings-value" v-html="formattedStartDisplay"></div>
           </div>
           <div class="settings-separator"></div>
           <div
             class="settings-block clickable time-input"
-            :class="{ 'selected': isFieldSelected('endDate') }"
+            :class="{ 'selected': isFieldSelected('endTime') }"
             @click.stop="editEndTime"
           >
-            <div class="settings-value">{{ formattedEndDate }}</div>
+            <div class="settings-value" v-html="formattedEndDisplay"></div>
           </div>
         </div>
 
@@ -237,19 +237,27 @@ export default {
       return this.notificationData.permission === false ? 'Отключено' : 'Активно';
     },
 
-    formattedStartDate() {
-      return this.notificationData.startDate || '???';
-    },
-
-    formattedEndDate() {
-      return this.notificationData.endDate || '???';
-    },
-
     frequencyLabel() {
       const freq = this.notificationData.frequency;
       if (freq && typeof freq === 'number') return freq;
       return '???';
       //return FREQUENCY_LABELS[this.notificationData.frequency] ?? this.notificationData.frequency ?? '???';
+    },
+    displayStartTime() {
+      return this.notificationData?.startTime ?? '00:00';
+    },
+    displayEndTime() {
+      return this.notificationData?.endTime ?? '23:59';
+    },
+    formattedStartDisplay() {
+      const time = this.displayStartTime;
+      const isSelected = this.isFieldSelected('startTime');
+      return this.dateTimeUtils.formatTimeWithHighlight(time, this.timeEditMode, isSelected);
+    },
+    formattedEndDisplay() {
+      const time = this.displayEndTime;
+      const isSelected = this.isFieldSelected('endTime');
+      return this.dateTimeUtils.formatTimeWithHighlight(time, this.timeEditMode, isSelected);
     },
   },
 
@@ -286,6 +294,7 @@ export default {
 
 
     toggleCondition(event) {
+      if (!this.notificationData) return;
       console.log('[MainBodyNotifications] - toggleCondition - Изменяем Условие срабатывания');
       event.stopPropagation();
       const currentIndex = CONDITIONS.indexOf(this.notificationData.value_type);

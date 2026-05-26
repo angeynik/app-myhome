@@ -66,7 +66,7 @@
               :class="{ 'selected': isFieldSelected('startTime') }"
               @click.stop="editStartTime"
             >
-            <div class="settings-value" v-html="formattedDisplay('displayStartTime')"></div>
+            <div class="settings-value" v-html="formattedStartDisplay"></div>
               
             </div>
             <div class="settings-separator"></div>
@@ -74,7 +74,7 @@
               :class="{ 'selected': isFieldSelected('endTime') }"
               @click.stop="editEndTime"
             >
-              <div class="settings-value" v-html="formattedDisplay('displayEndTime')"></div>
+              <div class="settings-value" v-html="formattedEndDisplay"></div>
             </div>
     </div>
 
@@ -195,7 +195,16 @@ export default {
     displayEndTime() {
       return String(this.scheduleData.endTime || '00:05');
     },
-
+    formattedStartDisplay() {
+      const time = this.displayStartTime;
+      const isSelected = this.isFieldSelected('startTime');
+      return this.dateTimeUtils.formatTimeWithHighlight(time, this.timeEditMode, isSelected);
+    },
+    formattedEndDisplay() {
+      const time = this.displayEndTime;
+      const isSelected = this.isFieldSelected('endTime');
+      return this.dateTimeUtils.formatTimeWithHighlight(time, this.timeEditMode, isSelected);
+    },
 
 
     
@@ -361,12 +370,6 @@ export default {
       });
     },
 
-
-    formattedDisplay(fieldName) {
-      const time = fieldName === 'startTime' ? this.displayStartTime : this.displayEndTime;
-      const isSelected = this.isFieldSelected(fieldName);
-      return this.dateTimeUtils.formatTimeWithHighlight(time, this.timeEditMode, isSelected);
-    },
     
 
     editStartTime() {

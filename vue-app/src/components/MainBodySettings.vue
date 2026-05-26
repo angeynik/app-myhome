@@ -386,7 +386,7 @@ export default {
         
         switch(type) {
           case 'schedules':
-            await this.loadData('schedule');
+            await this.loadData('schedules');
             break;
           case 'notifications':
             await this.loadData('notifications');
@@ -473,7 +473,7 @@ export default {
           // existingSchedules
         });
 
-        console.log('[MainBodySettings] - generationTime - Результат проверки пересечения:', hasOverlap);
+        //console.log('[MainBodySettings] - generationTime - Результат проверки пересечения:', hasOverlap);
         
           if (hasOverlap.massage) {
             alert(hasOverlap.massage);
@@ -575,7 +575,7 @@ export default {
           room: this.settingsData.payload.room,
           param: this.effectiveParamKey,
           configName: 'schedules',
-          schedules: newSchedule
+          configData: newSchedule
         });
         console.log('[MainBodySettings] - addNewSchedule - Расписание успешно сохранено');
         
@@ -583,7 +583,7 @@ export default {
         this.showSuccessNotification('Расписание успешно создано');
         
         // Если нужно, можно обновить список расписаний
-        await this.loadData('schedule');
+        await this.loadData('schedules');
         console.groupEnd();
         return newSchedule;
       } catch (error) {
@@ -623,12 +623,12 @@ export default {
       console.groupCollapsed('[MainBodySettings] - addNewNotification');
       const settingsData = this.$store.state.setpointsManager?.settingsData;
       const value = settingsData?.payload?.value || 0;
-      const roomKey = this.settingsData.payload.room;
-      const paramKey = this.effectiveParamKey;
+      const room = this.settingsData.payload.room;
+      const param = this.effectiveParamKey;
       // Получаем текущие уведомления для этой комнаты и параметра
       const existingNotifications = this.notifications.filter(n => 
-        n.roomKey === roomKey && 
-        n.paramKey === paramKey
+        n.roomKey === room && 
+        n.paramKey === param
       );
       
       // Определяем ID нового уведомления
@@ -656,21 +656,56 @@ export default {
         frequency: 0, // 0 - 'once' ; число - интервал в минутах
         permission: false,
         status: 'active',
-        startDate: startTime,
-        endDate: endTime,
+        startTime: startTime,
+        endTime: endTime,
         createdAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
         updatedAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
       };
       
       // Добавляем уведомление
       this.notifications = [...this.notifications, newNotification];
-      
-      console.log('[MainBodySettings] - addNewNotification - Новое уведомление создано:', newNotification);
-      
-      // Сохраняем изменения
-      await this.saveNotificationBlock();
-      console.log('[MainBodySettings] - addNewNotification - Уведомление успешно сохранено');
-     console.groupEnd();
+      console.log('[MainBodySettings] - addNewNotification - Новое Уведомления создано:', newNotification);
+            // Сохраняем изменения на сервер
+      try {
+        console.log('[MainBodySettings] - addNewNotification - Сохраняем Уведомления локально');
+        await this.$store.dispatch('settingsConfig/addConfigLocally', {
+          room: room,
+          param: param,
+          configName: 'notifications',
+          configData: newNotification
+        });
+        
+        console.log('[MainBodySettings] - addNewNotification - Уведомления сохранено локально');
+        console.groupEnd();
+
+        // await this.saveScheduleBlock();
+        await this.saveConfigItems({
+          room: this.settingsData.payload.room,
+          param: this.effectiveParamKey,
+          configName: 'notifications',
+          configData: newNotification
+        });
+        console.log('[MainBodySettings] - addNewNotification - Уведомления успешно сохранено');
+        
+        // Опционально: показываем уведомление об успехе
+        this.showSuccessNotification('Уведомления успешно создано');
+        
+        // Если нужно, можно обновить список расписаний
+        await this.loadData('notifications');
+        console.groupEnd();
+        return newNotification;
+      } catch (error) {
+        console.error('[MainBodySettings] - addNewNotification - Уведомления - Ошибка сохранения:', error);
+        
+        // Откатываем изменения в UI при ошибке сохранения
+        this.notifications = this.notifications.filter(s => s.id !== newId);
+        
+        // Показываем сообщение об ошибке
+        alert('Не удалось сохранить Уведомления на сервере. Попробуйте еще раз.');
+        console.groupEnd();
+        throw error;
+      }
+
     },
   
     async addNewStatistic(roomKey, paramKey) {
@@ -711,7 +746,36 @@ export default {
       console.log('[MainBodySettings] - addNewStatistic - Аналитика успешно сохранена');
       console.groupEnd();
     },
-    
+
+    async saveNewConfig({ configName, configData, room, param }) {
+      try {
+        // Локальное сохранение (backup)
+        await this.$store.dispatch('settingsConfig/addConfigLocally', {
+          room, param, configName, configData
+        });
+
+        // Отправка на сервер в зависимости от типа
+        await this.saveConfigItems({
+            room: this.settingsData.payload.room,
+            param: this.effectiveParamKey,
+            configName: configName,
+            configData: configData
+          });
+          const successMessage = 'Настройка успешно сохранена';
+        alert(successMessage);
+        // Обновляем список (перезагружаем данные из store)
+        return configData;
+      } catch (error) {
+        console.error(`[MainBodySettings] saveNewConfig error for ${configName}:`, error);
+        throw error;
+      }
+    },
+
+
+
+
+
+
     
     async saveNotificationBlock() {
       try {
@@ -778,10 +842,10 @@ export default {
 
     },
 
-    async loadData(dataType) {
-      const roomKey = this.settingsData.payload.room;
-      const paramKey = this.settingsData.payload.param;
-      console.log('[MainBodySettings] Loading ', dataType, ' data for ', roomKey, paramKey);
+    async loadData(dataType, room, param) {
+      // const roomKey = this.settingsData.payload.room;
+      // const paramKey = this.settingsData.payload.param;
+      console.log('[MainBodySettings] Loading ', dataType, ' data for ', room, param);
       
       try {
         let result = [];
@@ -790,8 +854,8 @@ export default {
         // Прямой доступ к rootState.config
         const configData = this.$store.state.config?.[dataType]?.[dID];
         
-        if (configData && configData[roomKey] && configData[roomKey][paramKey]) {
-          result = configData[roomKey][paramKey];
+        if (configData && configData[room] && configData[room][param]) {
+          result = configData[room][param];
           console.log(`[MainBodySettings] - loadData - Данные из store для ${dataType}:`, result);
         } else {
           // Fallback на localStorage (как было в getConfigSettings)
@@ -800,8 +864,8 @@ export default {
           if (localConfig) {
             try {
               const parsedConfig = JSON.parse(localConfig);
-              if (parsedConfig[roomKey] && parsedConfig[roomKey][paramKey]) {
-                result = parsedConfig[roomKey][paramKey];
+              if (parsedConfig[room] && parsedConfig[room][param]) {
+                result = parsedConfig[room][param];
                 console.log(`[MainBodySettings] - loadData - Данные из localStorage для ${dataType}:`, result);
               }
             } catch (error) {
