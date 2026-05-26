@@ -1,6 +1,8 @@
 // модуль работы с конфигурацией Расписания
 // store/modules/settingsConfig.js
 import logger from './logger';
+import { timeToMinutes, minutesToTime, formatDate,
+         formatTimeWithHighlight, validateScheduleTime } from '@/utils/timeUtils';
 
 const MUTATION_TYPES = {
   SET_NOTIFICATIONS: 'SET_NOTIFICATIONS',
@@ -235,195 +237,6 @@ export default {
         throw error;
       }
     },
-  
-
-
-    // Формируем время для создания интервала Расписания и Уведомления
-    getCurrentDateTime() {
-      try {
-        const now = new Date();
-        return now.toISOString();
-      } catch (error) {
-        logger.error('[settingsConfig] - getCurrentDateTime - Ошибка создания даты:', error);
-        return new Date().toISOString(); // fallback
-      }
-    },
-    getCurrentTimeString() {
-      try {
-        const now = new Date();
-        const hours = now.getHours().toString().padStart(2, '0');
-        const minutes = now.getMinutes().toString().padStart(2, '0');
-        return `${hours}:${minutes}`;
-      } catch (error) {
-        console.error('[settingsConfig] - getCurrentTimeString - Ошибка:', error);
-        return '00:00';
-      }
-    },
-    formatDate(context, { dateString, locale = 'ru-RU', timeZone = 'Europe/Moscow'  }) {
-      try {
-        if (!dateString) return '—';
-        
-        // Если строка уже содержит запятую, значит уже отформатирована
-        if (typeof dateString === 'string' && dateString.includes(',')) {
-          return dateString;
-        }
-        
-        const date = dateString instanceof Date ? dateString : new Date(dateString);
-        
-        // Проверка валидности даты
-        if (isNaN(date.getTime())) {
-          return dateString;
-        }
-        
-        return date.toLocaleDateString(locale, {
-          timeZone: timeZone,
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      } catch (error) {
-        logger.error('[settingsConfig] - formatDate - Ошибка форматирования даты:', error);
-        return dateString || '—';
-      }
-    },
-    timeToMinutes(_, timeString) {
-      //console.log('[settingsConfig] - timeToMinutes - Преобразование времени:', timeString);
-        try {
-          if (!timeString || typeof timeString !== 'string') {
-            logger.warn('[settingsConfig] - timeToMinutes - Неверный формат времени:', timeString);
-            return 0;
-          }
-          
-          const [hours, minutes] = timeString.split(':').map(Number);
-          
-          // Проверяем валидность часов и минут
-          if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-            logger.warn('[settingsConfig] - timeToMinutes - Некорректное время:', timeString);
-            return 0;
-          }
-          
-          const totalMinutes = hours * 60 + minutes;
-          logger.dev('[settingsConfig] - timeToMinutes - Преобразовано:', { timeString, totalMinutes });
-          
-          return totalMinutes;
-        } catch (error) {
-          logger.error('[settingsConfig] - timeToMinutes - Ошибка преобразования:', error);
-          return 0;
-        }
-      },
-    minutesToTime(_, minutes) {
-      //console.log('[settingsConfig] - minutesToTime - Преобразование минут:', minutes);
-        try {
-          if (typeof minutes !== 'number' || minutes < 0 || minutes > 1439) {
-            logger.warn('[settingsConfig] - minutesToTime - Некорректное количество минут:', minutes);
-            return '00:00';
-          }
-          
-          const hours = Math.floor(minutes / 60);
-          const mins = minutes % 60;
-          
-          const timeString = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-          logger.dev('[settingsConfig] - minutesToTime - Преобразовано:', { minutes, timeString });
-          
-          return timeString;
-        } catch (error) {
-          logger.error('[settingsConfig] - minutesToTime - Ошибка преобразования:', error);
-          return '00:00';
-        }
-    },
-    validateScheduleTime(context, schedule) {
-        try {
-          if (!schedule || !schedule.startTime || !schedule.endTime) {
-            return {
-              valid: false,
-              message: 'Отсутствует время начала или окончания'
-            };
-          }
-          
-          // Используем нашу функцию timeToMinutes
-          const startMinutes = context.dispatch('timeToMinutes', schedule.startTime);
-          const endMinutes = context.dispatch('timeToMinutes', schedule.endTime);
-          
-          // Проверяем, что endTime > startTime
-          if (endMinutes <= startMinutes) {
-            return {
-              valid: false,
-              message: 'Время окончания должно быть позже времени начала'
-            };
-          }
-          
-          logger.dev('[settingsConfig] - validateScheduleTime - Валидация пройдена:', schedule);
-          return { valid: true };
-          
-        } catch (error) {
-          logger.error('[settingsConfig] - validateScheduleTime - Ошибка валидации:', error);
-          return {
-            valid: false,
-            message: 'Ошибка при валидации времени'
-          };
-        }
-    },
-    async createTimePoint({ dispatch }, { offset = 1, duration = 10 } = {}) {
-      console.groupCollapsed('[settingsConfig] - createTimePoint');
-      logger.dev('[settingsConfig] - createTimePoint - Создание временной точки:', { offset, duration });
-      
-      try {
-        // Шаг 1: Получаем текущее московское время с учетом смещения offset
-        const now = new Date();
-        
-        // Применяем смещение offset (в минутах) к текущему времени
-        const offsetDate = new Date(now.getTime() + offset * 60 * 1000);
-        
-        // Форматируем время начала в московском часовом поясе
-        const formattedStartTime = await dispatch('formatDate', { 
-          dateString: offsetDate, 
-          timeZone: 'Europe/Moscow',
-          returnTimeOnly: true // Предполагаем, что formatDate может возвращать только время
-        });
-        const startTime = formattedStartTime.split(', ')[1];
-        logger.dev('[settingsConfig] - createTimePoint - Время начала (с учетом offset):', startTime);
-        
-        // Шаг 2: Создаем время окончания, добавляя duration минут к offsetDate
-        const endDate = new Date(offsetDate.getTime() + duration * 60 * 1000);
-        
-        // Форматируем время окончания
-        const formattedEndTime = await dispatch('formatDate', { 
-          dateString: endDate, 
-          timeZone: 'Europe/Moscow',
-          returnTimeOnly: true
-        });
-        const endTime = formattedEndTime.split(', ')[1];
-        console.log('[settingsConfig] - createTimePoint - Время окончания:', endTime);
-      
-        // Шаг 3: Возвращаем результат
-        const result = {
-          startTime,
-          endTime,
-        };
-        
-        console.log('[settingsConfig] - createTimePoint - Результат:', result);
-        console.groupEnd();
-        return result;
-        
-      } catch (error) {
-        logger.error('[settingsConfig] - createTimePoint - Ошибка создания временной точки:', error);
-        console.groupEnd();
-        
-        // Возвращаем значения по умолчанию в случае ошибки
-        return {
-          startTime: '00:00',
-          endTime: '00:05'
-        };
-      }
-    },
-
-
-
-
-
-
 
   getConfigDataFromStore({ rootState, rootGetters }, { configName }) {
     //console.log('[settingsConfig] - getConfigDataFromStore - configName', configName);
@@ -584,9 +397,9 @@ export default {
         throw error;
       }
   },
-  async deleteConfigItems({ dispatch, rootGetters }, { room, param, configName, scheduleIds }) {
+  async deleteConfigItems({ dispatch, rootGetters }, { room, param, configName, configsIds }) {
       console.groupCollapsed('[settingsConfig] - deleteConfigItems');
-      console.log('[settingsConfig] - deleteConfigItems - Удаляем расписания:', { room, param, configName, scheduleIds });
+      console.log('[settingsConfig] - deleteConfigItems - Удаляем расписания:', { room, param, configName, configsIds });
       
       const dID = rootGetters['dID'];
       const request = 'del'+configName;
@@ -605,7 +418,7 @@ export default {
           payload: { 
             room, 
             param, 
-            scheduleIds: Array.isArray(scheduleIds) ? scheduleIds : [scheduleIds] 
+            Ids: Array.isArray(configsIds) ? configsIds : [configsIds] 
           }
         }, { root: true });
         
@@ -644,15 +457,15 @@ export default {
 
         // Определяем интервал в зависимости от режима
         if (mode === 'new') {
-          startMinutes = await dispatch('timeToMinutes', startTime);
-          endMinutes = await dispatch('timeToMinutes', endTime);
+          startMinutes = timeToMinutes(startTime);
+          endMinutes = timeToMinutes(endTime);
         } else if (mode === 'edit') {
           if (value_name === 'startTime') {
-            startMinutes = await dispatch('timeToMinutes', valueToCheck);
-            endMinutes = currentSchedule ? await dispatch('timeToMinutes', currentSchedule.endTime) : startMinutes + 10;
+            startMinutes = timeToMinutes(valueToCheck);
+            endMinutes = currentSchedule ? timeToMinutes(currentSchedule.endTime) : startMinutes + 10;
           } else if (value_name === 'endTime') {
-            endMinutes = await dispatch('timeToMinutes', valueToCheck);
-            startMinutes = currentSchedule ? await dispatch('timeToMinutes', currentSchedule.startTime) : endMinutes - 10;
+            endMinutes = timeToMinutes(valueToCheck);
+            startMinutes = currentSchedule ? timeToMinutes(currentSchedule.startTime) : endMinutes - 10;
           }
         }
 
@@ -664,11 +477,11 @@ export default {
           } else {
             if (value_name === 'startTime') {
               startMinutes = endMinutes - 1;
-              adjustedValue = await dispatch('minutesToTime', startMinutes);
+              adjustedValue = minutesToTime(startMinutes);
               message = 'Время начала не может быть больше или равно времени окончания';
             } else {
               endMinutes = startMinutes + 1;
-              adjustedValue = await dispatch('minutesToTime', endMinutes);
+              adjustedValue = minutesToTime(endMinutes);
               message = 'Время окончания не может быть меньше или равно времени начала';
             }
             hasOverlap = true;
@@ -684,8 +497,8 @@ export default {
         for (const scheduleItem of existingSchedules) {
           if (id && scheduleItem.id === id) continue;
 
-          const existingStart = await dispatch('timeToMinutes', scheduleItem.startTime);
-          const existingEnd = await dispatch('timeToMinutes', scheduleItem.endTime);
+          const existingStart = timeToMinutes(scheduleItem.startTime);
+          const existingEnd = timeToMinutes(scheduleItem.endTime);
 
           allExistingEnds.push(existingEnd);
 
@@ -697,20 +510,20 @@ export default {
               // Корректируем время для edit
               if (value_name === 'startTime') {
                 startMinutes = existingEnd;
-                adjustedValue = await dispatch('minutesToTime', startMinutes);
+                adjustedValue = minutesToTime(startMinutes);
                 message = 'Обнаружено пересечение, время скорректировано';
                 if (startMinutes >= endMinutes) {
                   startMinutes = endMinutes - 1;
-                  adjustedValue = await dispatch('minutesToTime', startMinutes);
+                  adjustedValue = minutesToTime(startMinutes);
                   message = 'Время начала скорректировано из-за пересечения и ограничений интервала';
                 }
               } else if (value_name === 'endTime') {
                 endMinutes = existingStart;
-                adjustedValue = await dispatch('minutesToTime', endMinutes);
+                adjustedValue = minutesToTime(endMinutes);
                 message = 'Обнаружено пересечение, время скорректировано';
                 if (startMinutes >= endMinutes) {
                   endMinutes = startMinutes + 1;
-                  adjustedValue = await dispatch('minutesToTime', endMinutes);
+                  adjustedValue = minutesToTime(endMinutes);
                   message = 'Время окончания скорректировано из-за пересечения и ограничений интервала';
                 }
               }
@@ -735,8 +548,8 @@ export default {
             };
           }
 
-          const newStartTimeStr = await dispatch('minutesToTime', newStartMinutes);
-          const newEndTimeStr = await dispatch('minutesToTime', newEndMinutes);
+          const newStartTimeStr = minutesToTime(newStartMinutes);
+          const newEndTimeStr = minutesToTime(newEndMinutes);
 
           message = `Предложено новое время от ${newStartTimeStr} до ${newEndTimeStr}`;
           return {
@@ -749,7 +562,7 @@ export default {
 
         // Проверка границ суток для edit
         if (mode === 'edit') {
-          const checkedTimeInMinutes = await dispatch('timeToMinutes', adjustedValue);
+          const checkedTimeInMinutes = timeToMinutes(adjustedValue);
           if (checkedTimeInMinutes < 0) {
             adjustedValue = '00:00';
             message = 'Время не может быть меньше 00:00';
@@ -837,7 +650,10 @@ export default {
         const [hours, minutes] = value.split(':').map(Number);
 
         if (value_details === 'hours') {
-          updatedValue = newValue < 10 ? `0${newValue}:${minutes < 10 ? '0' + minutes : minutes}` : `${newValue}:${minutes < 10 ? '0' + minutes : minutes}`;
+          const totalMinutes = value_details === 'hours'
+            ? newValue * 60 + minutes
+            : hours * 60 + newValue;
+          updatedValue = minutesToTime(Math.min(Math.max(totalMinutes, 0), 1439));
         } else if (value_details === 'minutes') {
           updatedValue = hours < 10 ? `0${hours}:${newValue < 10 ? '0' + newValue : newValue}` : `${hours}:${newValue < 10 ? '0' + newValue : newValue}`;
         }
@@ -1029,146 +845,8 @@ export default {
     //   );
     // },
 
-    dateTimeUtils: () => ({
-        getCurrentDateTime: () => {
-          return new Date().toISOString();
-        },
-        // formatDate: (dateString, locale = 'ru-RU') => {
-        //     try {
-        //       if (!dateString) return '—';
-              
-        //       // Если строка уже содержит запятую, значит уже отформатирована
-        //       if (typeof dateString === 'string' && dateString.includes(',')) {
-        //         //console.log('[settingsConfig] - dateTimeUtils.formatDate - Уже отформатирована:', dateString);
-        //         return dateString;
-        //       }
-              
-        //       const date = new Date(dateString);
-        //       if (isNaN(date.getTime())) {
-        //         //console.log('[settingsConfig] - dateTimeUtils.formatDate - Invalid date:', dateString);
-        //         return dateString;
-        //       }
-              
-        //       return date.toLocaleDateString(locale, {
-        //         day: '2-digit',
-        //         month: '2-digit',
-        //         year: 'numeric',
-        //         hour: '2-digit',
-        //         minute: '2-digit'
-        //       });
-        //     } catch (error) {
-        //       //console.log('[settingsConfig] - dateTimeUtils.formatDate - Error:', error, 'for dateString:', dateString);
-        //       return dateString;
-        //     }
-        // },
-formatDate: (dateString, locale = 'ru-RU') => {
-  try {
-    if (!dateString) return '—';
-
-    // Пытаемся привести к объекту Date
-    let date = null;
-
-    // 1. Если строка похожа на ISO (YYYY-MM-DDTHH:MM:SS)
-    if (typeof dateString === 'string' && dateString.includes('-') && !dateString.includes(',')) {
-      date = new Date(dateString);
-    }
-    // 2. Если строка в русском формате "DD.MM.YYYY, HH:MM:SS"
-    else if (typeof dateString === 'string' && dateString.includes(',')) {
-      const parts = dateString.split(', ');
-      if (parts.length === 2) {
-        const dateParts = parts[0].split('.');
-        const timeParts = parts[1].split(':');
-        if (dateParts.length === 3 && timeParts.length === 3) {
-          const day = parseInt(dateParts[0], 10);
-          const month = parseInt(dateParts[1], 10) - 1;
-          const year = parseInt(dateParts[2], 10);
-          const hours = parseInt(timeParts[0], 10);
-          const minutes = parseInt(timeParts[1], 10);
-          const seconds = parseInt(timeParts[2], 10);
-          date = new Date(year, month, day, hours, minutes, seconds);
-        }
-      }
-    }
-    // 3. Если не удалось распарсить – возвращаем исходную строку
-    if (!date || isNaN(date.getTime())) {
-      return dateString;
-    }
-
-    const now = new Date();
-    const isToday =
-      date.getDate() === now.getDate() &&
-      date.getMonth() === now.getMonth() &&
-      date.getFullYear() === now.getFullYear();
-
-    if (isToday) {
-      // Сегодня – показываем только время
-      return date.toLocaleTimeString(locale, {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      });
-    } else {
-      // Не сегодня – показываем только дату в формате ДД:ММ:ГГ
-      const day = date.getDate().toString().padStart(2, '0');
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const year = date.getFullYear().toString().slice(-2);
-      return `${day}:${month}:${year}`;
-    }
-  } catch (error) {
-    return dateString;
-  }
-},
-        formatTimeWithHighlight: (timeString, editMode, isSelected) => {
-          if (!timeString) timeString = '00:00';
-          if (!timeString.includes(':')) return timeString;
-          const [hours, minutes] = timeString.split(':');
-          if (!isSelected) return `${hours}:${minutes}`;
-          if (editMode === 'minutes') {
-            return `<span class="time-highlight-simple">${hours}</span> <span class="time-dimmed"> :${minutes}</span>`;
-          } else {
-            return `<span class="time-dimmed">${hours}:</span> <span class="time-highlight-simple">${minutes}</span>`;
-          }
-        },
-
-    
-    }),
-
-
-    validationUtils: ( getters) => ({
-        validateScheduleTime: (schedule) => {
-          // Синхронная версия валидации
-          if (!schedule || !schedule.startTime || !schedule.endTime) {
-            return {
-              valid: false,
-              message: 'Отсутствует время начала или окончания'
-            };
-          }
-          
-          const timeToMinutes = getters.dateTimeUtils.timeToMinutes;
-          const startMinutes = timeToMinutes(schedule.startTime);
-          const endMinutes = timeToMinutes(schedule.endTime);
-          
-          if (endMinutes <= startMinutes) {
-            return {
-              valid: false,
-              message: 'Время окончания должно быть позже времени начала'
-            };
-          }
-          
-          return { valid: true };
-        },
-      //  checkScheduleOverlap: (startTime, endTime) => {
-      //     try {
-      //       console.log('[settingsConfig] - checkScheduleOverlap - Начало проверки', {
-      //         startTime,
-      //         endTime,
-      //         schedulesCount: existingSchedules?.length || 0
-      //       });
-      //     } catch (error) {
-      //       console.log('[settingsConfig] - checkScheduleOverlap - Ошибка валидации:', error);
-      //     }
-      //   }
-    }),
+    dateTimeUtils: () => ({ formatDate, formatTimeWithHighlight }),
+    validationUtils: () => ({ validateScheduleTime }),
 
   }
 };

@@ -1,6 +1,6 @@
 // store/modules/config.js
 import logger from './logger';
-//import store from '@/store';
+import { nowMoscow } from '@/utils/timeUtils';
 
 export default {
   namespaced: true,
@@ -126,7 +126,7 @@ export default {
       }
 
       roomObj[type][name].value = value;
-      roomObj[type][name].lastUpdate = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+      roomObj[type][name].lastUpdate = nowMoscow();
       logger.dev(`[Config] - Обновлено значение ${type}.${name} в комнате ${room}:`, roomObj[type][name]);
       logger.dev(`[Config] - UPDATE_CONFIG_VALUE - state.configs[${dID}] ${JSON.stringify(config, null, 2)}`);
       console.log(`[Config] - Обновлено значение ${type}.${name} в комнате ${room}:`, roomObj[type][name]);
@@ -155,7 +155,7 @@ export default {
           state.schedules[dID][room][param][index] = {
             ...schedules[index],
             [title]: value,
-            updatedAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+            updatedAt: nowMoscow()
           };
           logger.dev('[config] - UPDATE_SCHEDULE_VALUE - Расписание обновлено');
           console.log('[config] - UPDATE_SCHEDULE_VALUE - Расписание обновлено', state.schedules[dID][room][param][index] );
@@ -173,7 +173,7 @@ export default {
           state.notifications[dID][room][param][index] = {
             ...notifications[index],
             [title]: value,
-            updatedAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+            updatedAt: nowMoscow()
           };
         }
       }
@@ -632,101 +632,6 @@ export default {
         }
       }
     },
-
-    // async ensureSortingKeys({ state, dispatch, rootGetters }) {
-    //   logger.dev('[config] - Проверяем наличие ключей сортировки');
-      
-    //   const processKey = async (type, stateArrayName, getterName, storageKey, specialAction) => {
-    //     // Получаем текущий ключ и массив допустимых значений
-    //     const currentKey = rootGetters[getterName] || localStorage.getItem(storageKey);
-    //     const validItems = state[stateArrayName];
-        
-    //     // Если массив пуст, ничего не делаем
-    //     if (!validItems.length) {
-    //       logger.dev(`[config] - Массив ${stateArrayName} пуст, пропускаем`);
-    //       return null;
-    //     }
-        
-    //     // Функция для нормализации ключа
-    //     const normalizeKey = (key) => {
-    //       if (!key) return null;
-    //       const withoutPrefix = key.slice(1);
-    //       return withoutPrefix.replace(/\d+$/, '');
-    //     };
-        
-    //     // Проверяем валидность текущего ключа
-    //     if (currentKey) {
-    //       const normalizedKey = normalizeKey(currentKey);
-    //       const isValid = validItems.includes(currentKey) || 
-    //                     (normalizedKey && validItems.includes(normalizedKey));
-          
-    //       if (!isValid) {
-    //         logger.warn(`[config] - ${storageKey} невалиден, пытаемся нормализовать`, currentKey, validItems);
-            
-    //         // Пытаемся найти соответствующий валидный ключ
-    //         if (normalizedKey) {
-    //           const matchedKey = validItems.find(item => normalizeKey(item) === normalizedKey);
-    //           if (matchedKey) {
-    //             // Нашли соответствующий валидный ключ
-    //             localStorage.setItem(storageKey, matchedKey);
-    //             logger.dev(`[config] - Ключ нормализован: ${matchedKey}`);
-                
-    //             await dispatch('sortParams/updateSortKey', { 
-    //               type, 
-    //               newKey: matchedKey 
-    //             }, { root: true });
-                
-    //             if (specialAction) {
-    //               await dispatch(`sortParams/${specialAction}`, matchedKey, { root: true });
-    //             }
-                
-    //             return matchedKey;
-    //           }
-    //         }
-            
-    //         // Если не нашли соответствия - сбрасываем
-    //         logger.error(`[config] - Не удалось нормализовать ${storageKey}, сбрасываем`, currentKey);
-    //         localStorage.removeItem(storageKey);
-    //       } else {
-    //         // Ключ валидный, используем его
-    //         return currentKey;
-    //       }
-    //     }
-        
-    //     // Если ключа нет или он был сброшен, устанавливаем первый элемент
-    //     if (!localStorage.getItem(storageKey) && validItems.length > 0) {
-    //       const newKey = validItems[0];
-    //       localStorage.setItem(storageKey, newKey);
-    //       logger.dev(`[config] - Установлен первый ${type}:`, newKey);
-          
-    //       await dispatch('sortParams/updateSortKey', { 
-    //         type, 
-    //         newKey 
-    //       }, { root: true });
-          
-    //       if (specialAction) {
-    //         await dispatch(`sortParams/${specialAction}`, newKey, { root: true });
-    //       }
-          
-    //       return newKey;
-    //     }
-        
-    //     return localStorage.getItem(storageKey);
-    //   };
-
-    //   // Конфигурация ключей
-    //   const keyConfigs = [
-    //     { type: 'rooms', stateArray: 'allRooms', getter: 'roomKey', storage: 'roomKey', specialAction: 'updateRoomsTitle' },
-    //     { type: 'params', stateArray: 'allParams', getter: 'paramKey', storage: 'paramKey' },
-    //     { type: 'devices', stateArray: 'allDevices', getter: 'deviceKey', storage: 'deviceKey' },
-    //     { type: 'setpoints', stateArray: 'allSetpoints', getter: 'setpointKey', storage: 'setpointKey' }
-    //   ];
-
-    //   // Параллельная обработка всех ключей для оптимизации
-    //   await Promise.all(keyConfigs.map(config => 
-    //     processKey(config.type, config.stateArray, config.getter, config.storage, config.specialAction)
-    //   ));
-    // },
     async updateSetpointServer( {rootGetters}) {
       const settingsData = rootGetters['getSetpointsManager']?.settingsData;
         logger.info('[config] - updateSetpointServer - Готовим уставку для отправки на сервер');

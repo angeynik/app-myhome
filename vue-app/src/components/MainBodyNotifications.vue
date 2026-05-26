@@ -10,13 +10,13 @@
       </div>
       <div class="settings-info-item" v-if="notificationData.createdAt">
         <span class="settings-info-value">Создано:</span>
-        <span class="settings-info-value">{{ dateTimeUtils.formatDate(notificationData.createdAt) }}</span>
+        <span class="settings-info-value">{{ formatDate(notificationData.createdAt) }}</span>
       </div>
       <div class="settings-info-item" v-if="notificationData.updatedAt">
         <span class="settings-info-value">Обновлено:</span>
-        <span class="settings-info-value">{{ dateTimeUtils.formatDate(notificationData.updatedAt) }}</span>
+        <span class="settings-info-value">{{ formatDate(notificationData.updatedAt) }}</span>
       </div>
-      <button class="mainBodySettings-header-button" @click="deleteScheduleItem">
+      <button class="mainBodySettings-header-button" @click="deleteNotificationItem">
       <svg class="icon-settings close" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle class="hover-bg" cx="33" cy="33" r="31" fill="#CC0000" opacity="0"/>
         <circle cx="33" cy="33" r="31" fill="#FF4747"/>
@@ -131,21 +131,6 @@
 
       </div>
 
-      <!-- Вторая колонка: кнопка удаления (20%) -->
-      <!-- <div class="settings-col-second">
-        <div class="icon-settings item">
-          <button class="mainBodySettings-header-button" @click="deleteNotificationItem">
-            <svg class="icon-settings close" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle class="hover-bg" cx="44" cy="44" r="42" fill="#CC0000" opacity="0"/>
-              <circle cx="44" cy="44" r="42" fill="#FF4747"/>
-              <circle cx="44" cy="44" r="42" stroke="#FF4747" stroke-width="4"/>
-              <line x1="28" y1="28" x2="60" y2="60" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
-              <line x1="60" y1="28" x2="28" y2="60" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
-            </svg>
-          </button>
-        </div>
-      </div> -->
-
     </div>
   </div>
 </template>
@@ -153,10 +138,9 @@
 <script>
 import logger from '../store/modules/logger.js';
 import { mapGetters, mapActions } from 'vuex';
+import { formatDate, formatTimeWithHighlight } from '@/utils/timeUtils';
 
 const CONDITIONS = ['greater_than', 'less_than', 'equal', 'not_equal', 'greater_equal', 'less_equal'];
-// const NOTIFICATION_TYPES = ['Web', 'telegram'];
-//const FREQUENCY_MODES = ['once', 'every_5min', 'every_10min', 'every_15min', 'every_30min', 'every_60min'];
 
 const CONDITION_LABELS = {
   greater_than:  'Больше',
@@ -172,15 +156,6 @@ const TYPE_LABELS = {
   1: 'Telegram',
   2: 'Web + Telegram'
 };
-
-// const FREQUENCY_LABELS = {
-//   once:         'Однократно',
-//   every_5min:   'Каждые 5 мин',
-//   every_10min:  'Каждые 10 мин',
-//   every_15min:  'Каждые 15 мин',
-//   every_30min:  'Каждые 30 мин',
-//   every_60min:  'Каждый час',
-// };
 
 export default {
   name: 'MainBodyNotifications',
@@ -209,7 +184,6 @@ export default {
 
   computed: {
     ...mapGetters(['level']),
-    ...mapGetters('settingsConfig', ['dateTimeUtils']),
 
     userLevel() {
       return this.level || 0;
@@ -250,14 +224,14 @@ export default {
       return this.notificationData?.endTime ?? '23:59';
     },
     formattedStartDisplay() {
-      const time = this.displayStartTime;
-      const isSelected = this.isFieldSelected('startTime');
-      return this.dateTimeUtils.formatTimeWithHighlight(time, this.timeEditMode, isSelected);
+      return formatTimeWithHighlight(
+        this.displayStartTime, this.timeEditMode, this.isFieldSelected('startTime')
+      );
     },
     formattedEndDisplay() {
-      const time = this.displayEndTime;
-      const isSelected = this.isFieldSelected('endTime');
-      return this.dateTimeUtils.formatTimeWithHighlight(time, this.timeEditMode, isSelected);
+      return formatTimeWithHighlight(
+        this.displayEndTime, this.timeEditMode, this.isFieldSelected('endTime')
+      );
     },
   },
 
@@ -270,6 +244,7 @@ export default {
   },
 
   methods: {
+    formatDate, 
     ...mapActions(['updateSettingsData', 'updatePayloadData']),
     ...mapActions('sortParams', ['setLimits']),
 
@@ -501,9 +476,22 @@ export default {
         logger.error('[MainBodyNotifications] - deleteNotificationItem - нет ID');
         return;
       }
+      console.log('[MainBodySchedule] - deleteNotificationItem - Список Уведомлений ', this.notificationData);
+      const notificationTitle = this.notificationData.paramTitle || ` ID Уведомления : ${this.notificationData.id}`;
+      
+      // Запрос подтверждения
+      if (!confirm(`Удалить расписание "${notificationTitle}"?\n\nУдаление будет применено после сохранения изменений.`)) {
+        return;
+      }
 
-      const label = `уведомление ID: ${this.notificationData.id}`;
-      if (!confirm(`Удалить ${label}?\n\nУдаление будет применено после сохранения изменений.`)) return;
+
+
+
+
+
+
+      // const label = `уведомление ID: ${this.notificationData.id}`;
+      // if (!confirm(`Удалить ${label}?\n\nУдаление будет применено после сохранения изменений.`)) return;
 
       this.$emit('delete-notification', {
         id: this.notificationData.id,

@@ -12,11 +12,11 @@
       </div>
       <div class="settings-info-item" v-if="scheduleData.createdAt">
         <span class="settings-info-value">Создано:</span>
-        <span class="settings-info-value">{{ dateTimeUtils.formatDate(scheduleData.createdAt) }}</span>
+        <span class="settings-info-value">{{ formatDate(scheduleData.createdAt) }}</span>
       </div>
       <div class="settings-info-item" v-if="scheduleData.updatedAt">
         <span class="settings-info-value">Обновлено:</span>
-        <span class="settings-info-value">{{ dateTimeUtils.formatDate(scheduleData.updatedAt) }}</span>
+        <span class="settings-info-value">{{ formatDate(scheduleData.updatedAt) }}</span>
       </div>
       <button class="mainBodySettings-header-button" @click="deleteScheduleItem">
       <svg class="icon-settings close" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -107,6 +107,7 @@
 <script>
 import logger from '../store/modules/logger.js';
 import { mapGetters, mapActions} from 'vuex';
+import { formatDate, formatTimeWithHighlight } from '@/utils/timeUtils';
 
 export default {
   name: 'MainBodySchedule',
@@ -144,7 +145,6 @@ export default {
   
   computed: {
     ...mapGetters(['level']),
-    ...mapGetters('settingsConfig', ['dateTimeUtils', 'validationUtils']),
     
     userLevel() {
       return this.level || 0;
@@ -196,14 +196,14 @@ export default {
       return String(this.scheduleData.endTime || '00:05');
     },
     formattedStartDisplay() {
-      const time = this.displayStartTime;
-      const isSelected = this.isFieldSelected('startTime');
-      return this.dateTimeUtils.formatTimeWithHighlight(time, this.timeEditMode, isSelected);
+      return formatTimeWithHighlight(
+        this.displayStartTime, this.timeEditMode, this.isFieldSelected('startTime')
+      );
     },
     formattedEndDisplay() {
-      const time = this.displayEndTime;
-      const isSelected = this.isFieldSelected('endTime');
-      return this.dateTimeUtils.formatTimeWithHighlight(time, this.timeEditMode, isSelected);
+      return formatTimeWithHighlight(
+        this.displayEndTime, this.timeEditMode, this.isFieldSelected('endTime')
+      );
     },
 
 
@@ -245,6 +245,7 @@ export default {
     document.removeEventListener('click', this.handleClickOutside);
   },
   methods: {
+    formatDate,
     ...mapActions('settingsConfig', [
       'timeToMinutes',
       'minutesToTime',
@@ -435,7 +436,7 @@ export default {
         logger.error('[MainBodySchedule] - deleteScheduleItem - Невозможно удалить: нет ID расписания');
         return;
       }
-      
+      console.log('[MainBodySchedule] - deleteScheduleItem - Список Расписаний ', this.scheduleData);
       const scheduleTitle = this.scheduleData.paramTitle || `расписание ID: ${this.scheduleData.id}`;
       
       // Запрос подтверждения

@@ -1,4 +1,6 @@
 // store/classes/manageSetpoints.js
+
+import { nowMoscow } from '@/utils/timeUtils';
 export default class ManageSetpoints {
     constructor(dID, config) {
         if (!dID || !config) {
@@ -14,13 +16,13 @@ export default class ManageSetpoints {
                 param: null,
                 value: null,
                 id: null,
-                updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+                updated: nowMoscow()
             },
             limits: {
               limHigh: null,
               limLow: null,
               limStep: null,
-              updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+              updated: nowMoscow()
             }
         };
     }
@@ -38,14 +40,14 @@ export default class ManageSetpoints {
             value_name: '',
             value_type: 'absolute',
             id: null,
-            updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+            updated: nowMoscow()
         };
     }
     // updatePayload(data) {
     //     this.settingsData.payload = {
     //         ...this.settingsData.payload,
     //         ...data,
-    //         updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+    //         updated: nowMoscow()
     //     };
     // }
     updateSettingsData(data) {
@@ -63,7 +65,7 @@ export default class ManageSetpoints {
             this.settingsData.payload = {
                 ...this.settingsData.payload,
                 ...payload,
-                updated: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+                updated: nowMoscow()
             };
         }
     }

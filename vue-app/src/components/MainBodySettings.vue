@@ -131,7 +131,7 @@ import { mapMutations, mapGetters, mapActions } from 'vuex';
 import MainBodySchedule from './MainBodySchedule.vue';
 import MainBodyNotifications from './MainBodyNotifications.vue';
 import MainBodyStatistic from './MainBodyStatistic.vue';
-
+import { nowMoscow, createTimePoint } from '@/utils/timeUtils';
 
 export default {
   name: 'MainBodySettings',
@@ -294,10 +294,7 @@ export default {
       'initialize',
       'updateTypePopupItem', 
       'saveConfigItems',
-      'getCurrentDateTime',
-      'formatDate',
       'checkScheduleOverlap',
-      'createTimePoint',
       'updateSchedule',
       'deleteConfigItems',
       'getConfigDataFromStore',
@@ -464,9 +461,9 @@ export default {
       console.log('[MainBodySettings] - generationTime - Создание временного интервала для нового элемента');
             let startTime, endTime;
       try {
-        const createTimePoint = await this.$store.dispatch('settingsConfig/createTimePoint');
-        startTime = createTimePoint.startTime;
-        endTime = createTimePoint.endTime;
+        const { startTime: st, endTime: et } = createTimePoint();
+        startTime = st;
+        endTime   = et;
         const hasOverlap = await this.$store.dispatch('settingsConfig/checkScheduleOverlap', {
           startTime,
           endTime,
@@ -544,8 +541,8 @@ export default {
         unit: this.unit || '',
         room: room,
         param: param,
-        createdAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
-        updatedAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
+        createdAt: nowMoscow(),
+        updatedAt: nowMoscow(),
         // _modified: true, // Флаг для отслеживания изменений
         days: [1, 2, 3, 4, 5], // Пн-Пт по умолчанию
         
@@ -600,11 +597,11 @@ export default {
       }
     },
     handleDeleteConfigItem(id, configName) {
-      console.log('[MainBodySettings] - handleDeleteConfigItem - Добавляем в список на удаление ID:', id, configName);
+      //console.log('[MainBodySettings] - handleDeleteConfigItem - Добавляем в список на удаление ID:', id, configName);
   
       // Сохраняем данные для удаления
       this.pendingDeletions[id] = id;
-      console.log('[MainBodySettings] - handleDeleteConfigItem - Массив на удаление:', this.pendingDeletions);
+      //console.log('[MainBodySettings] - handleDeleteConfigItem - Массив на удаление:', this.pendingDeletions);
       
       // Добавляем ID в массив для отслеживания
       if (!this.configDataToDelete.includes(id)) {
@@ -630,8 +627,8 @@ export default {
       console.log('[MainBodySettings] - addNewNotification - Текущая конфигурация Уведомлений - ', this.notifications);
       // Получаем текущие уведомления для этой комнаты и параметра
       const existingNotifications = this.notifications.filter(n => 
-        n.roomKey === room && 
-        n.paramKey === param
+        n.room === room && 
+        n.param === param
       );
       console.log('[MainBodySettings] - addNewNotification - Конфигурация Уведомлений для комнаты -', room, ' , параметра -', param, ' :', this.notifications);
       
@@ -640,13 +637,21 @@ export default {
       if (existingNotifications.length > 0) {
         const existingIds = existingNotifications
           .map(n => n.id)
-          .filter(id => id != null && typeof id === 'number');
-        
+          .filter(id => typeof id === 'number');
         if (existingIds.length > 0) {
           newId = Math.max(...existingIds) + 1;
-          console.log('[MainBodySettings] - addNewNotification - Номер новой записи-', newId);
         }
       }
+      // if (existingNotifications.length > 0) {
+      //   const existingIds = existingNotifications
+      //     .map(n => n.id)
+      //     .filter(id => id != null && typeof id === 'number');
+        
+      //   if (existingIds.length > 0) {
+      //     newId = Math.max(...existingIds) + 1;
+      //     console.log('[MainBodySettings] - addNewNotification - Номер новой записи-', newId);
+      //   }
+      // }
       
         const newTime = await this.generationTime('notifications');
         const startTime = newTime.startTime;
@@ -662,8 +667,10 @@ export default {
         status: false,
         startTime: startTime,
         endTime: endTime,
-        createdAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
-        updatedAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
+        createdAt: nowMoscow(),
+        updatedAt: nowMoscow(),
+        room: room,
+        param: param,
       };
       
       // Добавляем уведомление
@@ -821,7 +828,7 @@ export default {
               room: this.settingsData.payload.room,
               param: this.effectiveParamKey,
               configName: this.title,
-              scheduleIds: [...this.configDataToDelete] // создаем копию массива
+              configsIds: [...this.configDataToDelete] // создаем копию массива
             });
             
             // Очищаем массивы после успешной отправки

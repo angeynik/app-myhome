@@ -9,6 +9,7 @@ import config from './modules/config';
 import settingsConfig from './modules/settingsConfig';
 import logger from './modules/logger';
 import popup from './modules/popup';
+import { nowMoscow } from '@/utils/timeUtils';
 
 
 const store = createStore({
@@ -44,9 +45,8 @@ const store = createStore({
             } else{
               //console.log('[index] - UPDATE_SETTINGS_DATA -  Обновляем поле', field, 'в объекте payload значением:', value); 
                 state.setpointsManager.settingsData.payload[field] = value;
-                state.setpointsManager.settingsData.payload.updated = 
-                    new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
-            }
+                state.setpointsManager.settingsData.payload.updated = nowMoscow();
+              }
             state.settingsData = { ...state.setpointsManager.settingsData };
             //console.log('[index] - UPDATE_SETTINGS_DATA - ', state.setpointsManager.settingsData);
         }
@@ -68,9 +68,7 @@ const store = createStore({
           ...state.setpointsManager.settingsData.payload, // существующие данные
           ...payload // новые/обновленные поля
         };
-        state.setpointsManager.settingsData.payload.updated = 
-          new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
-        
+        state.setpointsManager.settingsData.payload.updated = nowMoscow();
         state.settingsData = { ...state.setpointsManager.settingsData };
         // Вернуть console.log
         console.log('[index] - UPDATE_PAYLOAD_DATA - Обновляем payload:', state.setpointsManager.settingsData.payload );
