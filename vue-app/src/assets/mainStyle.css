@@ -780,6 +780,10 @@ form button:active {
   color: var(--orange) !important;
   font-weight: 600;
 }
+.settings-block.selected .statistic-value {
+  color: var(--orange) !important;
+  font-weight: 600;
+}
 
 .settings-block-title.selected {
   color: var(--orange) !important;
@@ -825,6 +829,21 @@ form button:active {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   background: rgba(0, 0, 0, 0.25);
 }
+.settings-block.statistic-checkbox-field {
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    background: transparent;
+    /* padding: 4px 12px; */
+}
+
+/* Эффект при наведении (необязательно, для единообразия) */
+.settings-block.statistic-checkbox-field:hover .checkbox-custom {
+  border-color: var(--orange, #F97B00);
+  transition: border-color 0.2s ease;
+}
+
+
 .settings-separator {
   width: 40%;
   max-width: 35px;
@@ -898,13 +917,13 @@ form button:active {
   margin-right: auto;
   overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
 }
-.analytics-list {
+.statistics-list {
   margin-top: 2rem;
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
   place-items: start center; /* Вертикальное выравнивание по верхней границе, горизонтальное центрирование */
-  width: 90%; /* Занимает 90% ширины */
+  width: 95%; /* Занимает 90% ширины */
   margin-left: auto;
   margin-right: auto;
   overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
@@ -960,10 +979,6 @@ form button:active {
   box-sizing: border-box
 }
 
-
-
-
-
 .settings-new-value {
   flex: 1;
   min-height: 3rem;
@@ -1002,8 +1017,94 @@ form button:active {
   min-width: 100px; /* Минимальная ширина */
 }
 
+/* MainBodyStatistics.vue */
 
+/* Двухколоночная сетка */
+.settings-two-columns {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
 
+.settings-column {
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-column .settings-row {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.settings-column .settings-block {
+  padding: 4px 12px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.settings-block.selected .checkbox-custom {
+  border-color: var(--orange, #F97B00);
+  box-shadow: 0 0 0 2px rgba(249, 123, 0, 0.3);
+}
+
+/* Кастомный чекбокс (квадрат с галочкой) */
+.checkbox-custom {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background-color: #2a2a2e;
+  border: 2px solid #8e8e93;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s ease;
+  cursor: pointer;
+}
+
+.checkbox-custom.checked {
+  border-color: var(--green, #34B534);
+  background-color: #2a2a2e;
+}
+
+.checkbox-custom svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--green, #34B534);
+  stroke-width: 3;
+}
+
+/* Выпадающее меню для периода сохранения */
+.save-period-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: #3a3a3e;
+  border-radius: 16px;
+  padding: 8px 0;
+  min-width: 160px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.save-period-option {
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #e0dfe7;
+  transition: background 0.1s;
+}
+
+.save-period-option:hover {
+  background: #4a4a4e;
+  color: white;
+}
 
 
 
@@ -1047,11 +1148,14 @@ form button:active {
   .introduce-button {
     max-width: 500px; /* Максимальная ширина кнопки */
   }
-}
-@media (min-width: 920px) {
+  .settings-two-columns {
+    flex-direction: column;
+    gap: 24px;
+  }
+} 
+@media (min-width: 940px) {
   .schedules-list,
-  .notifications-list,
-  .analytics-list {
+  .notifications-list {
     /* grid-template-columns: 1fr 1fr; */
     grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
     place-items: center; /* Вертикальное и горизонтальное центрирование в видимой области */
@@ -1059,6 +1163,14 @@ form button:active {
     max-width: 90%; /* Уменьшенное ограничение ширины для предотвращения полосы прокрутки */
     margin: 1rem auto 0; /* Центрирование контейнера */
     overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
+  }
+  .statistics-list{
+    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+    place-items: center; 
+    gap: 1rem; 
+    max-width: 78%; 
+    margin: 1rem auto 0; 
+    overflow-x: hidden; 
   }
   .settings-block.clickable {
     max-width: 12vw;

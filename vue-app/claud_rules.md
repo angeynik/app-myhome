@@ -36,6 +36,16 @@ src/store/
     log.js                  ← Логирование ошибок (namespaced: log/)
     logger.js               ← Утилита логирования (НЕ Vuex-модуль, просто экспорт)
 ```
+utils/
+    timeUtils.js            ← Утилита работы со временем: создание и проверка временных интервалов
+tests/
+  integration/
+
+  setup/
+
+  unit/
+    router.spec.js          ← Jest тест проверки scr/router/router.js
+```
 
 ### 2.2 Компоненты
 
@@ -56,7 +66,10 @@ src/
     AppLogin.vue            ← Логин
     AppProfile.vue          ← Профиль пользователя
     UserConfig.vue          ← Управление пользователями (level 3)
+    PopupMenu.vue           ← Выводит информационные сообщения пользователю
+    InputDialog.vue         ← Компонент для ввода произвольного значения изменяемого параметра с клавиатуры
     AccessDenied.vue        ← Страница запрета доступа
+
 ```
 
 ---
@@ -453,3 +466,154 @@ switch (requestName) {
 - ❌ Изменять сигнатуры существующих actions/mutations/getters
 - ❌ Хранить ключи сортировки иначе, чем через `localStorage` + `SET_*_KEY` mutations
 - ❌ Изменять логику навигационного гарда (только расширять)
+
+---
+
+## 14. ТЕСТИРОВАНИЕ
+
+### 14.1 Стек тестирования
+
+| Слой | Инструмент |
+|------|-----------|
+| Test runner | Jest |
+| Vue-компоненты | `@vue/test-utils` + `jest-environment-jsdom` |
+| Покрытие | `jest --coverage` |
+| Расположение тестов | `src/tests/unit/` |
+
+---
+
+### 14.2 Соглашения по именованию файлов
+
+```
+src/tests/unit/
+  router.spec.js
+  store/
+    auth.spec.js
+    config.spec.js
+    settingsConfig.spec.js
+    websocket.spec.js
+  utils/
+    timeUtils.spec.js
+  components/
+    AppLogin.spec.js
+```
+
+Правило: **имя файла = имя тестируемого модуля + `.spec.js`**
+
+---
+
+### 14.3 Структура тест-файла
+
+```js
+// 1. Глобальные моки ДО импортов
+const localStorageMock = { getItem: jest.fn(), setItem: jest.fn(), removeItem: jest.fn(), clear: jest.fn() }
+global.localStorage = localStorageMock
+
+// 2. Импорты
+import { ... } from '@/...'
+
+// 3. describe-блоки по функциональным группам
+describe('Модуль — группа функционала', () => {
+  beforeEach(() => { /* сброс моков */ })
+  test('ожидаемое поведение при конкретном условии', () => { ... })
+})
+```
+
+---
+
+### 14.4 Правила написания тестов
+
+**Именование:** формат `«что происходит» при «условии»`:
+```js
+// ✅
+test('перенаправляет на /login если не аутентифицирован', ...)
+test('сохраняет redirectPath в localStorage при редиректе', ...)
+// ❌
+test('работает корректно', ...)
+```
+
+**Граничные случаи обязательны** для числовых значений (0, max, min, -1),
+уровней доступа (каждый level × каждый requiredLevel), времени ('00:00', '23:59', невалидные строки),
+пустых/null/undefined параметров.
+
+**Побочные эффекты** — проверять явно в обе стороны:
+```js
+expect(localStorageMock.setItem).toHaveBeenCalledWith('redirectPath', '/dashboard')
+expect(localStorageMock.setItem).not.toHaveBeenCalled()  // когда НЕ должно вызываться
+```
+
+**Один тест — одна проверяемая вещь.**
+
+---
+
+### 14.5 Мокирование Vuex store
+
+Стандартный паттерн проекта — `jest.doMock` + `jest.resetModules()`:
+
+```js
+beforeEach(() => {
+  jest.resetModules()
+  localStorageMock.setItem.mockClear()
+})
+
+function makeGuard({ isAuthenticated, level }) {
+  jest.doMock('@/store', () => ({ getters: { isAuthenticated, level } }))
+  const { navigationGuard } = require('@/router/routes') // require ПОСЛЕ doMock
+  return navigationGuard
+}
+```
+
+- `jest.doMock` + `require` — для изоляции store в каждом тесте
+- `jest.mock` на уровне файла — только для статических зависимостей (logger, WebSocket)
+- **Никогда** не импортировать реальный `store` в юнит-тесты гарда/утилит
+
+---
+
+### 14.6 Тестирование роутера — обязательный минимум
+
+При добавлении маршрута проверить:
+- [ ] Маршрут существует в `router.getRoutes()` по `name`
+- [ ] `meta.requiresAuth` и `meta.requiredLevel` соответствуют таблице п.6.2
+- [ ] Публичный маршрут: `meta.public === true` и `meta.requiresAuth` отсутствует
+
+Для `navigationGuard` покрыть все ветки:
+- [ ] `meta.public` → `next()`, localStorage не вызывается
+- [ ] `!isAuthenticated` → `next('/login')` + `localStorage.setItem('redirectPath', ...)`
+- [ ] `authenticated && level < requiredLevel` → `next('/access-denied')`
+- [ ] `authenticated && level >= requiredLevel` → `next()`
+- [ ] Маршрут без `requiresAuth` и без `public` → `next()`
+
+---
+
+### 14.7 Тестирование утилит (timeUtils и подобные)
+
+Чистые функции тестируются без моков, с `test.each` для параметрических случаев:
+
+```js
+import { timeToMinutes } from '@/utils/timeUtils'
+
+describe('timeToMinutes', () => {
+  test.each([
+    ['14:30',  870],
+    ['00:00',    0],
+    ['23:59', 1439],
+    ['',         0],
+    [null,       0],
+    ['99:99',    0],
+  ])('timeToMinutes("%s") === %i', (input, expected) => {
+    expect(timeToMinutes(input)).toBe(expected)
+  })
+})
+```
+
+---
+
+### 14.8 Чеклист нового теста
+
+- [ ] Файл `*.spec.js` создан по соглашению п.14.2
+- [ ] Все ветки `if/else` покрыты отдельными тестами
+- [ ] Граничные значения проверены
+- [ ] Побочные эффекты (localStorage, dispatch, commit) проверены явно
+- [ ] `test.each` используется для параметрических случаев
+- [ ] Моки сбрасываются в `beforeEach`
+- [ ] Реальный Vuex store не импортируется напрямую

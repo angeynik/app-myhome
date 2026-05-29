@@ -58,7 +58,6 @@
         <div class="mainBodySettings-content-body">
 
           <div v-if="selectedTitle === 'Расписание' && schedules.length > 0" class="schedules-list">
-            
             <MainBodySchedule
               v-for="(schedule, index) in schedules"
               :key="schedule.id || `schedule-${index}`"
@@ -84,6 +83,7 @@
                 v-for="(notification, index) in notifications"
                 :key="notification.id || `notification-${index}`"
                 :notificationData="notification"
+                :notificationUnit="unit"
                 :activeSelection="activeSelection"
                 :handleInputPermit="handleInputPermit"
                 class="schedule-item"  
@@ -103,12 +103,14 @@
               <MainBodyStatistic
                 v-for="(statistic, index) in statistics"
                 :key="statistic.id || `statistic-${index}`"
-                :analyticData="statistic"
+                :statisticData="statistic"
+                :statisticUnit="unit"
                 :activeSelection="activeSelection"
                 :handleInputPermit="handleInputPermit"
                 class="schedule-item"  
+                @getDataStatisticItem="checkDataStatisticItem"
                 @edit-analytic="handleEditAnalytic(statistic.id, $event)"
-                @delete-analytic="handleDeleteConfigItem(statistic.id, 'statistics')"
+                @delete-statistic="handleDeleteConfigItem(statistic.id, 'statistics')"
                 @field-selected="handleFieldSelected"
               />
             </div>
@@ -332,7 +334,22 @@ export default {
         updateState: event,
         request: arrayTitle,
       };
-      console.log('[MainBodySettings] -  checkDataNotificationItem - Формируем сообщение для DashBoard - emit getComponentData', message);
+      //console.log('[MainBodySettings] -  checkDataNotificationItem - Формируем сообщение для DashBoard - emit getComponentData', message);
+      this.$emit('getComponentData', message);
+    },
+    checkDataStatisticItem(event) {
+      // Функция получает измененный параметр от экземплара MainBodyStatistic 
+      // Проверяет event.value_type и устанвливает флаг action
+      console.log('[MainBodySettings] -  checkDataStatisticItem - Данные от компонента MainBodyStatistic:', event, null, 2);
+      let action = "hide";
+      if (event.title === 'sensityRate') action = "show";
+      const arrayTitle = this.settingsData?.payload?.config; // имя массива (например, "schedule")
+      const message = {
+        action: action,
+        updateState: event,
+        request: arrayTitle,
+      };
+      console.log('[MainBodySettings] -  checkDataStatisticItem - Формируем сообщение для DashBoard - emit getComponentData', message);
       this.$emit('getComponentData', message);
     },
 
@@ -722,43 +739,93 @@ export default {
 
     },
   
-    async addNewStatistic(roomKey, paramKey) {
+    async addNewStatistic() {
       // Получаем текущую аналитику для этой комнаты и параметра
-      const existingAnalytics = this.statistics.filter(a => 
-        a.roomKey === roomKey && 
-        a.paramKey === paramKey
+      console.groupCollapsed('[MainBodySettings] - addNewStatistic');
+      //const settingsData = this.$store.state.setpointsManager?.settingsData;
+      //const value = settingsData?.payload?.value || 0;
+      const room = this.settingsData.payload.room;
+      const param = this.effectiveParamKey;
+
+      console.log('[MainBodySettings] - addNewStatistic - Текущая конфигурация Аналитики - ', this.statistics);
+      // Получаем текущие уведомления для этой комнаты и параметра
+      const existingStatistics = this.statistics.filter(n => 
+        n.room === room && 
+        n.param === param
       );
+      console.log('[MainBodySettings] - addNewStatistic - Конфигурация Аналитики для комнаты -', 
+      room, ' , параметра -', param, ' :', this.statistics);
       
-      // Определяем ID новой аналитики
+      // Определяем ID нового уведомления
       let newId = 1;
-      if (existingAnalytics.length > 0) {
-        const existingIds = existingAnalytics
-          .map(a => a.id)
-          .filter(id => id != null && typeof id === 'number');
-        
+      if (existingStatistics.length > 0) {
+        const existingIds = existingStatistics
+          .map(n => n.id)
+          .filter(id => typeof id === 'number');
         if (existingIds.length > 0) {
           newId = Math.max(...existingIds) + 1;
         }
       }
-      
+
       const newStatistic = {
         id: newId,
-        chartType: 'line', // 'line', 'bar', 'pie'
-        period: 'day', // 'hour', 'day', 'week', 'month'
-        aggregation: 'average', // 'average', 'sum', 'min', 'max'
-        roomKey: roomKey,
-        paramKey: paramKey,
+        value: true,
+        setpoint: false,
+        devSetpoint: false,
+        changeSeason: false,
+        savePeriod: 0,
+        sensityRate: 0.5,
+        createdAt: nowMoscow(),
+        updatedAt: nowMoscow(),
+        room: room,
+        param: param,
       };
       
-      // Добавляем аналитику
+      // Добавляем уведомление
       this.statistics = [...this.statistics, newStatistic];
-      
-      console.log('[MainBodySettings] - addNewStatistic - Новая аналитика создана:', newStatistic);
-      
-      // Сохраняем изменения
-      await this.saveAnalyticBlock();
-      console.log('[MainBodySettings] - addNewStatistic - Аналитика успешно сохранена');
-      console.groupEnd();
+      console.log('[MainBodySettings] - addNewStatistic - Новое Аналитика создано:', newStatistic);
+      console.log('[MainBodySettings] - addNewStatistic - Новое Аналитика добавлено в конфигурацию Уведомлений:', this.statistics);
+    // Сохраняем изменения на сервер
+      try {
+        //console.log('[MainBodySettings] - addNewNotification - Сохраняем Уведомления локально');
+        await this.$store.dispatch('settingsConfig/addConfigLocally', {
+          room: room,
+          param: param,
+          configName: 'statistics',
+          configData: newStatistic
+        });
+        
+        console.log('[MainBodySettings] - addNewStatistic - Аналитика сохранено локально');
+        console.groupEnd();
+
+        // await this.saveScheduleBlock();
+        await this.saveConfigItems({
+          room: this.settingsData.payload.room,
+          param: this.effectiveParamKey,
+          configName: 'statistics',
+          configData: newStatistic
+        });
+        console.log('[MainBodySettings] - addNewStatistic - Аналитика успешно сохранено');
+        
+        // Опционально: показываем уведомление об успехе
+        this.showSuccessNotification('addNewStatistic Аналитика успешно создано');
+        
+        // Если нужно, можно обновить список расписаний
+        await this.loadData('statistics');
+        console.groupEnd();
+        return newStatistic;
+      } catch (error) {
+        console.error('[MainBodySettings] - addNewStatistic - Аналитика - Ошибка сохранения:', error);
+        
+        // Откатываем изменения в UI при ошибке сохранения
+        this.statistics = this.statistics.filter(s => s.id !== newId);
+        
+        // Показываем сообщение об ошибке
+        alert('Не удалось сохранить Аналитику на сервере. Попробуйте еще раз.');
+        console.groupEnd();
+        throw error;
+      }
+
     },
 
     async saveNewConfig({ configName, configData, room, param }) {
@@ -811,8 +878,6 @@ export default {
         const key = `statistics_${this.dID}_${this.settingsData.payload.room}_${this.effectiveParamKey}`;
         localStorage.setItem(key, JSON.stringify(this.statistics));
         
-        // Или вызываем action если он есть
-        // await this.saveAnalytics({...});
       } catch (error) {
         console.error('[MainBodySettings] - saveAnalyticBlock - Ошибка сохранения:', error);
         throw error;
