@@ -1,6 +1,11 @@
 // store/modules/config.js
 import logger from './logger';
 import { nowMoscow } from '@/utils/timeUtils';
+const LIMITS = {
+  schedules: parseInt(process.env.VUE_APP_LIM_SCHEDULE_ITEM) || 8,
+  notifications: parseInt(process.env.VUE_APP_LIM_NOTIFICATION_ITEM) || 6,
+  statistics: parseInt(process.env.VUE_APP_LIM_STATISTIC_ITEM) || 1,
+};
 
 export default {
   namespaced: true,
@@ -386,8 +391,6 @@ export default {
       console.log('[config] - updateScheduleLocally - dID:', dID, 'configName-', configName, 'configData: ', configData);
       commit('UPDATE_CONFIGDATA_LOCALLY', { dID, configName, configData });
     },
-
-
     handleRoomsSet({ commit }, config) {
       //console.log('[Config] - handleRoomsSet - Обновляем список комнат');
       try {
@@ -505,9 +508,6 @@ export default {
         throw error;
       }
     },
-
-
-
     handleValueUpdate({ commit, rootGetters}, { dID, payload, type }) {
       logger.info('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
       console.log('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
@@ -584,7 +584,6 @@ export default {
 
 
     },
-
     async ensureConfig({ dispatch }, dID) {
       if (!dID) throw new Error('dID не определен');
       
@@ -601,7 +600,6 @@ export default {
         throw error;
       }
     },
- 
     async ensureSortingKeys({ state, dispatch, rootGetters }) {
       //console.groupCollapsed('[config] - ensureSortingKeys');
       logger.dev('Проверяем наличие ключей сортировки');
@@ -680,6 +678,88 @@ export default {
       //console.log(`[config] - clearKey - key: ${clearKey}`);
       return clearKey;
     },
+
+
+
+    // getCurrentItemCount({ rootGetters }, configType) {
+    //    /**
+    //    * Получить количество элементов заданного типа для текущих room/param
+    //    * @param {Object} context
+    //    * @param {string} configType - 'schedules', 'notifications', 'statistics'
+    //    * @returns {number}
+    //    */
+      
+    //   const settingsData = rootGetters['getSetpointsManager']?.settingsData;
+    //   if (!settingsData) return 0;
+    //   const dID = settingsData.name;
+    //   const room = settingsData.payload?.room;
+    //   const param = settingsData.payload?.param;
+    //   if (!dID || !room || !param) return 0;
+
+    //   const items = this[configType]?.[room]?.[param] || [];
+    //   console.log('[config] - getCurrentItemCount - Для ', configType, ' : ',items.length);
+    //   return items.length;
+    // },    
+
+  // checkLimitBeforeAdd({ rootGetters }, configType) {
+  //   console.log('[config] - checkLimitBeforeAdd - Для ', configType);
+  //   const typeMap = {
+  //     schedules: 'schedules',
+  //     notifications: 'notifications',
+  //     statistics: 'statistics',
+  //   };
+  //   const storeKey = typeMap[configType];
+  //   if (!storeKey) return { allowed: false, limit: 0, current: 0 };
+
+  //   const settingsData = rootGetters['getSetpointsManager']?.settingsData;
+  //   console.log('[config] - checkLimitBeforeAdd - settingsData', settingsData);
+  //   if (!settingsData) return { allowed: false, limit: 0, current: 0 };
+  //   const dID = settingsData.name;
+  //   const room = settingsData.payload?.room;
+  //   const param = settingsData.payload?.param;
+  //   if (!dID || !room || !param) return { allowed: false, limit: 0, current: 0 };
+
+  //   const configData = rootState.config[storeKey]?.[dID] || {};
+  //   console.log('[config] - checkLimitBeforeAdd - configData', configData);
+  //   const items = configData[room]?.[param] || [];
+  //   console.log('[config] - checkLimitBeforeAdd - items', items);
+  //   const currentCount = items.length;
+
+  //   const limit = LIMITS[storeKey]; // LIMITS.schedules и т.д.
+  //   return {
+  //     allowed: currentCount < limit,
+  //     limit,
+  //     current: currentCount,
+  //   };
+  // },
+  checkLimitBeforeAdd({ rootState, rootGetters }, configType) {
+  console.log('[config] - checkLimitBeforeAdd - Для ', configType);
+  // configType ожидается 'schedules', 'notifications', 'statistics'
+  const storeKey = configType; // напрямую
+  if (!storeKey) return { allowed: false, limit: 0, current: 0 };
+
+  const settingsData = rootGetters['getSetpointsManager']?.settingsData;
+  console.log('[config] - checkLimitBeforeAdd - settingsData', settingsData);
+  if (!settingsData) return { allowed: false, limit: 0, current: 0 };
+  const dID = settingsData.name;
+  const room = settingsData.payload?.room;
+  const param = settingsData.payload?.param;
+  if (!dID || !room || !param) return { allowed: false, limit: 0, current: 0 };
+
+  const configData = rootState.config[storeKey]?.[dID] || {};
+  console.log('[config] - checkLimitBeforeAdd - configData', configData);
+  const items = configData[room]?.[param] || [];
+  console.log('[config] - checkLimitBeforeAdd - items', items);
+  const currentCount = items.length;
+
+  const limit = LIMITS[storeKey];
+  return {
+    allowed: currentCount < limit,
+    limit,
+    current: currentCount,
+  };
+},
+
   },
  
   getters: {
@@ -704,7 +784,9 @@ export default {
     allSetpoints: state => state.allSetpoints,
     getMobile: state => state.mobile,
     getDeviceType: state => state.deviceType,
-    getTypeSettingsItem: (state) => state.typeSettingsKey
-
+    getTypeSettingsItem: (state) => state.typeSettingsKey,
+    getConfigByType: (state) => (type, dID) => {
+      return state[type]?.[dID] || {};
+    },
   }
 };

@@ -20,6 +20,7 @@ const MUTATION_TYPES = {
   SET_ERROR: 'SET_ERROR',
 };
 
+
 export default {
   namespaced: true,
   state: () => ({
@@ -347,8 +348,6 @@ export default {
           };
         }
   },
-
-
   async addConfigLocally({ rootGetters, rootState, dispatch }, { room, param, configName, configData }) {
       //console.log('[settingsConfig] - addConfigLocally - Начинаем локальное сохранение для ', configName);
       const dID = rootGetters['dID'];
@@ -723,44 +722,6 @@ export default {
         throw error;
       }
     },
-
-
-    // async saveNotifications({ commit, rootGetters, dispatch }, { roomKey, paramKey, notifications }) {
-    //   const dID = rootGetters['dID'];
-    //   if (!dID) {
-    //     logger.warn('[settingsConfig] - saveNotifications - dID не определен');
-    //     return;
-    //   }
-      
-    //   try {
-    //     // Обновляем в хранилище
-    //     const key = `${dID}_notifications`;
-    //     const allNotifications = { ...(this.state.notifications[key] || {}) };
-        
-    //     if (!allNotifications[roomKey]) {
-    //       allNotifications[roomKey] = {};
-    //     }
-    //     allNotifications[roomKey][paramKey] = notifications;
-        
-    //     commit('SET_NOTIFICATIONS', { name: dID, config: allNotifications });
-        
-    //     // Отправляем на сервер
-    //     await dispatch('websocket/send', {
-    //       type: 'post',
-    //       request: 'notifications',
-    //       name: dID,
-    //       payload: { roomKey, paramKey, notifications }
-    //     }, { root: true });
-        
-    //     logger.info('[settingsConfig] - saveNotifications - Уведомления сохранены');
-        
-    //     return { success: true };
-        
-    //   } catch (error) {
-    //     logger.error('[settingsConfig] - saveNotifications - Ошибка сохранения:', error);
-    //     throw error;
-    //   }
-    // },
     async saveNotifications({ rootGetters, dispatch }, { room, param, notifications }) {
       const dID = rootGetters['dID'];
       if (!dID) throw new Error('[settingsConfig] saveNotifications: dID не определен');

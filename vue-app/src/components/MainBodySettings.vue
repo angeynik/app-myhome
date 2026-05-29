@@ -517,6 +517,16 @@ export default {
   
     async addNewSchedule() {
       //console.groupCollapsed('[MainBodySettings] - addNewSchedule');
+      const limitCheck = await this.$store.dispatch('config/checkLimitBeforeAdd', 'schedules');
+      if (!limitCheck.allowed) {
+        this.$store.dispatch('popup/show', {
+            message: `Достигнут предел количества элементов расписания (${limitCheck.limit}).`,
+            type: 'warning',
+            duration: 2000
+          });
+        return;
+      }
+
       const settingsData = this.$store.state.setpointsManager?.settingsData;
       const room = settingsData?.payload?.room;
       const param = settingsData?.payload?.param;
@@ -633,11 +643,19 @@ export default {
       logger.info(`[MainBodySettings] - handleDeleteConfigItem - Расписание c ${id} добавлено в список на удаление`);
 
     },
-  
-
-
     async addNewNotification() {
       console.groupCollapsed('[MainBodySettings] - addNewNotification');
+      const limitCheck = await this.$store.dispatch('config/checkLimitBeforeAdd', 'notifications');
+      console.log('[MainBodySettings] - addNewNotification - limitCheck', limitCheck);
+      if (!limitCheck.allowed) {
+        this.$store.dispatch('popup/show', {
+            message: `Достигнут предел количества элементов уведомлений (${limitCheck.limit}).`,
+            type: 'warning',
+            duration: 2000
+          });
+        return;
+      }
+
       const settingsData = this.$store.state.setpointsManager?.settingsData;
       const value = settingsData?.payload?.value || 0;
       const room = this.settingsData.payload.room;
@@ -738,10 +756,19 @@ export default {
       }
 
     },
-  
     async addNewStatistic() {
       // Получаем текущую аналитику для этой комнаты и параметра
       console.groupCollapsed('[MainBodySettings] - addNewStatistic');
+      const limitCheck = await this.$store.dispatch('config/checkLimitBeforeAdd', 'statistics');
+      if (!limitCheck.allowed) {
+        this.$store.dispatch('popup/show', {
+            message: `Достигнут предел количества элементов аналитики (${limitCheck.limit}).`,
+            type: 'warning',
+            duration: 2000
+          });
+        return;
+      }
+
       //const settingsData = this.$store.state.setpointsManager?.settingsData;
       //const value = settingsData?.payload?.value || 0;
       const room = this.settingsData.payload.room;
