@@ -178,6 +178,21 @@ export default {
         }
       }
     },
+    UPDATE_STATISTIC_VALUE(state, { dID, room, param, id, title, value }) {
+      console.log('[config] - UPDATE_STATISTIC_VALUE - Обновляем уведомление:', { dID, room, param, id, title, value });
+      if (!state.statistics[dID]) return;
+      if (state.statistics[dID][room] && state.statistics[dID][room][param]) {
+        const statistics = state.statistics[dID][room][param];
+        const index = statistics.findIndex(n => n.id === id);
+        if (index !== -1) {
+          state.statistics[dID][room][param][index] = {
+            ...statistics[index],
+            [title]: value,
+            updatedAt: nowMoscow()
+          };
+        }
+      }
+    },
 
     SET_LOADING(state, value) {
       state.loading = value;
@@ -545,7 +560,7 @@ export default {
         }
       }
       if (type === 'notifications') {
-       console.log('[Config] - handleValueUpdate - обновление уведомления', payload);
+       console.log('[Config] - handleValueUpdate type - notifications - обновление уведомления', payload);
         commit('UPDATE_NOTIFICATION_VALUE', {
           dID: settingsData.name,
           room: settingsData.payload.room,
@@ -556,7 +571,15 @@ export default {
         });
       }
       if (type === 'statistics') {
-        console.log(' ~~~~~~~~~~~~~~~~~~~  [Config] - handleSensorUpdate - Необходимо написать логику ОБНОВЛЕНИЯ локальной конфигурации АНАЛИТИКИ');
+        console.log('[Config] - handleValueUpdate type - statistics - обновление уведомления', payload);
+        commit('UPDATE_STATISTIC_VALUE', {
+          dID: settingsData.name,
+          room: settingsData.payload.room,
+          param: settingsData.payload.param,
+          id: settingsData.payload.id,
+          title: settingsData.payload.value_name,
+          value: settingsData.payload.value,
+        });
       }
 
 

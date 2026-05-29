@@ -246,6 +246,13 @@ export default {
               high: 1440,
               step: 1,
             };
+        } else if (param === 'sensityRate') {
+            limits = {
+              low: 0.1,
+              high: 12,
+              step: 0.1,
+            };
+
         } else {
         const dID = rootGetters['dID'];
           const config = rootGetters['config/getConfig'](dID);

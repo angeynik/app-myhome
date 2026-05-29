@@ -449,6 +449,13 @@ export default {
         break;
       case 'statistics':
         console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - Статистика');
+        newValue = value;
+        payload = {
+            room: roomKey, 
+            param: setpointKey,
+            value: newValue, 
+            time: nowMoscow()
+          };
       break;
     
       default:
@@ -533,7 +540,7 @@ export default {
       this.request = event.request;
 
       if (event.action === 'show') {  
-        //console.log('[DashBoard] - getComponentData - Показываем компонент MainSetpoint с данными:', this.selectedItemData);
+        console.log('[DashBoard] - getComponentData - Показываем компонент MainSetpoint с данными:', event.updateState.value);
         this.setpoint = event.updateState.value;
         this.showSetpoint = true;
         

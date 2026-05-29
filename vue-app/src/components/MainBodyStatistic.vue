@@ -16,7 +16,7 @@
         <span class="settings-info-value">Обновлено:</span>
         <span class="settings-info-value">{{ formatDate(statisticData.updatedAt) }}</span>
       </div>
-      <button class="mainBodySettings-header-button" @click="deleteNotificationItem">
+      <button class="mainBodySettings-header-button" @click="deleteStatisticItem">
         <svg class="icon-settings close" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle class="hover-bg" cx="33" cy="33" r="31" fill="#CC0000" opacity="0"/>
           <circle cx="33" cy="33" r="31" fill="#FF4747"/>
@@ -147,12 +147,6 @@ import { mapGetters, mapActions } from 'vuex';
 import { formatDate} from '@/utils/timeUtils';
 
 const PERIODS = [0, 5, 15, 30, 60, 120, 180, 300, 720, 1440, 10080, 302400];
-
-const TYPE_LABELS = {
-  0: 'Web',
-  1: 'Telegram',
-  2: 'Web + Telegram'
-};
 
 export default {
   name: 'MainBodyStatistic',
@@ -307,10 +301,10 @@ export default {
       event.stopPropagation();
       console.log('[MainBodyStatistic] - editSensityRate - Изменяем Значение срабатывания');
       this.$emit('field-selected', { statisticId: this.statisticData.id, field: 'sensityRate' });
-      this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
+      this.updateSettingsData({ field: 'request', value: 'updatestatistics' });
 
       this.setLimits({
-        param: 'value',
+        param: 'sensityRate',
         valueType: 'absolute',
       });
 
@@ -330,197 +324,17 @@ export default {
         value_type: 'value',
         value: currentValue,
       });
-
-
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    editStartTime(event) {
-      event.stopPropagation();
-      this.$emit('field-selected', { statisticId: this.statisticData.id, field: 'startTime' });
-      const timeString = this.statisticData.startTime || '00:00';
-      //console.log('[MainBodyNotifications] - Редактирование startTime:', timeString);
-      const [hours, minutes] = timeString.split(':').map(Number);
-      this.editTimeFieldWithToggle('startTime', hours, minutes);
-    },
-
-    editEndTime(event) {
-      event.stopPropagation();
-      const timeString = this.statisticData.endTime || '00:05';
-      const [hours, minutes] = timeString.split(':').map(Number);      
-      this.editTimeFieldWithToggle('endTime', hours, minutes);
-
-    },
-
-    editTimeFieldWithToggle(selectedField, currentHours, currentMinutes) {
-      this.updateSettingsData({ field: 'request', value: 'updatestatistics' });
-        //console.log('[MainBodyNotifications] - Редактирование:', currentHours, currentMinutes, this.scheduleData[this.selectedField]);
-        this.updatePayloadData({ 
-              id: this.statisticData.id,
-              value: this.statisticData[selectedField],
-              value_name: selectedField,
-              value_type: '',
-              value_details: this.timeEditMode
-            });
-        const editMode = this.timeEditMode;
-        // Устанавливаем лимиты
-          const params = {
-            param: editMode, 
-            valueType: '', 
-          }
-          //console.log('[MainBodyNotifications] - editValue - params:', params);
-          this.setLimits(params);
-
-        if (editMode === 'minutes') {
-            this.$emit('getDataStatisticItem', {
-                value: currentMinutes,
-                title: selectedField,
-                value_details: 'minutes'
-            });
-        } else {
-            this.$emit('getDataStatisticItem', {
-                value: currentHours,
-                title: selectedField,
-                value_details: 'hours'
-            });
-        }
-        
-        // Переключаем режим
-        this.timeEditMode = this.timeEditMode === 'minutes' ? 'hours' : 'minutes';
-        //console.groupEnd();
-    },
-
-
-    editFrequency(event) {
-      event.stopPropagation();
-      this.updateSettingsData({ field: 'request', value: 'updatestatistics' });
-      this.setLimits({
-        param: 'frequency',
-        valueType: 'absolute',
-      });
-
-      const currentValue = this.statisticData.frequency || 0;
-
-      this.updatePayloadData({ 
-        id: this.statisticData.id,
-        value: currentValue,
-        value_type: 'value',
-        value_name: 'frequency',
-      });
-
-      // Отправляем событие родителю для немедленного обновления
-      this.$emit('getDataStatisticItem', {
-        title: 'frequency',
-        value_type: 'value',
-        value: currentValue,
-      });
-
-      // Визуально выделяем поле
-      this.$emit('field-selected', { statisticId: this.statisticData.id, field: 'frequency' });
-
-    },
-
-    toggleNotificationСhannel(event) {
-      event.stopPropagation();
-      this.updateSettingsData({ field: 'request', value: 'updatestatistics' });
-      if (!this.statisticData) return;
-      console.log('[MainBodyNotifications] - toggleNotificationСhannel - Изменяем Канал уведомления');
-      
-      const typesCount = Object.keys(TYPE_LABELS).length; // 3
-      const currentValue = this.statisticData.notificationСhannel;
-      // Убедимся, что currentValue число
-      const currentIndex = Number(currentValue);
-      const nextIndex = (currentIndex + 1) % typesCount;
-      const nextValue = nextIndex; // 0,1,2
-
-      this.updatePayloadData({
-        id: this.statisticData.id,
-        value: nextValue,
-        value_name: 'notificationСhannel',
-        value_type: 'value',
-      });
-
-      this.$emit('getDataStatisticItem', {
-        id: this.statisticData.id,
-        title: 'notificationСhannel',
-        value_type: 'value',
-        value: nextValue,
-      });
-
-      this.$emit('field-selected', { statisticId: this.statisticData.id, field: 'notifСhannel' });
-    },
-
-
-    togglePermission(event) {
-      event.stopPropagation();
-      this.updateSettingsData({ field: 'request', value: 'updatestatistics' });
-      const newEnabled = this.statisticData.permission === false ? true : false;
-
-      this.updatePayloadData({
-        id: this.statisticData.id,
-        value: newEnabled,
-        value_name: 'permission',
-        value_type: '',
-      });
-      // Отправляем событие родителю для немедленного обновления
-      this.$emit('getDataStatisticItem', {
-        title: 'permission',
-        value_type: '',
-        value: newEnabled,
-      });
-
-      // Визуально выделяем поле
-      this.$emit('field-selected', { statisticId: this.statisticData.id, field: 'permission' });
-    },
-
-    deleteNotificationItem() {
+    deleteStatisticItem() {
       if (!this.statisticData.id) {
-        logger.error('[MainBodyNotifications] - deleteNotificationItem - нет ID');
+        logger.error('[MainBodyStatistic] - deleteStatisticItem - нет ID');
         return;
       }
-      console.log('[MainBodySchedule] - deleteNotificationItem - Список Уведомлений ', this.statisticData);
+      console.log('[MainBodyStatistic] - deleteStatisticItem - Список Уведомлений ', this.statisticData);
       const statisticTitle = this.statisticData.paramTitle || ` ID Уведомления : ${this.statisticData.id}`;
       
       // Запрос подтверждения
-      if (!confirm(`Удалить расписание "${statisticTitle}"?\n\nУдаление будет применено после сохранения изменений.`)) {
+      if (!confirm(`Удалить Уведомление "${statisticTitle}"?\n\nУдаление будет применено после сохранения изменений.`)) {
         return;
       }
 
@@ -532,7 +346,7 @@ export default {
       this.$el.style.opacity = '0.35';
       this.$el.style.pointerEvents = 'none';
 
-      logger.info('[MainBodyNotifications] - deleteNotificationItem - id:', this.statisticData.id);
+      logger.info('[MainBodyStatistic] - deleteStatisticItem - id:', this.statisticData.id);
     },
 
   },
