@@ -101,8 +101,8 @@ export default {
     UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value }) {
       const config = state.configs[dID];
       logger.dev('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
-      //console.log('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
-      //console.log('[config] - UPDATE_CONFIG_VALUE - Конфиг:', config);
+      console.log('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
+      console.log('[config] - UPDATE_CONFIG_VALUE - Конфиг:', config);
       if (!config) {
         logger.error(`[Config] - dID ${dID} не найден в конфигурации`);
         console.warn(`[Config] - dID ${dID} не найден в конфигурации`);
@@ -523,10 +523,29 @@ export default {
       // const { room, param, value, time } = payload;
       //console.log('[Config] - handleValueUpdate - Параметры запроса:', { dID, room, param, value, time });
       // if (!dID || !room || !param || value === undefined) return;
-      
+
+      if (type === 'sensors') {
+        try {
+          logger.dev('[Config] - handleValueUpdate - type = sensors');
+          console.log('[Config] - handleValueUpdate - type = sensors, payload:', payload);
+          commit('UPDATE_CONFIG_VALUE', {
+            dID: dID || settingsData.name,
+            room: payload?.room || settingsData.payload.room,
+            type: type,
+            name: payload?.item_name,
+            value: payload?.item_value,
+          });
+
+        } catch (error) {
+          logger.error('[Config] Ошибка обработки данных сенсора:', error);
+          //console.error('[Config] Ошибка обработки данных сенсора:', error);
+        }
+
+      }
 
       
       if (type === 'setpoints') {
+        
         try {
           commit('UPDATE_CONFIG_VALUE', {
             dID: dID || settingsData.name,

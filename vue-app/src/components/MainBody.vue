@@ -29,6 +29,7 @@
 import { mapGetters, mapMutations, mapActions} from 'vuex'
 import MainBodyValue from './MainBodyValue.vue'
 import logger from '../store/modules/logger.js';
+import { parseMoscowDate } from '@/utils/timeUtils';
 
 export default {
   name: 'MainBody',
@@ -318,7 +319,7 @@ export default {
       console.groupEnd();
     },
     async updateView() { // Формируем массив для отображения пользователю в соответствии с типом сортировки и текущим ключем
-      console.log('[MainBody] - updateView - started');
+      //console.log('[MainBody] - updateView - started');
         try {
           logger.info('[MainBody] - updateView - started');
           console.groupCollapsed('[MainBody] - updateView ');
@@ -333,19 +334,19 @@ export default {
 
           if (this.currentSortType === 'rooms') {
             logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: комнаты -(', this.getRoomKey, ')');
-            console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: комнаты -(${this.getRoomKey})`);
+            //console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: комнаты -(${this.getRoomKey})`);
             this.viewArray = this.getSortedRooms(config, this.getRoomKey);
           } else if (this.currentSortType === 'params') {
             logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: параметров -(', this.getParamKey, ')');
-            console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: параметров -(${this.getParamKey})`);
-          this.viewArray = this.getSortedParams(config, this.getParamKey);
+            //console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: параметров -(${this.getParamKey})`);
+            this.viewArray = this.getSortedParams(config, this.getParamKey);
           } else if (this.currentSortType === 'devices') {
             logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: Устройств -(', this.getDeviceKey, ')');
-            console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: Устройств -(${this.getDeviceKey})`);
+            //console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: Устройств -(${this.getDeviceKey})`);
             this.viewArray = this.getSortedDevices(config, this.getDeviceKey);
           } else if (this.currentSortType === 'setpoints') {
             logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: Уставки -(', this.getSetpointKey, ')');
-            console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: Уставки -(${this.getSetpointKey})`);
+            //console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: Уставки -(${this.getSetpointKey})`);
             this.viewArray = this.getSortedSetpoints(config, this.getSetpointKey);
           }
         
@@ -359,6 +360,7 @@ export default {
           logger.error('[MainBody] - updateView - Ошибка обновления:', error);
           //console.error('[MainBody] Ошибка обновления:', error);
           this.viewArray = [];
+          console.groupEnd();
         }
         console.groupEnd();
     },
@@ -411,7 +413,7 @@ export default {
                 setpointKey = null;
               }
             }
-
+            //console.log('[MainBody] getSortedRooms - itemData.lastUpdate - ', itemData.lastUpdate);
             devicesArray.push({
               sortType: 'rooms',
               paramTitle: this.getSensorTitle(itemKey),
@@ -431,12 +433,14 @@ export default {
       });
       logger.dev(`[MainBody] - getSortedRooms - Найдено устройств в комнате ${roomKey}:`, devicesArray.length);
       console.log(`[MainBody] - getSortedRooms - Найдено устройств в комнате ${roomKey}:`, devicesArray);
+      console.groupEnd;
       return devicesArray;
     },
 
     // Формируем массив для отображения сортировки по параметрам
     getSortedParams(config, paramPrefix) {
       // Получаем все ключи сенсоров, которые начинаются с этого префикса
+      logger.dev('[MainBody] getSortedParams - Выполняем сортировку по paramPrefix:', paramPrefix, 'в ', Object.keys(config).length, ' комнатах');
       //console.log('[MainBody] getSortedParams - Выполняем сортировку по paramPrefix:', paramPrefix, 'в ', Object.keys(config).length, ' комнатах');
       const sensors = [];
       
@@ -460,7 +464,8 @@ export default {
               setValue = room.setpoints[setpointKey]?.value != null 
                 ? parseFloat(room.setpoints[setpointKey].value) 
                 : null;
-                console.log('[MainBody] getSortedParams - Ключ параметра уставки:', setpointKey);
+                logger.dev('[MainBody] getSortedParams - Ключ параметра уставки:', setpointKey);
+                //console.log('[MainBody] getSortedParams - Ключ параметра уставки:', setpointKey);
             } else if (!setpointKey) {
                 setValue = null;
                 setpointKey = null;
@@ -560,8 +565,8 @@ export default {
           }
         });
       });
-     
-      console.log('[MainBody] getSortedDevices - Devices found:', devicesArray.length);
+     logger.dev('[MainBody] - getSortedDevices - devicesArray:', devicesArray, 'devicesArray.length:', devicesArray.length);
+      // console.log('[MainBody] getSortedDevices - Devices found:', devicesArray.length);
       console.log('[MainBody] getSortedDevices - Devices array:', devicesArray);
       return devicesArray;
     },
@@ -621,7 +626,7 @@ export default {
         });
       });
       logger.dev('[MainBody] - getSortedSetpoints - setpointsArray:', setpointsArray, 'setpointsArray.length:', setpointsArray.length);
-      console.log('[MainBody] getSortedSetpoints - Setpoints found:', setpointsArray.length);
+      // console.log('[MainBody] getSortedSetpoints - Setpoints found:', setpointsArray.length);
       console.log('[MainBody] getSortedSetpoints - setpointsArray:', setpointsArray);
       
       return setpointsArray;
@@ -629,13 +634,31 @@ export default {
 
     getTimeDiff(timestamp) {
       if (!timestamp) return 'Неизвестно';
-    
+      //console.log('timestamp:', timestamp, '→ UTC:', new Date(timestamp).toISOString());
+      let time;
+
       try {
         const now = Date.now();
-        const time = new Date(timestamp).getTime();
+        // const time = new Date(timestamp).getTime();
+        // //console.log('[MainBody] getSortedSetpoints - getTimeDiff - Текущая дата', now, ' дата обновления - ', time);
+        // if (isNaN(time)) return 'Неизвестно';
+
+        if (typeof timestamp === 'number') {
+          time = timestamp;
+        } else if (typeof timestamp === 'string') {
+          // Сначала пробуем распознать ваш московский формат
+          time = parseMoscowDate(timestamp);
+          // Если не удалось, пробуем стандартный парсинг
+          if (isNaN(time)) {
+            time = new Date(timestamp).getTime();
+          }
+        } else {
+          return 'Неизвестно';
+        }
         if (isNaN(time)) return 'Неизвестно';
         
         const diff = Math.floor((now - time) / 60000);
+        //console.log('[MainBody] getSortedSetpoints - getTimeDiff - Результат -', diff);
         if (diff < 1) return 'сейчас';
         if (diff < 60) return `${diff} мин назад`;
         if (diff < 1440) return `${Math.floor(diff / 60)} ч назад`;

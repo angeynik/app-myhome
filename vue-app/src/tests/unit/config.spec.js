@@ -22,11 +22,17 @@ jest.mock('@/store/modules/logger', () => ({
   isInfoEnabled: () => false, isDevEnabled: () => false, isErrorEnabled: () => false,
 }));
 
-// ВАЖНО: nowMoscow мокируем с фиксированным значением.
-// UPDATE_CONFIG_VALUE всегда использует nowMoscow() для lastUpdate,
-// поле timestamp из payload игнорируется (текущее поведение реализации).
+// ВАЖНО: nowMoscow — обычная стрелочная функция, НЕ jest.fn().
+//
+// ПОЧЕМУ НЕ jest.fn(): если в jest.config установлен resetMocks: true,
+// Jest вызывает mockReset() перед каждым тестом и стирает имплементацию —
+// функция начинает возвращать undefined. Обычная функция resetMocks не трогает.
+//
+// Мутации UPDATE_CONFIG_VALUE, UPDATE_SCHEDULE_VALUE, UPDATE_NOTIFICATION_VALUE
+// используют nowMoscow() для lastUpdate/updatedAt — тесты проверяют
+// что записывается именно возвращаемое значение этой функции.
 jest.mock('@/utils/timeUtils', () => ({
-  nowMoscow: jest.fn(() => 'MOCKED_TIMESTAMP'),
+  nowMoscow: () => 'MOCKED_TIMESTAMP',
 }));
 
 import configModule from '@/store/modules/config';
@@ -226,8 +232,10 @@ describe('Vuex config module', () => {
       expect(configModule.getters.getConfig(state)('device123')).toEqual({ room1: {} });
     });
 
-    it('getConfig возвращает undefined для несуществующего dID', () => {
-      expect(configModule.getters.getConfig(state)('nonexistent')).toBeUndefined();
+    it('getConfig возвращает пустой объект для несуществующего dID', () => {
+      // Геттер реализован как state.configs[name] || {} —
+      // возвращает {} по умолчанию, а не undefined.
+      expect(configModule.getters.getConfig(state)('nonexistent')).toEqual({});
     });
 
     it('isLoading возвращает состояние загрузки', () => {
@@ -485,12 +493,61 @@ describe('Vuex config module', () => {
         });
       });
 
-      it('type=sensors: не коммитит ничего (тип не обрабатывается)', async () => {
+      // ── type = sensors ────────────────────────────────────────────────────
+      // Поля commit берутся из payload.item_name / payload.item_value,
+      // а НЕ из payload.param / payload.value (как у setpoints/schedules).
+      // room: payload.room || settingsData.payload.room (fallback)
+ 
+      it('type=sensors: коммитит UPDATE_CONFIG_VALUE c item_name и item_value', async () => {
         await configModule.actions.handleValueUpdate(context, {
-          dID: 'device123', payload: {}, type: 'sensors',
+          dID:     'device123',
+          payload: { room: 'room1', item_name: 'temp1', item_value: 23.5 },
+          type:    'sensors',
         });
+        expect(context.commit).toHaveBeenCalledWith('UPDATE_CONFIG_VALUE', {
+          dID:   'device123',
+          room:  'room1',
+          type:  'sensors',
+          name:  'temp1',
+          value: 23.5,
+        });
+      });
+ 
+      it('type=sensors: использует settingsData.payload.room если payload.room отсутствует', async () => {
+        await configModule.actions.handleValueUpdate(context, {
+          dID:     'device123',
+          payload: { item_name: 'humidity1', item_value: 55 }, // нет room
+          type:    'sensors',
+        });
+        expect(context.commit).toHaveBeenCalledWith('UPDATE_CONFIG_VALUE', expect.objectContaining({
+          room: 'room1', // из settingsData.payload.room
+          name: 'humidity1',
+          value: 55,
+        }));
+      });
+ 
+      it('type=sensors: использует settingsData.name если dID не передан', async () => {
+        await configModule.actions.handleValueUpdate(context, {
+          dID:     null,
+          payload: { item_name: 'temp1', item_value: 21 },
+          type:    'sensors',
+        });
+        // dID=null → срабатывает ранний return (!dID), commit не вызывается
         expect(context.commit).not.toHaveBeenCalled();
       });
+ 
+      it('type=sensors: name и value равны undefined если поля отсутствуют в payload', async () => {
+        await configModule.actions.handleValueUpdate(context, {
+          dID:     'device123',
+          payload: { room: 'room1' }, // нет item_name и item_value
+          type:    'sensors',
+        });
+        expect(context.commit).toHaveBeenCalledWith('UPDATE_CONFIG_VALUE', expect.objectContaining({
+          name:  undefined,
+          value: undefined,
+        }));
+      });
+
 
       it('возвращает сразу если settingsData отсутствует', async () => {
         context.rootGetters.getSetpointsManager = null;

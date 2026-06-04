@@ -19,6 +19,22 @@ export function nowMoscow() {
 }
 
 /**
+ * Парсит строку "DD.MM.YYYY, HH:MM:SS" в миллисекунды (timestamp)
+ * @param {string} dateStr - например "03.06.2026, 21:22:38"
+ * @returns {number} timestamp или NaN
+ */
+export function parseMoscowDate(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return NaN;
+  const [datePart, timePart] = dateStr.split(', ');
+  if (!datePart || !timePart) return NaN;
+  const [day, month, year] = datePart.split('.').map(Number);
+  const [hours, minutes, seconds] = timePart.split(':').map(Number);
+  // Месяц в JavaScript начинается с 0
+  const date = new Date(year, month - 1, day, hours, minutes, seconds);
+  return date.getTime();
+}
+
+/**
  * Текущая дата/время в формате ISO (UTC)
  *
  * Замена: action settingsConfig/getCurrentDateTime
