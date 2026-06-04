@@ -46,6 +46,9 @@
     margin: 0 !important;
     border: 0 !important;
  }
+ body, .app {
+  overflow-x: hidden;
+}
 
  /* Компонент AppPlace */
 .app-place_body {
@@ -127,10 +130,10 @@
   color: var(--light_font);
   justify-content: center;
 }
-    .mainBody {
+  .mainBody {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); /* Автоматическая подгонка элементов по ширине от 120px до доступного пространства */
-      grid-gap: 1.5rem; /* Отступы между элементами */
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Автоматическая подгонка элементов по ширине от 120px до доступного пространства */
+      grid-gap: 1.2rem; /* Отступы между элементами */
       background-color: var(--header_color);
       height: 100%;
       width: 100%;
@@ -143,8 +146,8 @@
       -ms-user-select: none;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
-    } 
-    .mainBody.swiping {
+  } 
+  .mainBody.swiping {
     transition: none;
   }
   .header {
@@ -1109,42 +1112,42 @@ form button:active {
 
 
 
-/* Горизонтальная ориентация (ширина больше высоты) */
-@media (orientation: landscape) {
-    .mainBody {
-      align-content: stretch;
-    }
-  .introduce-place {
-    width: 100vw;
-    display: flex;
-    flex-direction: row; /* Горизонтальное расположение */
-    flex-wrap: wrap; /* Перенос на следующую строку если не помещается */
-    justify-content: space-around;
-    align-items: stretch;
-    min-height: calc(80vh - 130px);
-  }
-  
-  .introduce-button {
-    width: 24%; /* Занимает примерно треть ширины */
-    min-width: 130px; /* Минимальная ширина */
-    height: 60vh; /* Большая высота в ландшафтном режиме */
-    max-height: 240px;
-    flex: 1 1 auto; /* Гибкое растягивание */
-    margin: 0.5rem;
-  }
-  
-  .button-text {
-    font-size: clamp(1.3rem, 3vw, 1.5rem);
-  }
-  .frequency-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-}
+
 
 
 /* Адаптация для узких экранов */
+@media (max-width: 400px) {
+    .mainBody {
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Автоматическая подгонка элементов по ширине от 120px до доступного пространства */
+      grid-gap: 1rem; /* Отступы между элементами */
+    } 
+  .introduce-button {
+    max-width: 280px;
+    min-height: 120px;
+  }
+  .button-text {
+    font-size: 1rem;
+  }
+  .schedules-list,
+  .notifications-list {
+    grid-template-columns: 1fr;
+  }
+  /* Убираем лишние горизонтальные отступы у сеток */
+  .schedules-list,
+  .notifications-list,
+  .statistics-list {
+    max-width: 98%;
+    margin: 0.25rem auto;
+  }
+}
+@media (max-width: 600px) {
+  .introduce-button {
+    max-width: 320px; /* Максимальная ширина кнопки */
+  }
+  .error {
+    color: red;
+  }
+}
 @media (max-width: 800px) {
   .introduce-button {
     max-width: 500px; /* Максимальная ширина кнопки */
@@ -1154,11 +1157,11 @@ form button:active {
     gap: 24px;
   }
 } 
-@media (min-width: 940px) {
+@media (min-width: 980px) {
   .schedules-list,
   .notifications-list {
     /* grid-template-columns: 1fr 1fr; */
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
     place-items: center; /* Вертикальное и горизонтальное центрирование в видимой области */
     gap: 1rem; /* Уменьшенный gap для предотвращения overflow */
     max-width: 90%; /* Уменьшенное ограничение ширины для предотвращения полосы прокрутки */
@@ -1177,11 +1180,37 @@ form button:active {
     max-width: 12vw;
   }
 }
-@media (max-width: 600px) {
+
+
+/* Горизонтальная ориентация (ширина больше высоты) */
+@media (orientation: landscape) and (min-width: 800px) {
   .introduce-button {
-    max-width: 340px; /* Максимальная ширина кнопки */
+    width: 24%;
+    height: 60vh;
+    max-height: 240px;
   }
-  .error {
-    color: red;
+  .introduce-place {
+    flex-direction: row;
+    min-height: calc(80vh - 130px);
+  }
+}
+
+/* Ландшафт на телефонах (узкий экран) – своя адаптация */
+@media (orientation: landscape) and (max-width: 799px) {
+  .introduce-place {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .introduce-button {
+    width: 45%;          /* Две кнопки в ряд */
+    max-width: 240px;
+    height: 35vh;
+    min-height: 160px;
+    margin: 0.25rem;
+  }
+  .button-text {
+    font-size: 1rem;
   }
 }
