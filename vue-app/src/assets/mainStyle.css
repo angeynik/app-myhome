@@ -129,14 +129,14 @@
 }
     .mainBody {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Автоматическая подгонка элементов по ширине от 120px до доступного пространства */
-      grid-gap: 1.6rem; /* Отступы между элементами */
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); /* Автоматическая подгонка элементов по ширине от 120px до доступного пространства */
+      grid-gap: 1.5rem; /* Отступы между элементами */
       background-color: var(--header_color);
       height: 100%;
       width: 100%;
       justify-items: center;
       align-content: stretch;
-      padding: 1.4rem; /* Отступы внутри контейнера */
+      padding: 1rem; /* Отступы внутри контейнера */
       box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
       -webkit-user-select: none;
       -moz-user-select: none;
@@ -315,11 +315,11 @@ form div {
   gap: 10px;
 }
     .sensor-card {
-      min-width: 190px;
+      min-width: 180px;
       width: 98%;
       max-width: 54vw;
-      min-height: 180px;
-      max-height: 230px;
+      min-height: 190px;
+      max-height: 260px;
       display: grid;
       grid-template-rows: 1fr 5fr 1fr;
       flex-direction: column;
@@ -338,11 +338,11 @@ form div {
     .sensor-card.selected{
       border: 0.2rem solid var(--orange);
       box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-      transform: scale(1.08);
+      transform: scale(1.1);
       z-index: 12
     }
     .mainBodyValue:hover {
-      transform: scale(1.08); /* Небольшое увеличение при наведении */
+      transform: scale(1.1); /* Небольшое увеличение при наведении */
     }
 
     /* SVG Иконки */
@@ -403,19 +403,20 @@ form div {
 
 
     .sensor-header {
-      height: 2.4rem;
+      height: 2rem;
       align-content: center;
       align-items: center;
-      font-size: clamp(0.7rem, 4vw, 1.2rem);
-      font-weight: 800;
-      letter-spacing: 4px;
+      font-size: clamp(0.6rem, 3vw, 1.1rem);
+      color: var(--sensor-gray);
+      font-weight: 700;
+      letter-spacing: 3.6px;
       text-transform: uppercase;
     }
     .sensor-value {
-      height: 4rem;
+      height: 4.8rem;
       align-content: center;
       font-size: 2.6rem;
-      font-size: clamp(2rem, 4.2vw, 2.5rem);
+      font-size: clamp(2.2rem, 4.4vw, 2.7rem);
       font-weight: 500;
       letter-spacing: 4px;
     }
@@ -439,7 +440,7 @@ form div {
     .sensor-SetValue.selected-setvalue {
       height: 4rem;
       color: var(--orange);
-      font-size: clamp(2rem, 4.2vw, 2.5rem);
+      font-size: clamp(2.2rem, 4.4vw, 2.7rem);
       font-weight: 500;
       letter-spacing: 4px;
       opacity: 1;
