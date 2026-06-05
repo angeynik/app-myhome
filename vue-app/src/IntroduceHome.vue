@@ -12,16 +12,19 @@
     </nav>
 
     <p style="width: 100%; height: 1px; background-color: var(--orange);"> </p>
-    <div style="align-items: center;">
+  <!-- <div style="align-items: center;">
     <h1>Добро пожаловать!</h1>
-    <!-- <h2 style="width: 80%; align-content: flex-start;">
+    <h2 style="width: 80%; align-content: flex-start;">
       Наша компания предлагает решения в сфере управления и автоматизации как для вашего дома, так и для вашего бизнеса.
     </h2>
     <h2 style="width: 80%; align-content: flex-end;">
       Вы можете выбрать один из разделов и узнать больше о типовых решениях или заказать индивидуальную разработку.
-    </h2> -->
+    </h2>
 
     <p>Выберите раздел:</p>
+
+  </div> -->
+
     <div class="introduce-place">
       <button @click="goToDashboard" class="introduce-button color_dark dash">
         <span class="button-text">Dashboard</span>
@@ -33,7 +36,8 @@
         <span class="button-text">Manufact Automation</span>
       </button>
     </div>
-  </div>
+
+
 </div>
 </template>
 

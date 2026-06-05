@@ -1,4 +1,4 @@
-/* Создание переменных mainStyle.css */
+/* ===== ПЕРЕМЕННЫЕ ===== */
 :root {
   --light_font: #E0DFE7;
   --dark_font: #1E1E31;
@@ -15,497 +15,465 @@
   --sensor-red: #fdbbb2;
   --sensor-gray: #808080;
 }
-.html {
-  font-size: 18px; /* Теперь 1rem = 18px */
-  height: 100%; 
-  margin: 0; 
-  padding: 0; 
-  /* box-sizing: border-box; */
-}
-#app {
-    font-family: Avenir, Helvetica, Arial, sans-serif;
-    text-align: center;
-    color: var(--dark_font);
-    margin: 0; 
-    border: 0px;
-    padding: 0px;
-    display: grid; 
-    gap: 30px;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 3fr));
-  }
-   .app {
-    display: flex; 
-    flex-direction: column; 
-    height: 100vh; 
-    width: 100%;
-    background-color: var(--background_color);
-    color: var(--light_font);
-    font-family:   Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    margin: 0 !important;
-    border: 0 !important;
- }
- body, .app {
-  overflow-x: hidden;
+
+/* ===== ГЛОБАЛЬНЫЕ СБРОСЫ И БАЗА ===== */
+* {
+  box-sizing: border-box;
 }
 
- /* Компонент AppPlace */
-.app-place_body {
-  width: 100vw;
-  border: 0px;
-  padding: 30px;
-  display: grid; 
-  gap: 30px;
-  align-content: stretch;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 3fr));
+.html {
+  font-size: 18px;
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
+
+body, .app {
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  text-align: center;
+  color: var(--dark_font);
+  margin: 0;
+  border: 0;
+  padding: 0;
+  display: grid;
+  gap: 30px;
+  grid-template-columns: 1fr;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; min-height: 100dvh;
+  /* height: 100vh; */
+  width: 100%;
+  background-color: var(--background_color);
+  color: var(--light_font);
+  font-family: Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  border: 0;
+}
+
+/* ===== БАЗОВЫЕ СТИЛИ (MOBILE FIRST, до 410px) ===== */
+
+/* Компонент AppPlace */
+.app-place_body {
+  width: 100%;
+  border: 0;
+  padding: 15px;
+  display: grid;
+  gap: 15px;
+  align-content: stretch;
+  grid-template-columns: 1fr; /* одна колонка на телефоне */
+}
+
 .triangle-container {
   position: relative;
-  width: 100vw;
+  width: 100%;
 }
+
 .triangle-btn {
   position: absolute;
-  width: 100px; /* Adjust size as needed */
-  height: 100px; /* Adjust size as needed */
+  width: 80px;
+  height: 80px;
   transform: translate(-50%, -50%);
 }
-#btn1 {
-  top: 10%;
-  left: 50%;
-}
-#btn2 {
-  top: 70%;
-  left: 20%;
-}
-#btn3 {
-  top: 70%;
-  left: 80%;
-}
+
+#btn1 { top: 10%; left: 50%; }
+#btn2 { top: 70%; left: 20%; }
+#btn3 { top: 70%; left: 80%; }
+
 .app-place_module {
-  width: 100%; 
-  max-height: 220px; 
+  width: 100%;
+  max-height: 220px;
   min-height: 200px;
   background: var(--light_font);
   color: var(--header_color);
   display: grid;
-  gap: 32px;
-  grid-row: 1fr 5fr;
+  gap: 16px;
+  grid-template-rows: auto 1fr;
   justify-items: center;
-  border-radius: 16px; 
-  border: 1px solid var(--background_color); 
+  border-radius: 16px;
+  border: 1px solid var(--background_color);
   box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
-  transition: transform 0.6s; /* Плавное изменение размера */
+  transition: transform 0.6s;
 }
+
 .app-place_module:hover {
-  transform: scale(1.1); /* Небольшое увеличение при наведении */
+  transform: scale(1.05);
 }
+
 .app-place_module_h1 {
   height: 40px;
-  font-size: clamp(1.1rem, 4vw, 1.4em);
+  font-size: clamp(1rem, 4vw, 1.2rem);
   font-weight: 900;
   letter-spacing: 2px;
   text-transform: uppercase;
 }
+
 .app-place_module_icon {
-  font-size: 2rem;
-  height: 120px;
+  font-size: 1.8rem;
+  height: 100px;
 }
+
 .paramPlace {
-  padding: 0 1vh 0 1vh;
+  padding: 0 1dvh;
   display: flex;
   align-self: center;
   justify-content: center;
   align-items: center;
 }
 
- .body {
-  flex: 1 1 86%; 
+/* Основное тело */
+.body {
+  flex: 1 1 86%;
   overflow-y: auto;
-  margin: 1 !important;
-  border: 0 !important;
-  display: flex !important;
-  box-sizing: border-box !important;
+  margin: 0;
+  border: 0;
+  display: flex;
+  box-sizing: border-box;
   background-color: var(--header_color);
   color: var(--light_font);
   justify-content: center;
 }
-  .mainBody {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Автоматическая подгонка элементов по ширине от 120px до доступного пространства */
-      grid-gap: 1.2rem; /* Отступы между элементами */
-      background-color: var(--header_color);
-      height: 100%;
-      width: 100%;
-      justify-items: center;
-      align-content: stretch;
-      padding: 1rem; /* Отступы внутри контейнера */
-      box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-  } 
-  .mainBody.swiping {
-    transition: none;
-  }
-  .header {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0;
-    box-sizing: border-box !important;
-  }
-  .header-top {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    margin: 0;
-  }
-  .header-bottom {
-    width: 100%;
-    /* height: 100%; */
-    display: flex;
-    justify-content: center;
-    white-space: nowrap;
-    padding: 0;
-    margin: 0;
-    /* background-color: var(--light_font); */
-  }
-  .header_place {
+
+.mainBody {
   display: grid;
-  grid-row: inherit;
-  grid-template-columns: 1fr 5fr 1fr;
-  height: 8vh;
-  width: 100vw
+  grid-template-columns: 1fr; /* одна колонка до 410px */
+  grid-gap: 1rem;
+  background-color: var(--header_color);
+  height: 100%;
+  width: 100%;
+  justify-items: center;
+  align-content: stretch;
+  padding: 1rem;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
+
+.mainBody.swiping {
+  transition: none;
+}
+
+/* Хедер */
+.header {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.header-top {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+}
+
+.header-bottom {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  white-space: nowrap;
+  padding: 0;
+}
+
+.header_place {
+  display: grid;
+  grid-template-columns: 1fr 5fr 1fr;
+  height: 8dvh;
+  width: 100%;
+}
+
 .header_arrow {
-  box-sizing: border-box !important;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 2.8vh;
-  margin: 0 1vw 0 1vw;
+  height: 2.8dvh;
+  margin: 0 2vw;
   transition: transform 0.5s;
+  touch-action: manipulation;
 }
+
 .header_arrow:hover {
-  transform: scale(1.6); /* Небольшое увеличение при наведении */
-  /* color: var(--orange) !important; */
-  fill: red !important;
-  /* stroke: red;
-  stroke-width: 2px; */
+  transform: scale(1.4);
 }
 
+/* Навигация */
+menu { flex-direction: row; }
+nav { margin: 4px 0; }
+nav a {
+  margin: 0 8px;
+  text-decoration: none;
+  color: #8898a8;
+}
+nav a.router-link-exact-active {
+  color: var(--orange);
+  font-weight: bold;
+}
 
-  menu {
-    flex-direction: row;
-  }
-  nav {
-    margin-top: 4px;
-    margin-bottom: 4px;
-  }
-  
-  nav a {
-    margin: 0 8px;
-    text-decoration: none;
-    color: #8898a8;
-  }
-  
-  nav a.router-link-exact-active {
-    color: var(--orange);
-    font-weight: bold;
-  }
-  .introduce-place {
-    /* width: 100vw; */
-    gap: 1rem;
-    width: 100%;
-    max-width: 100%;
-    padding: 1rem;
-    box-sizing: border-box;
-    align-content: center;
-    border: 0px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: calc(100vh - 120px);
-    /* padding: 30px; */
-    /* display: grid; */
-    /* gap: 30px; */
-    /* grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); */
-    margin: 0 auto; 
-  }
- 
-  .introduce-button {
-    width: 90%;
-    max-width: 600px;
-    height: 22vh; 
-    max-height: 220px;
-    min-height: 140px;
-    background-size: auto 70%;
-    background-position: center; /* Центрируем изображение */
-    background-repeat: no-repeat; /* Запрещаем повторение изображения */
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end; /* Текст внизу */
-    align-items: center;
-    border-radius: 16px;
-    border: 1px solid var(--background_color);
-    box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
-    transition: transform 0.6s;
-    overflow: hidden; /* Чтобы картинка не выходила за границы */
-    text-overflow: ellipsis;
-  }
-  
-  .color_dark {
-    background-color:  var(--header_color); /* Темный цвет текста */
-    color: var(--light_font);
-  }
-  .color-light {
-    background-color:  var(--light_font); /* Светлый цвет текста */
-    color: var(--header_color);
-  }
-  .dash {
-    background-image: url('@/assets/dash.png');
-  }
-  .home {
-    background-image: url('@/assets/home.png');
-  }
-  .manuft {
-    background-image: url('@/assets/manufact.png');
-  }
-  .button-text {
-    height: 25%; /* Текст занимает 25% высоты кнопки */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: clamp(1.1rem, 4vw, 1.6rem);
-    font-weight: bold;
-    width: 100%; /* Ширина текстового блока */
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+/* Introduce-блок (стартовые кнопки) */
+.introduce-place {
+  gap: 1rem;
+  width: 100%;
+  max-width: 100dvw;
+  /* padding: 1rem; */
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100dvh - 120px);
+  min-height: calc(100vh - 120px);
+  margin: 0;
+}
+
+.introduce-button {
+  width: 90%;
+  max-width: 320px;
+  height: auto;
+  min-height: 140px;
+  background-size: auto 70%;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  border-radius: 16px;
+  border: 1px solid var(--background_color);
+  box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+.color_dark {
+  background-color: var(--header_color);
+  color: var(--light_font);
+}
+.color-light {
+  background-color: var(--light_font);
+  color: var(--header_color);
+}
+.dash { background-image: url('@/assets/dash.png'); }
+.home { background-image: url('@/assets/home.png'); }
+.manuft { background-image: url('@/assets/manufact.png'); }
+
+.button-text {
+  height: 25%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(1rem, 4vw, 1.3rem);
+  font-weight: bold;
+  width: 100%;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .button-image {
-  flex-grow: 1; /* Занимает оставшееся пространство */
+  flex-grow: 1;
   width: 100%;
 }
+
+/* Общие элементы */
 p {
   min-height: 1px;
   margin: 0;
   padding: 0;
 }
+
+/* Формы */
 form {
   display: flex;
   flex-direction: column;
-  gap: 20px; /* Расстояние между элементами */
-  max-width: 600px; /* Максимальная ширина формы */
-  margin: 0 auto; /* Центрирование формы */
-  padding: 30px;
-  /* border: 1px solid var(--light_font_color); */
+  gap: 20px;
+  max-width: 90%;
+  margin: 0 auto;
+  padding: 20px;
   border-radius: 16px;
   background-color: var(--header_color);
-  /* box-shadow: 0 2px 6px rgba(255, 255, 255, 0.5); */
 }
 form div {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
 }
-    .sensor-card {
-      min-width: 180px;
-      width: 98%;
-      max-width: 54vw;
-      min-height: 190px;
-      max-height: 260px;
-      display: grid;
-      grid-template-rows: 1fr 5fr 1fr;
-      flex-direction: column;
-      justify-items: center; /* Центрирование содержимого по вертикали */
-      align-items: center;     /* Центрирование содержимого по горизонтали */
-      background-color: var(--background_color);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Легкая тень для визуального эффекта */
-      padding: 0.6rem;
-      box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
-      transition: transform 0.4s; /* Плавное изменение размера */
-      border-radius: 16px; 
-      border: 0.08rem solid var(--sensor-gray); 
-      box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
-      transition: transform 0.2s ease;
-    }
-    .sensor-card.selected{
-      border: 0.2rem solid var(--orange);
-      box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-      transform: scale(1.1);
-      z-index: 12
-    }
-    .mainBodyValue:hover {
-      transform: scale(1.1); /* Небольшое увеличение при наведении */
-    }
-
-    /* SVG Иконки */
-.icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box !important;
-    margin: 10px;
-}
-.icon.big {
-  fill: var(--light_font);
-  /* display: block; */
-  width: 4vh;
-  height: 4vh;
-}
-.icon:hover {
-  fill: var(--violet);
-  stroke: var(--background_color);
-  stroke-width: 1vh;
-}
-.icon.small {
-  fill: var(--light_font);
-  /* display: block; */
-  /* width: 2vh; */
-  height: 4vh;
-}
-.icon-settings {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box !important;
-  margin: 10px;
-  transition: transform 0.4s ease;
-  /* width: 4vh;
-  height: 4vh; */
-}
-.icon-settings.item {
-  /* max-width: 9rem; */
-  margin: 0;
-  height: 100%;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.icon-settings.add {
-  fill: var(--green);
-}
-.icon-settings.close {
-  fill: var(--red);
-}
-
-.icon-settings.add:hover,
-.icon-settings.close:hover {
-  transform: scale(1.2);
-}
-
-
-    .sensor-header {
-      height: 2rem;
-      align-content: center;
-      align-items: center;
-      font-size: clamp(0.6rem, 3vw, 1.1rem);
-      color: var(--sensor-gray);
-      font-weight: 700;
-      letter-spacing: 3.6px;
-      text-transform: uppercase;
-    }
-    .sensor-value {
-      height: 4.8rem;
-      align-content: center;
-      font-size: 2.6rem;
-      font-size: clamp(2.2rem, 4.4vw, 2.7rem);
-      font-weight: 500;
-      letter-spacing: 4px;
-    }
-    .sensor-value.selected-value {
-      height: 2rem;
-      align-content: center;
-      font-size: clamp(1.1rem, 1.5vw, 1.7rem);
-      font-weight: 300;
-      letter-spacing: 3px;
-      color: var(--light_font);
-      opacity: 0.8;
-    }
-    .sensor-SetValue {
-      height: 2rem;
-      align-content: center;
-      color: var(--orange);
-      font-size: clamp(1.1rem, 1.5vw, 1.7rem);
-      font-weight: 300;
-      letter-spacing: 3px;
-    }
-    .sensor-SetValue.selected-setvalue {
-      height: 4rem;
-      color: var(--orange);
-      font-size: clamp(2.2rem, 4.4vw, 2.7rem);
-      font-weight: 500;
-      letter-spacing: 4px;
-      opacity: 1;
-    }
-    .sensor-footer {
-      height: 1.4rem;
-      align-content: center;
-      font-size: 0.85rem;
-      font-weight: 200;
-      letter-spacing: 2px;
-      color: var(--sensor-gray);
-    }
 form label {
-  flex: 0 0 180px;
-  align-items: end;
-  align-self: flex-end;
-  align-content: flex-end;
-  font-size: 18px;
-  color: var(--light_font_color);
+  font-size: 16px;
+  color: var(--light_font);
 }
 form input,
 form select {
-  flex: 1;
-  padding: 14px;
-  font-size: 18px;
+  padding: 12px;
+  font-size: 16px;
   border: 1px solid var(--light_font);
   border-radius: 8px;
   outline: none;
-  transition: border-color 0.5s ease;
+  transition: border-color 0.3s;
 }
 form input:focus,
 form select:focus {
   border-color: var(--orange);
-  border-width: 4px;
+  border-width: 2px;
 }
 form button {
-  align-self: flex-end;
-  padding: 12px 24px;
-  font-size: 18px;
+  align-self: center;
+  padding: 12px 20px;
+  font-size: 16px;
   color: #fff;
   background-color: var(--violet);
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.5s ease;
+  transition: background-color 0.3s;
+  touch-action: manipulation;
 }
-
-form button:hover {
-  background-color: var(--violet);
-}
-
 form button:active {
   background-color: var(--orange);
 }
-.footer {
-    flex: 0 0 6%; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-    background-color: var(--header_color);
+
+/* Sensor card */
+.sensor-card {
+  min-width: 180px;
+  width: 98%;
+  max-width: 80vw;
+  min-height: 150px;
+  max-height: 170px;
+  display: grid;
+  grid-template-rows: 1fr 5fr 1fr;
+  justify-items: center;
+  align-items: center;
+  background-color: var(--background_color);
+  padding: 0.6rem;
+  box-sizing: border-box;
+  transition: transform 0.2s ease;
+  border-radius: 16px;
+  border: 0.08rem solid var(--sensor-gray);
+  box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
 }
-/* setpointBlock */
+.sensor-card.selected {
+  border: 0.2rem solid var(--orange);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+  transform: scale(1.02);
+  z-index: 12;
+}
+.mainBodyValue:hover {
+  transform: scale(1.05);
+}
+
+/* Иконки */
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin: 8px;
+  touch-action: manipulation;
+}
+.icon.big {
+  fill: var(--light_font);
+  width: 4dvh;
+  height: 4dvh;
+}
+.icon.small {
+  fill: var(--light_font);
+  height: 4dvh;
+}
+.icon-settings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 8px;
+  transition: transform 0.3s ease;
+  touch-action: manipulation;
+}
+.icon-settings.item {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+}
+.icon-settings.add { fill: var(--green); }
+.icon-settings.close { fill: var(--red); }
+.icon-settings.add:hover,
+.icon-settings.close:hover {
+  transform: scale(1.1);
+}
+
+/* Текст датчиков */
+.sensor-header {
+  height: 2rem;
+  align-content: center;
+  font-size: clamp(0.7rem, 3vw, 0.9rem);
+  color: var(--sensor-gray);
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.sensor-value {
+  height: 4.8rem;
+  align-content: center;
+  font-size: clamp(1.8rem, 6vw, 2.2rem);
+  font-weight: 500;
+  letter-spacing: 2px;
+}
+.sensor-value.selected-value {
+  height: 2rem;
+  font-size: clamp(1rem, 3vw, 1.3rem);
+  font-weight: 300;
+  letter-spacing: 2px;
+  color: var(--light_font);
+  opacity: 0.8;
+}
+.sensor-SetValue {
+  height: 2rem;
+  color: var(--orange);
+  font-size: clamp(1rem, 3vw, 1.3rem);
+  font-weight: 300;
+  letter-spacing: 2px;
+}
+.sensor-SetValue.selected-setvalue {
+  height: 4rem;
+  font-size: clamp(1.8rem, 6vw, 2.2rem);
+  font-weight: 500;
+  opacity: 1;
+}
+.sensor-footer {
+  height: 1.4rem;
+  font-size: 0.7rem;
+  font-weight: 200;
+  letter-spacing: 1px;
+  color: var(--sensor-gray);
+}
+
+/* Footer */
+.footer {
+  flex: 0 0 6%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--header_color);
+}
+
+/* Setpoint block */
 .setpointBlock {
   display: flex;
   flex-direction: column;
@@ -513,549 +481,318 @@ form button:active {
   align-items: stretch;
   width: 100%;
   background-color: var(--background_color);
-  box-sizing: border-box; /* Учитывать padding и border в размерах элемента */
   margin: 0;
-  padding-bottom: 8vh;
-  box-shadow: 0vw -3vw 6vw rgba(225, 225, 225, 0.15), 0vw 2vw 3vw rgba(225, 225, 225, 0.15),inset 12vw 0 8vw -6vw rgba(0, 0, 0, 0.8), inset -12vw 0 8vw -6vw rgba(0, 0, 0, 0.8);
+  padding-bottom: 6dvh;
+  box-shadow: 0 -2vw 4vw rgba(225, 225, 225, 0.1), 0 2vw 3vw rgba(225, 225, 225, 0.1), inset 8vw 0 6vw -6vw rgba(0,0,0,0.8), inset -8vw 0 6vw -6vw rgba(0,0,0,0.8);
 }
-/* .setpointBlock.mobile-padding {
-  padding-bottom: 8vh;
-} */
 .setpointValue {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   width: 100%;
-  height: inherit;
-  box-sizing: border-box;
-  padding: 1vw 1.5vw 0 1.5vw;
+  padding: 2vw 4vw 0 4vw;
 }
-
 .setpointValue_number {
-  min-width: 64px;
-  height: 100%;
+  min-width: 50px;
   display: flex;
   justify-content: center;
   align-self: center;
-  color: var(--light_font);
 }
 .setpointValue_icon {
-  height: 6vh;
-  width: 38vw;
+  height: 5dvh;
+  width: 40vw;
   display: flex;
   align-items: center;
-  box-sizing: border-box; 
 }
-
 .setpointValue h1 {
-  /* align-items: center; */
-  font-size: 2.4rem;
+  font-size: 1.8rem;
   font-weight: 500;
-  letter-spacing: 0.3rem;
+  letter-spacing: 0.2rem;
   margin: 0;
-  padding: 0;
 }
-
 .setpointLimits {
   display: flex;
-  height: 3vw;
   justify-content: space-between;
-  align-items: flex-start;
-  padding: 0 4vw;
+  padding: 0 6vw;
 }
 .setpointLimits h4 {
   margin: 0;
-  font-size: 0.8rem;
-  letter-spacing: 0.07rem;
-  color: var(--light_font_color);
+  font-size: 0.7rem;
   font-weight: 500;
 }
 
-/* Всплывающее информационноеи окно PopipMenu */
+/* Popup */
 .popup-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-  
-  .popup-content {
-    background: var(--header_color);
-    padding: 0;
-    border-radius: 16px;
-    box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
-    min-width: 300px;
-    max-width: 400px;
-    border: 1px solid var(--light_font);
-    color: var(--light_font);
-  }
-
-  .popup-success {
-    border-top: 4px solid var(--green);
-  }
-
-  .popup-error {
-    border-top: 4px solid var(--red);
-  }
-
-  .popup-warning {
-    border-top: 4px solid var(--yellow);
-  }
-
-  .popup-info {
-    border-top: 4px solid var(--violet);
-  }
-  
-  .popup-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    border-bottom: 1px solid var(--light_font);
-  }
-  
-  .popup-title {
-    font-weight: bold;
-    font-size: 1.2rem;
-    color: var(--light_font);
-  }
-  
-  .popup-close {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: var(--light_font);
-    padding: 0;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .popup-close:hover {
-    color: var(--orange);
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-  }
-  
-  .popup-message {
-    padding: 30px 20px;
-    white-space: pre-line;
-    font-size: 1rem;
-    line-height: 1.5;
-    text-align: center;
-  }
-  
-  .popup-footer {
-    padding: 20px;
-    text-align: center;
-    border-top: 1px solid var(--light_font);
-  }
-  
-  .popup-ok-button {
-    background: var(--violet);
-    color: var(--light_font);
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: bold;
-    transition: background-color 0.5s ease;
-    min-width: 100px;
-  }
-  
-  .popup-ok-button:hover {
-    background: var(--orange);
-  }
-
-  .popup-ok-button:active {
-    background: var(--yellow);
-  }
-
-
- /* Стили для отображения информации MainBodySchedule.vue и MainBodySettings.vue */
-
-
-/* MainBodySettings.vue */
- .mainBodySettings {
-  width: 96vw;
-  /* background-color: blueviolet; */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.popup-content {
+  background: var(--header_color);
+  border-radius: 16px;
+  box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
+  min-width: 260px;
+  max-width: 90%;
+  border: 1px solid var(--light_font);
+}
+.popup-success { border-top: 4px solid var(--green); }
+.popup-error { border-top: 4px solid var(--red); }
+.popup-warning { border-top: 4px solid var(--yellow); }
+.popup-info { border-top: 4px solid var(--violet); }
+.popup-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  /* grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); */
-  /* margin: 1rem 0; */
-  padding: 0.6rem 0.2rem; 
-  text-align: center;
-  box-sizing: border-box;
-  overflow: hidden;
+  padding: 15px;
+  border-bottom: 1px solid var(--light_font);
 }
-.mainBodySettings-message {
-  width: 100%;
-}
-.mainBodySettings-content-body {
-  width: 100%;
-  max-width: 100vw;
-  min-width: 0;
-  overflow-x: hidden;
-  box-sizing: border-box;
-}
-.mainBodySettings-header {
-  max-width: 7.4rem;
-  width: 20%;
-  display: flex;
-}
-.mainBodySettings-header-button {
-  background: none; 
-  border: none; 
-  width: 100%;
-  max-width: 64px;
-  padding: 0;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.settings-info .mainBodySettings-header-button {
-  max-width: 48px;
-  max-height: 30px;
-}
-.settings-info .mainBodySettings-header-button .icon-settings.close {
-  width: 100%;
-  height: auto;
-}
-
-.mainBodySettings-header-title {
-  font-size: 1.8rem;
+.popup-title {
   font-weight: bold;
-  color: var(--light_font);
-  margin-bottom: 4px;
+  font-size: 1.1rem;
 }
-.mainBodySettings-header-title-others {
+.popup-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  touch-action: manipulation;
+}
+.popup-message {
+  padding: 20px;
+  white-space: pre-line;
   font-size: 0.9rem;
+  line-height: 1.4;
+}
+.popup-footer {
+  padding: 15px;
+  text-align: center;
+  border-top: 1px solid var(--light_font);
+}
+.popup-ok-button {
+  background: var(--violet);
   color: var(--light_font);
-  opacity: 0.7;
-  line-height: 1.2;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: bold;
+  min-width: 80px;
+  touch-action: manipulation;
+}
+.popup-ok-button:active {
+  background: var(--yellow);
 }
 
+/* Списки и сетки (базовые одноколоночные) */
+.schedules-list,
+.notifications-list,
+.statistics-list {
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  width: 95%;
+  margin-left: auto;
+  margin-right: auto;
+  overflow-x: hidden;
+}
+.schedules-list-title {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(224,223,231,0.3);
+  text-align: left;
+}
 
-
-/* MainBodySchedule.vue */
-
+/* Настройки */
 .settings-block {
-  margin: 2rem 0;
+  margin: 1rem 0;
   padding: 0.4rem;
   text-align: center;
-  color: rgba(224, 223, 231, 0.6);
-  background: rgba(0, 0, 0, 0.1);
+  color: rgba(224,223,231,0.6);
+  background: rgba(0,0,0,0.1);
   border-radius: 4px;
-  border: 1px dashed rgba(224, 223, 231, 0.3);
+  border: 1px dashed rgba(224,223,231,0.3);
 }
-.settings-block p {
-  font-size: 1rem;
-  margin: 0;
-}
+.settings-block p { font-size: 0.9rem; }
 .settings-block-title {
   text-align: center;
   display: flex;
-  align-items: center; /* Вертикальное центрирование */
-  justify-content: center; /* Горизонтальное центрирование */
+  align-items: center;
+  justify-content: center;
   min-height: 2rem;
-  margin-right: 1rem;
+  margin-right: 0.5rem;
 }
-/* Стили для выделенного элемента */
 .settings-block.selected {
   border: 2px solid var(--green) !important;
-  box-shadow: 0 0 10px rgba(52, 181, 52, 0.3);
-  transition: all 0.2s ease;
+  box-shadow: 0 0 10px rgba(52,181,52,0.3);
 }
-
-.settings-block.selected .settings-value {
-  color: var(--orange) !important;
-  font-weight: 600;
-}
+.settings-block.selected .settings-value,
 .settings-block.selected .statistic-value {
   color: var(--orange) !important;
   font-weight: 600;
 }
-
 .settings-block-title.selected {
   color: var(--orange) !important;
   font-weight: 600;
 }
-
-.settings-block-title.selected p {
-  color: var(--orange) !important;
-}
-
-.settings-block.clickable {
-  margin: 0;
-  padding: 0;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  min-height: 2rem;
-  max-width: 26vw;
-}
+.settings-block.clickable,
 .settings-block-title.clickable {
   margin: 0;
   padding: 0;
   cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  min-height: 1.5rem;
-}
-.settings-block.clickable:hover,
-.settings-block-title.clickable:hover {
-  /* background: rgba(0, 0, 0, 0.2);
-  border-color: rgba(224, 223, 231, 0.5); */
-  font-weight: 800;
-  /* font-size: 44px; */
-  color: #F97B00;
-  /* min-height: 4rem; */
-  /* transform: translateY(-3px); */
-  border-color: var(--violet);
-  /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); */
+  transition: all 0.2s;
+  touch-action: manipulation;
 }
 .settings-block.clickable:active,
 .settings-block-title.clickable:active {
-  /* transform: translateY(0); */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0,0,0,0.25);
 }
-.settings-block.statistic-checkbox-field {
-    border: none;
-    border-radius: 0;
-    margin: 0;
-    background: transparent;
-    /* padding: 4px 12px; */
-}
-
-/* Эффект при наведении (необязательно, для единообразия) */
-.settings-block.statistic-checkbox-field:hover .checkbox-custom {
-  border-color: var(--orange, #F97B00);
-  transition: border-color 0.2s ease;
-}
-
-
 .settings-separator {
   width: 40%;
   max-width: 35px;
-  height: 2.6px;
-  background-color: rgba(242, 242, 244, 0.4); /* как в .settings-info */
+  height: 2px;
+  background-color: rgba(242,242,244,0.4);
   border: none;
-  margin: auto;
-  box-sizing: border-box;
-  display: block;
+  margin: 8px auto;
 }
 .settings-value {
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem;
+  padding: 0.3rem;
 }
 .time-highlight-simple {
-  /* letter-spacing: 4px; */
   color: var(--orange);
   font-weight: 800;
-  font-size: 1.5em;
-  /* transition: font-size 0.4s ease, color 0.4s ease; */
+  font-size: 1.3em;
 }
 .time-dimmed {
-  color: rgba(224, 223, 231, 0.8); /* Полупрозрачный светлый */
-  /* или */
   color: var(--light_font);
   opacity: 0.4;
-  font-weight: 400;
 }
-
 .schedule-item {
   width: 100%;
-  max-width: 100%;         /* ← добавить */
-  min-width: 0;            /* ← ключевое: запрещает растяжение за пределы grid */
-  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
 }
-
-.schedules-list {
-  margin-top: 2rem;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-  place-items: start center; /* Вертикальное выравнивание по верхней границе, горизонтальное центрирование */
-  width: 95%; /* Занимает 90% ширины */
+.mainBodySettings {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.2rem;
+  overflow: hidden;
+}
+.mainBodySettings-content-body {
+  width: 100%;
   max-width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
-  box-sizing: border-box;
+  min-width: 0;
+  overflow-x: hidden;
 }
-.schedules-list-title {
-  color: var(--light_font);
-  font-size: 1.2rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(224, 223, 231, 0.3);
-  text-align: left;
+.mainBodySettings-header {
+  max-width: 7rem;
+  width: 20%;
 }
-.notifications-list {
-  margin-top: 2rem;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-  place-items: start center; /* Вертикальное выравнивание по верхней границе, горизонтальное центрирование */
-  width: 90%; /* Занимает 90% ширины */
-  margin-left: auto;
-  margin-right: auto;
-  overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
+.mainBodySettings-header-button {
+  background: none;
+  border: none;
+  max-width: 48px;
+  cursor: pointer;
+  touch-action: manipulation;
 }
-.statistics-list {
-  margin-top: 2rem;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-  place-items: start center; /* Вертикальное выравнивание по верхней границе, горизонтальное центрирование */
-  width: 95%; /* Занимает 90% ширины */
-  margin-left: auto;
-  margin-right: auto;
-  overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
+.mainBodySettings-header-title {
+  font-size: 1.4rem;
+  font-weight: bold;
+  margin-bottom: 4px;
 }
-.settings-info{
+.mainBodySettings-header-title-others {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+.settings-info {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   margin-bottom: 0.4rem;
   padding-bottom: 0.3rem;
-  border-bottom: 1px solid rgba(224, 223, 231, 0.2);
+  border-bottom: 1px solid rgba(224,223,231,0.2);
 }
 .settings-info-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-  font-size: 0.8rem;
-  font-weight: 400;
-  color: var(--light_font);
+  font-size: 0.7rem;
   opacity: 0.6;
 }
-.settings-info-value {
-  margin-right: 0.9rem;
-}
-
 .settings-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  align-items: stretch;
-  /* gap: 1rem; */
   width: 100%;
   min-width: 0;
   margin-bottom: 0.4rem;
   overflow: hidden;
 }
 .settings-col-first {
-  flex: 0 0 84%;
+  flex: 0 0 80%;
   min-width: 60%;
   display: flex;
   flex-direction: column;
-  padding: 0 0.4rem;
-  gap: 1rem;
+  gap: 0.5rem;
 }
-.settings-col-second{
-  flex: 0 0 14%;
+.settings-col-second {
+  flex: 0 0 15%;
   min-width: 10%;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;        /* обрезаем всё что выходит за пределы */
-  box-sizing: border-box
 }
-
 .settings-new-value {
-  flex: 1;
-  min-height: 3rem;
-  height: 35%;
+  min-height: 2.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(224, 223, 231, 0.3);
+  border: 1px solid rgba(224,223,231,0.3);
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.3);
-  font-size: 1.6rem;
-  font-weight: 500;
+  background: rgba(0,0,0,0.3);
+  font-size: 1.3rem;
+  padding: 0.3rem;
   cursor: pointer;
-  /* transition: all 0.3s ease; */
-  padding: 0.5rem;
+  touch-action: manipulation;
 }
 .settings-new-value-title {
   width: 45%;
-  min-height: 3rem;
-  height: 25%;
+  min-height: 2.5rem;
 }
-
-.settings-new-value.clickable {
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-.settings-new-value.clickable:hover {
-  color: var(--orange);
-  background: rgba(249, 123, 0, 0.1);
-  transform: translateY(-1px);
-}
-
 .time-input {
-  width: 25vw;
-  max-width: 200px; /* Ограничение максимальной ширины */
-  min-width: 100px; /* Минимальная ширина */
+  width: 40vw;
+  max-width: 160px;
+  min-width: 100px;
 }
-
-/* MainBodyStatistics.vue */
-
-/* Двухколоночная сетка */
 .settings-two-columns {
-  display: flex;
-  gap: 32px;
-  flex-wrap: wrap;
-  margin-top: 16px;
-}
-
-.settings-column {
-  flex: 1;
-  min-width: 240px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  margin-top: 16px;
 }
-
-.settings-column .settings-row {
-  justify-content: space-between;
-  flex-wrap: wrap;
+.settings-column {
+  flex: 1;
+  min-width: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-
-.settings-column .settings-block {
-  padding: 4px 12px;
-  display: inline-flex;
-  align-items: center;
-}
-
-.settings-block.selected .checkbox-custom {
-  border-color: var(--orange, #F97B00);
-  box-shadow: 0 0 0 2px rgba(249, 123, 0, 0.3);
-}
-
-/* Кастомный чекбокс (квадрат с галочкой) */
 .checkbox-custom {
   width: 32px;
   height: 32px;
@@ -1065,23 +802,18 @@ form button:active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.1s ease;
   cursor: pointer;
+  touch-action: manipulation;
 }
-
 .checkbox-custom.checked {
-  border-color: var(--green, #34B534);
-  background-color: #2a2a2e;
+  border-color: var(--green);
 }
-
 .checkbox-custom svg {
   width: 16px;
   height: 16px;
-  stroke: var(--green, #34B534);
+  stroke: var(--green);
   stroke-width: 3;
 }
-
-/* Выпадающее меню для периода сохранения */
 .save-period-menu {
   position: absolute;
   top: 100%;
@@ -1090,127 +822,167 @@ form button:active {
   background: #3a3a3e;
   border-radius: 16px;
   padding: 8px 0;
-  min-width: 160px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  min-width: 140px;
   z-index: 100;
   backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
-
 .save-period-option {
-  padding: 10px 20px;
+  padding: 8px 16px;
   cursor: pointer;
-  font-size: 14px;
-  color: #e0dfe7;
-  transition: background 0.1s;
+  font-size: 13px;
 }
 
-.save-period-option:hover {
-  background: #4a4a4e;
-  color: white;
+/* ===== ПЕРЕХОД НА ГИБКУЮ СЕТКУ С 410px ===== */
+@media (min-width: 376px) {
+  .mainBody {
+    /* grid-template-columns: 1fr 1fr; */
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+  /* Опционально для главной сетки модулей — тоже можно сделать от 410px, 
+     но оставлю закомментированным, чтобы не нарушать вашу структуру.
+     При необходимости раскомментируйте:
+  .app-place_body {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+  */
+  .sensor-card {
+    max-height: 180px;
+  }
 }
 
+/* ===== МЕДИА-ЗАПРОСЫ (дальнейшее расширение) ===== */
 
-
-
-
-
-/* Адаптация для узких экранов */
-@media (max-width: 400px) {
-    .mainBody {
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Автоматическая подгонка элементов по ширине от 120px до доступного пространства */
-      grid-gap: 1rem; /* Отступы между элементами */
-    } 
+/* Планшеты (≥768px) */
+@media (min-width: 640px) {
+  .app-place_body {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 30px;
+    padding: 30px;
+  }
+  .mainBody {
+    /* уже переопределено на 190px с 410px, но можно сделать колонки шире */
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    grid-gap: 1.5rem;
+  }
+  .introduce-place {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    min-height: calc(80vh - 130px);
+  }
   .introduce-button {
-    max-width: 280px;
-    min-height: 120px;
+    width: 45%;
+    max-width: 400px;
+    height: 28dvh;
+    min-height: 160px;
   }
   .button-text {
-    font-size: 1rem;
+    font-size: clamp(1.1rem, 2.5vw, 1.4rem);
   }
   .schedules-list,
   .notifications-list {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    width: 90%;
   }
-  /* Убираем лишние горизонтальные отступы у сеток */
-  .schedules-list,
-  .notifications-list,
   .statistics-list {
-    max-width: 98%;
-    margin: 0.25rem auto;
-  }
-}
-@media (max-width: 600px) {
-  .introduce-button {
-    max-width: 320px; /* Максимальная ширина кнопки */
-  }
-  .error {
-    color: red;
-  }
-}
-@media (max-width: 800px) {
-  .introduce-button {
-    max-width: 500px; /* Максимальная ширина кнопки */
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    width: 90%;
   }
   .settings-two-columns {
-    flex-direction: column;
+    flex-direction: row;
     gap: 24px;
   }
-} 
+  form div {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+  form label {
+    flex: 0 0 140px;
+    text-align: right;
+  }
+  form input, form select {
+    flex: 1;
+  }
+}
+
+/* Десктопы и широкие планшеты (≥980px) */
 @media (min-width: 980px) {
   .schedules-list,
   .notifications-list {
-    /* grid-template-columns: 1fr 1fr; */
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    place-items: center; /* Вертикальное и горизонтальное центрирование в видимой области */
-    gap: 1rem; /* Уменьшенный gap для предотвращения overflow */
-    max-width: 90%; /* Уменьшенное ограничение ширины для предотвращения полосы прокрутки */
-    margin: 1rem auto 0; /* Центрирование контейнера */
-    overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
+    max-width: 90%;
+    gap: 1rem;
+    margin: 1rem auto 0;
   }
-  .statistics-list{
-    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
-    place-items: center; 
-    gap: 1rem; 
-    max-width: 78%; 
-    margin: 1rem auto 0; 
-    overflow-x: hidden; 
+  .statistics-list {
+    grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+    max-width: 85%;
+  }
+  .settings-block.clickable {
+    max-width: 14vw;
+  }
+  .introduce-button {
+    width: 24%;
+    max-width: 600px;
+    height: 35dvh;
+    max-height: 240px;
+  }
+}
+
+/* Крупные десктопы (≥1200px) */
+@media (min-width: 1200px) {
+  .statistics-list {
+    max-width: 78%;
+    grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
   }
   .settings-block.clickable {
     max-width: 12vw;
   }
-}
-
-
-/* Горизонтальная ориентация (ширина больше высоты) */
-@media (orientation: landscape) and (min-width: 800px) {
   .introduce-button {
-    width: 24%;
-    height: 60vh;
-    max-height: 240px;
-  }
-  .introduce-place {
-    flex-direction: row;
-    min-height: calc(80vh - 130px);
+    height: 45dvh;
   }
 }
 
-/* Ландшафт на телефонах (узкий экран) – своя адаптация */
-@media (orientation: landscape) and (max-width: 799px) {
+/* ===== ЛАНДШАФТНАЯ ОРИЕНТАЦИЯ (коррекция на телефонах и планшетах) ===== */
+@media (orientation: landscape) and (max-width: 979px) {
   .introduce-place {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.5rem;
+    min-height: auto;
   }
   .introduce-button {
-    width: 45%;          /* Две кнопки в ряд */
-    max-width: 240px;
-    height: 35vh;
-    min-height: 160px;
-    margin: 0.25rem;
+    width: 45%;
+    max-width: 280px;
+    height: 35dvh;
+    min-height: 140px;
   }
   .button-text {
-    font-size: 1rem;
+    font-size: 0.9rem;
+  }
+  .mainBody {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+}
+
+/* Дополнительные корректировки для очень узких экранов (до 400px) */
+@media (max-width: 400px) {
+  .introduce-button {
+    max-width: 280px;
+    min-height: 120px;
+  }
+  .button-text {
+    font-size: 0.9rem;
+  }
+  .schedules-list,
+  .notifications-list,
+  .statistics-list {
+    max-width: 98%;
+  }
+  .mainBody {
+    grid-gap: 0.8rem;
+    padding: 0.8rem;
   }
 }
