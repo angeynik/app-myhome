@@ -95,9 +95,10 @@ export default {
       }
     },
     
-    logout({ commit }) {
+    logout({ commit, dispatch }) {
       commit('LOGOUT');
       localStorage.removeItem('authData'); // Очищаем хранилище
+      dispatch('dropdown/hide', null, { root: true });
     }
   }
 };

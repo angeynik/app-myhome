@@ -322,21 +322,21 @@ export default {
       this.$router.push('/');
     },
     openMenu(event) {
-      event.stopPropagation(); 
-      console.log(`[DashBoard] - openMenu - Открываем меню `);
-      try {
-        this.show({
-          items: [
-            { label: 'Профиль', action: 'profile' },
-            { label: 'Настройки', action: 'settings' },
-            { label: 'Выйти', action: 'logout' }
-          ],
-          anchorElement: event.currentTarget,
-        });
-        console.log('[DashBoard] this.show executed successfully');
-      } catch (err) {
-        console.error('[DashBoard] this.show error:', err);
-      }
+      event.stopPropagation();
+      const isMobile = this.getMobile; // текущее состояние
+      this.show({
+        items: [
+          { label: 'Профиль', action: 'profile' },
+          { label: 'Настройки', action: 'settings' },
+          { label: 'Выйти', action: 'logout' },
+          { divider: true }, // разделитель
+          { 
+            label: isMobile ? '🖥️ Десктопная навигация (стрелки)' : '📱 Мобильная навигация (свайпы)',
+            action: 'toggleMobile'
+          }
+        ],
+        anchorElement: event.currentTarget,
+      });
     },
 
     sortingBack() {

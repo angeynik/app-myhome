@@ -866,6 +866,13 @@ form button:active {
 .menu-dropdown-item:hover {
   background-color: #f5f5f5;
 }
+.menu-dropdown-divider {
+  margin: 8px 0;
+  border: 0;
+  height: 1px;
+  background-color: #e0dfe7;
+  opacity: 0.3;
+}
 
 
 

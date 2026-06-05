@@ -4,14 +4,19 @@
     <div v-if="visible" class="menu-dropdown-overlay" @click.self="close">
         <!-- <div class="menu-dropdown-overlay" @click.self="close"> -->
       <div class="menu-dropdown" :style="positionStyle">
-        <div
-          v-for="(item, idx) in items"
-          :key="idx"
-          class="menu-dropdown-item"
-          @click="selectItem(item)"
-        >
-          {{ item.label }}
-        </div>
+<div
+  v-for="(item, idx) in items"
+  :key="idx"
+>
+  <hr v-if="item.divider" class="menu-dropdown-divider" />
+  <div
+    v-else
+    class="menu-dropdown-item"
+    @click="selectItem(item)"
+  >
+    {{ item.label }}
+  </div>
+</div>
       </div>
     </div>
   </Teleport>
@@ -50,7 +55,13 @@ export default {
   },
   methods: {
     handleOutsideClick(event) {
-      if (this.visible && this.$el && !this.$el.contains(event.target)) {
+      if (!this.visible) return;
+      // Не закрывать, если клик был по кнопке, вызвавшей меню
+      if (this.anchorElement && this.anchorElement.contains(event.target)) {
+        return;
+      }
+      // Если меню смонтировано, и клик не внутри него
+      if (this.$el && !this.$el.contains(event.target)) {
         this.close();
       }
     },
