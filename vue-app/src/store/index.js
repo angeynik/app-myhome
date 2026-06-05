@@ -10,6 +10,7 @@ import settingsConfig from './modules/settingsConfig';
 import logger from './modules/logger';
 import popup from './modules/popup';
 import { nowMoscow } from '@/utils/timeUtils';
+import dropdown from './modules/dropdown';
 
 
 const store = createStore({
@@ -30,6 +31,7 @@ const store = createStore({
     config,
     settingsConfig,
     popup,
+    dropdown,
   },
   mutations: {
     INIT_SETPOINTS_MANAGER(state, { dID, config }) { // Инициализация менеджера сетпоинтов manageSetpoints

@@ -57,25 +57,18 @@ export default {
       // Сохраняем в localStorage
       localStorage.setItem(`${dID}_schedules`, JSON.stringify(state.schedules[dID]));
     },
-
-
-
     SET_NOTIFICATION(state, { name, config }) {
       state.notifications[name] = config;
       logger.dev('[sortParams] - SET_NOTIFICATION Обновлен конфиг[' + name + ']: ', config);
       // Вернуть console.log
       //console.log('[sortParams] - SET_NOTIFICATION Обновлен конфиг[' + name + ']: ', config);
     },
-
     SET_STATISTIC(state, { name, config }) {
       state.statistics[name] = config;
       logger.dev('[sortParams] - SET_STATISTIC Обновлен конфиг[' + name + ']: ', config);
       // Вернуть console.log
       //console.log('[sortParams] - SET_STATISTIC Обновлен конфиг[' + name + ']: ', config);
     },
-
-
-
     SET_ALL_ROOMS(state, rooms) {
       state.allRooms = rooms;
       logger.dev('[sortParams] - SET_ALL_ROOMS Обновлен список доступных комнат: ', rooms);
@@ -96,8 +89,6 @@ export default {
       logger.dev('[sortParams] - SET_ALL_SETPOINTS Обновлен список уставок: ', setpoints);
       //console.log('[sortParams] - SET_ALL_SETPOINTS Обновлен список уставок: ', setpoints);
     },
-
-
     UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value }) {
       const config = state.configs[dID];
       logger.dev('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
@@ -198,7 +189,6 @@ export default {
         }
       }
     },
-
     SET_LOADING(state, value) {
       state.loading = value;
     },
@@ -207,6 +197,7 @@ export default {
     },
     SET_MOBILE(state, value) {
       state.mobile = value;
+      localStorage.setItem('mobile_navigation', value);
     },
      SET_DEVICE_TYPE(state, deviceType) {
       state.deviceType = deviceType;
@@ -252,9 +243,14 @@ export default {
       logger.dev('[config] - initialize - Завершена инициализация');
       //console.log('[config] - initialize - Завершена инициализация');
     },
-
     detectDevice({commit}) {
+      const savedMobile = localStorage.getItem('mobile_navigation');
+      if (savedMobile !== null) {
+        commit('SET_MOBILE', savedMobile === 'true');
+        return;
+      }
       const mobile = /Mobi|Android/i.test(navigator.userAgent);
+      commit('SET_MOBILE', mobile);
       logger.info('[config] - detectDevice - Работаем с мобильным устройством - ', mobile);
       //console.log('[config] - detectDevice - Работаем с мобильным устройством - ', mobile);
       commit('SET_MOBILE', mobile);
@@ -271,9 +267,8 @@ export default {
       }
       commit('SET_DEVICE_TYPE', deviceType);
       logger.info('[config] - initialize - Тип устройства - ', deviceType);
-      //console.log('[config] - initialize - Тип устройства - ', deviceType);
+      console.log('[config] - initialize - Тип устройства - ', deviceType);
     },
-
     async checkConfigInState({ commit, dispatch, rootGetters, state }) {
       commit('SET_LOADING', true);
       try {
@@ -288,8 +283,7 @@ export default {
       } finally {
         commit('SET_LOADING', false);
       }
-    },
-  
+    }, 
     async requestConfig({ dispatch, state }, dID) {
       //console.log('[config] - requestConfig - Формируем Запрос на Сервер для получение конфигурации по dID - ', dID);
       
@@ -331,7 +325,6 @@ export default {
         throw error;
       }
     },
-
     async handleConfigResponse({ commit, dispatch }, response) {
       logger.dev('[Config] - handleConfigResponse - Обработка ответа от Server - Конфигурация', response.payload);
       //console.log('[Config] - handleConfigResponse - Обработка ответа от Server - Конфигурация', response.payload);
@@ -386,7 +379,6 @@ export default {
         throw error;
       }
     },
-
     updateScheduleLocally({ commit }, { dID, configName, configData }) {
       console.log('[config] - updateScheduleLocally - dID:', dID, 'configName-', configName, 'configData: ', configData);
       commit('UPDATE_CONFIGDATA_LOCALLY', { dID, configName, configData });
@@ -697,88 +689,43 @@ export default {
       //console.log(`[config] - clearKey - key: ${clearKey}`);
       return clearKey;
     },
+    checkLimitBeforeAdd({ rootState, rootGetters }, configType) {
+      console.log('[config] - checkLimitBeforeAdd - Для ', configType);
+      // configType ожидается 'schedules', 'notifications', 'statistics'
+      const storeKey = configType; // напрямую
+      if (!storeKey) return { allowed: false, limit: 0, current: 0 };
 
+      const settingsData = rootGetters['getSetpointsManager']?.settingsData;
+      console.log('[config] - checkLimitBeforeAdd - settingsData', settingsData);
+      if (!settingsData) return { allowed: false, limit: 0, current: 0 };
+      const dID = settingsData.name;
+      const room = settingsData.payload?.room;
+      const param = settingsData.payload?.param;
+      if (!dID || !room || !param) return { allowed: false, limit: 0, current: 0 };
 
+      const configData = rootState.config[storeKey]?.[dID] || {};
+      console.log('[config] - checkLimitBeforeAdd - configData', configData);
+      const items = configData[room]?.[param] || [];
+      console.log('[config] - checkLimitBeforeAdd - items', items);
+      const currentCount = items.length;
 
-    // getCurrentItemCount({ rootGetters }, configType) {
-    //    /**
-    //    * Получить количество элементов заданного типа для текущих room/param
-    //    * @param {Object} context
-    //    * @param {string} configType - 'schedules', 'notifications', 'statistics'
-    //    * @returns {number}
-    //    */
-      
-    //   const settingsData = rootGetters['getSetpointsManager']?.settingsData;
-    //   if (!settingsData) return 0;
-    //   const dID = settingsData.name;
-    //   const room = settingsData.payload?.room;
-    //   const param = settingsData.payload?.param;
-    //   if (!dID || !room || !param) return 0;
-
-    //   const items = this[configType]?.[room]?.[param] || [];
-    //   console.log('[config] - getCurrentItemCount - Для ', configType, ' : ',items.length);
-    //   return items.length;
-    // },    
-
-  // checkLimitBeforeAdd({ rootGetters }, configType) {
-  //   console.log('[config] - checkLimitBeforeAdd - Для ', configType);
-  //   const typeMap = {
-  //     schedules: 'schedules',
-  //     notifications: 'notifications',
-  //     statistics: 'statistics',
-  //   };
-  //   const storeKey = typeMap[configType];
-  //   if (!storeKey) return { allowed: false, limit: 0, current: 0 };
-
-  //   const settingsData = rootGetters['getSetpointsManager']?.settingsData;
-  //   console.log('[config] - checkLimitBeforeAdd - settingsData', settingsData);
-  //   if (!settingsData) return { allowed: false, limit: 0, current: 0 };
-  //   const dID = settingsData.name;
-  //   const room = settingsData.payload?.room;
-  //   const param = settingsData.payload?.param;
-  //   if (!dID || !room || !param) return { allowed: false, limit: 0, current: 0 };
-
-  //   const configData = rootState.config[storeKey]?.[dID] || {};
-  //   console.log('[config] - checkLimitBeforeAdd - configData', configData);
-  //   const items = configData[room]?.[param] || [];
-  //   console.log('[config] - checkLimitBeforeAdd - items', items);
-  //   const currentCount = items.length;
-
-  //   const limit = LIMITS[storeKey]; // LIMITS.schedules и т.д.
-  //   return {
-  //     allowed: currentCount < limit,
-  //     limit,
-  //     current: currentCount,
-  //   };
-  // },
-  checkLimitBeforeAdd({ rootState, rootGetters }, configType) {
-  console.log('[config] - checkLimitBeforeAdd - Для ', configType);
-  // configType ожидается 'schedules', 'notifications', 'statistics'
-  const storeKey = configType; // напрямую
-  if (!storeKey) return { allowed: false, limit: 0, current: 0 };
-
-  const settingsData = rootGetters['getSetpointsManager']?.settingsData;
-  console.log('[config] - checkLimitBeforeAdd - settingsData', settingsData);
-  if (!settingsData) return { allowed: false, limit: 0, current: 0 };
-  const dID = settingsData.name;
-  const room = settingsData.payload?.room;
-  const param = settingsData.payload?.param;
-  if (!dID || !room || !param) return { allowed: false, limit: 0, current: 0 };
-
-  const configData = rootState.config[storeKey]?.[dID] || {};
-  console.log('[config] - checkLimitBeforeAdd - configData', configData);
-  const items = configData[room]?.[param] || [];
-  console.log('[config] - checkLimitBeforeAdd - items', items);
-  const currentCount = items.length;
-
-  const limit = LIMITS[storeKey];
-  return {
-    allowed: currentCount < limit,
-    limit,
-    current: currentCount,
-  };
-},
-
+      const limit = LIMITS[storeKey];
+      return {
+        allowed: currentCount < limit,
+        limit,
+        current: currentCount,
+      };
+    },
+    toggleMobileMode({ commit, state }) {
+      const newValue = !state.mobile;
+      commit('SET_MOBILE', newValue);
+      // Можно вывести уведомление (опционально)
+      this.dispatch('popup/show', {
+        message: newValue ? 'Включена мобильная навигация (свайпы)' : 'Включена десктопная навигация (стрелки)',
+        type: 'info',
+        duration: 3000
+      }, { root: true });
+    },
   },
  
   getters: {

@@ -9,6 +9,7 @@ export default {
   },
   mutations: {
     SHOW(state, { message, type, duration }) {
+      console.log('[popup] SHOW mutation, visible = true');
       state.visible = true;
       state.message = message;
       state.type = type || 'info';
@@ -21,6 +22,7 @@ export default {
   },
   actions: {
     show({ commit }, payload) {
+      console.trace('[popup] show called with payload:', payload); 
       commit('SHOW', payload);
       // Автоскрытие через duration сработает внутри компонента по watch,
       // но здесь можно предусмотреть дополнительный механизм на случай,
