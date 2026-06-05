@@ -417,6 +417,15 @@ form button:active {
 .icon-settings.close:hover {
   transform: scale(1.1);
 }
+.icon-home {
+  cursor: pointer;
+  stroke: var(--orange, #E0DFE7);
+  fill: none;
+  transition: stroke 0.2s;
+}
+.icon-home:hover {
+  stroke: var(--orange-light, #ffaa44);
+}
 
 /* Текст датчиков */
 .sensor-header {
@@ -831,6 +840,34 @@ form button:active {
   cursor: pointer;
   font-size: 13px;
 }
+
+.menu-dropdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+.menu-dropdown {
+  position: absolute;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  min-width: 150px;
+  padding: 8px 0;
+  z-index: 1001;
+}
+.menu-dropdown-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.menu-dropdown-item:hover {
+  background-color: #f5f5f5;
+}
+
+
 
 /* ===== ПЕРЕХОД НА ГИБКУЮ СЕТКУ С 410px ===== */
 @media (min-width: 376px) {

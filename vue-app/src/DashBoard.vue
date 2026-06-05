@@ -10,11 +10,25 @@
         <line y1="-2" x2="43.0756" y2="-2" transform="matrix(0.684508 -0.729005 0.684508 0.729005 3.51367 34.4023)" stroke="#E0DFE7" stroke-width="4"/>
         <line y1="-2" x2="43.0756" y2="-2" transform="matrix(0.684508 0.729005 -0.684508 0.729005 1 31.9999)" stroke="#E0DFE7" stroke-width="4"/>
       </symbol>
+      <symbol id="homeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </symbol>
+      <symbol id="menuIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </symbol>
     </svg>
 
     <header class="header">
       <div class="header-top">
-        <div class="icon" @click="resetSelection">back</div>
+        <div class="icon" @click="goHome">
+          <svg width="24" height="24" viewBox="0 0 24 24">
+            <use href="#homeIcon"></use>
+          </svg>
+        </div>
+
         <svg class="header_arrow" v-show="showHeaderArrow" @click="sortingBack">
           <use href="#arrowLeft"></use>
         </svg>
@@ -25,12 +39,20 @@
         <svg class="header_arrow" v-show="showHeaderArrow" @click="sortingForvard">
           <use href="#arrowRight"></use>
         </svg>
-        <div class="icon">menu</div>
+
+        <!-- <div class="icon">menu</div> -->
+         <!-- иконка меню -->
+        <div class="icon" @click="openMenu">
+          <svg width="24" height="24" viewBox="0 0 24 24">
+            <use href="#menuIcon"></use>
+          </svg>
+        </div>
+
       </div>
       <p style="width: 100%; height: 1px; background-color: var(--orange);"></p>
       <div class="header-bottom">
         <nav>
-          <router-link to="/">Главная</router-link>
+          <!-- <router-link to="/">Главная</router-link> -->
           <router-link :to="{ name: 'DashboardSort', params: { sortType: 'rooms' } }">Комнаты</router-link>
           <router-link :to="{ name: 'DashboardSort', params: { sortType: 'params' } }">Датчики</router-link>
           <router-link :to="{ name: 'DashboardSort', params: { sortType: 'devices' } }">Устройства</router-link>
@@ -261,6 +283,7 @@ export default {
     // ...mapActions('config', ['initialize']),
     ...mapActions('settingsConfig', ['settingsConfigUpdate', 'checkScheduleOverlap']),
     ...mapActions(['initializeSetpointsManager', 'updateSettingsData','updatePayloadData', 'updateLimitsData', 'updateViewData']),
+    ...mapActions('dropdown', ['show']),
     
     handleSortTypeChange(sortType) {
       //console.log('[DashBoard] - handleSortTypeChange - Обновляем информацию для sortType: ', sortType);
@@ -295,9 +318,27 @@ export default {
       // );
     },
     
-    resetSelection() {
-      this.$router.push({ name: 'DashboardMain' });
+    goHome() {
+      this.$router.push('/');
     },
+    openMenu(event) {
+      event.stopPropagation(); 
+      console.log(`[DashBoard] - openMenu - Открываем меню `);
+      try {
+        this.show({
+          items: [
+            { label: 'Профиль', action: 'profile' },
+            { label: 'Настройки', action: 'settings' },
+            { label: 'Выйти', action: 'logout' }
+          ],
+          anchorElement: event.currentTarget,
+        });
+        console.log('[DashBoard] this.show executed successfully');
+      } catch (err) {
+        console.error('[DashBoard] this.show error:', err);
+      }
+    },
+
     sortingBack() {
       const sortType = this.$route.params.sortType;
       logger.info('[DashBoard] - sortingBack - Сортировка назад', sortType);
