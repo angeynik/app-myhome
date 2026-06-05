@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Dashboard from '../DashBoard.vue';
 import SmartHome from '../SmartHome.vue';
 import ManufactAutomatation from '../ManufactAutomatation.vue';
-import IntroduceHome from '../IntroduceHome.vue';
+//import IntroduceHome from '../IntroduceHome.vue';
 import Login from '../components/AppLogin.vue';
 import Profile from '../components/AppProfile.vue';
 import UserConfig from '../components/UserConfig.vue';
@@ -10,16 +10,16 @@ import AccessDenied from '../components/AccessDenied.vue';
 import store from '@/store';
 
 const routes = [
+  // {
+  //   path: '/',
+  //   name: 'Intro',
+  //   component: IntroduceHome,
+  // },
+  // Временно перенаправляем стартовый запрос на DashBoard
   {
     path: '/',
-    name: 'Intro',
-    component: IntroduceHome,
-  },
-  {
-    path: '/dashboard',
     name: 'DashBoard',
     component: Dashboard,
-    meta: { requiresAuth: true, requiredLevel: 1 },
     children: [
       {
         path: '', // Главное меню с AppPlace
@@ -41,6 +41,37 @@ const routes = [
       }
     ]
   },
+  {
+    path: '/dashboard',
+    redirect: '/'
+  },
+  // {
+  //   path: '/dashboard',
+  //   name: 'DashBoard',
+  //   component: Dashboard,
+  //   meta: { requiresAuth: true, requiredLevel: 1 },
+  //   children: [
+  //     {
+  //       path: '', // Главное меню с AppPlace
+  //       name: 'DashboardMain',
+  //       component: null
+  //     },
+  //     {
+  //       path: 'sort/:sortType', // Динамический параметр для типа сортировки
+  //       name: 'DashboardSort',
+  //       component: () => import('@/components/MainBody.vue'),
+  //       props: true // Передаем параметры как props
+  //     },
+  //     {
+  //       path: 'settings/:settingsType', //динамический параметр для выбора компонента отображения настроек Расписания или Уведомдений
+  //       name: 'DashboardSettings',
+  //       component: () => import('@/components/MainBodySettings.vue'),
+  //       meta: { requiresAuth: true, requiredLevel: 2 },
+  //       props: true, 
+  //     }
+  //   ]
+  // },
+
   {
     path: '/smart-home',
     name: 'SmartHome',
