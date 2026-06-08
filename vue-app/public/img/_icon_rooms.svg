@@ -1,0 +1,49 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" width="512" height="512">
+<title>Комнаты</title>
+<style>
+  .bg { fill: #1a2332; }
+  .card { fill: #232e3e; stroke: #2e3d52; stroke-width: 6; }
+  .orange { fill: #f07820; }
+  .orange-dark { fill: #c05e10; }
+  .gray { fill: #4a5568; }
+  .gray-light { fill: #6b7a8e; }
+  .gray-lighter { fill: #8b9ab0; }
+  .accent-dot { fill: #f07820; }
+  .dark-dot { fill: #141c28; }
+</style>
+<rect x="40" y="40" width="432" height="432" rx="64" class="bg"/>
+<rect x="40" y="40" width="432" height="432" rx="64" class="card"/>
+<rect x="90" y="140" width="148" height="120" rx="8" class="gray"/>
+<rect x="90" y="140" width="148" height="10" rx="4" fill="#3a4a5e"/>
+<rect x="110" y="165" width="40" height="50" rx="4" class="gray-lighter"/>
+<rect x="165" y="165" width="50" height="22" rx="4" class="orange"/>
+<rect x="165" y="198" width="50" height="10" rx="3" class="gray-light"/>
+<rect x="90" y="230" width="148" height="8" rx="4" fill="#3a4a5e"/>
+<rect x="200" y="220" width="24" height="32" rx="3" class="orange-dark"/>
+<rect x="274" y="140" width="148" height="120" rx="8" class="gray"/>
+<rect x="274" y="140" width="148" height="10" rx="4" fill="#3a4a5e"/>
+<rect x="294" y="165" width="50" height="22" rx="4" class="orange"/>
+<rect x="294" y="198" width="50" height="10" rx="3" class="gray-light"/>
+<rect x="360" y="165" width="40" height="50" rx="4" class="gray-lighter"/>
+<rect x="274" y="230" width="148" height="8" rx="4" fill="#3a4a5e"/>
+<rect x="358" y="220" width="24" height="32" rx="3" class="orange-dark"/>
+<rect x="90" y="286" width="148" height="120" rx="8" class="gray"/>
+<rect x="90" y="286" width="148" height="10" rx="4" fill="#3a4a5e"/>
+<rect x="110" y="311" width="108" height="14" rx="4" class="orange"/>
+<rect x="110" y="336" width="80" height="8" rx="3" class="gray-light"/>
+<rect x="110" y="355" width="108" height="8" rx="3" class="gray-lighter"/>
+<rect x="200" y="366" width="24" height="32" rx="3" class="orange-dark"/>
+<rect x="274" y="286" width="148" height="120" rx="8" class="gray"/>
+<rect x="274" y="286" width="148" height="10" rx="4" fill="#3a4a5e"/>
+<rect x="294" y="311" width="40" height="50" rx="4" class="gray-lighter"/>
+<rect x="348" y="311" width="54" height="22" rx="4" class="orange"/>
+<rect x="348" y="344" width="54" height="10" rx="3" class="gray-light"/>
+<rect x="358" y="366" width="24" height="32" rx="3" class="orange-dark"/>
+<line x1="256" y1="140" x2="256" y2="406" stroke="#2e3d52" stroke-width="6"/>
+<line x1="90" y1="263" x2="422" y2="263" stroke="#2e3d52" stroke-width="6"/>
+<circle cx="430" cy="82" r="16" class="dark-dot"/>
+<circle cx="390" cy="76" r="8" class="accent-dot"/>
+<circle cx="82" cy="430" r="10" class="dark-dot"/>
+<circle cx="430" cy="430" r="12" class="dark-dot"/>
+<circle cx="410" cy="446" r="6" class="accent-dot"/>
+</svg>

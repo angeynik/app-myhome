@@ -1,23 +1,25 @@
-<template> 
-<!-- <h1> Выводим - AppPlace </h1> -->
-    <div @click="$emit('select', title)">
-        <div class="app-place_module_icon"></div>
-        <h1 class="app-place_module_h1"> {{ title }} </h1>
+<!-- AppPlace.vue -->
+<template>
+  <div class="app-place_module" @click="$emit('select')">
+    <div class="app-place_module_icon">
+      <svg viewBox="0 0 512 512">
+        <use :href="`#icon_${icon}`" />
+      </svg>
     </div>
-   
+  </div>
 </template>
 
-<script> 
-export default { 
-name: 'AppPlace', 
-props: {
-    title: { type: String, 
-        required: true, 
-    }, 
-}, 
-}; 
+<script>
+export default {
+  name: 'AppPlace',
+  props: {
+    title: String,
+    icon: {
+      type: String,
+      required: true
+    }
+  }
+}
 </script>
 
-<style>
-
-</style>
+<style lang="css" src="@/assets/mainStyle.css"></style>
