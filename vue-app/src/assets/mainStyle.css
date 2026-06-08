@@ -80,7 +80,8 @@ body, .app {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: 300px; /* ограничиваем максимальную ширину */
+  max-width: 320px; /* ограничиваем максимальную ширину */
+  max-height: 240px;
 }
 
 .triangle-container {
@@ -135,7 +136,7 @@ body, .app {
 
 /* Заголовок под карточкой */
 .app-place_title {
-  margin-top: max(1dvh, 14px);
+  margin-top: max(1dvh, 12px);
   font-size: 1.2rem;
   font-weight: bold;
   text-transform: uppercase;
@@ -915,6 +916,9 @@ form button:active {
 
 /* ===== ПЕРЕХОД НА ГИБКУЮ СЕТКУ С 410px ===== */
 @media (min-width: 376px) {
+  .app-place_title {
+    margin-top: max(0.1dvh, 8px);
+  }
   .mainBody {
     /* grid-template-columns: 1fr 1fr; */
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -942,6 +946,9 @@ form button:active {
     grid-template-columns: repeat(2, minmax(240px, 360px));
     gap: 30px;
     padding: 30px;
+  }
+  .app-place_title {
+    margin-top: max(2dvh, 16px);
   }
   .mainBody {
     /* уже переопределено на 190px с 410px, но можно сделать колонки шире */

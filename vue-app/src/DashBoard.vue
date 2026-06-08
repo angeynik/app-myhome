@@ -220,7 +220,7 @@
         <circle cx="12" cy="12" r="3"/>
       </symbol> -->
 
-      </svg>
+    </svg>
 
     <header class="header">
       <div class="header-top">
@@ -292,8 +292,7 @@
         @eventsMainBodySettings="handlePermitEvent"
         @getComponentData="getComponentData"
         @updateTypeValue="editValueMainSetpoint"
-        @swipe-forward="handleSwipeForward"
-        @swipe-back="handleSwipeBack"
+        @swipe="handleSwipe"
         :ref="currentRef"
       />
 
@@ -548,21 +547,20 @@ export default {
 
     sortingBack() {
       const sortType = this.$route.params.sortType;
-      logger.info('[DashBoard] - sortingBack - Сортировка назад', sortType);
-      //console.log('[DashBoard] - sortingBack - Сортировка назад', sortType);
+      logger.dev('[DashBoard] - sortingBack - Сортировка назад', sortType);
+      console.log('[DashBoard] - sortingBack - Сортировка назад', sortType);
       this.switchSortKey({ sortingType: sortType, direction: 'prev' });
     },    
     sortingForvard() {
       const sortType = this.$route.params.sortType;
+      logger.dev('[DashBoard] - sortingForvard - Сортировка назад', sortType);
+      console.log('[DashBoard] - sortingForvard - Сортировка назад', sortType);
       this.switchSortKey({ sortingType: sortType, direction: 'next' });
     },
 
 
 
     // Работа с компонентом настройки Расписания, Уведомлений и Статистики
-
-
-
   async editValueMainSetpoint(eventData) { // Формирует сообщение при изменении уставки и выполняет отправку этого сообщения на сервер с фиксированной задержкой
     console.groupCollapsed('[DashBoard] - editValueMainSetpoint');
     console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения Уставки :', eventData);
@@ -754,8 +752,6 @@ export default {
         this.$store.commit('sortParams/SET_FORCE_UPDATE', Date.now());
         console.groupEnd();
   },
-
-
   sendChangedData (event) {
     console.log('[DashBoard] - sendChangedData - Запускаем таймер задержки отправки на данных на сервер', event);
     //const oldValue = event.updateState.value;
@@ -781,7 +777,6 @@ export default {
           }
         }, 200);
   },
-
   getComponentData(event) {
 
       console.log('[DashBoard] - getComponentData - Данные от компонента:', event);
@@ -887,6 +882,12 @@ export default {
         this.closeManualInputDialog();
       },
 // Окончание Блока для управления ручным редактированием значения
+
+      handleSwipe(event){
+        console.log('[DashBoard] - handleSwipe - Получены данные ', event);
+        if (event > 80) {console.log('[DashBoard] - handleSwipe - Смещение вперед'); this.sortingBack();}
+        if (event < -80) {console.log('[DashBoard] - handleSwipe - Смещение назад'); this.sortingForvard();}
+      },
 
   }
 };

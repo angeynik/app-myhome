@@ -206,10 +206,10 @@ export default {
           });
           
 
-        // console.log('[MainBody] - selectItem - ОБНОВИЛИ payload в settingsData Param:',
-        //   this.$store.state.setpointsManager?.settingsData?.payload?.param, ' и значение:',
-        //   this.$store.state.setpointsManager?.settingsData?.payload?.value
-        // );
+        console.log('[MainBody] - selectItem - ОБНОВИЛИ payload в settingsData Param:',
+          this.$store.state.setpointsManager?.settingsData?.payload?.param, ' и значение:',
+          this.$store.state.setpointsManager?.settingsData?.payload?.value
+        );
         console.log('[MainBody] - selectItem - ОБНОВИЛИ settingsData:',
           this.$store.state.setpointsManager?.settingsData, null, 2
         );
@@ -220,7 +220,8 @@ export default {
           this.SET_DEVICE_KEY(item.deviceKey);
           this.SET_SETPOINT_KEY(item.setpointKey);
           //console.log (`[MainBody] - selectItem - Обновлены ключи выбранного элемента: ${JSON.stringify(item)}`);
-          
+          console.log (`[MainBody] - selectItem - Обновлен ключи clearParam ${clearParam}`);
+
           // Устанавливаем лимиты - по ключу вида dTemp (по этому ключу определена конфигурация лимитов)
           const params = { 
             param: clearParam, 
@@ -365,8 +366,10 @@ export default {
         console.groupEnd();
     },
 
-    getSortedRooms(config, roomKey) {
 
+    getSortedRooms(config, roomKey) {
+      logger.dev('[MainBody] getSortedRooms - Выполняем сортировку по roomKey:', roomKey, 'в ', Object.keys(config).length, ' комнатах');
+      console.log('[MainBody] getSortedRooms - Выполняем сортировку по roomKey:', roomKey, 'в ', Object.keys(config).length, ' комнатах');
       //console.groupCollapsed('[MainBody] - getSortedRooms');
       const room = config[roomKey];
       if (!room) return [];
@@ -436,12 +439,11 @@ export default {
       console.groupEnd;
       return devicesArray;
     },
-
     // Формируем массив для отображения сортировки по параметрам
     getSortedParams(config, paramPrefix) {
       // Получаем все ключи сенсоров, которые начинаются с этого префикса
       logger.dev('[MainBody] getSortedParams - Выполняем сортировку по paramPrefix:', paramPrefix, 'в ', Object.keys(config).length, ' комнатах');
-      //console.log('[MainBody] getSortedParams - Выполняем сортировку по paramPrefix:', paramPrefix, 'в ', Object.keys(config).length, ' комнатах');
+      console.log('[MainBody] getSortedParams - Выполняем сортировку по paramPrefix:', paramPrefix, 'в ', Object.keys(config).length, ' комнатах');
       const sensors = [];
       
       Object.entries(config).forEach(([roomKey, room]) => {
@@ -494,11 +496,10 @@ export default {
       console.log('[MainBody] - getSortedParams - Получен список сенсоров:', sensors);
       return sensors;
     },
-
     // Формируем массив для отображения сортировки по устройствам
     getSortedDevices(config, deviceKey) {
       logger.dev('[MainBody] - getSortedDevices - Выполняем сортировку по deviceKey:', deviceKey);
-      //console.log('[MainBody] - getSortedDevices - Выполняем сортировку по deviceKey:', deviceKey);
+      console.log('[MainBody] - getSortedDevices - Выполняем сортировку по deviceKey:', deviceKey);
       const devicesArray = [];
     
       Object.entries(config).forEach(([roomKey, room]) => {
@@ -570,10 +571,9 @@ export default {
       console.log('[MainBody] getSortedDevices - Devices array:', devicesArray);
       return devicesArray;
     },
-
     getSortedSetpoints(config, setpointKey) {
       logger.dev('[MainBody] - getSortedSetpoints - Выполняем сортировку по setpointKey:', setpointKey, 'в config:', config);
-      //console.log('[MainBody] - getSortedSetpoints - Выполняем сортировку по setpointKey:', setpointKey, 'в config:', config);
+      console.log('[MainBody] - getSortedSetpoints - Выполняем сортировку по setpointKey:', setpointKey, 'в config:', config);
       const setpointsArray = [];
       Object.entries(config).forEach(([roomKey, room]) => {
         if (!room || typeof room !== 'object') {
@@ -631,7 +631,6 @@ export default {
       
       return setpointsArray;
     },
-
     getTimeDiff(timestamp) {
       if (!timestamp) return 'Неизвестно';
       //console.log('timestamp:', timestamp, '→ UTC:', new Date(timestamp).toISOString());
@@ -667,10 +666,9 @@ export default {
         return 'Неизвестно';
       }
     },
-
     handleTouchStart(event) {
       logger.dev('[MainBody] - handleTouchStart ', event.touches[0].clientX, event.touches[0].clientY);
-      //console.log('[MainBody] - handleTouchStart ', event.touches[0].clientX, event.touches[0].clientY);
+      console.log('[MainBody] - handleTouchStart ', event.touches[0].clientX, event.touches[0].clientY);
       this.touchStartX = event.touches[0].clientX;
       this.isSwiping = true;
     },
@@ -680,33 +678,18 @@ export default {
       const touchX = event.touches[0].clientX;
       const diffX = touchX - this.touchStartX;
       logger.dev('[MainBody] - handleTouchMove Смещение по Х', diffX);
-      //console.log('[MainBody] - handleTouchMove Смещение по Х', diffX);
+      console.log('[MainBody] - handleTouchMove Смещение по Х', diffX);
     },
-
     handleTouchEnd(event) {
-
       if (!this.isSwiping ) return;
       this.isSwiping = false;
       
       const touchEndX = event.changedTouches[0].clientX;
       const diffX = touchEndX - this.touchStartX;
       logger.dev('[MainBody] - handleTouchEnd Смещение по Х', diffX);
-      //console.log('[MainBody] - handleTouchEnd Смещение по Х', diffX);
+      console.log('[MainBody] - handleTouchEnd Смещение по Х', diffX);
       // Определяем минимальную длину свайпа для активации
-      
-      if (Math.abs(diffX) > this.swipeThreshold) {
-        if (diffX > 0) {
-          logger.dev('[MainBody] - handleTouchEnd Свайп вправо');
-          //console.log('Свайп вправо');
-          // Свайп вправо - назад
-          this.$emit('swipe-back', '');
-        } else {
-          logger.dev('[MainBody] - handleTouchEnd Свайп влево');
-          //console.log('Свайп влево');
-          // Свайп влево - вперед
-          this.$emit('swipe-forward', '');
-        }
-      }
+      this.$emit('swipe', diffX);
     },
 
 

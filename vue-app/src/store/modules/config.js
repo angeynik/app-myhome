@@ -92,8 +92,8 @@ export default {
     UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value }) {
       const config = state.configs[dID];
       logger.dev('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
-      console.log('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
-      console.log('[config] - UPDATE_CONFIG_VALUE - Конфиг:', config);
+      // console.log('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
+      // console.log('[config] - UPDATE_CONFIG_VALUE - Конфиг:', config);
       if (!config) {
         logger.error(`[Config] - dID ${dID} не найден в конфигурации`);
         console.warn(`[Config] - dID ${dID} не найден в конфигурации`);
@@ -125,7 +125,7 @@ export default {
       roomObj[type][name].lastUpdate = nowMoscow();
       logger.dev(`[Config] - Обновлено значение ${type}.${name} в комнате ${room}:`, roomObj[type][name]);
       logger.dev(`[Config] - UPDATE_CONFIG_VALUE - state.configs[${dID}] ${JSON.stringify(config, null, 2)}`);
-      console.log(`[Config] - Обновлено значение ${type}.${name} в комнате ${room}:`, roomObj[type][name]);
+      //console.log(`[Config] - Обновлено значение ${type}.${name} в комнате ${room}:`, roomObj[type][name]);
       // console.log(`[Config] - UPDATE_CONFIG_VALUE - state.configs[${dID}] ${JSON.stringify(config, null, 2)}`);
       // const updatedRoom = config[room];
       // console.log(`[Config] - UPDATE_CONFIG_VALUE - state.configs[${dID}] Обновляем комнату ${room} - ${JSON.stringify(updatedRoom, null, 2)}`);
@@ -502,7 +502,7 @@ export default {
     },
     handleValueUpdate({ commit, rootGetters}, { dID, payload, type }) {
       logger.info('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
-      console.log('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
+      //console.log('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
 
       const settingsData = rootGetters.getSetpointsManager?.settingsData;
       //console.log('[Config] - handleValueUpdate - Текущие settingsData:', settingsData);
@@ -519,7 +519,7 @@ export default {
       if (type === 'sensors') {
         try {
           logger.dev('[Config] - handleValueUpdate - type = sensors');
-          console.log('[Config] - handleValueUpdate - type = sensors, payload:', payload);
+          //console.log('[Config] - handleValueUpdate - type = sensors, payload:', payload);
           commit('UPDATE_CONFIG_VALUE', {
             dID: dID || settingsData.name,
             room: payload?.room || settingsData.payload.room,
