@@ -70,8 +70,18 @@ body, .app {
   padding: 15px;
   display: grid;
   gap: 15px;
-  align-content: stretch;
-  grid-template-columns: 1fr; /* одна колонка на телефоне */
+  /* align-content: stretch; */
+  grid-template-columns: 1fr; /* по умолчанию 1 колонка (для <376px) */
+  align-content: start;       /* прижатие к верху */
+  justify-items: center; 
+}
+.app-place_item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 320px; /* ограничиваем максимальную ширину */
+  max-height: 240px;
 }
 
 .triangle-container {
@@ -91,25 +101,56 @@ body, .app {
 #btn3 { top: 70%; left: 80%; }
 
 .app-place_module {
+  /* background: var(--light_font); */
+  /* border-radius: 16px; */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
   width: 100%;
-  max-height: 220px;
-  min-height: 200px;
-  background: var(--light_font);
-  color: var(--header_color);
-  display: grid;
-  gap: 16px;
-  grid-template-rows: auto 1fr;
-  justify-items: center;
-  border-radius: 16px;
-  border: 1px solid var(--background_color);
-  box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
-  transition: transform 0.6s;
+  cursor: pointer;
+  transition: transform 0.2s ease;
 }
 
 .app-place_module:hover {
-  transform: scale(1.05);
+  transform: scale(1.06);
+  /* transform: translateY(-4px);
+  box-shadow: 0 12px 12px rgba(0, 0, 0, 0.2); */
+}
+/* Иконка внутри карточки */
+.app-place_module_icon {
+  width: 90%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
+.app-place_module_icon svg {
+  width: 90%;
+  height: auto;
+  display: block;
+}
+
+/* Заголовок под карточкой */
+.app-place_title {
+  margin-top: max(1dvh, 12px);
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--light_font);
+  text-align: center;
+}
+.app-place_module_title {
+  margin-top: 16px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
 .app-place_module_h1 {
   height: 40px;
   font-size: clamp(1rem, 4vw, 1.2rem);
@@ -118,10 +159,7 @@ body, .app {
   text-transform: uppercase;
 }
 
-.app-place_module_icon {
-  font-size: 1.8rem;
-  height: 100px;
-}
+
 
 .paramPlace {
   padding: 0 1dvh;
@@ -878,17 +916,23 @@ form button:active {
 
 /* ===== ПЕРЕХОД НА ГИБКУЮ СЕТКУ С 410px ===== */
 @media (min-width: 376px) {
+  .app-place_title {
+    margin-top: max(0.1dvh, 8px);
+  }
   .mainBody {
     /* grid-template-columns: 1fr 1fr; */
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
   /* Опционально для главной сетки модулей — тоже можно сделать от 410px, 
      но оставлю закомментированным, чтобы не нарушать вашу структуру.
-     При необходимости раскомментируйте:
+     При необходимости раскомментируйте: */
   .app-place_body {
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(2, minmax(174px, 300px)); /* фиксированная ширина колонок */
+    justify-content: center;  /* центрирование всей сетки по горизонтали */
+    gap: 20px;
+    padding: 20px;
   }
-  */
+ 
   .sensor-card {
     max-height: 180px;
   }
@@ -897,11 +941,14 @@ form button:active {
 /* ===== МЕДИА-ЗАПРОСЫ (дальнейшее расширение) ===== */
 
 /* Планшеты (≥768px) */
-@media (min-width: 640px) {
+@media (min-width: 630px) {
   .app-place_body {
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(2, minmax(240px, 360px));
     gap: 30px;
     padding: 30px;
+  }
+  .app-place_title {
+    margin-top: max(2dvh, 16px);
   }
   .mainBody {
     /* уже переопределено на 190px с 410px, но можно сделать колонки шире */
@@ -952,6 +999,11 @@ form button:active {
 
 /* Десктопы и широкие планшеты (≥980px) */
 @media (min-width: 980px) {
+  .app-place_body {
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
   .schedules-list,
   .notifications-list {
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));

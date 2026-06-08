@@ -19,6 +19,207 @@
         <line x1="3" y1="6" x2="21" y2="6"></line>
         <line x1="3" y1="18" x2="21" y2="18"></line>
       </symbol>
+
+      
+<symbol id="icon_rooms" viewBox="0 0 512 512">
+  <!-- Скруглённый фон -->
+  <rect x="40" y="40" width="432" height="432" rx="64" fill="#1a2332" />
+  <rect x="40" y="40" width="432" height="432" rx="64" fill="#232e3e" />
+  <!-- Внешняя обводка -->
+  <rect x="40" y="40" width="432" height="432" rx="64" fill="none" stroke="#E0DFE7" stroke-width="10" />
+  <defs>
+    <clipPath id="clip_rooms">
+      <rect x="40" y="40" width="432" height="432" rx="64" />
+    </clipPath>
+  </defs>
+  <g clip-path="url(#clip_rooms)">
+    <!-- Уменьшаем всё внутреннее содержимое на 10% с центрированием -->
+    <g transform="translate(256, 256) scale(0.9) translate(-256, -256)">
+      <rect x="58" y="58" width="185" height="231" fill="#232e3e"/>
+      <rect x="249" y="58" width="205" height="112" fill="#1e2a38"/>
+      <rect x="249" y="176" width="205" height="113" fill="#1c2836"/>
+      <rect x="58" y="289" width="396" height="165" fill="#253040"/>
+      <rect x="58" y="58" width="396" height="8" fill="#2e3d52"/>
+      <rect x="58" y="446" width="396" height="8" fill="#2e3d52"/>
+      <rect x="58" y="58" width="8" height="396" fill="#2e3d52"/>
+      <rect x="446" y="58" width="8" height="396" fill="#2e3d52"/>
+      <rect x="243" y="58" width="12" height="92" fill="#2e3d52"/>
+      <rect x="243" y="194" width="12" height="95" fill="#2e3d52"/>
+      <rect x="58" y="283" width="80" height="12" fill="#2e3d52"/>
+      <rect x="192" y="283" width="262" height="12" fill="#2e3d52"/>
+      <rect x="243" y="170" width="130" height="12" fill="#2e3d52"/>
+      <rect x="419" y="170" width="35" height="12" fill="#2e3d52"/>
+      <rect x="93" y="88" width="51" height="37" rx="3" fill="#c05e10"/>
+      <rect x="93" y="88" width="51" height="11" rx="2" fill="#141c28" opacity="0.4"/>
+      <rect x="160" y="88" width="39" height="12" rx="3" fill="#4a5568"/>
+      <rect x="160" y="104" width="39" height="12" rx="3" fill="#6b7a8e"/>
+      <rect x="160" y="120" width="39" height="12" rx="3" fill="#4a5568"/>
+      <rect x="93" y="135" width="106" height="11" rx="3" fill="#2e3d52"/>
+      <rect x="84" y="185" width="90" height="60" rx="4" fill="#4a5568"/>
+      <rect x="93" y="193" width="72" height="42" rx="2" fill="#3a4a5e"/>
+      <rect x="263" y="72" width="166" height="76" rx="4" fill="#4a5568"/>
+      <rect x="272" y="81" width="66" height="58" rx="3" fill="#3a4a5e"/>
+      <rect x="345" y="81" width="76" height="32" rx="3" fill="#c05e10"/>
+      <rect x="345" y="117" width="76" height="23" rx="3" fill="#6b7a8e"/>
+      <rect x="263" y="188" width="120" height="58" rx="4" fill="#4a5568"/>
+      <rect x="272" y="197" width="101" height="40" rx="3" fill="#3a4a5e"/>
+      <rect x="72" y="308" width="67" height="99" rx="4" fill="#4a5568"/>
+      <rect x="81" y="317" width="48" height="80" rx="2" fill="#3a4a5e"/>
+      <rect x="152" y="308" width="92" height="51" rx="4" fill="#4a5568"/>
+      <rect x="161" y="317" width="74" height="32" rx="2" fill="#3a4a5e"/>
+      <rect x="152" y="366" width="44" height="41" rx="4" fill="#c05e10"/>
+      <rect x="200" y="366" width="42" height="41" rx="4" fill="#6b7a8e"/>
+      <rect x="265" y="302" width="162" height="110" rx="4" fill="#4a5568"/>
+      <rect x="274" y="311" width="144" height="92" rx="3" fill="#3a4a5e"/>
+    </g>
+  </g>
+</symbol>
+
+<symbol id="icon_sensors" viewBox="0 0 512 512">
+  <rect x="40" y="40" width="432" height="432" rx="64" fill="none" stroke="#E0DFE7" stroke-width="10" />
+  <rect x="40" y="40" width="432" height="432" rx="64" fill="#1a2332"/>
+  <rect x="40" y="40" width="432" height="432" rx="64" fill="#232e3e" />
+  <circle cx="256" cy="258" r="68" fill="#4a5568"/>
+  <circle cx="256" cy="258" r="52" fill="#3a4a5e"/>
+  <circle cx="256" cy="258" r="34" fill="#f07820"/>
+  <circle cx="256" cy="258" r="22" fill="#c05e10"/>
+  <circle cx="256" cy="258" r="10" fill="#141c28"/>
+  <path d="M190 195 Q170 230 170 258 Q170 286 190 321" fill="none" stroke="#6b7a8e" stroke-width="10" stroke-linecap="round"/>
+  <path d="M322 195 Q342 230 342 258 Q342 286 322 321" fill="none" stroke="#6b7a8e" stroke-width="10" stroke-linecap="round"/>
+  <path d="M158 162 Q126 210 126 258 Q126 306 158 354" fill="none" stroke="#4a5568" stroke-width="9" stroke-linecap="round"/>
+  <path d="M354 162 Q386 210 386 258 Q386 306 354 354" fill="none" stroke="#4a5568" stroke-width="9" stroke-linecap="round"/>
+  <rect x="244" y="170" width="24" height="24" rx="4" fill="#f07820"/>
+  <polygon points="256,152 248,166 264,166" fill="#f07820"/>
+  <rect x="108" y="362" width="52" height="18" rx="12" fill="#f07820"/>
+  <circle cx="114" cy="371" r="4" fill="#141c28"/>
+  <circle cx="124" cy="371" r="4" fill="#141c28"/>
+  <circle cx="134" cy="371" r="4" fill="#141c28"/>
+  <circle cx="144" cy="371" r="4" fill="#141c28"/>
+  <circle cx="154" cy="371" r="4" fill="#141c28"/>
+  <rect x="352" y="362" width="52" height="18" rx="12" fill="#4a5568"/>
+  <circle cx="82" cy="82" r="12" fill="#141c28"/>
+  <circle cx="430" cy="82" r="14" fill="#141c28"/>
+  <circle cx="410" cy="70" r="7" fill="#f07820"/>
+  <circle cx="82" cy="430" r="10" fill="#f07820"/>
+  <circle cx="430" cy="438" r="8" fill="#141c28"/>
+</symbol>
+
+<symbol id="icon_devices" viewBox="0 0 512 512">
+  <rect x="40" y="40" width="432" height="432" rx="64" fill="none" stroke="#E0DFE7" stroke-width="10" />
+  <rect x="40" y="40" width="432" height="432" rx="64" fill="#1a2332"/>
+  <rect x="40" y="40" width="432" height="432" rx="64" fill="#232e3e" />
+  <rect x="96" y="128" width="138" height="186" rx="16" fill="#4a5568"/>
+  <rect x="106" y="138" width="118" height="130" rx="8" fill="#3a4a5e"/>
+  <rect x="118" y="150" width="94" height="94" rx="6" fill="#c05e10"/>
+  <circle cx="165" cy="197" r="24" fill="#141c28"/>
+  <circle cx="165" cy="197" r="14" fill="#f07820"/>
+  <circle cx="165" cy="197" r="6" fill="#141c28"/>
+  <rect x="130" y="282" width="48" height="8" rx="4" fill="#2e3d52"/>
+  <circle cx="214" cy="290" r="8" fill="#f07820"/>
+  <rect x="106" y="300" width="118" height="8" rx="4" fill="#3a4a5e"/>
+  <rect x="278" y="128" width="138" height="186" rx="16" fill="#6b7a8e"/>
+  <rect x="288" y="138" width="118" height="130" rx="8" fill="#3a4a5e"/>
+  <rect x="300" y="150" width="94" height="40" rx="6" fill="#f07820"/>
+  <rect x="308" y="158" width="40" height="8" rx="3" fill="#141c28" opacity="0.5"/>
+  <rect x="308" y="172" width="60" height="5" rx="2" fill="#141c28" opacity="0.4"/>
+  <rect x="300" y="205" width="40" height="32" rx="4" fill="#4a5568"/>
+  <rect x="352" y="205" width="40" height="32" rx="4" fill="#8b9ab0"/>
+  <rect x="300" y="248" width="94" height="12" rx="4" fill="#f07820"/>
+  <rect x="296" y="280" width="28" height="8" rx="4" fill="#6b7a8e"/>
+  <circle cx="376" cy="288" r="8" fill="#f07820"/>
+  <rect x="288" y="300" width="118" height="8" rx="4" fill="#3a4a5e"/>
+  <rect x="96" y="338" width="320" height="36" rx="14" fill="#f07820"/>
+  <circle cx="116" cy="356" r="7" fill="#141c28"/>
+  <circle cx="132" cy="356" r="7" fill="#141c28"/>
+  <circle cx="148" cy="356" r="7" fill="#141c28"/>
+  <circle cx="164" cy="356" r="7" fill="#141c28"/>
+  <circle cx="180" cy="356" r="7" fill="#141c28"/>
+  <rect x="300" y="344" width="100" height="24" rx="10" fill="#c05e10"/>
+  <circle cx="312" cy="356" r="6" fill="#f07820" opacity="0.5"/>
+  <circle cx="328" cy="356" r="6" fill="#f07820" opacity="0.5"/>
+  <circle cx="344" cy="356" r="6" fill="#f07820" opacity="0.5"/>
+  <circle cx="360" cy="356" r="6" fill="#f07820" opacity="0.5"/>
+  <circle cx="430" cy="80" r="14" fill="#141c28"/>
+  <circle cx="410" cy="70" r="7" fill="#f07820"/>
+  <circle cx="82" cy="82" r="10" fill="#141c28"/>
+  <circle cx="82" cy="430" r="12" fill="#141c28"/>
+  <circle cx="430" cy="430" r="9" fill="#f07820"/>
+</symbol>
+
+<symbol id="icon_setpoints" viewBox="0 0 512 512">
+  <!-- Скруглённый фон -->
+  <rect x="40" y="40" width="432" height="432" rx="64" fill="#1a2332" />
+  <rect x="40" y="40" width="432" height="432" rx="64" fill="#232e3e" />
+  <!-- Внешняя обводка -->
+  <rect x="40" y="40" width="432" height="432" rx="64" fill="none" stroke="#E0DFE7" stroke-width="10" />
+  <defs>
+    <clipPath id="clip_setpoints">
+      <rect x="40" y="40" width="432" height="432" rx="64" />
+    </clipPath>
+  </defs>
+  <g clip-path="url(#clip_setpoints)">
+    <!-- Уменьшенный на 10% тёмный квадрат (356x356, центрирован) -->
+    <rect x="78" y="78" width="356" height="356" fill="#141c28" />
+    <!-- Остальное содержимое -->
+    <rect x="78" y="96" width="356" height="96" rx="14" fill="#232e3e"/>
+    <rect x="96" y="112" width="76" height="14" rx="4" fill="#4a5568"/>
+    <rect x="96" y="112" width="38" height="14" rx="4" fill="#6b7a8e"/>
+    <text x="256" y="144" font-family="monospace, sans-serif" font-size="32" font-weight="700" fill="#f07820" text-anchor="middle" dominant-baseline="central">22.5</text>
+    <text x="302" y="144" font-family="sans-serif" font-size="14" font-weight="600" fill="#6b7a8e" text-anchor="start" dominant-baseline="central">°C</text>
+    <rect x="92" y="158" width="130" height="8" rx="4" fill="#1a2332"/>
+    <rect x="92" y="158" width="86" height="8" rx="4" fill="#f07820"/>
+    <rect x="360" y="112" width="58" height="28" rx="8" fill="#4a5568"/>
+    <polygon points="389,118 380,132 398,132" fill="#6b7a8e"/>
+    <rect x="360" y="148" width="58" height="28" rx="8" fill="#f07820"/>
+    <polygon points="389,170 380,156 398,156" fill="#141c28"/>
+    <rect x="78" y="208" width="356" height="96" rx="14" fill="#232e3e"/>
+    <rect x="96" y="224" width="76" height="14" rx="4" fill="#4a5568"/>
+    <rect x="96" y="224" width="52" height="14" rx="4" fill="#6b7a8e"/>
+    <text x="256" y="256" font-family="monospace, sans-serif" font-size="32" font-weight="700" fill="#f07820" text-anchor="middle" dominant-baseline="central">65</text>
+    <text x="280" y="256" font-family="sans-serif" font-size="14" font-weight="600" fill="#6b7a8e" text-anchor="start" dominant-baseline="central">%</text>
+    <rect x="92" y="270" width="130" height="8" rx="4" fill="#1a2332"/>
+    <rect x="92" y="270" width="54" height="8" rx="4" fill="#c05e10"/>
+    <rect x="360" y="224" width="58" height="28" rx="8" fill="#4a5568"/>
+    <polygon points="389,230 380,244 398,244" fill="#6b7a8e"/>
+    <rect x="360" y="260" width="58" height="28" rx="8" fill="#4a5568"/>
+    <polygon points="389,282 380,268 398,268" fill="#6b7a8e"/>
+    <rect x="78" y="320" width="356" height="96" rx="14" fill="#232e3e"/>
+    <rect x="96" y="336" width="76" height="14" rx="4" fill="#4a5568"/>
+    <rect x="96" y="336" width="64" height="14" rx="4" fill="#6b7a8e"/>
+    <text x="248" y="368" font-family="monospace, sans-serif" font-size="32" font-weight="700" fill="#f07820" text-anchor="middle" dominant-baseline="central">1013</text>
+    <text x="294" y="368" font-family="sans-serif" font-size="14" font-weight="600" fill="#6b7a8e" text-anchor="start" dominant-baseline="central">hPa</text>
+    <rect x="92" y="382" width="130" height="8" rx="4" fill="#1a2332"/>
+    <rect x="92" y="382" width="118" height="8" rx="4" fill="#f07820"/>
+    <rect x="360" y="336" width="58" height="28" rx="8" fill="#c05e10"/>
+    <polygon points="389,342 380,356 398,356" fill="#f07820"/>
+    <rect x="360" y="372" width="58" height="28" rx="8" fill="#4a5568"/>
+    <polygon points="389,394 380,380 398,380" fill="#6b7a8e"/>
+  </g>
+</symbol>
+
+      
+      <!-- <symbol id="icon_rooms" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </symbol>
+
+      <symbol id="icon_sensors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+        <circle cx="12" cy="12" r="2"/>
+      </symbol>
+      
+      <symbol id="icon_devices" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="4" width="20" height="12" rx="2"/>
+        <line x1="8" y1="20" x2="16" y2="20"/>
+        <line x1="12" y1="16" x2="12" y2="20"/>
+      </symbol>
+      
+      <symbol id="icon_setpoints" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        <circle cx="12" cy="12" r="3"/>
+      </symbol> -->
+
     </svg>
 
     <header class="header">
@@ -64,11 +265,17 @@
     <div class="body">
       <!-- Главное меню -->
       <div class="app-place_body" v-if="!$route.params.sortType && !$route.params.settingsType" id="app_place">
-        <AppPlace class="app-place_module" title="Комнаты" @select="selectComponent('rooms')" />
-        <AppPlace class="app-place_module" title="Датчики" @select="selectComponent('params')" />
-        <AppPlace class="app-place_module" title="Устройства" @select="selectComponent('devices')" />
-        <AppPlace class="app-place_module" title="Уставки" @select="selectComponent('setpoints')" />
-      </div>
+  <div class="app-place_item">
+    <AppPlace icon="rooms" @select="selectComponent('rooms')" />
+    <div class="app-place_title">Комнаты</div></div>
+  <div class="app-place_item"><AppPlace icon="sensors" @select="selectComponent('params')" />
+    <div class="app-place_title">Датчики</div></div>
+  <div class="app-place_item"><AppPlace icon="devices" @select="selectComponent('devices')" />
+    <div class="app-place_title">Устройства</div></div>
+  <div class="app-place_item">
+    <AppPlace icon="setpoints" @select="selectComponent('setpoints')" />
+    <div class="app-place_title">Уставки</div></div>
+</div>
 
       <!-- Динамический компонент для всех типов сортировки -->
       <!-- <router-view 
@@ -85,8 +292,7 @@
         @eventsMainBodySettings="handlePermitEvent"
         @getComponentData="getComponentData"
         @updateTypeValue="editValueMainSetpoint"
-        @swipe-forward="handleSwipeForward"
-        @swipe-back="handleSwipeBack"
+        @swipe="handleSwipe"
         :ref="currentRef"
       />
 
@@ -341,21 +547,20 @@ export default {
 
     sortingBack() {
       const sortType = this.$route.params.sortType;
-      logger.info('[DashBoard] - sortingBack - Сортировка назад', sortType);
-      //console.log('[DashBoard] - sortingBack - Сортировка назад', sortType);
+      logger.dev('[DashBoard] - sortingBack - Сортировка назад', sortType);
+      console.log('[DashBoard] - sortingBack - Сортировка назад', sortType);
       this.switchSortKey({ sortingType: sortType, direction: 'prev' });
     },    
     sortingForvard() {
       const sortType = this.$route.params.sortType;
+      logger.dev('[DashBoard] - sortingForvard - Сортировка назад', sortType);
+      console.log('[DashBoard] - sortingForvard - Сортировка назад', sortType);
       this.switchSortKey({ sortingType: sortType, direction: 'next' });
     },
 
 
 
     // Работа с компонентом настройки Расписания, Уведомлений и Статистики
-
-
-
   async editValueMainSetpoint(eventData) { // Формирует сообщение при изменении уставки и выполняет отправку этого сообщения на сервер с фиксированной задержкой
     console.groupCollapsed('[DashBoard] - editValueMainSetpoint');
     console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения Уставки :', eventData);
@@ -547,8 +752,6 @@ export default {
         this.$store.commit('sortParams/SET_FORCE_UPDATE', Date.now());
         console.groupEnd();
   },
-
-
   sendChangedData (event) {
     console.log('[DashBoard] - sendChangedData - Запускаем таймер задержки отправки на данных на сервер', event);
     //const oldValue = event.updateState.value;
@@ -574,7 +777,6 @@ export default {
           }
         }, 200);
   },
-
   getComponentData(event) {
 
       console.log('[DashBoard] - getComponentData - Данные от компонента:', event);
@@ -680,6 +882,12 @@ export default {
         this.closeManualInputDialog();
       },
 // Окончание Блока для управления ручным редактированием значения
+
+      handleSwipe(event){
+        console.log('[DashBoard] - handleSwipe - Получены данные ', event);
+        if (event > 80) {console.log('[DashBoard] - handleSwipe - Смещение вперед'); this.sortingBack();}
+        if (event < -80) {console.log('[DashBoard] - handleSwipe - Смещение назад'); this.sortingForvard();}
+      },
 
   }
 };

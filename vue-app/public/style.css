@@ -424,11 +424,11 @@
   background: var(--light_font);
   color: var(--header_color);
   display: grid;
-  gap: 32px;
+  gap: 10dvw;
   grid-row: 1fr 5fr;
   justify-items: center;
   border-radius: 16px; 
-  border: 1px solid var(--background_color); 
+  /* border: 1px solid var(--background_color);  */
   box-shadow: 0 8px 6px rgba(0, 0, 0, 0.15);
   transition: transform 0.6s; /* Плавное изменение размера */
 }
