@@ -32,6 +32,8 @@ body, .app {
   overflow-x: hidden;
   margin: 0;
   padding: 0;
+  transform: none;
+  perspective: none;
 }
 
 #app {
@@ -176,6 +178,8 @@ body, .app {
   margin: 0;
   border: 0;
   display: flex;
+  /* display: grid;
+  grid-template-columns: 1fr minmax(auto, 1400px) 1fr; */
   box-sizing: border-box;
   background-color: var(--header_color);
   color: var(--light_font);
@@ -443,8 +447,9 @@ form button:active {
   margin: 8px;
   transition: transform 0.3s ease;
   touch-action: manipulation;
-  width: 4dvw;
-  height: 4dvw;
+  width: 6dvw;
+  height: 6dvw;
+  max-width: 34px;
 }
 .icon-settings.item {
   margin: 0;
@@ -524,6 +529,8 @@ form button:active {
 
 /* Setpoint block */
 .setpointBlock {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  text-align: center;
   display: flex;
   flex-direction: column;
   align-content: space-around;
@@ -543,9 +550,13 @@ form button:active {
 }
 .setpointValue_number {
   min-width: 50px;
+  font-size: clamp(1.8rem, 6vw, 2.2rem);
+  letter-spacing: 10px;
+  font-weight: bold;
   display: flex;
   justify-content: center;
   align-self: center;
+  color: var(--light_font);
 }
 .setpointValue_icon {
   height: 5dvh;
@@ -568,6 +579,18 @@ form button:active {
   margin: 0;
   font-size: 0.7rem;
   font-weight: 500;
+}
+.setpoint-overlay {
+  position: fixed !important;
+  bottom: env(safe-area-inset-bottom, 0) !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 10000 !important;
+  pointer-events: none;
+}
+/* Активация интерактива только внутри .setpointValue (будет задано в MainSetpoint) */
+.setpoint-overlay .setpointValue {
+  pointer-events: auto;
 }
 
 /* Popup */
@@ -649,9 +672,9 @@ form button:active {
 .statistics-list {
   margin-top: 1.5rem;
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
-  width: 95%;
+  width: 80dvw;
   margin-left: auto;
   margin-right: auto;
   overflow-x: hidden;
@@ -745,7 +768,8 @@ form button:active {
   overflow: hidden;
 }
 .mainBodySettings-content-body {
-  width: 100%;
+  grid-column: 2 / 3;
+  width: 100dvw;
   max-width: 100%;
   min-width: 0;
   overflow-x: hidden;
@@ -771,6 +795,8 @@ form button:active {
   opacity: 0.7;
 }
 .settings-info {
+  max-width: 96%;
+  align-items: center;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -788,13 +814,15 @@ form button:active {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
+  width: 94%;
   min-width: 0;
   margin-bottom: 0.4rem;
+  margin-left: 0.4rem;
+  margin-right: 0.2rem;
   overflow: hidden;
 }
 .settings-col-first {
-  flex: 0 0 80%;
+  flex: 0 0 100%;
   min-width: 60%;
   display: flex;
   flex-direction: column;
@@ -975,10 +1003,10 @@ form button:active {
   .schedules-list,
   .notifications-list {
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    width: 90%;
+    width: 80%;
   }
   .statistics-list {
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
     width: 90%;
   }
   .settings-two-columns {
@@ -997,6 +1025,10 @@ form button:active {
   form input, form select {
     flex: 1;
   }
+  .settings-info {
+    max-width: 98%;
+    max-height: 4.4dvh;
+  }
 }
 
 /* Десктопы и широкие планшеты (≥980px) */
@@ -1008,14 +1040,14 @@ form button:active {
   }
   .schedules-list,
   .notifications-list {
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(340px, 2fr));
     max-width: 90%;
     gap: 1rem;
     margin: 1rem auto 0;
   }
   .statistics-list {
-    grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
-    max-width: 85%;
+    grid-template-columns: repeat(auto-fill, minmax(580px, 1fr));
+    width: 90%;
   }
   .settings-block.clickable {
     max-width: 14vw;
@@ -1039,6 +1071,10 @@ form button:active {
   }
   .introduce-button {
     height: 45dvh;
+  }
+  .settings-info {
+    max-width: 98%;
+    max-height: 4.8dvh;
   }
 }
 

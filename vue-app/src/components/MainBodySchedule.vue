@@ -78,25 +78,6 @@
     </div>
 
     </div>
-      <!-- Вторая колонка (20%) -->
-       <!-- <div class="settings-col-second">
-        <div class="icon-settings item">
-          <button class="mainBodySettings-header-button" @click="deleteScheduleItem">
-            <svg class="icon-settings close" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
-
-              <circle class="hover-bg" cx="44" cy="44" r="42" fill="#CC0000" opacity="0"/>
-
-              <circle cx="44" cy="44" r="42" fill="#FF4747"/>
-
-              <circle cx="44" cy="44" r="42" stroke="#FF4747" stroke-width="4"/>
-
-              <line x1="28" y1="28" x2="60" y2="60" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
-              <line x1="60" y1="28" x2="28" y2="60" stroke="#E0DFE7" stroke-width="8" stroke-linecap="round"/>
-            </svg>
-          </button>
-        </div>
-        
-      </div>   -->
 
     </div>
   </div>

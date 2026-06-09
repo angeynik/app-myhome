@@ -299,19 +299,9 @@
     </div>
 
     <footer class="footer"> 
-      <MainFooter v-show="!showFooterSetpoint"/>
-      <MainSetpoint
-        ref="mainSetpoint" 
-        v-if="showFooterSetpoint"
-        :setPoint="setpoint" 
-        :request="request"
-        :roomKey="selectedItemData.roomKey"
-        :setpointKey="selectedItemData.setpointKey"
-        :valueTitle="selectedItemData.valueTitle"
-        @eventsMainSetpoint="editValueMainSetpoint"
-        @eventsSchedule="editValueMainSetpoint"
-      />
+      <MainFooter/>
     </footer>
+    
     <InputDialog
       :visible="manualInputDialog.visible"
       :title="manualInputDialog.title"
@@ -321,6 +311,24 @@
       @cancel="closeManualInputDialog"
     />
   </div>
+  <!-- Плавающий блок MainSetpoint через Teleport -->
+  <Teleport to="body">
+    <div 
+      class="setpoint-overlay" 
+      v-if="showFooterSetpoint"
+    >
+      <MainSetpoint
+        ref="mainSetpoint"
+        :setPoint="setpoint"
+        :request="request"
+        :roomKey="selectedItemData.roomKey"
+        :setpointKey="selectedItemData.setpointKey"
+        :valueTitle="selectedItemData.valueTitle"
+        @eventsMainSetpoint="editValueMainSetpoint"
+        @eventsSchedule="editValueMainSetpoint"
+      />
+    </div>
+  </Teleport>
 </template>
 
 <script>
