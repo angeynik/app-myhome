@@ -6,7 +6,7 @@
     <div v-else id="app_mainBody" class="mainBody"
      @touchstart.passive="handleTouchStart" 
     @touchend.passive="handleTouchEnd">
-      <MainBodyValue 
+    <MainBodyValue 
         v-for="(item, index) in viewArray"
         :key="`${index}-${item.paramKey}-${item.roomKey}-${item.deviceKey}-${item.setpointKey}`"
         :value="item.value"
@@ -42,8 +42,8 @@ export default {
       touchStartX: 0,
       isSwiping: false,
       swipeThreshold: 50, // минимальное расстояние для определения свайпа
-
-      clickTimer: null, // Таймер для определения двойного клика
+      clickTimer:null, // Таймер автоснятия
+      doubleClickTimer: null, // Таймер для определения двойного клика
     }
   },
 
@@ -168,16 +168,16 @@ export default {
     
     selectItem(item) {
       const clearParam = 'd' + this.clearKeySync(item.paramKey);
-      //console.log('[MainBody] - selectItem - Исходный ключ -', item.paramKey, ' Очищенный ключ -', clearParam);
+      console.log('[MainBody] - selectItem - Исходный ключ -', item.paramKey, ' Очищенный ключ -', clearParam);
       // localStorage.setItem('paramKey', clearParam);
-      //console.log('[MainBody] - selectItem - Обновили localStorage paramKey:', clearParam);
+      console.log('[MainBody] - selectItem - Обновили localStorage paramKey:', clearParam);
 
-      if (this.clickTimer) {
-        clearTimeout(this.clickTimer);
-        this.clickTimer = null;
+      if (this.doubleClickTimer) {
+        clearTimeout(this.doubleClickTimer);
+        this.doubleClickTimer = null;
       }
       
-      this.clickTimer = setTimeout(() => {
+      this.doubleClickTimer = setTimeout(() => {
         console.groupCollapsed('[MainBody] - selectItem ');
         logger.dev(`[MainBody] - selectItem - Выбран параметр:  ${JSON.stringify(item, null, 2)}`);
         //console.log(`[MainBody] - selectItem - setpointKey: ${item.setpointKey}, deviceKey: ${item.deviceKey}, paramKey: ${item.paramKey}, roomKey: ${item.roomKey}`);
@@ -189,7 +189,13 @@ export default {
             this.selectedItem = null;
             // Отправляем событие, что нужно скрыть MainSetpoint
             this.$emit('getComponentData', { 
-              action: 'hide' 
+              action: 'hide',
+              updateState: {
+              value: item.setValue,
+              title: 'value',
+              roomKey: clearParam,
+              setpointKey: item.setpointKey
+            }
             });
             //console.log(`[MainBody] - selectItem - Выбран параметр: ${JSON.stringify(item.action)}`);
         } else {
@@ -227,12 +233,13 @@ export default {
             param: clearParam, 
             valueType: 'absolute', 
           }
-          console.log('[MainBody] - selectItem - params:', params);
+          //console.log('[MainBody] - selectItem - params (для setLimits):', params);
           console.groupEnd();
           this.setLimits(params);
 
           console.log(`[MainBody] - selectItem - Формируем данные для передачи в DashBoard, value: ${item.setValue} и title: value`);
 
+          if (item.setValue && clearParam && item.setpointKey) {
           // Отправляем событие с данными в DashBoard
           this.$emit('getComponentData', {
             action: 'show',
@@ -241,13 +248,16 @@ export default {
             updateState: {
               value: item.setValue,
               title: 'value',
-              roomKey: item.roomKey,
+              roomKey: clearParam,
               setpointKey: item.setpointKey
             }
           });
           console.log(`[MainBody] - selectItem - Отправляем событие с данными в DashBoard, value: ${item.setValue}, title: value`);
+          } else {
+            console.error(`Не определены значения уставки: ${item.setValue}, ключа Параметра ${clearParam} и ключа Уставки ${item.setpointKey}`);
+          }
         }
-        this.clickTimer = null;
+        this.doubleClickTimer = null;
       }, 350);
       
         
@@ -259,9 +269,9 @@ export default {
       const clearParam = 'd' + this.clearKeySync(item.paramKey);
 
       
-      if (this.clickTimer) {
-        clearTimeout(this.clickTimer);
-        this.clickTimer = null;
+      if (this.doubleClickTimer) {
+        clearTimeout(this.doubleClickTimer);
+        this.doubleClickTimer = null;
       }
 
       const config = this.getConfig(this.dID);

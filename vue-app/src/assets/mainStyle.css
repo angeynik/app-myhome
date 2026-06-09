@@ -443,6 +443,8 @@ form button:active {
   margin: 8px;
   transition: transform 0.3s ease;
   touch-action: manipulation;
+  width: 4dvw;
+  height: 4dvw;
 }
 .icon-settings.item {
   margin: 0;

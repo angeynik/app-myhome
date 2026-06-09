@@ -789,7 +789,7 @@ export default {
         
         this.selectedItemData = {
           roomKey: this.$store.state.setpointsManager?.settingsData?.payload?.room,
-          setpointKey: this.$store.state.setpointsManager?.settingsData?.payload?.param,
+          setpointKey: event.updateState.setpointKey || this.$store.state.setpointsManager?.settingsData?.payload?.param,
           valueTitle: event.updateState.title,
         };
         console.log('[DashBoard] - getComponentData - Компонент MainSetpoint показан', this.selectedItemData);
