@@ -116,7 +116,7 @@
         isTouching: false,
         newSetPointValue: this.setPoint,
         inactivityTimer: null,
-        valueTimer: 66000,
+        valueTimer: 6000,
       }
     },
     watch: {
