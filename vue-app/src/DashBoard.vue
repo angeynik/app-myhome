@@ -363,6 +363,7 @@ export default {
         type: 'number',    // 'number' или 'time'
         callback: null,    // функция, которая будет вызвана с новым значением
       },
+      swipeThreshold: 50,
     }; 
   },
   async created() {
@@ -885,8 +886,8 @@ export default {
 
       handleSwipe(event){
         console.log('[DashBoard] - handleSwipe - Получены данные ', event);
-        if (event > 80) {console.log('[DashBoard] - handleSwipe - Смещение вперед'); this.sortingBack();}
-        if (event < -80) {console.log('[DashBoard] - handleSwipe - Смещение назад'); this.sortingForvard();}
+        if (event > this.swipeThreshold) {console.log('[DashBoard] - handleSwipe - Смещение вперед'); this.sortingBack();}
+        if (event < -(this.swipeThreshold)) {console.log('[DashBoard] - handleSwipe - Смещение назад'); this.sortingForvard();}
       },
 
   }
