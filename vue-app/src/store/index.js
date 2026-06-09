@@ -18,6 +18,8 @@ const store = createStore({
     setpointsManager: null, // Экземпляр класса ManageSetpoints
     settingsData: null, // Текущие данные настроек
 
+    showSetpoint: false,
+
     roomKey: localStorage.getItem('roomKey') || null,
     paramKey: localStorage.getItem('paramKey') || null, // Ключ вида dTemp используется для определения параметра при сортировке по параметрам
     deviceKey: localStorage.getItem('deviceKey') || null, 
@@ -118,6 +120,10 @@ const store = createStore({
         localStorage.setItem('setpointKey', key);
       }
     },
+
+    SHOW_SETPOINT(state, value) {
+      state.showSetpoint = value;
+    },
     
   },
   actions: {
@@ -154,19 +160,24 @@ const store = createStore({
       //console.log('[index] - updatePayloadData - Обновляем payload:', payload);
       commit('UPDATE_PAYLOAD_DATA', payload);
     },
-    
     updateLimitsData({ commit }, limits) {
       //console.log('[index] - updateLimitsData - limits:', limits);
       commit('UPDATE_LIMITS_DATA', limits);
     },
-
     resetSettingsData({ commit }) { // Action для сброса данных настроек manageSetpoints
       commit('RESET_SETTINGS_DATA');
+    },
+    setShowSetpoint({ commit }, value) {
+      commit('SHOW_SETPOINT', value);
+    },
+    hideSetpoint({ commit }) {
+      commit('SHOW_SETPOINT', false);
     },
 
 
   },
   getters: {
+    showSetpoint: (state) => state.showSetpoint,
     isAuthenticated: (state) => !!state.auth.token,
     authStatus: (state) => state.auth.status,
     user: (state) => state.auth.user.username || '',

@@ -39,7 +39,7 @@ export default {
   emits: ['close', 'select'],
   computed: {
     positionStyle() {
-      if (!this.anchorElement) return { top: '50px', right: '20px' };
+      if (!this.anchorElement) return { top: '30px', right: '10px' };
       const rect = this.anchorElement.getBoundingClientRect();
       return {
         top: `${rect.bottom + window.scrollY + 5}px`,

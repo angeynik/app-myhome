@@ -98,10 +98,15 @@ export default {
         immediate: true
       },
     sortType(newSortType) {
-    // Реагируем на изменение sortType извне
-    this.$store.commit('sortParams/SET_SORT_TYPE', newSortType);
-    // this.initializeComponent();
-  },
+      // Реагируем на изменение sortType извне
+      this.$store.commit('sortParams/SET_SORT_TYPE', newSortType);
+      // this.initializeComponent();
+    },
+    '$store.state.showSetpoint'(newVal) {
+      if (newVal === false && this.selectedItem) {
+        this.clearSelection();
+      }
+    },
   },
   methods: {
     ...mapMutations({
@@ -676,6 +681,20 @@ singleClickAction(item) {
       console.log('[MainBody] - handleTouchEnd Смещение по Х', diffX);
       // Определяем минимальную длину свайпа для активации
       this.$emit('swipe', diffX);
+    },
+    clearSelection() {
+      console.log('[MainBody] - clearSelection ВЫЗВАН, selectedItem =', this.selectedItem);
+      if (this.selectedItem) {
+        logger.dev('[MainBody] - clearSelection - сбрасываем выделение');
+        console.log('[MainBody] - clearSelection - сбрасываем выделение');
+        this.selectedItem = null;
+        // Также сбрасываем ожидание двойного клика, чтобы не было артефактов
+        if (this.doubleClickTimer) {
+          clearTimeout(this.doubleClickTimer);
+          this.doubleClickTimer = null;
+        }
+        this.pendingItem = null;
+      }
     },
 
 

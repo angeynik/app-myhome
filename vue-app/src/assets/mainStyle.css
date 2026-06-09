@@ -397,15 +397,15 @@ form button:active {
 .sensor-card {
   min-width: 180px;
   width: 98%;
-  max-width: 80vw;
-  min-height: 150px;
-  max-height: 170px;
+  max-width: 280vw;
+  min-height: 160px;
+  max-height: 200px;
   display: grid;
   grid-template-rows: 1fr 5fr 1fr;
   justify-items: center;
   align-items: center;
   background-color: var(--background_color);
-  padding: 0.6rem;
+  padding: 0.4rem;
   box-sizing: border-box;
   transition: transform 0.2s ease;
   border-radius: 16px;
@@ -418,6 +418,55 @@ form button:active {
   transform: scale(1.02);
   z-index: 12;
 }
+/* Текст датчиков */
+.sensor-header {
+  height: 1.8rem;
+  max-height: 30px;
+  align-content: center;
+  font-size: clamp(0.7rem, 3vw, 0.9rem);
+  color: var(--sensor-gray);
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.sensor-value {
+  height: 3.6rem;
+  align-content: center;
+  font-size: clamp(1.8rem, 6vw, 2.2rem);
+  font-weight: 500;
+  letter-spacing: 2px;
+}
+.sensor-value.selected-value {
+  height: 1.4rem;
+  font-size: clamp(1rem, 3vw, 1.3rem);
+  font-weight: 300;
+  letter-spacing: 2px;
+  color: var(--light_font);
+  opacity: 0.8;
+}
+.sensor-SetValue {
+  height: 1.6rem;
+  color: var(--orange);
+  font-size: clamp(1rem, 3vw, 1.3rem);
+  font-weight: 300;
+  letter-spacing: 2px;
+}
+.sensor-SetValue.selected-setvalue {
+  height: 3.6rem;
+  font-size: clamp(1.8rem, 6vw, 2.2rem);
+  font-weight: 500;
+  opacity: 1;
+  align-content: center;
+}
+.sensor-footer {
+  height: 1rem;
+  min-height: 20px;
+  font-size: 0.75rem;
+  font-weight: 200;
+  letter-spacing: 1.2px;
+  color: var(--sensor-gray);
+}
+
 .mainBodyValue:hover {
   transform: scale(1.05);
 }
@@ -472,51 +521,7 @@ form button:active {
   stroke: var(--orange-light, #ffaa44);
 }
 
-/* Текст датчиков */
-.sensor-header {
-  height: 2rem;
-  align-content: center;
-  font-size: clamp(0.7rem, 3vw, 0.9rem);
-  color: var(--sensor-gray);
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-.sensor-value {
-  height: 4.8rem;
-  align-content: center;
-  font-size: clamp(1.8rem, 6vw, 2.2rem);
-  font-weight: 500;
-  letter-spacing: 2px;
-}
-.sensor-value.selected-value {
-  height: 2rem;
-  font-size: clamp(1rem, 3vw, 1.3rem);
-  font-weight: 300;
-  letter-spacing: 2px;
-  color: var(--light_font);
-  opacity: 0.8;
-}
-.sensor-SetValue {
-  height: 2rem;
-  color: var(--orange);
-  font-size: clamp(1rem, 3vw, 1.3rem);
-  font-weight: 300;
-  letter-spacing: 2px;
-}
-.sensor-SetValue.selected-setvalue {
-  height: 4rem;
-  font-size: clamp(1.8rem, 6vw, 2.2rem);
-  font-weight: 500;
-  opacity: 1;
-}
-.sensor-footer {
-  height: 1.4rem;
-  font-size: 0.7rem;
-  font-weight: 200;
-  letter-spacing: 1px;
-  color: var(--sensor-gray);
-}
+
 
 /* Footer */
 .footer {
@@ -538,7 +543,7 @@ form button:active {
   width: 100%;
   background-color: var(--background_color);
   margin: 0;
-  padding-bottom: 6dvh;
+  padding-bottom: 1.4dvh;
   box-shadow: 0 -2vw 4vw rgba(225, 225, 225, 0.1), 0 2vw 3vw rgba(225, 225, 225, 0.1), inset 8vw 0 6vw -6vw rgba(0,0,0,0.8), inset -8vw 0 6vw -6vw rgba(0,0,0,0.8);
 }
 .setpointValue {
