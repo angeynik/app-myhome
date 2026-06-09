@@ -115,10 +115,13 @@
         startX: 0,
         isTouching: false,
         newSetPointValue: this.setPoint,
+        inactivityTimer: null,
+        valueTimer: 66000,
       }
     },
     watch: {
       setPoint(newSetPoint) {
+        this.resetInactivityTimer();
         //logger.dev('[MainSetpoint] - setPoint - Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
         //console.log('Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
         //this.newSetPointValue = parseFloat(newSetPoint).toFixed(1);
@@ -156,7 +159,13 @@
         valueTitle: this.valueTitle
       });
        //console.log('[MainSetpoint] - created - Полученные props', JSON.stringify(this.$store.state.settingsData, null, 2));
-      },
+    },
+    mounted() {
+      this.startInactivityTimer();
+    },
+    beforeUnmount() {
+      this.clearInactivityTimer();
+    },
       
     props: {   // Переменные полученные в компонент
       setPoint: Number,
@@ -165,7 +174,7 @@
       setpointKey: String,
       valueTitle: String,
     },
-      methods: {
+    methods: {
       ...mapActions(['updateSettingsData']),
       sendEmitMessage(event, value) {
         //console.groupCollapsed('[MainSetpoint] - sendEmitMessage ');
@@ -192,6 +201,7 @@
 
 
     handleTouchStart(event) {
+      this.resetInactivityTimer();
       logger.dev('[MainSetpoint] - handleTouchStart', event.touches[0].clientX, event.touches[0].clientY);
         // console.log('Компонент bodySetpointBlock событие - handleTouchStart', event.touches[0].clientX, event.touches[0].clientY);
         this.startX = event.touches[0].clientX;
@@ -226,6 +236,7 @@
         }
     },
     calculateSetpoint(value, step, min, max) {
+      this.resetInactivityTimer();
       logger.dev('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
       //console.log('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
         
@@ -291,7 +302,6 @@
       this.calculateSetpoint(value, this.limStep, this.limLow, this.limHigh);
       //this.debouncedUpdatePermitions('updatePermission', 'permission', true);
     },
-
     debounce(func, wait) {
       logger.dev('[MainSetpoint] - debounce Активирована задержка выполнения функции', func, 'в', wait, 'мсек');
         // console.log('Активирована задержка выполнения функции', func, 'в', wait, 'мсек');
@@ -301,9 +311,27 @@
         timeout = setTimeout(() => func.apply(this, arguments), wait);
       };
     },
+    resetInactivityTimer() {
+      if (this.inactivityTimer) {
+        clearTimeout(this.inactivityTimer);
+      }
+      this.startInactivityTimer();
+    },
+    startInactivityTimer() {
+      this.inactivityTimer = setTimeout(() => {
+        logger.dev('[MainSetpoint] - Бездействие 5 секунд, генерируем событие скрытия');
+        this.$emit('inactivity-timeout');
+      }, this.valueTimer);
+    },
+    clearInactivityTimer() {
+      if (this.inactivityTimer) {
+        clearTimeout(this.inactivityTimer);
+        this.inactivityTimer = null;
+      }
+    },
  
   
-      },
+    },
   }
   </script>
   

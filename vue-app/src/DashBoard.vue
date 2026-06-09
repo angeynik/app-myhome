@@ -326,6 +326,7 @@
         :valueTitle="selectedItemData.valueTitle"
         @eventsMainSetpoint="editValueMainSetpoint"
         @eventsSchedule="editValueMainSetpoint"
+        @inactivity-timeout="handleSetpointInactivity"
       />
     </div>
   </Teleport>
@@ -359,7 +360,7 @@ export default {
   data() { 
     return {
       showHeaderArrow: false,
-      showSetpoint: false,
+      // showSetpoint: false,
       request: null,
       setpoint: null,
       selectedItemData: {},
@@ -405,7 +406,7 @@ export default {
       getDeviceKey: 'deviceKey',
       getSetpointKey: 'setpointKey',
     }),
-    ...mapGetters(['level', 'dID']),
+    ...mapGetters(['level', 'dID', 'showSetpoint']),
     ...mapGetters('sortParams', [
       'updateSortKey',
       'currentSortType',
@@ -469,6 +470,7 @@ export default {
     '$route.params.sortType': {
       immediate: true,
       handler(newSortType) {
+        this.$store.commit('SHOW_SETPOINT', false);
         this.handleSortTypeChange(newSortType);
       }
     },
@@ -501,6 +503,7 @@ export default {
     ...mapActions('dropdown', ['show']),
     
     handleSortTypeChange(sortType) {
+      this.$store.commit('SHOW_SETPOINT', false);
       //console.log('[DashBoard] - handleSortTypeChange - Обновляем информацию для sortType: ', sortType);
       if (sortType) {
         // Устанавливаем тип сортировки в store
@@ -518,6 +521,7 @@ export default {
     selectComponent(sortType) {
       //logger.info(`[DashBoard] - selectComponent - Выбор компонента: ${sortType}`);
       //console.log('[DashBoard] - selectComponent - Выбор компонента:', sortType);
+      this.$store.commit('SHOW_SETPOINT', false);
       this.$router.push({ 
         name: 'DashboardSort', 
         params: { sortType } 
@@ -534,6 +538,7 @@ export default {
     },
     
     goHome() {
+      this.$store.commit('SHOW_SETPOINT', false);
       this.$router.push('/');
     },
     openMenu(event) {
@@ -546,7 +551,7 @@ export default {
           { label: 'Выйти', action: 'logout' },
           { divider: true }, // разделитель
           { 
-            label: isMobile ? '🖥️ Десктопная навигация (стрелки)' : '📱 Мобильная навигация (свайпы)',
+            label: isMobile ? '🖥️ Десктоп' : '📱 Мобильн',
             action: 'toggleMobile'
           }
         ],
@@ -555,12 +560,14 @@ export default {
     },
 
     sortingBack() {
+      this.$store.commit('SHOW_SETPOINT', false);
       const sortType = this.$route.params.sortType;
       logger.dev('[DashBoard] - sortingBack - Сортировка назад', sortType);
       console.log('[DashBoard] - sortingBack - Сортировка назад', sortType);
       this.switchSortKey({ sortingType: sortType, direction: 'prev' });
     },    
     sortingForvard() {
+      this.$store.commit('SHOW_SETPOINT', false);
       const sortType = this.$route.params.sortType;
       logger.dev('[DashBoard] - sortingForvard - Сортировка назад', sortType);
       console.log('[DashBoard] - sortingForvard - Сортировка назад', sortType);
@@ -794,7 +801,7 @@ export default {
       if (event.action === 'show') {  
         console.log('[DashBoard] - getComponentData - Показываем компонент MainSetpoint с данными:', event.updateState.value);
         this.setpoint = event.updateState.value;
-        this.showSetpoint = true;
+        this.$store.commit('SHOW_SETPOINT', true);
         
         this.selectedItemData = {
           roomKey: this.$store.state.setpointsManager?.settingsData?.payload?.room,
@@ -803,7 +810,7 @@ export default {
         };
         console.log('[DashBoard] - getComponentData - Компонент MainSetpoint показан', this.selectedItemData);
       } else if (event.action === 'hide') {
-        this.showSetpoint = false;
+        this.$store.commit('SHOW_SETPOINT', false);
         this.setpoint = event.updateState.value;
         //console.log('[DashBoard] - getComponentData - Компонент MainSetpoint скрыт');
           this.sendChangedData(
@@ -892,11 +899,25 @@ export default {
       },
 // Окончание Блока для управления ручным редактированием значения
 
-      handleSwipe(event){
-        console.log('[DashBoard] - handleSwipe - Получены данные ', event);
-        if (event > this.swipeThreshold) {console.log('[DashBoard] - handleSwipe - Смещение вперед'); this.sortingBack();}
-        if (event < -(this.swipeThreshold)) {console.log('[DashBoard] - handleSwipe - Смещение назад'); this.sortingForvard();}
-      },
+  handleSwipe(event){
+    console.log('[DashBoard] - handleSwipe - Получены данные ', event);
+    if (event > this.swipeThreshold) {console.log('[DashBoard] - handleSwipe - Смещение вперед'); this.sortingBack();}
+    if (event < -(this.swipeThreshold)) {console.log('[DashBoard] - handleSwipe - Смещение назад'); this.sortingForvard();}
+  },
+
+  handleSetpointInactivity() {
+    // Логирование для отладки
+    logger.dev('[DashBoard] - handleSetpointInactivity - Бездействие в MainSetpoint, скрываем панель');
+    console.log('[DashBoard] - handleSetpointInactivity - Бездействие, скрываем панель');
+
+    // Скрываем панель MainSetpoint через Vuex
+    this.$store.commit('SHOW_SETPOINT', false);
+
+    // Очищаем локальные данные, связанные с текущей уставкой
+    this.setpoint = null;
+    this.selectedItemData = {};
+    this.request = null;
+  },
 
   }
 };

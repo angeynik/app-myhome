@@ -284,6 +284,11 @@ export default {
       deep: true,
       immediate: false
     },
+    '$store.state.showSetpoint'(newVal) {
+      if (newVal === false) {
+        this.activeSelection = null;
+      }
+    },
     setting_Type: {
       handler(newVal) {
         if (newVal && newVal !== this.title) {
