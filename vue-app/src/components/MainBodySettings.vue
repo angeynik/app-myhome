@@ -16,7 +16,7 @@
           </button>
 
 
-          <button class="mainBodySettings-header-button" @click="handlePermit">
+          <!-- <button class="mainBodySettings-header-button" @click="handlePermit">
           <svg class="icon-settings hand" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="44" cy="44" r="42" 
               :fill="handleInputPermit ? '#FFA500' : '#E0E0E0'"
@@ -26,7 +26,7 @@
               fill="#E0DFE7"
               :fill-opacity="handleInputPermit ? 1 : 0.5"/>
             </svg>
-          </button>
+          </button> -->
 
         </div>
 
@@ -159,6 +159,7 @@ export default {
       availableTitles: ['schedules', 'notifications', 'statistics'],
       typeToTitleMap: {
         'schedules': 'Расписание',
+        'schedule': 'Расписание',
         'notifications': 'Уведомления',
         'statistics': 'Аналитика'
       },
@@ -220,6 +221,8 @@ export default {
     // },
    selectedTitle() {
       // Находим соответствующий заголовок в typeToTitleMap по ключу title
+      console.log('[MainBodySettings] selectedTitle - Находим соответствующий заголовок по ключу title', this.title);
+      
       return this.typeToTitleMap[this.title];
     },
     otherTitles() {
@@ -247,6 +250,7 @@ export default {
     // });
     this.initialize();
     this.schedules = this.loadConfigDataFromStore('schedules');
+    console.log('[MainBodySettings] CREATED - создаем компонент с selectedTitle', this.selectedTitle);
     this.setComponentParam(this.selectedTitle);
   },
   watch: {
@@ -254,6 +258,7 @@ export default {
       if (newTitle !== oldTitle) {
         //console.log('[MainBodySettings] WATCH - this.title:', newTitle);
         this.loadCurrentSettings();
+        console.log('[MainBodySettings] WATCH - вызываем setComponentParam с selectedTitle', this.selectedTitle);
         this.setComponentParam(this.selectedTitle);
       }
     },
@@ -279,7 +284,15 @@ export default {
       deep: true,
       immediate: false
     },
-
+    setting_Type: {
+      handler(newVal) {
+        if (newVal && newVal !== this.title) {
+          this.title = newVal;
+          this.SET_TYPE_SETTINGS_ITEM(newVal);
+        }
+      },
+      immediate: true
+    },
   },
   mounted() {
     document.addEventListener('click', this.handleClickOutside);
@@ -353,22 +366,23 @@ export default {
       this.$emit('getComponentData', message);
     },
 
-    setComponentParam (selectedTitle) {
+    setComponentParam (selectTitle) {
+      console.log('[MainBodySettings] - setComponentParam - Получили selectTitle:', selectTitle);
       this.updateSettingsData({ field: 'type', value: 'post' });
-      if(selectedTitle === 'Расписание') {
+      if(selectTitle === 'Расписание') {
         this.updatePayloadData({ config: 'schedules'});
 
         this.loadConfigDataFromStore('schedules');
-      } else if (selectedTitle === 'Уведомления') {
+      } else if (selectTitle === 'Уведомления') {
         this.updatePayloadData({ config: 'notifications'});
         this.loadConfigDataFromStore('notifications');
         console.log('[MainBodySettings] - setComponentParam - Пишем код для загрузки конфигурации Уведомлений и устанавливаем соответствующие ключи в state settingsData');
-      } else if (selectedTitle === 'Аналитика') {
+      } else if (selectTitle === 'Аналитика') {
         this.updatePayloadData({ config: 'statistics'});
         this.loadConfigDataFromStore('statistics');
         console.log('[MainBodySettings] - setComponentParam - Пишем код для загрузки конфигурации Аналитики и устанавливаем соответствующие ключи в state settingsData');
       } else {
-        console.log('[MainBodySettings] - setComponentParam - Пишем обработку для неизвестного selectedTitle', selectedTitle);
+        console.log('[MainBodySettings] - setComponentParam - Пишем обработку для неизвестного selectTitle', selectTitle);
       }
     },
 

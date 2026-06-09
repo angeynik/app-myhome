@@ -299,19 +299,9 @@
     </div>
 
     <footer class="footer"> 
-      <MainFooter v-show="!showFooterSetpoint"/>
-      <MainSetpoint
-        ref="mainSetpoint" 
-        v-if="showFooterSetpoint"
-        :setPoint="setpoint" 
-        :request="request"
-        :roomKey="selectedItemData.roomKey"
-        :setpointKey="selectedItemData.setpointKey"
-        :valueTitle="selectedItemData.valueTitle"
-        @eventsMainSetpoint="editValueMainSetpoint"
-        @eventsSchedule="editValueMainSetpoint"
-      />
+      <MainFooter/>
     </footer>
+    
     <InputDialog
       :visible="manualInputDialog.visible"
       :title="manualInputDialog.title"
@@ -321,6 +311,24 @@
       @cancel="closeManualInputDialog"
     />
   </div>
+  <!-- Плавающий блок MainSetpoint через Teleport -->
+  <Teleport to="body">
+    <div 
+      class="setpoint-overlay" 
+      v-if="showFooterSetpoint"
+    >
+      <MainSetpoint
+        ref="mainSetpoint"
+        :setPoint="setpoint"
+        :request="request"
+        :roomKey="selectedItemData.roomKey"
+        :setpointKey="selectedItemData.setpointKey"
+        :valueTitle="selectedItemData.valueTitle"
+        @eventsMainSetpoint="editValueMainSetpoint"
+        @eventsSchedule="editValueMainSetpoint"
+      />
+    </div>
+  </Teleport>
 </template>
 
 <script>
@@ -363,6 +371,7 @@ export default {
         type: 'number',    // 'number' или 'time'
         callback: null,    // функция, которая будет вызвана с новым значением
       },
+      swipeThreshold: 50,
     }; 
   },
   async created() {
@@ -789,7 +798,7 @@ export default {
         
         this.selectedItemData = {
           roomKey: this.$store.state.setpointsManager?.settingsData?.payload?.room,
-          setpointKey: this.$store.state.setpointsManager?.settingsData?.payload?.param,
+          setpointKey: event.updateState.setpointKey || this.$store.state.setpointsManager?.settingsData?.payload?.param,
           valueTitle: event.updateState.title,
         };
         console.log('[DashBoard] - getComponentData - Компонент MainSetpoint показан', this.selectedItemData);
@@ -885,8 +894,8 @@ export default {
 
       handleSwipe(event){
         console.log('[DashBoard] - handleSwipe - Получены данные ', event);
-        if (event > 80) {console.log('[DashBoard] - handleSwipe - Смещение вперед'); this.sortingBack();}
-        if (event < -80) {console.log('[DashBoard] - handleSwipe - Смещение назад'); this.sortingForvard();}
+        if (event > this.swipeThreshold) {console.log('[DashBoard] - handleSwipe - Смещение вперед'); this.sortingBack();}
+        if (event < -(this.swipeThreshold)) {console.log('[DashBoard] - handleSwipe - Смещение назад'); this.sortingForvard();}
       },
 
   }

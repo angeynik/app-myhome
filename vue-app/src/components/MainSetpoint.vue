@@ -2,9 +2,6 @@
 <template>
   
     <div class="setpointBlock" 
-    @touchstart="handleTouchStart" 
-    @touchend="handleTouchEnd('setpointBlock')"
-    @touchmove="handleTouchMove"
     >
     <svg display="none"> // Задаем код для визуализации области скрола для изменения уставки
         <symbol id="iconTelegram" viewBox="0 0 24 24">
@@ -74,9 +71,13 @@
   
     </svg>
  
-    <div class="setpointValue">
+    <div class="setpointValue"
+          @touchstart="handleTouchStart" 
+          @touchend="handleTouchEnd('setpointBlock')"
+          @touchmove="handleTouchMove"
+          >
         <svg class="setpointValue_icon"
-        @click="clickChangeSetpoint(-50)"
+          @click="clickChangeSetpoint(-50)"
         >
           <use href="#setpointSelector"></use>
         </svg>

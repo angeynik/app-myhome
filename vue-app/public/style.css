@@ -350,13 +350,13 @@
   padding: 1vw 1.5vw 0 1.5vw;
 }
 
-.setpointValue_number {
+/* .setpointValue_number {
   min-width: 64px;
   height: 100%;
   display: flex;
   justify-content: center;
   align-self: center;
-}
+} */
 .setpointValue_icon {
   height: 6vh;
   width: 38vw;
