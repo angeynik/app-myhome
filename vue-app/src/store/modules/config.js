@@ -434,30 +434,53 @@ export default {
         throw error;
       }
     },
-    handleSetpointsSet ({ commit }, config) {
-      //console.groupCollapsed('[Config] - handleSetpointsSet');
-      //console.log('[Config] - handleSetpointsSet - Обновляем список параметров');
-      try {
-      const paramsSet = new Set();
-      Object.values(config).forEach(room => {
-        if (room.setpoints) {
-          Object.keys(room.setpoints).forEach(k => {
-            // Извлекаем префикс (часть до цифр)
-            const prefix = k.replace(/\d+$/, '');
-            paramsSet.add(prefix);
-          });
-        }
-      });
-      const params = Array.from(paramsSet);
-      commit('SET_ALL_SETPOINTS', params);
-      logger.dev('[Config] - handleSetpointsSet Обновлен список доступных параметров params: ', params);
-      //console.log('[Config] - handleSetpointsSet Обновлен список доступных параметров params: ', params);
-      } catch (error) {
-        logger.error('[Config] - handleSetpointsSet - Ошибка обновления списка параметров:', error);
-        //console.error('[Config] - handleSetpointsSet - Ошибка обновления списка параметров:', error);
-        throw error;
+    // handleSetpointsSet ({ commit }, config) {
+    //   //console.groupCollapsed('[Config] - handleSetpointsSet');
+    //   //console.log('[Config] - handleSetpointsSet - Обновляем список параметров');
+    //   try {
+    //   const paramsSet = new Set();
+    //   Object.values(config).forEach(room => {
+    //     if (room.setpoints) {
+    //       Object.keys(room.setpoints).forEach(k => {
+    //         // Извлекаем префикс (часть до цифр)
+    //         const prefix = k.replace(/\d+$/, '');
+    //         paramsSet.add(prefix);
+    //       });
+    //     }
+    //   });
+    //   const params = Array.from(paramsSet);
+    //   commit('SET_ALL_SETPOINTS', params);
+    //   logger.dev('[Config] - handleSetpointsSet Обновлен список доступных параметров params: ', params);
+    //   //console.log('[Config] - handleSetpointsSet Обновлен список доступных параметров params: ', params);
+    //   } catch (error) {
+    //     logger.error('[Config] - handleSetpointsSet - Ошибка обновления списка параметров:', error);
+    //     //console.error('[Config] - handleSetpointsSet - Ошибка обновления списка параметров:', error);
+    //     throw error;
+    //   }
+    // },
+    handleSetpointsSet({ commit }, config) {
+  try {
+    const setpointsSet = new Set();
+    Object.values(config).forEach(room => {
+      if (room.setpoints) {
+        Object.keys(room.setpoints).forEach(k => {
+          // Извлекаем префикс (часть до цифр)
+          const prefix = k.replace(/\d+$/, '');
+          // Добавляем только если начинается с 's' (уставки)
+          if (prefix.startsWith('s')) {
+            setpointsSet.add(prefix);
+          }
+        });
       }
-    },
+    });
+    const setpoints = Array.from(setpointsSet);
+    commit('SET_ALL_SETPOINTS', setpoints);
+    logger.dev('[Config] - handleSetpointsSet Обновлен список уставок: ', setpoints);
+  } catch (error) {
+    logger.error('[Config] - handleSetpointsSet - Ошибка обновления списка уставок:', error);
+    throw error;
+  }
+},
     handleDevicesSet({ commit }, config) {
       //console.log('[Config] - handleDevicesSet - Обновляем список устройств');
       try {
@@ -611,59 +634,108 @@ export default {
         throw error;
       }
     },
-    async ensureSortingKeys({ state, dispatch, rootGetters }) {
-      //console.groupCollapsed('[config] - ensureSortingKeys');
-      logger.dev('Проверяем наличие ключей сортировки');
-      //console.log('Проверяем наличие ключей сортировки');
+    // async ensureSortingKeys({ state, dispatch, rootGetters }) {
+    //   //console.groupCollapsed('[config] - ensureSortingKeys');
+    //   logger.dev('Проверяем наличие ключей сортировки');
+    //   //console.log('Проверяем наличие ключей сортировки');
       
-      const processKey = async (type, stateArrayName, getterName, storageKey) => {
-        const key = rootGetters[getterName] || localStorage.getItem(storageKey);
-        const arrayItems = state[stateArrayName];
+    //   const processKey = async (type, stateArrayName, getterName, storageKey) => {
+    //     const key = rootGetters[getterName] || localStorage.getItem(storageKey);
+    //     const arrayItems = state[stateArrayName];
         
-        // Проверка валидности ключа
-        if (key && !arrayItems.includes(key)) {
-          logger.error(`[config] - ensureSortingKeys - ${storageKey} невалиден, сбрасываем`, key, arrayItems);
-          //console.warn(`[config] - ensureSortingKeys - ${storageKey} невалиден, сбрасываем`);
-          localStorage.removeItem(storageKey);
-          return null;
-        }
+    //     // Проверка валидности ключа
+    //     if (key && !arrayItems.includes(key)) {
+    //       logger.error(`[config] - ensureSortingKeys - ${storageKey} невалиден, сбрасываем`, key, arrayItems);
+    //       //console.warn(`[config] - ensureSortingKeys - ${storageKey} невалиден, сбрасываем`);
+    //       localStorage.removeItem(storageKey);
+    //       return null;
+    //     }
         
-        // Установка первого элемента если ключа нет
-        if (!key && arrayItems.length > 0) {
-          const newKey = arrayItems[0];
-          localStorage.setItem(storageKey, newKey);
-          logger.dev(`[config] - Установлен первый ${type}:`, newKey);
-          //console.log(`[config] - Установлен первый ${type}:`, newKey);
-          return newKey;
-        }
+    //     // Установка первого элемента если ключа нет
+    //     if (!key && arrayItems.length > 0) {
+    //       const newKey = arrayItems[0];
+    //       localStorage.setItem(storageKey, newKey);
+    //       logger.dev(`[config] - Установлен первый ${type}:`, newKey);
+    //       //console.log(`[config] - Установлен первый ${type}:`, newKey);
+    //       return newKey;
+    //     }
         
-        return key;
-      };
+    //     return key;
+    //   };
 
-      // Обработка всех типов ключей
-      const keyConfigs = [
-        { type: 'rooms', stateArray: 'allRooms', getter: 'roomKey', storage: 'roomKey', specialAction: 'updateRoomsTitle' },
-        { type: 'params', stateArray: 'allParams', getter: 'paramKey', storage: 'paramKey' },
-        { type: 'devices', stateArray: 'allDevices', getter: 'deviceKey', storage: 'deviceKey' },
-        { type: 'setpoints', stateArray: 'allSetpoints', getter: 'setpointKey', storage: 'setpointKey' }
-      ];
+    //   // Обработка всех типов ключей
+    //   const keyConfigs = [
+    //     { type: 'rooms', stateArray: 'allRooms', getter: 'roomKey', storage: 'roomKey', specialAction: 'updateRoomsTitle' },
+    //     { type: 'params', stateArray: 'allParams', getter: 'paramKey', storage: 'paramKey' },
+    //     { type: 'devices', stateArray: 'allDevices', getter: 'deviceKey', storage: 'deviceKey' },
+    //     { type: 'setpoints', stateArray: 'allSetpoints', getter: 'setpointKey', storage: 'setpointKey' }
+    //   ];
 
-      for (const config of keyConfigs) {
-        const key = await processKey(config.type, config.stateArray, config.getter, config.storage);
+    //   for (const config of keyConfigs) {
+    //     const key = await processKey(config.type, config.stateArray, config.getter, config.storage);
         
-        if (key) {
-          await dispatch('sortParams/updateSortKey', { 
-            type: config.type, 
-            newKey: key 
-          }, { root: true });
+    //     if (key) {
+    //       await dispatch('sortParams/updateSortKey', { 
+    //         type: config.type, 
+    //         newKey: key 
+    //       }, { root: true });
           
-          // Специальное действие для комнат
-          if (config.specialAction) {
-            await dispatch(`sortParams/${config.specialAction}`, key, { root: true });
-          }
-        }
-      }
-    },
+    //       // Специальное действие для комнат
+    //       if (config.specialAction) {
+    //         await dispatch(`sortParams/${config.specialAction}`, key, { root: true });
+    //       }
+    //     }
+    //   }
+    // },
+// config.js, action ensureSortingKeys
+async ensureSortingKeys({ state, dispatch, rootGetters }) {
+  logger.dev('Проверяем наличие ключей сортировки');
+
+  const processKey = async (type, stateArrayName, getterName, storageKey, shouldStripNumbers = false) => {
+    let key = rootGetters[getterName];
+    let storedKey = localStorage.getItem(storageKey);
+    let currentKey = key || storedKey;
+
+    if (currentKey && shouldStripNumbers) {
+      currentKey = currentKey.replace(/\d+$/, '');
+    }
+
+    const arrayItems = state[stateArrayName] || [];
+
+    // Невалидный ключ – сбрасываем
+    if (currentKey && !arrayItems.includes(currentKey)) {
+      logger.warn(`[config] - ensureSortingKeys - ${storageKey} невалиден (${currentKey}), сбрасываем`);
+      localStorage.removeItem(storageKey);
+      await dispatch('sortParams/updateSortKey', { type, newKey: null }, { root: true });
+      currentKey = null;
+    }
+
+    // Если ключа нет, берём первый из массива
+    if (!currentKey && arrayItems.length > 0) {
+      currentKey = arrayItems[0];
+      logger.dev(`[config] - Установлен первый ${type}:`, currentKey);
+      await dispatch('sortParams/updateSortKey', { type, newKey: currentKey }, { root: true });
+    }
+
+    return currentKey;
+  };
+
+  const keyConfigs = [
+    { type: 'rooms', stateArray: 'allRooms', getter: 'roomKey', storage: 'roomKey', shouldStripNumbers: false, specialAction: 'updateRoomsTitle' },
+    { type: 'params', stateArray: 'allParams', getter: 'paramKey', storage: 'paramKey', shouldStripNumbers: true },
+    { type: 'devices', stateArray: 'allDevices', getter: 'deviceKey', storage: 'deviceKey', shouldStripNumbers: false },
+    { type: 'setpoints', stateArray: 'allSetpoints', getter: 'setpointKey', storage: 'setpointKey', shouldStripNumbers: true }
+  ];
+
+  for (const cfg of keyConfigs) {
+    const key = await processKey(cfg.type, cfg.stateArray, cfg.getter, cfg.storage, cfg.shouldStripNumbers);
+    if (key && cfg.specialAction) {
+      await dispatch(`sortParams/${cfg.specialAction}`, key, { root: true });
+    }
+  }
+},
+
+
     async updateSetpointServer( {rootGetters}) {
       const settingsData = rootGetters['getSetpointsManager']?.settingsData;
         logger.info('[config] - updateSetpointServer - Готовим уставку для отправки на сервер');
@@ -689,6 +761,14 @@ export default {
       //console.log(`[config] - clearKey - key: ${clearKey}`);
       return clearKey;
     },
+    // clearKey_a: () => (key) => {
+    //   if (!key) return '';
+    //   if (key[0] === 'a') {
+    //     // aSwitch01 → sSwitch01
+    //     return 's' + key.slice(1);
+    //   }
+    //   return '';
+    // },
     checkLimitBeforeAdd({ rootState, rootGetters }, configType) {
       console.log('[config] - checkLimitBeforeAdd - Для ', configType);
       // configType ожидается 'schedules', 'notifications', 'statistics'
@@ -739,6 +819,14 @@ export default {
       logger.dev(`[config] - clearKeySync - key: ${clearKey}`);
       //console.log(`[config] - clearKeySync - key: ${clearKey}`);
       return clearKey;
+    },
+    clearKey_a: () => (key) => {
+      if (!key) return '';
+      if (key[0] === 'a') {
+        // aSwitch01 → sSwitch01
+        return 's' + key.slice(1);
+      }
+      return '';
     },
     getConfig: state => name => state.configs[name] || {},
     isLoading: state => state.loading,

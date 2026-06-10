@@ -89,6 +89,9 @@ export default {
       } else {
         logger.error('[APP] - mounted - Недостаточно данных для автоматического входа:', user);
         //console.log('Недостаточно данных для автоматического входа:', user);
+        if (this.$route.meta.requiresAuth !== false) {
+          this.$router.push('/login');
+        }
       }
 
       // 4. После успешного подключения загружаем конфигурацию

@@ -15,8 +15,8 @@ function getSensorTitle(key) {
     'dPress': 'Давление',
     'dPower': 'Потребление',
     'dMove': 'Движение',
-    'dFire': 'Контроль возгорания',
-    'dLeak': 'Контроль утечек',
+    'dFire': 'Возгорания',
+    'dLeak': 'Утечеки',
     'aLamp': 'Освещение',
     'aFan': 'Вентиляция',
     'aPump': 'Насос',
@@ -24,13 +24,11 @@ function getSensorTitle(key) {
     'aRelay': 'Реле',
     'dFrequency': 'Частота',
     'dVoltage': 'Напряжение',
-    'dСurrent_a': 'Ток Фаза',
-    'dСurrent_b': 'Ток Ноль',
-    'dEnergy_a': 'Потребление Фаза',
-    'dEnergy_b': 'Потребление Ноль',
+    'dEnergy': 'Потребление',
     'dСurrent': 'Ток',
     'aActuator': 'Актуатор',
     'aSwitch': 'Переключатель',
+    'sSwitch': 'Переключатель',
     'aController': 'Контроллер',
     'dBat': 'Батарея',
     'sTemp': 'Уставка температуры',
@@ -42,7 +40,6 @@ function getSensorTitle(key) {
 }
 function getUnit(key) {
   if (!key) return '';
-
         if (key.includes('Temp')) return '°C';
         if (key.includes('Hum')) return '%';
         if (key.includes('Press')) return 'hPa';
@@ -52,9 +49,9 @@ function getUnit(key) {
         if (key.includes('Voltage')) return 'V';
         if (key.includes('Frequency')) return 'Hz';
         if (key.includes('Energy')) return 'kWh';
+        if (key.includes('Switch')) return '';
         return '';
 }
-
 
 export default {
   namespaced: true,
@@ -132,77 +129,154 @@ export default {
  
   actions: {
   ...mapActions(['updateSettingsData', 'updatePayloadData', 'updateLimitsData', 'updateViewData']),
-  updateSortKey({ commit, dispatch}, { type, newKey }) {
-    //console.groupCollapsed('[sortParams] - updateSortKey');
-    logger.dev(`[sortParams] - updateSortKey - Обновляем ключ для ${type}:`, newKey);
-    //console.log(`[sortParams] - updateSortKey - Обновляем ключ для ${type}:`, newKey);
-    
-    // Проверка на валидность ключа
-    if (!newKey) {
-      logger.error(`[sortParams] - updateSortKey - Ключ для ${type} не определен:`, newKey);
-      return;
+    // sortParams.js (actions)
+    // updateSortKey({ commit, dispatch}, { type, newKey }) {
+    //   //console.groupCollapsed('[sortParams] - updateSortKey');
+    //   logger.dev(`[sortParams] - updateSortKey - Обновляем ключ для ${type}:`, newKey);
+    //   //console.log(`[sortParams] - updateSortKey - Обновляем ключ для ${type}:`, newKey);
+      
+    //   // Проверка на валидность ключа
+    //   if (!newKey) {
+    //     logger.error(`[sortParams] - updateSortKey - Ключ для ${type} не определен:`, newKey);
+    //     return;
+    //   }
+
+    //   try {
+    //     // Обработка в зависимости от типа
+    //     switch (type) {
+    //       case 'rooms': {
+    //         // Обновляем ключ комнаты
+    //         commit('SET_ROOM_KEY', newKey, { root: true });
+    //         localStorage.setItem('roomKey', newKey);
+    //         //console.log(`[sortParams] - updateSortKey - Сохраняем в localStorage: roomKey:${newKey}`);
+            
+    //         // Выполняем дополнительное действие для комнат
+    //         logger.dev(`[sortParams] - updateSortKey - Выполняем дополнительное действие: updateRoomsTitle : ${newKey}`);
+    //         //console.log(`[sortParams] - updateSortKey - Выполняем дополнительное действие: updateRoomsTitle : ${newKey}`);
+    //         dispatch('updateRoomsTitle', newKey);
+    //         break;
+    //       }
+    //       case 'params': {
+    //         const cleanKey = newKey.replace(/\d+$/, '');
+    //         //console.log(`[sortParams] - updateSortKey - cleanKey: ${cleanKey}`);
+    //         // Обновляем ключ параметра
+    //         commit('SET_PARAM_KEY', cleanKey, { root: true });
+            
+    //         // Обновляем заголовок параметра
+    //         const paramTitle = getSensorTitle(cleanKey);
+    //         if (paramTitle !== undefined) {
+    //           commit('SET_PARAM_TITLE', paramTitle);
+    //         }
+    //         break;
+    //       }
+    //       case 'devices': {
+    //         // Обновляем ключ устройства
+    //         commit('SET_DEVICE_KEY', newKey, { root: true });
+    //         localStorage.setItem('deviceKey', newKey);
+    //         //console.log(`[sortParams] - updateSortKey - Сохраняем в localStorage: deviceKey:${newKey}`);
+    //         break;
+    //       }
+    //       case 'setpoints': {
+    //         // Обновляем ключ уставки
+    //         commit('SET_SETPOINT_KEY', newKey, { root: true });
+    //         localStorage.setItem('setpointKey', newKey);
+    //         //console.log(`[sortParams] - updateSortKey - Сохраняем в localStorage: setpointKey:${newKey}`);
+    //         break;
+    //       }
+    //       default:
+    //         logger.error(`[sortParams] - updateSortKey - Неизвестный тип: ${type}`);
+    //         console.error(`[sortParams] - updateSortKey - Неизвестный тип: ${type}`);
+    //         return;
+    //     }
+    //     commit('SET_FORCE_UPDATE', Date.now());
+    //     logger.info(`[sortParams] - updateSortKey - Ключ ${type} обновлен:`, newKey);
+    //     //console.log(`[sortParams] - updateSortKey - Ключ ${type} обновлен:`, newKey);
+
+    //   } catch (error) {
+    //     logger.error(`[sortParams] - updateSortKey - Ошибка при обновлении ${type}:`, error);
+    //   }
+    //   //console.groupEnd();
+    // },
+    updateSortKey({ commit, dispatch }, { type, newKey }) {
+  // ----- Обработка сброса ключа -----
+  if (!newKey) {
+    switch (type) {
+      case 'rooms':
+        commit('SET_ROOM_KEY', null, { root: true });
+        localStorage.removeItem('roomKey');
+        break;
+      case 'params':
+        commit('SET_PARAM_KEY', null, { root: true });
+        localStorage.removeItem('paramKey');
+        break;
+      case 'devices':
+        commit('SET_DEVICE_KEY', null, { root: true });
+        localStorage.removeItem('deviceKey');
+        break;
+      case 'setpoints':
+        commit('SET_SETPOINT_KEY', null, { root: true });
+        localStorage.removeItem('setpointKey');
+        break;
+      default:
+        logger.error(`[sortParams] updateSortKey - неизвестный тип для сброса: ${type}`);
+        return;
     }
+    commit('SET_FORCE_UPDATE', Date.now());
+    return;
+  }
 
-    try {
-      // Обработка в зависимости от типа
-      switch (type) {
-        case 'rooms': {
-          // Обновляем ключ комнаты
-          commit('SET_ROOM_KEY', newKey, { root: true });
-          localStorage.setItem('roomKey', newKey);
-          //console.log(`[sortParams] - updateSortKey - Сохраняем в localStorage: roomKey:${newKey}`);
-          
-          // Выполняем дополнительное действие для комнат
-          logger.dev(`[sortParams] - updateSortKey - Выполняем дополнительное действие: updateRoomsTitle : ${newKey}`);
-          //console.log(`[sortParams] - updateSortKey - Выполняем дополнительное действие: updateRoomsTitle : ${newKey}`);
-          dispatch('updateRoomsTitle', newKey);
-          break;
-        }
+  // ----- Обновление ключа -----
+  logger.dev(`[sortParams] updateSortKey - Обновляем ключ для ${type}:`, newKey);
 
-        case 'params': {
-          const cleanKey = newKey.replace(/\d+$/, '');
-          //console.log(`[sortParams] - updateSortKey - cleanKey: ${cleanKey}`);
-          // Обновляем ключ параметра
-          commit('SET_PARAM_KEY', cleanKey, { root: true });
-          
-          // Обновляем заголовок параметра
-          const paramTitle = getSensorTitle(cleanKey);
-          if (paramTitle !== undefined) {
-            commit('SET_PARAM_TITLE', paramTitle);
-          }
-          break;
-        }
+  // Проверка на валидность ключа
+  if (!newKey) {
+    logger.error(`[sortParams] updateSortKey - Ключ для ${type} не определен:`, newKey);
+    return;
+  }
 
-        case 'devices': {
-          // Обновляем ключ устройства
-          commit('SET_DEVICE_KEY', newKey, { root: true });
-          localStorage.setItem('deviceKey', newKey);
-          //console.log(`[sortParams] - updateSortKey - Сохраняем в localStorage: deviceKey:${newKey}`);
-          break;
-        }
-
-        case 'setpoints': {
-          // Обновляем ключ уставки
-          commit('SET_SETPOINT_KEY', newKey, { root: true });
-          localStorage.setItem('setpointKey', newKey);
-          //console.log(`[sortParams] - updateSortKey - Сохраняем в localStorage: setpointKey:${newKey}`);
-          break;
-        }
-
-        default:
-          logger.error(`[sortParams] - updateSortKey - Неизвестный тип: ${type}`);
-          console.error(`[sortParams] - updateSortKey - Неизвестный тип: ${type}`);
-          return;
+  try {
+    switch (type) {
+      case 'rooms': {
+        // Обновляем ключ комнаты
+        commit('SET_ROOM_KEY', newKey, { root: true });
+        localStorage.setItem('roomKey', newKey);
+        // Дополнительное действие для комнат
+        dispatch('updateRoomsTitle', newKey);
+        break;
       }
-      commit('SET_FORCE_UPDATE', Date.now());
-      logger.info(`[sortParams] - updateSortKey - Ключ ${type} обновлен:`, newKey);
-      //console.log(`[sortParams] - updateSortKey - Ключ ${type} обновлен:`, newKey);
-
-    } catch (error) {
-      logger.error(`[sortParams] - updateSortKey - Ошибка при обновлении ${type}:`, error);
+      case 'params': {
+        // Очищаем ключ от цифр в конце (например, dSwitch03 → dSwitch)
+        const cleanKey = newKey.replace(/\d+$/, '');
+        commit('SET_PARAM_KEY', cleanKey, { root: true });
+        // Обновляем заголовок параметра
+        const paramTitle = getSensorTitle(cleanKey);
+        if (paramTitle) commit('SET_PARAM_TITLE', paramTitle);
+        break;
+      }
+      case 'devices': {
+        commit('SET_DEVICE_KEY', newKey, { root: true });
+        localStorage.setItem('deviceKey', newKey);
+        break;
+      }
+      case 'setpoints': {
+        // Очищаем ключ от цифр в конце (например, sSwitch01 → sSwitch)
+        const cleanKey = newKey.replace(/\d+$/, '');
+        commit('SET_SETPOINT_KEY', cleanKey, { root: true });
+        localStorage.setItem('setpointKey', cleanKey);
+        break;
+      }
+      default:
+        logger.error(`[sortParams] updateSortKey - Неизвестный тип: ${type}`);
+        return;
     }
-    //console.groupEnd();
-  },
+    commit('SET_FORCE_UPDATE', Date.now());
+    logger.info(`[sortParams] updateSortKey - Ключ ${type} обновлен:`, newKey);
+  } catch (error) {
+    logger.error(`[sortParams] updateSortKey - Ошибка при обновлении ${type}:`, error);
+  }
+},
+
+
     updateRoomsTitle({ commit, rootGetters }, newRoomKey) {
       //console.groupCollapsed('[sortParams] - updateRoomsTitle');
       logger.dev(`[sortParams] - updateRoomsTitle`, newRoomKey);
@@ -224,13 +298,10 @@ export default {
       //console.log('[sortParams] - updateRoomsTitle - Ключ roomTitle обновлен', newRoom?.title, 'новый roomID', newRoom?.id);
       //console.groupEnd('[sortParams] - updateRoomsTitle');
     },
-
     async setSortType({ commit, state }, type) {
       if (state.sortType === type) return;
       commit('SET_SORT_TYPE', type);
     },
-
-
     setLimits({ rootGetters, dispatch, commit }, params) {
       console.groupCollapsed('[sortParams] - setLimits - Начало, params:', params);
       logger.info(`[sortParams] - setLimits - Параметр -`, params);
@@ -307,7 +378,6 @@ export default {
       console.groupEnd();
 
     },
-
     switchSortKey({ dispatch, rootGetters }, { sortingType, direction = 'prev' }) {
       console.groupCollapsed(`[sortParams] - switchSortKey`);
       logger.info(`[sortParams] - switchSortKey - Переключение ${direction} для [${sortingType}]`);
@@ -376,7 +446,7 @@ export default {
         }
 
         const newKey = array[newIndex];
-        console.log(` --- 459 ---  [sortParams] - switchSortKey - Новый ключ: ${newKey} Тип сортировки: ${sortingType}`);
+        console.log(` [sortParams] - switchSortKey - Новый ключ: ${newKey} Тип сортировки: ${sortingType}`);
         dispatch('updateSortKey', { type: sortingType, newKey });
         logger.info(`[sortParams] - switchSortKey - Переключение (${direction}): ${key} -> ${newKey}`);
         console.log(`[sortParams] - switchSortKey - Переключение (${direction}): ${key} -> ${newKey}`);

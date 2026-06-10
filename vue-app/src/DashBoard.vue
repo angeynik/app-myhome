@@ -581,7 +581,7 @@ export default {
     console.groupCollapsed('[DashBoard] - editValueMainSetpoint');
     console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения Уставки :', eventData);
     const settingsData = this.$store.state.setpointsManager?.settingsData;
-    //console.log('[DashBoard] - editValueMainSetpoint - Текущие settingsData:', settingsData);
+    console.log('[DashBoard] - editValueMainSetpoint - Текущие settingsData:', settingsData);
 
     let dID = this.dID;
     let roomKey = this.getRoomKey;
@@ -609,6 +609,8 @@ export default {
         value = Math.round(parseFloat(eventData.updateState.value) * 100) / 100;
       } else if (valueTitle === 'frequency') {
         value = parseInt(eventData.updateState.value, 10);
+      } else if (typeof value === 'boolean') {
+        console.log ('[DashBoard] - editValueMainSetpoint - Получили булевое значение', value);
       } else {
         //value = parseFloat(eventData.updateState.value).toFixed(1);
         value = Math.round(parseFloat(eventData.updateState.value) * 10) / 10;

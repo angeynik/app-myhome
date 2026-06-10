@@ -82,11 +82,14 @@
           <use href="#setpointSelector"></use>
         </svg>
 
-      <div class="setpointValue_number"> 
-      <!-- <h1> {{ newSetPointValue }} </h1> -->
+      <!-- <div class="setpointValue_number"> 
         <h1 v-if="newSetPointValue !== null">{{ newSetPointValue }}</h1>
         <h1 v-else> NONE </h1>
         <span v-if="unit && newSetPointValue !== null" class="unit">{{ unit }}</span>
+      </div> -->
+      <div class="setpointValue_number" @click="toggleBooleanValue">
+        <h1>{{ displayValue }}</h1>
+        <span v-if="!isBoolean && unit" class="unit">{{ unit }}</span>
       </div>
 
         <svg class="setpointValue_icon"
@@ -115,19 +118,52 @@
         startX: 0,
         isTouching: false,
         newSetPointValue: this.setPoint,
+        valueType: null,
         inactivityTimer: null,
         valueTimer: 6000,
       }
     },
+    props: {   // Переменные полученные в компонент
+      // setPoint: Number,
+      setPoint: {
+        required: true,
+        validator: (value) => typeof value === 'number' || typeof value === 'boolean' || value === null || value === undefined
+      },
+      request: String,
+      roomKey: String,
+      setpointKey: String,
+      valueTitle: String,
+    },
     watch: {
-      setPoint(newSetPoint) {
-        this.resetInactivityTimer();
-        //logger.dev('[MainSetpoint] - setPoint - Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
-        //console.log('Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
-        //this.newSetPointValue = parseFloat(newSetPoint).toFixed(1);
-        this.newSetPointValue = newSetPoint;
-        logger.dev('[MainSetpoint] - setPoint - Обновили newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
-        //console.log('[MainSetpoint] - setPoint - Преобразовали newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
+      // setPoint(newSetPoint) {
+      //   this.resetInactivityTimer();
+      //   //logger.dev('[MainSetpoint] - setPoint - Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
+      //   //console.log('Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
+      //   //this.newSetPointValue = parseFloat(newSetPoint).toFixed(1);
+      //   this.newSetPointValue = newSetPoint;
+      //   logger.dev('[MainSetpoint] - setPoint - Обновили newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
+      //   //console.log('[MainSetpoint] - setPoint - Преобразовали newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
+      // },
+      setPoint: {
+        immediate: true,
+        handler(newVal) {
+          this.resetInactivityTimer();
+          if (typeof newVal === 'boolean') {
+            this.newSetPointValue = newVal;
+          } else if (typeof newVal === 'number' && !isNaN(newVal)) {
+            this.newSetPointValue = newVal;
+          } else if (typeof newVal === 'string') {
+            if (newVal === 'ON') this.newSetPointValue = true;
+            else if (newVal === 'OFF') this.newSetPointValue = false;
+            else {
+              const num = parseFloat(newVal);
+              this.newSetPointValue = isNaN(num) ? null : num;
+            }
+          } else {
+            this.newSetPointValue = null;
+          }
+          logger.dev('[MainSetpoint] watch setPoint -> localValue:', this.newSetPointValue);
+        },
       },
       '$store.state.settingsData.limits': {
         handler(newLimits) {
@@ -138,6 +174,19 @@
       }
     },
     computed: {
+      isBoolean() {
+        // if (typeof this.newSetPointValue === 'boolean' || this.newSetPointValue === 'OFF' || this.newSetPointValue === "ON"){
+        //   return true;
+        // }
+        // return false;
+        return typeof this.newSetPointValue === 'boolean';
+      },
+      displayValue() {
+        console.log('[MainSetpoint] - displayValue Определяем значение для пользователя для', this.newSetPointValue);
+        if (this.newSetPointValue === null || this.newSetPointValue === undefined) return '—';
+        if (this.isBoolean) return this.newSetPointValue ? 'ON' : 'OFF';
+        return this.newSetPointValue;
+      },
       limHigh() {
         return this.$store.state.settingsData?.limits?.limHigh ?? 36;
       },
@@ -151,6 +200,7 @@
     created() {
       this.debouncedCalculateSetpoint = this.debounce(this.calculateSetpoint, 16);
       //this.debouncedUpdatePermitions = this.debounce(this.sendEmitMessage, 2000);
+      // if (this.isBoolean) this.valueType = true;
       console.log('[MainSetpoint] - created', {
         setPoint: this.setPoint,
         request: this.request,
@@ -167,13 +217,7 @@
       this.clearInactivityTimer();
     },
       
-    props: {   // Переменные полученные в компонент
-      setPoint: Number,
-      request: String,
-      roomKey: String,
-      setpointKey: String,
-      valueTitle: String,
-    },
+
     methods: {
       ...mapActions(['updateSettingsData']),
       sendEmitMessage(event, value) {
@@ -238,20 +282,33 @@
     calculateSetpoint(value, step, min, max) {
       this.resetInactivityTimer();
       logger.dev('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
-      //console.log('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
+      console.log('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
         
         let newValue, currentSetPoint;
-        if (this.setPoint === null || this.setPoint === undefined) {
-          currentSetPoint = parseFloat(min);
-        } else {
-          currentSetPoint = parseFloat(this.setPoint);
+        console.log('[MainSetpoint] - calculateSetpoint this.setPoint',this.setPoint);
+        if (!this.isBoolean) {
+          console.log('[MainSetpoint] - calculateSetpoint Определяем числовое значение');
+          if (this.setPoint === null || this.setPoint === undefined) {
+            currentSetPoint = parseFloat(min);
+          } else {
+            currentSetPoint = parseFloat(this.setPoint);
+          }
         }
+        currentSetPoint = this.setPoint;
+      if (this.isBoolean) {
+        newValue = !this.newSetPointValue;
+        this.newSetPointValue = newValue;
+        console.log('[MainSetpoint] - calculateSetpoint Инвертируем значение', newValue);
+        this.sendEmitMessage('updateState', newValue);
+        return;
+      }
+
         try {
           if (value > 5 && value < 120) {
           newValue = currentSetPoint + step;
           logger.dev('[MainSetpoint] - calculateSetpoint  Увеличили SetPoint:', newValue);
           //console.log('Увеличили SetPoint:', newValue);
-        } else if (value < -5 && value > -120) {
+        }  else if (value < -5 && value > -120) {
           newValue = currentSetPoint - step;
           logger.dev('[MainSetpoint] - calculateSetpoint  Уменьшили SetPoint:', newValue);
           //console.log('Уменьшили SetPoint:', newValue);

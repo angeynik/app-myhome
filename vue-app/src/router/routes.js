@@ -20,6 +20,7 @@ const routes = [
     path: '/',
     name: 'DashBoard',
     component: Dashboard,
+    meta: { requiresAuth: true, requiredLevel: 1 },
     children: [
       {
         path: '', // Главное меню с AppPlace
