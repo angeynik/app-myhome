@@ -28,6 +28,8 @@ import { mapGetters, mapMutations, mapActions} from 'vuex'
 import MainBodyValue from './MainBodyValue.vue'
 import logger from '../store/modules/logger.js';
 import { parseMoscowDate } from '@/utils/timeUtils';
+const EXCLUDED_SECTIONS = new Set(['init', 'id', 'group', 'title', 'setpoints']);
+const STRIP_DIGITS = /\d+$/;
 
 export default {
   name: 'MainBody',
@@ -120,6 +122,49 @@ export default {
       'setLimits',
     ]),
     ...mapActions(['updateSettingsData', 'updatePayloadData']),
+
+    _resolveSetpoint(room, cleanKey) {
+  if (!room?.setpoints) return { setValue: null, setpointKey: null };
+
+  // Точное совпадение — приоритет над partial match
+  let setpointKey = room.setpoints[cleanKey] ? cleanKey : null;
+
+  if (!setpointKey) {
+    // Partial match: ищем ключ, который НАЧИНАЕТСЯ с cleanKey или наоборот
+    // Используем startsWith вместо includes — избегаем ложных совпадений
+    setpointKey = Object.keys(room.setpoints).find(k =>
+      k.startsWith(cleanKey) || cleanKey.startsWith(k)
+    ) ?? null;
+  }
+
+  if (!setpointKey) return { setValue: null, setpointKey: null };
+
+  const spData = room.setpoints[setpointKey];
+  const spType = spData?.type ?? 'num';
+  const setValue = this.getSensorValue(spType, { value: spData?.value });
+
+  return { setValue, setpointKey };
+},
+
+// Строитель объекта элемента — единая схема для всех 4 функций
+_buildItem(overrides) {
+  return {
+    sortType: null,
+    paramTitle: null,
+    paramType: null,
+    paramKey: null,
+    value: null,
+    setValue: null,
+    setpointKey: null,
+    unit: null,
+    timeDiff: null,
+    roomTitle: null,
+    roomId: null,
+    roomKey: null,
+    deviceKey: null,
+    ...overrides,
+  };
+},
     
 
     getSensorValue(key, data) {
@@ -173,51 +218,19 @@ selectItem(item) {
   }, 300); // 300 мс – типичный интервал для двойного тача
 },
 
-singleClickAction(item) {
-  // Вся логика, которая ранее была внутри setTimeout в selectItem
-  const clearParam = 'd' + this.clearKeySync(item.paramKey);
-  console.log('[MainBody] - singleClickAction - Исходный ключ:', item.paramKey, 'Очищенный:', clearParam);
-  
-  console.groupCollapsed('[MainBody] - selectItem (одинарный)');
-  logger.dev(`[MainBody] - Выбран параметр: ${JSON.stringify(item, null, 2)}`);
-  
-  if (this.selectedItem === item) {
-    // Скрыть панель уставки
-    this.selectedItem = null;
-    this.$emit('getComponentData', { 
-      action: 'hide',
-      updateState: {
-        value: item.setValue,
-        title: 'value',
-        roomKey: clearParam,
-        setpointKey: item.setpointKey
-      }
-    });
-  } else {
-    // Показать панель уставки
-    this.selectedItem = item;
+  singleClickAction(item) {
+    // Вся логика, которая ранее была внутри setTimeout в selectItem
+    const clearParam = 'd' + this.clearKeySync(item.paramKey);
+    console.log('[MainBody] - singleClickAction - Исходный ключ:', item.paramKey, 'Очищенный:', clearParam);
     
-    this.updateSettingsData({ field: 'param', value: clearParam });
-    this.updateSettingsData({ field: 'request', value: 'setpoints' });
-    this.updatePayloadData({ 
-      value: item.setValue,
-      param: clearParam,
-      setKey: item.setpointKey,
-      id: item.roomId,
-      room: item.roomKey
-    });
+    console.groupCollapsed('[MainBody] - selectItem (одинарный)');
+    logger.dev(`[MainBody] - Выбран параметр: ${JSON.stringify(item, null, 2)}`);
     
-    this.SET_ROOM_KEY(item.roomKey);
-    this.SET_PARAM_KEY(clearParam);
-    this.SET_DEVICE_KEY(item.deviceKey);
-    this.SET_SETPOINT_KEY(item.setpointKey);
-    
-    this.setLimits({ param: clearParam, valueType: 'absolute' });
-    
-    if ((item.setValue !== undefined && item.setValue !== null) && clearParam && item.setpointKey) {
-      this.$emit('getComponentData', {
-        action: 'show',
-        request: 'setpoints',
+    if (this.selectedItem === item) {
+      // Скрыть панель уставки
+      this.selectedItem = null;
+      this.$emit('getComponentData', { 
+        action: 'hide',
         updateState: {
           value: item.setValue,
           title: 'value',
@@ -226,19 +239,45 @@ singleClickAction(item) {
         }
       });
     } else {
-      console.error(`Не определены значения уставки: ${item.setValue}, ключ параметра ${clearParam}, ключ уставки ${item.setpointKey}`);
+      // Показать панель уставки
+      this.selectedItem = item;
+      
+      this.updateSettingsData({ field: 'param', value: clearParam });
+      this.updateSettingsData({ field: 'request', value: 'setpoints' });
+      this.updatePayloadData({ 
+        value: item.setValue,
+        param: clearParam,
+        setKey: item.setpointKey,
+        id: item.roomId,
+        room: item.roomKey
+      });
+      
+      this.SET_ROOM_KEY(item.roomKey);
+      this.SET_PARAM_KEY(clearParam);
+      this.SET_DEVICE_KEY(item.deviceKey);
+      this.SET_SETPOINT_KEY(item.setpointKey);
+      
+      this.setLimits({ param: clearParam, valueType: 'absolute' });
+      
+      if ((item.setValue !== undefined && item.setValue !== null) && clearParam && item.setpointKey) {
+        this.$emit('getComponentData', {
+          action: 'show',
+          request: 'setpoints',
+          updateState: {
+            value: item.setValue,
+            title: 'value',
+            roomKey: clearParam,
+            setpointKey: item.setpointKey
+          }
+        });
+      } else {
+        console.error(`Не определены значения уставки: ${item.setValue}, ключ параметра ${clearParam}, ключ уставки ${item.setpointKey}`);
+      }
     }
-  }
-  console.groupEnd();
-},
+    console.groupEnd();
+  },
 
-
-
-
-
-
- 
-    DclickSelectItem(item) {
+  DclickSelectItem(item) {
       const clearParam = 'd' + this.clearKeySync(item.paramKey);
 
       
@@ -304,8 +343,8 @@ singleClickAction(item) {
         params: { settingsType }
       });
       console.groupEnd();
-    },
-    async updateView() { // Формируем массив для отображения пользователю в соответствии с типом сортировки и текущим ключем
+  },
+  async updateView() { // Формируем массив для отображения пользователю в соответствии с типом сортировки и текущим ключем
       //console.log('[MainBody] - updateView - started');
         try {
           logger.info('[MainBody] - updateView - started');
@@ -332,8 +371,13 @@ singleClickAction(item) {
             this.viewArray = this.getSortedRooms(config, checkKey);
           } else if (this.currentSortType === 'params') {
             logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: параметров -(', this.getParamKey, ')');
-            //console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: параметров -(${this.getParamKey})`);
-            this.viewArray = this.getSortedParams(config, this.getParamKey);
+            console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: параметров -(${this.getParamKey})`);
+            let actualParam = this.getParamKey;
+            if (actualParam.includes("Switch")) {
+              actualParam = 'dTemp';
+              this.SET_PARAM_KEY(actualParam);  // мутация из mapMutations
+            }
+            this.viewArray = this.getSortedParams(config, actualParam);
           } else if (this.currentSortType === 'devices') {
             logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: Устройств -(', this.getDeviceKey, ')');
             //console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: Устройств -(${this.getDeviceKey})`);
@@ -357,425 +401,209 @@ singleClickAction(item) {
           console.groupEnd();
         }
         console.groupEnd();
-    },
+  },
 
 
-    getSortedRooms(config, roomKey) {
-      logger.dev('[MainBody] getSortedRooms - Выполняем сортировку по roomKey:', roomKey, 'в ', Object.keys(config).length, ' комнатах');
-      console.log('[MainBody] getSortedRooms - Выполняем сортировку по roomKey:', roomKey, 'в ', Object.keys(config).length, ' комнатах');
-      //console.groupCollapsed('[MainBody] - getSortedRooms');
-      const room = config[roomKey];
-      console.table('[MainBody] - getSortedRooms - Конфигурация комнат:', room);
-      if (!room) return [];
-     
-      const devicesArray = [];
-      const excludedSections = ['init', 'id', 'group', 'title', 'setpoints'];
-      
+getSortedRooms(config, roomKey) {
+  const room = config[roomKey];
+  if (!room || typeof room !== 'object') return [];
 
-      // Проходим по всем разделам комнаты кроме исключенных
-      Object.entries(room).forEach(([sectionKey, sectionData]) => {
-        if (excludedSections.includes(sectionKey)) return;
-        
-        if (sectionData && typeof sectionData === 'object') {
-          Object.entries(sectionData).forEach(([itemKey, itemData]) => {
+  const result = [];
 
-            let cleanKey;
-            if (itemKey.startsWith('a')) {
-                // aSwitch01 -> sSwitch01
-                cleanKey = 's' + itemKey.slice(1);
-            } else if (itemKey.startsWith('d')) {
-                // dTemp01 -> sTemp
-                const base = itemKey.slice(1).replace(/\d+$/, '');
-                cleanKey = 's' + base;
-            }
-            let setpointKey = null;
-            if (cleanKey && room.setpoints[cleanKey]) {
-                setpointKey = cleanKey;
-            } else if (cleanKey) {
-                // ищем начинающийся с cleanKey (например, sSwitch для sSwitch01)
-                const found = Object.keys(room.setpoints).find(k => k.startsWith(cleanKey));
-                setpointKey = found;
-            }
-            
+  for (const [sectionKey, sectionData] of Object.entries(room)) {
+    if (EXCLUDED_SECTIONS.has(sectionKey)) continue;
+    if (!sectionData || typeof sectionData !== 'object') continue;
 
-            logger.dev('[MainBody] getSortedRooms - Item:', cleanKey);
-            console.log('[MainBody] getSortedRooms - Item:', cleanKey);
-            // Для каждого устройства ищем уставку
-            let setValue = null;
-            // let setpointKey = null;
+    for (const [itemKey, itemData] of Object.entries(sectionData)) {
+      // Вычисляем cleanKey один раз по чёткому правилу
+      const base = itemKey.slice(1).replace(STRIP_DIGITS, '');
+      const cleanKey = itemKey.startsWith('a')
+        ? 's' + itemKey.slice(1)  // aSwitch01 → sSwitch01
+        : 's' + base;             // dTemp01   → sTemp
 
-            if (room.setpoints) {
-              // setpointKey = Object.keys(room.setpoints).find(setKey => 
-              //   cleanKey.includes(setKey) || setKey.includes(cleanKey)
-              // );
+      const { setValue, setpointKey } = this._resolveSetpoint(room, cleanKey);
 
-              //console.log('983627  -- %%%%%%%%%%%% - [MainBody] getSortedRooms - Доступные уставки в room.setpoints:', Object.keys(room.setpoints));
-              //console.log('983627  -- %%%%%%%%%%%% - [MainBody] getSortedRooms - Ищем для cleanKey:', cleanKey);
-                
-                setpointKey = Object.keys(room.setpoints).find(setKey => {
-                  const result = setKey.toLowerCase().includes(cleanKey.toLowerCase());
-                  //console.log(`[MainBody] getSortedRooms - Проверяем ${setKey} на наличие ${cleanKey}: ${result}`);
-                  return result;
-                });
+      result.push(this._buildItem({
+        sortType: 'rooms',
+        paramTitle: this.getSensorTitle(itemKey),
+        paramType: itemData?.type,
+        paramKey: itemKey,
+        value: this.getSensorValue(itemData?.type, itemData),
+        setValue,
+        setpointKey,
+        unit: this.getUnit(itemKey),
+        timeDiff: this.getTimeDiff(itemData?.lastUpdate),
+        roomTitle: room.title,
+        roomId: room.id,
+        roomKey,
+      }));
+    }
+  }
 
-              console.log('[MainBody] getSortedRooms - Ключ параметра уставки:', setpointKey);
-              if (setpointKey) {
-                const setpointData = room.setpoints[setpointKey];
-                //console.log('[MainBody] getSortedRooms - setpointData', setpointData);
-                const setpointType = setpointData?.type || 'num';
-                if (setpointType === 'bool') {
-                  setValue = setpointData?.value === true;   // true/false
-                } else {
-                  setValue = setpointData?.value != null ? parseFloat(setpointData.value) : null;
-                }
-              } else if (!setpointKey) {
-                setValue = null;
-                setpointKey = null;
-              }
-            }
-            console.log('[MainBody] getSortedRooms - setValue', setValue);
-            devicesArray.push({
-              sortType: 'rooms',
-              paramTitle: this.getSensorTitle(itemKey),
-              paramType: itemData?.type,
-              paramKey: itemKey,
-              value: this.getSensorValue(itemData?.type, itemData),
-              setValue: setValue,
-              setpointKey: setpointKey,
-              unit: this.getUnit(itemKey),
-              timeDiff: this.getTimeDiff(itemData.lastUpdate),
-              roomTitle: room.title,
-              roomId: room.id,
-              roomKey
-            });
-          });
-        }
-      });
-      logger.dev(`[MainBody] - getSortedRooms - Найдено устройств в комнате ${roomKey}:`, devicesArray.length);
-      console.log(`[MainBody] - getSortedRooms - Найдено устройств в комнате ${roomKey}:`, devicesArray);
-      console.groupEnd;
-      return devicesArray;
-    },
+  return result;
+},
 
-// getSortedRooms(config, roomKey) {
-//   logger.dev('[MainBody] getSortedRooms - Выполняем сортировку по roomKey:', roomKey, 'в ', Object.keys(config).length, ' комнатах');
-//   console.log('[MainBody] getSortedRooms - Выполняем сортировку по roomKey:', roomKey, 'в ', Object.keys(config).length, ' комнатах');
+//Формируем массив для отображения сортировки по параметрам
+getSortedParams(config, paramPrefix) {
+  const result = [];
 
-//   const room = config[roomKey];
-//   console.table('[MainBody] - getSortedRooms - Конфигурация комнат:', room);
-//   if (!room) return [];
+  for (const [roomKey, room] of Object.entries(config)) {
+    if (!room?.sensors || typeof room.sensors !== 'object') continue;
 
-//   const devicesArray = [];
-//   const excludedSections = ['init', 'id', 'group', 'title', 'setpoints'];
+    for (const [sensorKey, sensorData] of Object.entries(room.sensors)) {
+      if (!sensorKey.startsWith(paramPrefix)) continue;
 
-//   Object.entries(room).forEach(([sectionKey, sectionData]) => {
-//     if (excludedSections.includes(sectionKey)) return;
+      // --- начало изменений ---
+      const base = sensorKey.slice(1).replace(STRIP_DIGITS, '');
+      const cleanKey = sensorKey.startsWith('a')
+        ? 's' + sensorKey.slice(1)
+        : 's' + base;
+      // --- конец изменений ---
 
-//     if (sectionData && typeof sectionData === 'object') {
-//       Object.entries(sectionData).forEach(([itemKey, itemData]) => {
-//         const cleanKey = this.clearKeySync(itemKey);
-//         logger.dev('[MainBody] getSortedRooms - Item:', cleanKey);
-//         console.log('[MainBody] getSortedRooms - Item:', cleanKey);
+      const { setValue, setpointKey } = this._resolveSetpoint(room, cleanKey);
+      console.log('[MainBody] - getSortedParams - setpointKey:', setpointKey, 'setValue:', setValue);
 
-//         let setValue = null;
-//         let setpointKey = null;      // базовое имя (без цифр)
-//         let setpointKeyFull = null;  // полный ключ для доступа к данным
+      result.push(this._buildItem({
+        sortType: 'params',
+        paramTitle: this.getSensorTitle(paramPrefix),
+        paramType: sensorData?.type,
+        paramKey: sensorKey,
+        value: this.getSensorValue(sensorData?.type, sensorData),
+        setValue,
+        setpointKey,
+        unit: this.getUnit(paramPrefix),
+        timeDiff: this.getTimeDiff(sensorData?.lastUpdate),
+        roomTitle: room.title,
+        roomId: room.id,
+        roomKey,
+      }));
+    }
+  }
 
-//         if (room.setpoints) {
-//           const exactKey = this.clearKey_a ? this.clearKey_a(itemKey) : '';
-//           if (exactKey && room.setpoints[exactKey]) {
-//             setpointKeyFull = exactKey;
-//             setpointKey = setpointKeyFull.replace(/\d+$/, '');
-//           } else {
-//             const foundKey = Object.keys(room.setpoints).find(setKey =>
-//               setKey.toLowerCase().includes(cleanKey.toLowerCase())
-//             );
-//             if (foundKey) {
-//               setpointKeyFull = foundKey;
-//               setpointKey = setpointKeyFull.replace(/\d+$/, '');
-//             }
-//           }
+  logger.dev('[MainBody] - getSortedParams - Получен список сенсоров:', result);
+  console.log('[MainBody] - getSortedParams - Получен список сенсоров:', result);
+  return result;
+},
 
-//           if (setpointKeyFull) {
-//             const setpointData = room.setpoints[setpointKeyFull];
-//             const setpointType = setpointData?.type || 'num';
-//             setValue = this.getSensorValue(setpointType, { value: setpointData?.value });
-//           } else {
-//             setValue = null;
-//             setpointKey = null;
-//             setpointKeyFull = null;
-//           }
-//         }
 
-//         devicesArray.push({
-//           sortType: 'rooms',
-//           paramTitle: this.getSensorTitle(itemKey),
-//           paramType: itemData?.type,
-//           paramKey: itemKey,
-//           value: this.getSensorValue(itemData?.type, itemData),
-//           setValue: setValue,
-//           setpointKey: setpointKey,           // базовый (sSwitch, sTemp)
-//           setpointKeyFull: setpointKeyFull,   // полный (sSwitch01, sTemp01)
-//           unit: this.getUnit(itemKey),
-//           timeDiff: this.getTimeDiff(itemData.lastUpdate),
-//           roomTitle: room.title,
-//           roomId: room.id,
-//           roomKey
-//         });
-//       });
-//     }
-//   });
+// Формируем массив для отображения сортировки по устройствам
+getSortedDevices(config, deviceKey) {
+  const result = [];
 
-//   logger.dev(`[MainBody] - getSortedRooms - Найдено устройств в комнате ${roomKey}:`, devicesArray.length);
-//   console.log(`[MainBody] - getSortedRooms - Найдено устройств в комнате ${roomKey}:`, devicesArray);
-//   return devicesArray;
-// },
-    // Формируем массив для отображения сортировки по параметрам
-    
-    getSortedParams(config, paramPrefix) {
-      // Получаем все ключи сенсоров, которые начинаются с этого префикса
-      logger.dev('[MainBody] getSortedParams - Выполняем сортировку по paramPrefix:', paramPrefix, 'в ', Object.keys(config).length, ' комнатах');
-      console.log('[MainBody] getSortedParams - Выполняем сортировку по paramPrefix:', paramPrefix, 'в ', Object.keys(config).length, ' комнатах');
-      const sensors = [];
-      
-      Object.entries(config).forEach(([roomKey, room]) => {
-        if (!room.sensors) return;
-        
-        Object.entries(room.sensors).forEach(([sensorKey, sensorData]) => {
-          // Проверяем, что ключ сенсора начинается с нужного префикса
-          if (sensorKey.startsWith(paramPrefix)) {
+  for (const [roomKey, room] of Object.entries(config)) {
+    if (!room || typeof room !== 'object') continue;
 
-            const cleanKey = this.clearKeySync(sensorKey);
-            let setValue = null;
-            let setpointKey = null;
-          if (room.setpoints) {
-            // Ищем ключ уставки, который соответствует префиксу сенсора
-            setpointKey = Object.keys(room.setpoints).find(setKey => 
-              cleanKey.includes(setKey) || setKey.includes(cleanKey)
-            );
-            
-            if (setpointKey) {
-              setValue = room.setpoints[setpointKey]?.value != null 
-                ? parseFloat(room.setpoints[setpointKey].value) 
-                : null;
-                logger.dev('[MainBody] getSortedParams - Ключ параметра уставки:', setpointKey);
-                //console.log('[MainBody] getSortedParams - Ключ параметра уставки:', setpointKey);
-            } else if (!setpointKey) {
-                setValue = null;
-                setpointKey = null;
-              }
-          }
-          console.log('[MainBody] getSortedParams - Уставка:', setValue);
-            
-            sensors.push({
-              sortType: 'params',
-              paramTitle: this.getSensorTitle(paramPrefix), // Название типа параметра
-              paramType: sensorData?.type,
-              paramKey: sensorKey, // Полный ключ сенсора
-              value: this.getSensorValue(sensorData?.type, sensorData),
-              setValue: setValue,
-              setpointKey: setpointKey,
-              unit: this.getUnit(paramPrefix),
-              timeDiff: this.getTimeDiff(sensorData.lastUpdate),
-              roomTitle: room.title,
-              roomId: room.id,
-              roomKey
-            });
-          }
-        });
-      });
-      logger.dev('[MainBody] - getSortedParams - Получен список сенсоров:', sensors);
-      console.log('[MainBody] - getSortedParams - Получен список сенсоров:', sensors);
-      return sensors;
-    },
-    // Формируем массив для отображения сортировки по устройствам
-    getSortedDevices(config, deviceKey) {
-      logger.dev('[MainBody] - getSortedDevices - Выполняем сортировку по deviceKey:', deviceKey);
-      console.log('[MainBody] - getSortedDevices - Выполняем сортировку по deviceKey:', deviceKey);
-      const devicesArray = [];
-    
-      Object.entries(config).forEach(([roomKey, room]) => {
-        if (!room || typeof room !== 'object') {
-          logger.dev('[MainBody] getSortedDevices Комната:', room, ' не содержит объекты');
-          //console.log('[MainBody] getSortedDevices Комната:', room, ' не содержит объекты');
-          return
-        }
-        logger.dev('[MainBody] getSortedDevices - Работаем с комнатой:', roomKey);
-        //console.log('[MainBody] getSortedDevices - Работаем с комнатой:', roomKey);
-        // Ищем во всех разделах комнаты кроме исключенных
-        Object.entries(room).forEach(([sectionKey, sectionData]) => {
-          const excludedSections = ['init', 'id', 'group', 'title', 'setpoints'];
-          if (excludedSections.includes(sectionKey)) return;
-          
-          if (sectionData && typeof sectionData === 'object') {
-            logger.dev('[MainBody] getSortedDevices - Processing section:', sectionKey);
-            //console.log('[MainBody] getSortedDevices - Processing section:', sectionKey);
-            Object.entries(sectionData).forEach(([itemKey, itemData]) => {
+    for (const [sectionKey, sectionData] of Object.entries(room)) {
+      if (EXCLUDED_SECTIONS.has(sectionKey)) continue;
+      if (!sectionData || typeof sectionData !== 'object') continue;
 
-              const baseItemKey = itemKey.replace(/\d+$/, '');
-              logger.dev('[MainBody] getSortedDevices - Item:', itemKey, 'Base item key:', baseItemKey, 'Device key:', deviceKey);
-              //console.log('[MainBody] getSortedDevices - Item:', itemKey, 'Base item key:', baseItemKey, 'Device key:', deviceKey);
-              
-              if (baseItemKey === deviceKey) {
+      for (const [itemKey, itemData] of Object.entries(sectionData)) {
+        const baseItemKey = itemKey.replace(STRIP_DIGITS, '');
+        if (baseItemKey !== deviceKey) continue;
 
-                const cleanKey = this.clearKeySync(itemKey);
-                logger.dev('[MainBody] getSortedDevices - Ищем совподение с утройством:', cleanKey);
-                console.log('[MainBody] getSortedDevices - Ищем совподение с утройством:', cleanKey);
-                let setValue = null;
-                let setpointKey = null;
+        // Вычисляем cleanKey по правилам из getSortedRooms
+        const base = itemKey.slice(1).replace(STRIP_DIGITS, '');
+        const cleanKey = itemKey.startsWith('a')
+          ? 's' + itemKey.slice(1)
+          : 's' + base;
 
-                // Поиск уставки
-                if (room.setpoints) {
-                  setpointKey = Object.keys(room.setpoints).find(setKey => 
-                    cleanKey.includes(setKey) || setKey.includes(cleanKey)
-                  );
+        const { setValue, setpointKey } = this._resolveSetpoint(room, cleanKey);
 
-                  if (setpointKey) {
-                    const setpointData = room.setpoints[setpointKey];
-                    // Определяем тип уставки (по умолчанию 'num', но для sSwitch может быть 'bool')
-                    const setpointType = setpointData?.type || 'num';
-                    // Используем getSensorValue для корректного преобразования
-                    setValue = this.getSensorValue(setpointType, { value: setpointData?.value });
-                    // setValue = room.setpoints[setpointKey]?.value != null 
-                    //   ? parseFloat(room.setpoints[setpointKey].value) 
-                    //   : null;
-                  } else if (!setpointKey) {
-                      setValue = null;
-                      setpointKey = null;
-                    }
-                }
-                
-                devicesArray.push({
-                  sortType: 'devices',
-                  paramTitle: this.getSensorTitle(deviceKey),
-                  paramType: itemData?.type,
-                  paramKey: itemKey,
-                  value: this.getSensorValue(itemData?.type, itemData),
-                  setValue: setValue,
-                  setpointKey: setpointKey,
-                  unit: this.getUnit(itemKey),
-                  timeDiff: this.getTimeDiff(itemData.lastUpdate),
-                  roomTitle: room.title,
-                  roomId: room.id,
-                  roomKey
-                });
-              }
-            });
-          }
-        });
-      });
-     logger.dev('[MainBody] - getSortedDevices - devicesArray:', devicesArray, 'devicesArray.length:', devicesArray.length);
-      // console.log('[MainBody] getSortedDevices - Devices found:', devicesArray.length);
-      console.log('[MainBody] getSortedDevices - Devices array:', devicesArray);
-      return devicesArray;
-    },
-    // getSortedSetpoints(config, setpointKey) {
-    //   logger.dev('[MainBody] - getSortedSetpoints - Выполняем сортировку по setpointKey:', setpointKey, 'в config:', config);
-    //   console.log('[MainBody] - getSortedSetpoints - Выполняем сортировку по setpointKey:', setpointKey, 'в config:', config);
-    //   const setpointsArray = [];
-    //   Object.entries(config).forEach(([roomKey, room]) => {
-    //     if (!room || typeof room !== 'object') {
-    //       logger.dev('[MainBody] getSortedSetpoints Комната:', room, ' не содержит объекты');
-    //       //console.log('[MainBody] getSortedSetpoints Комната:', room, ' не содержит объекты');
-    //       return;
-    //     }
-
-    //     // Проверяем наличие setpoints в комнате
-    //     if (!room.setpoints || typeof room.setpoints !== 'object') {
-    //       logger.dev('[MainBody] getSortedSetpoints Комната:', roomKey, ' не содержит setpoints');
-    //       //console.log('[MainBody] getSortedSetpoints Комната:', roomKey, ' не содержит setpoints');
-    //       return;
-    //     }
-    //     Object.entries(room.setpoints).forEach(([setKey, setpointData]) => {
-    //       // Проверяем, что ключ уставки начинается с нужного префикса
-    //       if (setKey.includes(setpointKey)) {
-    //         let newValue, newSet, newSetpointKey;
-    //         logger.dev('[MainBody] getSortedSetpoints - Найдено совпадение с ключом Уставки:', setKey);
-    //         //console.log('[MainBody] getSortedSetpoints - Найдено совпадение с ключом Уставки:', setKey);
-            
-    //         if (setKey.startsWith('s')) {
-    //           newValue = this.getSensorValue(setpointData?.type, setpointData);
-    //           newSet = this.getSensorValue(setpointData?.type, setpointData);
-    //           newSetpointKey = setpointKey;
-    //         } else if (setKey.startsWith('d')) { 
-    //           newValue = this.getSensorValue(setpointData?.type, setpointData);
-    //           newSet = null;
-    //           newSetpointKey = null;
-    //         } else {
-    //           newSet = null;
-    //           newSetpointKey = null;
-    //         }
-            
-    //         setpointsArray.push({
-    //           sortType: 'setpoints',
-    //           paramTitle: this.getSensorTitle(setKey),
-    //           paramType: setpointData?.type,
-    //           paramKey: setKey,
-    //           value: newValue,
-    //           setValue: newSet,
-    //           setpointKey: newSetpointKey,
-    //           unit: this.getUnit(setKey),
-    //           timeDiff: this.getTimeDiff(setpointData?.lastUpdate),
-    //           roomTitle: room.title,
-    //           roomId: room.id,
-    //           roomKey
-    //         });
-    //       }
-    //     });
-    //   });
-    //   logger.dev('[MainBody] - getSortedSetpoints - setpointsArray:', setpointsArray, 'setpointsArray.length:', setpointsArray.length);
-    //   // console.log('[MainBody] getSortedSetpoints - Setpoints found:', setpointsArray.length);
-    //   console.log('[MainBody] getSortedSetpoints - setpointsArray:', setpointsArray);
-      
-    //   return setpointsArray;
-    // },
-    getSortedSetpoints(config, setpointKey) {
-  logger.dev('[MainBody] - getSortedSetpoints - Выполняем сортировку по setpointKey:', setpointKey);
-  const setpointsArray = [];
-  
-  Object.entries(config).forEach(([roomKey, room]) => {
-    if (!room || typeof room !== 'object') return;
-    if (!room.setpoints || typeof room.setpoints !== 'object') return;
-
-    Object.entries(room.setpoints).forEach(([setKey, setpointData]) => {
-      // Проверяем, что ключ уставки соответствует текущему setpointKey (с учётом возможных цифр)
-      const baseSetKey = setKey.replace(/\d+$/, '');
-      if (baseSetKey === setpointKey) {
-        const setpointType = setpointData?.type || 'num';
-        // Значение уставки (value) – всегда через getSensorValue
-        const value = this.getSensorValue(setpointType, { value: setpointData?.value });
-        // setValue – для булевых уставок то же самое, для числовых можно оставить null или тоже value
-        let setValue = null;
-        let spKey = null;
-        
-        if (setpointType === 'bool') {
-          setValue = value; // 'ON' / 'OFF'
-          spKey = setpointKey;
-        } else {
-          setValue = null; // или можно value, если нужно редактирование
-          spKey = null;
-        }
-        
-        setpointsArray.push({
-          sortType: 'setpoints',
-          paramTitle: this.getSensorTitle(setpointKey), // человекочитаемое название
-          paramType: setpointType,
-          paramKey: setKey,                           // полный ключ (sSwitch01)
-          value: value,                               // текущее значение уставки
-          setValue: setValue,                         // для редактирования (только для bool)
-          setpointKey: spKey,
-          unit: this.getUnit(setpointKey),
-          timeDiff: this.getTimeDiff(setpointData?.lastUpdate),
+        result.push(this._buildItem({
+          sortType: 'devices',
+          paramTitle: this.getSensorTitle(deviceKey),
+          paramType: itemData?.type,
+          paramKey: itemKey,
+          value: this.getSensorValue(itemData?.type, itemData),
+          setValue,
+          setpointKey,
+          unit: this.getUnit(itemKey),
+          timeDiff: this.getTimeDiff(itemData?.lastUpdate),
           roomTitle: room.title,
           roomId: room.id,
-          roomKey
-        });
+          roomKey,
+        }));
       }
-    });
-  });
-  
-  return setpointsArray;
+    }
+  }
+
+  return result;
 },
+
+
+// getSortedSetpoints(config, setpointKey) {
+//   const result = [];
+
+//   for (const [roomKey, room] of Object.entries(config)) {
+//     if (!room?.setpoints || typeof room.setpoints !== 'object') continue;
+
+//     for (const [setKey, spData] of Object.entries(room.setpoints)) {
+//       if (setKey.replace(STRIP_DIGITS, '') !== setpointKey) continue;
+
+//       const spType = spData?.type ?? 'num';
+//       const value = this.getSensorValue(spType, { value: spData?.value });
+
+//       // Упрощено: setValue и spKey только для bool (логика была верна, но многословна)
+
+//       result.push(this._buildItem({
+//         sortType: 'setpoints',
+//         paramTitle: this.getSensorTitle(setpointKey),
+//         paramType: spType,
+//         paramKey: setKey,
+//         value,
+//         setValue: value,
+//         setpointKey: setKey,
+//         unit: this.getUnit(setpointKey),
+//         timeDiff: this.getTimeDiff(spData?.lastUpdate),
+//         roomTitle: room.title,
+//         roomId: room.id,
+//         roomKey,
+//       }));
+//     }
+//   }
+
+//   return result;
+// },
+getSortedSetpoints(config, setpointKey) {
+  // Нормализуем входящий ключ: удаляем цифры на конце
+  const normalizedKey = setpointKey.replace(/\d+$/, '');
+  console.log('[MainBody] - getSortedSetpoints - normalizedKey:', normalizedKey);
+  const result = [];
+
+  for (const [roomKey, room] of Object.entries(config)) {
+    if (!room?.setpoints || typeof room.setpoints !== 'object') continue;
+
+    for (const [setKey, spData] of Object.entries(room.setpoints)) {
+      const baseSetKey = setKey.replace(/\d+$/, '');
+      if (baseSetKey !== normalizedKey) continue;
+
+      // Пропускаем уставки без значения
+      if (!spData || spData.value === undefined || spData.value === null) continue;
+
+      const spType = spData?.type ?? 'num';
+      const value = this.getSensorValue(spType, { value: spData.value });
+      if (value === null || value === undefined) continue;
+
+      result.push(this._buildItem({
+        sortType: 'setpoints',
+        paramTitle: this.getSensorTitle(normalizedKey),
+        paramType: spType,
+        paramKey: setKey,           // полный ключ (sSwitch03)
+        value: value,
+        setValue: value,            // для редактирования
+        setpointKey: normalizedKey, // нормализованный ключ (sSwitch)
+        unit: this.getUnit(normalizedKey),
+        timeDiff: this.getTimeDiff(spData?.lastUpdate),
+        roomTitle: room.title,
+        roomId: room.id,
+        roomKey,
+      }));
+    }
+  }
+  console.log('[MainBody] - getSortedSetpoints - Результат:', result);
+  return result;
+},
+
 
     getTimeDiff(timestamp) {
       if (!timestamp) return 'Неизвестно';
