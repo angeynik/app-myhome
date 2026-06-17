@@ -235,7 +235,7 @@ export default {
     },
     effectiveParamKey() {
     // Определяем какой ключ использовать
-    return this.paramKey || '';
+      return this.$store.state.settingsData?.payload?.param || this.paramKey || '';
     },
     isEditingMode() {
       return this.isEditingSchedule && this.editingSchedule !== null;
@@ -392,11 +392,11 @@ export default {
     },
 
     async loadConfigDataFromStore(configName) {
-      //console.log('[MainBodySettings] - loadConfigDataFromStore - Вызов функции для конфигурации - ', configName);
+      console.log('[MainBodySettings] - loadConfigDataFromStore - Вызов функции для конфигурации - ', configName);
       try {
         
         const configData = await this.$store.dispatch('settingsConfig/getConfigDataFromStore', { configName });    
-        //console.log('[MainBodySettings] - loadConfigDataFromStore - Полученные расписания из store:', configData);
+        console.table('[MainBodySettings] - loadConfigDataFromStore - Полученные расписания из store:', configData);
        
         // schedules.forEach((schedule, index) => {
         //   console.log(`[MainBodySettings] - loadConfigDataFromStore - schedule[${index}] createdAt:`, schedule.createdAt, 'typeof:', typeof schedule.createdAt);

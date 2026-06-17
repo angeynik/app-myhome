@@ -43,11 +43,11 @@ const store = createStore({
     UPDATE_SETTINGS_DATA(state, { field, value }) { 
         if (state.setpointsManager) {
             if (field === 'request' || field === 'type' || field === 'limits' ) { // если поле field содержит имя объекта - заменяем весь объект иначе только параметр в payload
-              //console.log('[index] - UPDATE_SETTINGS_DATA -  Обновляем весь объект', field, 'value:', value);  
+              console.log('[index] - UPDATE_SETTINGS_DATA -  Обновляем весь объект', field, 'value:', value);  
               state.setpointsManager.settingsData[field] = value;
 
             } else{
-              //console.log('[index] - UPDATE_SETTINGS_DATA -  Обновляем поле', field, 'в объекте payload значением:', value); 
+              console.log('[index] - UPDATE_SETTINGS_DATA -  Обновляем поле', field, 'в объекте payload значением:', value); 
                 state.setpointsManager.settingsData.payload[field] = value;
                 state.setpointsManager.settingsData.payload.updated = nowMoscow();
               }
@@ -177,6 +177,9 @@ const store = createStore({
 
   },
   getters: {
+    settingsDataKey: (state) => state.settingsData?.payload?.key, 
+    settingsDataParam: (state) => state.settingsData?.payload?.param, 
+
     showSetpoint: (state) => state.showSetpoint,
     isAuthenticated: (state) => !!state.auth.token,
     authStatus: (state) => state.auth.status,
