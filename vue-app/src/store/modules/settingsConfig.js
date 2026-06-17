@@ -240,7 +240,7 @@ export default {
     },
 
   getConfigDataFromStore({ rootState, rootGetters }, { configName }) {
-    console.log('[settingsConfig] - getConfigDataFromStore - configName', configName);
+    //console.log('[settingsConfig] - getConfigDataFromStore - configName', configName);
     const settingsData = rootGetters['getSetpointsManager']?.settingsData;
     const dID = settingsData?.name;
     const room = settingsData?.payload?.room;

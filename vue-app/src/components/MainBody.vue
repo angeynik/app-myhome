@@ -333,9 +333,10 @@ singleClickAction(item) {
   },
 
   DclickSelectItem(item) {
-      const clearParam = this.clearKeySync(item.paramKey);
-
       
+      const clearParam = this.clearKeySync(item.paramKey);
+      console.log('[MainBody] - DclickSelectItem - Определяем key для settingsData.payload ', clearParam);
+
       if (this.doubleClickTimer) {
         clearTimeout(this.doubleClickTimer);
         this.doubleClickTimer = null;
@@ -373,18 +374,6 @@ singleClickAction(item) {
         config: this.typeSettingsKey,
         value: item.setValue
       });
-
-      // this.updateSettingsData({ field: 'request', value: 'updateSchedules' });
-      // this.updatePayloadData({ param: clearParam, room: item.roomKey, config: this.typeSettingsKey, value: item.setValue,});
-      // console.log('[MainBody] - DclickSelectItem - ОБНОВИЛИ КЛЮЧ param в settingsData:',
-      //   this.$store.state.setpointsManager?.settingsData?.payload?.param
-      // );
-
-      // Обновляем ключи в хранилище
-          // this.SET_ROOM_KEY(item.roomKey);
-          // this.SET_PARAM_KEY(clearParam);
-          // this.SET_DEVICE_KEY(item.deviceKey);
-          // this.SET_SETPOINT_KEY(item.setpointKey);
 
       let settingsType = this.typeSettingsKey || 'schedule';
 

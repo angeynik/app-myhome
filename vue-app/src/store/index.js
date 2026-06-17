@@ -52,7 +52,7 @@ const store = createStore({
                 state.setpointsManager.settingsData.payload.updated = nowMoscow();
               }
             state.settingsData = { ...state.setpointsManager.settingsData };
-            //console.log('[index] - UPDATE_SETTINGS_DATA - ', state.setpointsManager.settingsData);
+            console.log('[index] - UPDATE_SETTINGS_DATA - ', state.setpointsManager.settingsData);
         }
     },
     RESET_SETTINGS_DATA(state) { // Сброс settingsData manageSetpoints
@@ -157,7 +157,7 @@ const store = createStore({
       commit('UPDATE_SETTINGS_DATA', { field, value });
     },
     updatePayloadData({ commit }, payload) {
-      //console.log('[index] - updatePayloadData - Обновляем payload:', payload);
+      console.log('[index] - updatePayloadData - Обновляем payload:', payload);
       commit('UPDATE_PAYLOAD_DATA', payload);
     },
     updateLimitsData({ commit }, limits) {

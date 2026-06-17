@@ -221,7 +221,7 @@ export default {
     // },
    selectedTitle() {
       // Находим соответствующий заголовок в typeToTitleMap по ключу title
-      console.log('[MainBodySettings] selectedTitle - Находим соответствующий заголовок по ключу title', this.title);
+      //console.log('[MainBodySettings] selectedTitle - Находим соответствующий заголовок по ключу title', this.title);
       
       return this.typeToTitleMap[this.title];
     },
@@ -250,7 +250,7 @@ export default {
     // });
     this.initialize();
     this.schedules = this.loadConfigDataFromStore('schedules');
-    console.log('[MainBodySettings] CREATED - создаем компонент с selectedTitle', this.selectedTitle);
+    //console.log('[MainBodySettings] CREATED - создаем компонент с selectedTitle', this.selectedTitle);
     this.setComponentParam(this.selectedTitle);
   },
   watch: {
@@ -372,18 +372,21 @@ export default {
     },
 
     setComponentParam (selectTitle) {
-      console.log('[MainBodySettings] - setComponentParam - Получили selectTitle:', selectTitle);
+      //console.log('[MainBodySettings] - setComponentParam - Получили selectTitle:', selectTitle);
       this.updateSettingsData({ field: 'type', value: 'post' });
+      
       if(selectTitle === 'Расписание') {
         this.updatePayloadData({ config: 'schedules'});
-
+        //this.updateSettingsData({ field: 'request', value: 'schedules' });
         this.loadConfigDataFromStore('schedules');
       } else if (selectTitle === 'Уведомления') {
         this.updatePayloadData({ config: 'notifications'});
+        //this.updateSettingsData({ field: 'request', value: 'notifications' });
         this.loadConfigDataFromStore('notifications');
         console.log('[MainBodySettings] - setComponentParam - Пишем код для загрузки конфигурации Уведомлений и устанавливаем соответствующие ключи в state settingsData');
       } else if (selectTitle === 'Аналитика') {
         this.updatePayloadData({ config: 'statistics'});
+        //this.updateSettingsData({ field: 'request', value: 'statistics' });
         this.loadConfigDataFromStore('statistics');
         console.log('[MainBodySettings] - setComponentParam - Пишем код для загрузки конфигурации Аналитики и устанавливаем соответствующие ключи в state settingsData');
       } else {
@@ -392,7 +395,7 @@ export default {
     },
 
     async loadConfigDataFromStore(configName) {
-      console.log('[MainBodySettings] - loadConfigDataFromStore - Вызов функции для конфигурации - ', configName);
+      //console.log('[MainBodySettings] - loadConfigDataFromStore - Вызов функции для конфигурации - ', configName);
       try {
         
         const configData = await this.$store.dispatch('settingsConfig/getConfigDataFromStore', { configName });    

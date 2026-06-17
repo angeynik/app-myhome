@@ -274,7 +274,7 @@ export function formatDate(dateString, locale = 'ru-RU') {
  * @param {boolean} isSelected  - выделено ли поле
  */
 export function formatTimeWithHighlight(timeString, editMode, isSelected) {
-  const time = timeString || '00:00';
+  const time = String(timeString) || '00:00';
   if (!time.includes(':')) return time;
   const [hours, minutes] = time.split(':');
   if (!isSelected) return `${hours}:${minutes}`;

@@ -217,10 +217,10 @@ export default {
       return numFreq;
     },
     displayStartTime() {
-      return this.notificationData?.startTime ?? '00:00';
+      return String(this.notificationData.startTime || '00:00');
     },
     displayEndTime() {
-      return this.notificationData?.endTime ?? '23:59';
+      return String(this.notificationData.endTime || '00:05');
     },
     formattedStartDisplay() {
       return formatTimeWithHighlight(

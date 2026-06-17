@@ -581,18 +581,18 @@ export default {
     console.groupCollapsed('[DashBoard] - editValueMainSetpoint');
     console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения Уставки :', eventData);
     const settingsData = this.$store.state.setpointsManager?.settingsData;
-    console.log('[DashBoard] - editValueMainSetpoint - Текущие settingsData:', settingsData);
+    console.log('[DashBoard] - editValueMainSetpoint - Текущие settingsData:', settingsData.request);
 
     let dID = this.dID;
     let roomKey = settingsData?.payload?.room;
-    let setpointKey = settingsData?.payload?.setKey;
+    let setpointKey = settingsData?.payload?.param;
     let requestName = eventData.updateState.request || 'unknown';
     let valueTitle = eventData.updateState.title || '';
     let value = eventData.updateState.value || '';
-    let value_details = settingsData.payload.value_details || null;
+    let value_details = eventData.updateState.value_details || settingsData.payload.value_details || null;
     const value_type = settingsData.payload.value_type || 'absolute';
 
-    if (!dID || !roomKey || !setpointKey) {
+    if (!dID || !roomKey ) {
           logger.error(`[DashBoard] - editValueMainSetpoint - Не удалось обновить значение уставки: dID - ${dID}, roomKey - ${roomKey}, setpointKey - ${setpointKey} - не определены`);
           console.error('Не удалось обновить значение уставки: dID, roomKey или setpointKey не определены');
           return;
@@ -628,7 +628,7 @@ export default {
         console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - Уставка');
         payload = {
           room: roomKey, 
-          param: setpointKey,
+          param: settingsData.payload.param,
           value: value, 
           time: nowMoscow()
         };
@@ -655,7 +655,7 @@ export default {
           newValue = settingsConfigUpdate.updatedValue;
           payload = {
             room: roomKey, 
-            param: setpointKey,
+            param: settingsData.payload.param,
             value: newValue, 
             time: nowMoscow()
           };
@@ -666,7 +666,7 @@ export default {
           newValue = value;
           payload = {
             room: roomKey, 
-            param: setpointKey,
+            param: settingsData.payload.param,
             value: value, 
             value_type: value_type,
             time: nowMoscow()
@@ -694,7 +694,7 @@ export default {
           newValue = settingsConfigUpdate.updatedValue;
           payload = {
             room: roomKey, 
-            param: setpointKey,
+            param: settingsData.payload.param,
             value: newValue, 
             time: nowMoscow()
           };
@@ -705,7 +705,7 @@ export default {
           newValue = value;
           payload = {
             room: roomKey, 
-            param: setpointKey,
+            param: settingsData.payload.param,
             value: value, 
             value_type: value_type,
             time: nowMoscow()
@@ -717,7 +717,7 @@ export default {
         newValue = value;
         payload = {
             room: roomKey, 
-            param: setpointKey,
+            param: settingsData.payload.param,
             value: newValue, 
             time: nowMoscow()
           };
@@ -727,7 +727,7 @@ export default {
         console.log('[DashBoard] - editValueMainSetpoint - Обработка данных от компонента MainSetpoint изменения конфигурации - ?????');
         break;
     }
-    console.log('[DashBoard] - editValueMainSetpoint - Сформирован payload', payload);
+    //console.log('[DashBoard] - editValueMainSetpoint - Сформирован payload', payload);
       
     } catch (error) {
       return error;
@@ -781,10 +781,9 @@ export default {
         clearTimeout(this.setpointUpdateTimer);
         console.log('[DashBoard] - sendChangedData - Предыдущий таймер очищен');
       }
-            const value = event.updateState.value;
-            console.log('[DashBoard] - sendChangedData - event.updateState.value', value, 'event.updateState.request: ', event.updateState.request);
-            this.updateSettingsData({ field: 'request', value: event.updateState.request});
-            this.updatePayloadData({ value: value });
+        const value = event.updateState.value;
+        console.log('[DashBoard] - sendChangedData - event.updateState.value', value, 'event.updateState.request: ', event.updateState.request);
+        this.updatePayloadData({ value: value });
         this.setpointUpdateTimer = setTimeout(async () => {
           try {    
             await this.$store.dispatch('config/updateSetpointServer'); // Отправляем на данные из settingsData - index.js на сервер
