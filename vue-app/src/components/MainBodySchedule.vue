@@ -88,6 +88,7 @@
 import logger from '../store/modules/logger.js';
 import { mapGetters, mapActions} from 'vuex';
 import { formatDate, formatTimeWithHighlight } from '@/utils/timeUtils';
+import { extractTimePart, getTimeLimits } from '@/utils/timeFieldEditor';
 
 export default {
   name: 'MainBodySchedule',
@@ -326,62 +327,87 @@ export default {
 
     editStartTime() {
       this.$emit('field-selected', { scheduleId: this.scheduleData.id, field: 'startTime' });
-        const timeString = this.scheduleData.startTime || '00:00';
-        //console.log('[MainBodySchedule] - Редактирование startTime:', timeString);
-        const [hours, minutes] = timeString.split(':').map(Number);
-        
-        this.editTimeFieldWithToggle('startTime', hours, minutes);
+      const timeString = this.scheduleData.startTime || '00:00';
+      this.editTimeFieldWithToggle('startTime', timeString);
     },
     
     editEndTime() {
       this.$emit('field-selected', { scheduleId: this.scheduleData.id, field: 'endTime' });
-        const timeString = this.scheduleData.endTime || '00:05';
-        const [hours, minutes] = timeString.split(':').map(Number);      
-        this.editTimeFieldWithToggle('endTime', hours, minutes);
+      const timeString = this.scheduleData.endTime || '00:05';
+      this.editTimeFieldWithToggle('endTime', timeString);
     },
     
-    editTimeFieldWithToggle(selectedField, currentHours, currentMinutes) {
-      this.updateSettingsData({ field: 'request', value: 'updateschedules' });
-      //console.groupCollapsed('[MainBodySchedule] - editTimeFieldWithToggle');
-      // if (this.scheduleData[this.selectedField] === undefined) {
-      //   this.scheduleData[this.selectedField] = `00:00`;
-      // }
-        //console.log('[MainBodySchedule] - Редактирование:', currentHours, currentMinutes, this.scheduleData[this.selectedField]);
-        this.updatePayloadData({ 
-              id: this.scheduleData.id,
-              value: this.scheduleData[selectedField],
-              value_name: selectedField,
-              value_details: this.timeEditMode
-            });
-        const editMode = this.timeEditMode;
-        // Устанавливаем лимиты
-          const params = {
-            param: editMode, 
-            valueType: '', 
-          }
-          //console.log('[MainBodySettings] - editValue - params:', params);
-          this.setLimits(params);
+    // editTimeFieldWithToggle(selectedField, currentHours, currentMinutes) {
+    //   this.updateSettingsData({ field: 'request', value: 'updateschedules' });
+    //   //console.groupCollapsed('[MainBodySchedule] - editTimeFieldWithToggle');
+    //   // if (this.scheduleData[this.selectedField] === undefined) {
+    //   //   this.scheduleData[this.selectedField] = `00:00`;
+    //   // }
+    //     //console.log('[MainBodySchedule] - Редактирование:', currentHours, currentMinutes, this.scheduleData[this.selectedField]);
+    //     this.updatePayloadData({ 
+    //           id: this.scheduleData.id,
+    //           value: this.scheduleData[selectedField],
+    //           value_name: selectedField,
+    //           value_details: this.timeEditMode
+    //         });
+    //     const editMode = this.timeEditMode;
+    //     // Устанавливаем лимиты
+    //       const params = {
+    //         param: editMode, 
+    //         valueType: '', 
+    //       }
+    //       //console.log('[MainBodySettings] - editValue - params:', params);
+    //       this.setLimits(params);
 
-        if (editMode === 'minutes') {
-            this.$emit('getDataScheduleItem', {
-                value: currentMinutes,
-                title: selectedField,
-                value_details: 'minutes'
-            });
-        } else {
-            this.$emit('getDataScheduleItem', {
-                value: currentHours,
-                title: selectedField,
-                value_details: 'hours'
-            });
-        }
+    //     if (editMode === 'minutes') {
+    //         this.$emit('getDataScheduleItem', {
+    //             value: currentMinutes,
+    //             title: selectedField,
+    //             value_details: 'minutes'
+    //         });
+    //     } else {
+    //         this.$emit('getDataScheduleItem', {
+    //             value: currentHours,
+    //             title: selectedField,
+    //             value_details: 'hours'
+    //         });
+    //     }
         
-        // Переключаем режим
-        this.timeEditMode = this.timeEditMode === 'minutes' ? 'hours' : 'minutes';
-        //console.groupEnd();
-    },
+    //     // Переключаем режим
+    //     this.timeEditMode = this.timeEditMode === 'minutes' ? 'hours' : 'minutes';
+    //     //console.groupEnd();
+    // },
     
     // Удаление расписания
+  editTimeFieldWithToggle(selectedField, timeString) {
+    this.updateSettingsData({ field: 'request', value: 'updateschedules' });
+
+    const editMode = this.timeEditMode; // 'hours' или 'minutes'
+    const currentPartValue = extractTimePart(timeString, editMode);
+    const limits = getTimeLimits(editMode);
+
+    // Сохраняем в payload: храним оригинальную строку "HH:MM" — не число
+    this.updatePayloadData({ 
+      id: this.scheduleData.id,
+      value: timeString,          // ← всегда строка "HH:MM"
+      value_name: selectedField,  // 'startTime' или 'endTime'
+      value_details: editMode,    // 'hours' или 'minutes'
+    });
+
+    // Устанавливаем лимиты через утилиту (не через строковый ключ param)
+    this.$store.dispatch('updateLimitsData', limits);
+
+    // Передаём числовое значение части для MainSetpoint
+    this.$emit('getDataScheduleItem', {
+      value: currentPartValue,      // число: часы ИЛИ минуты
+      title: selectedField,         // 'startTime' | 'endTime'
+      value_details: editMode,      // 'hours' | 'minutes'
+    });
+
+    // Переключаем режим для следующего нажатия
+    this.timeEditMode = editMode === 'minutes' ? 'hours' : 'minutes';
+  },
+
     deleteScheduleItem() {
       if (!this.scheduleData.id) {
         logger.error('[MainBodySchedule] - deleteScheduleItem - Невозможно удалить: нет ID расписания');

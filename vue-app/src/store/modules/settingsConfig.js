@@ -3,6 +3,7 @@
 import logger from './logger';
 import { timeToMinutes, minutesToTime, formatDate,
          formatTimeWithHighlight, validateScheduleTime } from '@/utils/timeUtils';
+import { applyTimePart } from '@/utils/timeFieldEditor';
 
 const MUTATION_TYPES = {
   SET_NOTIFICATIONS: 'SET_NOTIFICATIONS',
@@ -445,6 +446,7 @@ export default {
         const settingsData = rootGetters['getSetpointsManager']?.settingsData;
         const room = settingsData?.payload?.room;
         const param = settingsData?.payload?.param;
+        
 
         const existingSchedules = schedules.filter(s => s.room === room && s.param === param);
         const currentSchedule = id ? existingSchedules.find(s => s.id === id) : null;
@@ -594,6 +596,7 @@ export default {
       try {
         const settingsData = rootGetters['getSetpointsManager']?.settingsData;
         const value_name = settingsData?.payload?.value_name;
+        const configName = settingsData?.payload?.config; 
 
         console.log('[settingsConfig] - checkTimeOverlap - Проверяем пересечение времени:', { valueToCheck, id, value_name });
 
@@ -602,6 +605,7 @@ export default {
           valueToCheck,
           id,
           value_name,
+          configName,
           mode: 'edit'
         });
 
@@ -645,17 +649,18 @@ export default {
         }
 
         // Формируем новое значение времени
-        let updatedValue;
-        const [hours, minutes] = value.split(':').map(Number);
+        const updatedValue = applyTimePart(value, value_details, newValue);
+        // let updatedValue;
+        // const [hours, minutes] = value.split(':').map(Number);
 
-        if (value_details === 'hours') {
-          const totalMinutes = value_details === 'hours'
-            ? newValue * 60 + minutes
-            : hours * 60 + newValue;
-          updatedValue = minutesToTime(Math.min(Math.max(totalMinutes, 0), 1439));
-        } else if (value_details === 'minutes') {
-          updatedValue = hours < 10 ? `0${hours}:${newValue < 10 ? '0' + newValue : newValue}` : `${hours}:${newValue < 10 ? '0' + newValue : newValue}`;
-        }
+        // if (value_details === 'hours') {
+        //   const totalMinutes = value_details === 'hours'
+        //     ? newValue * 60 + minutes
+        //     : hours * 60 + newValue;
+        //   updatedValue = minutesToTime(Math.min(Math.max(totalMinutes, 0), 1439));
+        // } else if (value_details === 'minutes') {
+        //   updatedValue = hours < 10 ? `0${hours}:${newValue < 10 ? '0' + newValue : newValue}` : `${hours}:${newValue < 10 ? '0' + newValue : newValue}`;
+        // }
 
         // Ждем результат проверки пересечений
         const overlapResult = await dispatch('checkTimeOverlap', {

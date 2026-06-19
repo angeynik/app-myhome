@@ -586,8 +586,10 @@ export default {
     let oldValue, newValue, payload;
     try {
       oldValue = this.setpoint;
+      // if (valueTitle === 'startTime' || valueTitle === 'endTime') {
+      //   value = parseFloat(eventData.updateState.value).toFixed(0);
       if (valueTitle === 'startTime' || valueTitle === 'endTime') {
-        value = parseFloat(eventData.updateState.value).toFixed(0);
+        value = Math.round(parseFloat(eventData.updateState.value)); 
       } else if (value_type === 'deviation') {
         //value = parseFloat(eventData.updateState.value).toFixed(2);
         value = Math.round(parseFloat(eventData.updateState.value) * 100) / 100;
@@ -721,15 +723,18 @@ export default {
     console.log('[DashBoard] - editValueMainSetpoint - Формируем сообщение для отпраку на сервер:', payload);
     console.groupEnd();
 
-    if (newValue !== undefined && !Number.isNaN(newValue)) {
+    if (newValue !== undefined && !Number.isNaN(newValue) && valueTitle !== 'startTime' && valueTitle !== 'endTime') {
       this.updatePayloadData({ value: newValue });
     }
     await this.$store.dispatch('config/handleValueUpdate', { dID, payload, type: requestName });
 
     console.log('[DashBoard] - editValueMainSetpoint - ', eventData);
-      //this.sendChangedData(eventData);
-      const sendTimer = this.sendChangedData(eventData);
-      if (sendTimer) this.setpoint = oldValue;
+    // Для time-полей передаём уже готовую строку "HH:MM", а не исходное число от MainSetpoint
+    const sendData = (valueTitle === 'startTime' || valueTitle === 'endTime')
+      ? { ...eventData, updateState: { ...eventData.updateState, value: newValue } }
+      : eventData;
+    const sendTimer = this.sendChangedData(sendData);
+    if (sendTimer) this.setpoint = oldValue;
     
       // Установка нового таймера для отправки на сервер
       if (this.setpointUpdateTimer) {
