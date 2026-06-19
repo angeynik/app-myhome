@@ -245,35 +245,6 @@ export default {
         this.selectedField = null;
       }
     },
-    // formattedTime(timeProperty) {
-    //   //console.log('[MainBodySchedule] - formattedTime - ', timeProperty);
-    //   let timeString = this[timeProperty];
-    //   //console.log('[MainBodySchedule] - formattedTime - timeString:', timeString);
-      
-    //   // Убедимся, что timeString - строка
-    //   timeString = typeof timeString === 'string' ? timeString : String(timeString || '00:00');
-      
-    //   if (!timeString.includes(':')) {
-    //     return timeString;
-    //   }
-
-    //   const [hours, minutes] = timeString.split(':');
-    //   const fieldName = timeProperty === 'displayStartTime' ? 'startTime' : 'endTime';
-    //   const isSelected = this.activeSelection?.scheduleId === this.scheduleData.id 
-    //             && this.activeSelection?.field === fieldName;
-
-    //   if (!isSelected) {
-    //     return `${hours}:${minutes}`;
-    //   }
-    //   if (this.timeEditMode === 'minutes') {
-    //     return `<span class="time-highlight-simple">${hours}</span> <span class="time-dimmed"> :${minutes}</span>`;
-    //   } else {
-    //     return `<span class="time-dimmed">${hours}:</span> <span class="time-highlight-simple">${minutes}</span>`;
-    //   }
-
-    // },
-
-
 
 
     // Переключение типа значения
@@ -324,7 +295,7 @@ export default {
       const field = 'value';
       this.updateSettingsData({ field: 'request', value: 'updateschedules' });
       this.setLimits({
-        param: this.$store.state.setpointsManager?.settingsData?.payload?.param, 
+        param: this.$store.state.setpointsManager?.settingsData?.payload?.key, 
         valueType: currentValueType, 
       });
 

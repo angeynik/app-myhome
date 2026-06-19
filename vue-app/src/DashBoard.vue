@@ -376,27 +376,11 @@ export default {
     }; 
   },
   async created() {
-    const param = localStorage.getItem('paramKey');
-    //console.log(' ^^^^^^^^^^^^^  -- [DashBoard] - created - roomKey:', this.getRoomKey, ' paramKey:', this.getParamKey, ' localStorageparam:', param);
-    
     await this.initializeSetpointsManager();
-    this.$store.commit('UPDATE_SETTINGS_DATA', { 
-      field: 'room', 
-      value: this.getRoomKey 
-    });
-    this.$store.commit('UPDATE_SETTINGS_DATA', { 
-      field: 'param', 
-      value: param 
-    });
-
-    // Проверка
-    // console.log('[DashBoard] - created - Комната в settingsData.payload:',
-    //   this.$store.state.setpointsManager?.settingsData?.payload?.room
-    // );
     logger.info('[DashBoard] - created ManageSetpoints - Менеджер сетпоинтов инициализирован Актуальные данные:', 
     JSON.parse(JSON.stringify(this.$store.state.setpointsManager)));
-    // console.log('[DashBoard] - created ManageSetpoints - Менеджер сетпоинтов инициализирован Актуальные данные:', 
-    // JSON.parse(JSON.stringify(this.$store.state.setpointsManager)));
+    console.log('[DashBoard] - created ManageSetpoints - Менеджер сетпоинтов инициализирован Актуальные данные:', 
+    JSON.parse(JSON.stringify(this.$store.state.setpointsManager)));
   },
  
   computed: {
@@ -799,15 +783,12 @@ export default {
         }, 200);
   },
   getComponentData(event) {
-
       console.log('[DashBoard] - getComponentData - Данные от компонента:', event);
       this.request = event.request;
-
+      this.setpoint = event.updateState.value;
       if (event.action === 'show') {  
         console.log('[DashBoard] - getComponentData - Показываем компонент MainSetpoint с данными:', event.updateState.value);
-        this.setpoint = event.updateState.value;
         this.$store.commit('SHOW_SETPOINT', true);
-        
         this.selectedItemData = {
           roomKey: this.$store.state.setpointsManager?.settingsData?.payload?.room,
           setpointKey: event.updateState.paramKey || this.$store.state.setpointsManager?.settingsData?.payload?.param,
@@ -816,7 +797,6 @@ export default {
         console.log('[DashBoard] - getComponentData - Компонент MainSetpoint показан', this.selectedItemData);
       } else if (event.action === 'hide') {
         this.$store.commit('SHOW_SETPOINT', false);
-        this.setpoint = event.updateState.value;
         //console.log('[DashBoard] - getComponentData - Компонент MainSetpoint скрыт');
           this.sendChangedData(
             {updateState : {

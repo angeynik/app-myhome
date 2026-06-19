@@ -292,8 +292,8 @@ export default {
     editThreshold(event) {
       console.log('[MainBodyNotifications] - editThreshold - Изменяем Значение срабатывания');
       event.stopPropagation();
+      console.log('[MainBodyNotifications] - editThreshold - Отправлем в index.js request : updatenotifications');
       this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
-
       this.setLimits({
         param: 'threshold',
         valueType: 'absolute',

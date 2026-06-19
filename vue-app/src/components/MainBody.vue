@@ -111,12 +111,12 @@ export default {
     },
   },
   methods: {
-    ...mapMutations({
-      SET_ROOM_KEY: 'SET_ROOM_KEY',
-      SET_PARAM_KEY: 'SET_PARAM_KEY', 
-      SET_DEVICE_KEY: 'SET_DEVICE_KEY', 
-      SET_SETPOINT_KEY: 'SET_SETPOINT_KEY' 
-    }),
+    // ...mapMutations({
+    //   SET_ROOM_KEY: 'SET_ROOM_KEY',
+    //   SET_PARAM_KEY: 'SET_PARAM_KEY', 
+    //   SET_DEVICE_KEY: 'SET_DEVICE_KEY', 
+    //   SET_SETPOINT_KEY: 'SET_SETPOINT_KEY' 
+    // }),
     ...mapMutations('sortParams', ['SET_SORT_TYPE']),
     ...mapActions('sortParams', [
       'setLimits',
@@ -223,64 +223,6 @@ _buildItem(overrides) {
     }, 300); // 300 мс – типичный интервал для двойного тача
   },
 
-  // singleClickAction(item) {
-  //   // Вся логика, которая ранее была внутри setTimeout в selectItem
-  //   const clearParam = 'd' + this.clearKeySync(item.paramKey);
-  //   console.log('[MainBody] - singleClickAction - Исходный ключ:', item.paramKey, 'Очищенный:', clearParam);
-    
-  //   console.groupCollapsed('[MainBody] - selectItem (одинарный)');
-  //   logger.dev(`[MainBody] - Выбран параметр: ${JSON.stringify(item, null, 2)}`);
-    
-  //   if (this.selectedItem === item) {
-  //     // Скрыть панель уставки
-  //     this.selectedItem = null;
-  //     this.$emit('getComponentData', { 
-  //       action: 'hide',
-  //       updateState: {
-  //         value: item.setValue,
-  //         title: 'value',
-  //         roomKey: clearParam,
-  //         setpointKey: item.setpointKey
-  //       }
-  //     });
-  //   } else {
-  //     // Показать панель уставки
-  //     this.selectedItem = item;
-      
-  //     this.updateSettingsData({ field: 'param', value: clearParam });
-  //     this.updateSettingsData({ field: 'request', value: 'setpoints' });
-  //     this.updatePayloadData({ 
-  //       value: item.setValue,
-  //       param: clearParam,
-  //       setKey: item.setpointKey,
-  //       id: item.roomId,
-  //       room: item.roomKey
-  //     });
-      
-  //     this.SET_ROOM_KEY(item.roomKey);
-  //     this.SET_PARAM_KEY(clearParam);
-  //     this.SET_DEVICE_KEY(item.deviceKey);
-  //     this.SET_SETPOINT_KEY(item.setpointKey);
-      
-  //     this.setLimits({ param: clearParam, valueType: 'absolute' });
-      
-  //     if ((item.setValue !== undefined && item.setValue !== null) && clearParam && item.setpointKey) {
-  //       this.$emit('getComponentData', {
-  //         action: 'show',
-  //         request: 'setpoints',
-  //         updateState: {
-  //           value: item.setValue,
-  //           title: 'value',
-  //           roomKey: clearParam,
-  //           setpointKey: item.setpointKey
-  //         }
-  //       });
-  //     } else {
-  //       console.error(`Не определены значения уставки: ${item.setValue}, ключ параметра ${clearParam}, ключ уставки ${item.setpointKey}`);
-  //     }
-  //   }
-  //   console.groupEnd();
-  // },
 singleClickAction(item) {
   const clearParam = this.clearKeySync(item.paramKey); // 'Temp', 'Switch' — без префикса, без цифр
   console.log('[MainBody] - singleClickAction - Исходный ключ:', item.paramKey, 'Очищенный:', clearParam);
@@ -310,7 +252,7 @@ singleClickAction(item) {
         room: item.roomKey
       });
       
-      this.setLimits({ param: clearParam, valueType: 'absolute' });
+      this.setLimits({ param: ('d'+clearParam), valueType: 'absolute' });
       
       if ((item.setValue !== undefined && item.setValue !== null) && clearParam && item.setpointKey) {
         this.$emit('getComponentData', {
@@ -328,7 +270,8 @@ singleClickAction(item) {
         console.error(`Не определены значения уставки: ${item.setValue}, ключ параметра ${clearParam}, ключ уставки ${item.setpointKey}`);
       }
     }
-    this.SET_PARAM_KEY(item.paramKey);   // сохраняем полный ключ в localStorage/store
+    this.$store.dispatch('updatePayloadData', { param: item.paramKey });
+    this.updateSettingsData({ field: 'request', value: 'setpoints' });
     console.groupEnd();
   },
 
@@ -426,7 +369,8 @@ singleClickAction(item) {
             let actualParam = this.getParamKey;
             if (actualParam.includes("Switch")) {
               actualParam = 'dTemp';
-              this.SET_PARAM_KEY(actualParam);  // мутация из mapMutations
+              this.$store.dispatch('updatePayloadData', { param: actualParam });
+              // this.SET_PARAM_KEY(actualParam);  // мутация из mapMutations
             }
             this.viewArray = this.getSortedParams(config, actualParam);
           } else if (this.currentSortType === 'devices') {

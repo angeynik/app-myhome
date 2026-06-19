@@ -13,9 +13,13 @@ export default class ManageSetpoints {
             payload: {
                 config: config,
                 room: null,
-                key: null,
+                clearKey: null,
                 param: null,
+                setKey: null,
+                device: null,
                 value: null,
+                value_name: null,
+                value_type: null,
                 id: null,
                 updated: nowMoscow()
             },
@@ -36,8 +40,10 @@ export default class ManageSetpoints {
         this.settingsData.payload = {
             config: '',
             room: '',
-            key: null,
+            clearKey: null,
             param: '',
+            setKey: null,
+            device: null,
             value: '',
             value_name: '',
             value_type: 'absolute',

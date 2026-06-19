@@ -240,11 +240,11 @@ export default {
     },
 
   getConfigDataFromStore({ rootState, rootGetters }, { configName }) {
-    //console.log('[settingsConfig] - getConfigDataFromStore - configName', configName);
+    console.groupCollapsed('[settingsConfig] - getConfigDataFromStore - configName', configName);
     const settingsData = rootGetters['getSetpointsManager']?.settingsData;
     const dID = settingsData?.name;
-    const room = settingsData?.payload?.room;
-    const param = settingsData?.payload?.param;
+    const room = settingsData?.payload?.room || localStorage.getItem('roomKey');
+    const param = settingsData?.payload?.param || localStorage.getItem('paramKey');
     //console.log('[settingsConfig] - getConfigDataFromStore - Start', { dID, room, param });
     
     try {
@@ -262,7 +262,7 @@ export default {
       const findedConfig = Array.isArray(paramData) ? [...paramData] : [];
       
       console.log('[settingsConfig] - getConfigDataFromStore - Найдено в конфигурации', findedConfig.length);
-      // console.groupEnd();
+      console.groupEnd();
       
       return findedConfig;
       

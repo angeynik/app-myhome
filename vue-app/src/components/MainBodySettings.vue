@@ -235,7 +235,7 @@ export default {
     },
     effectiveParamKey() {
     // Определяем какой ключ использовать
-      return this.$store.state.settingsData?.payload?.param || this.paramKey || '';
+      return this.$store.state.settingsData?.payload?.param || '';
     },
     isEditingMode() {
       return this.isEditingSchedule && this.editingSchedule !== null;
@@ -307,9 +307,9 @@ export default {
   },
   methods: {
     ...mapMutations('config', ['SET_TYPE_SETTINGS_ITEM']),
-    ...mapMutations({
-      SET_PARAM_KEY: 'SET_PARAM_KEY', 
-    }),
+    // ...mapMutations({
+    //   SET_PARAM_KEY: 'SET_PARAM_KEY', 
+    // }),
     ...mapActions('settingsConfig', [
       'initialize',
       'updateTypePopupItem', 

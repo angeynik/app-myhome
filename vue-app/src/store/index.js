@@ -20,10 +20,10 @@ const store = createStore({
 
     showSetpoint: false,
 
-    roomKey: localStorage.getItem('roomKey') || null,
-    paramKey: localStorage.getItem('paramKey') || null, // Ключ вида dTemp используется для определения параметра при сортировке по параметрам
-    deviceKey: localStorage.getItem('deviceKey') || null, 
-    setpointKey: localStorage.getItem('setpointKey') || null, // Ключ вида sTemp используется при работе с Уставкой 
+    // roomKey: localStorage.getItem('roomKey') || null,
+    // paramKey: localStorage.getItem('paramKey') || null, // Ключ вида dTemp используется для определения параметра при сортировке по параметрам
+    // deviceKey: localStorage.getItem('deviceKey') || null, 
+    // setpointKey: localStorage.getItem('setpointKey') || null, // Ключ вида sTemp используется при работе с Уставкой 
   },
   modules: {
     auth,
@@ -75,8 +75,13 @@ const store = createStore({
         state.setpointsManager.settingsData.payload.updated = nowMoscow();
         state.settingsData = { ...state.setpointsManager.settingsData };
         // Вернуть console.log
-        console.log('[index] - UPDATE_PAYLOAD_DATA - Обновили state.setpointsManager.settingsData:', state.setpointsManager.settingsData);
+        //console.log('[index] - UPDATE_PAYLOAD_DATA - Обновили state.setpointsManager.settingsData:', state.setpointsManager.settingsData);
       }
+      if (payload.room) localStorage.setItem('roomKey', payload.room);
+      if (payload.param) localStorage.setItem('paramKey', payload.param);
+      if (payload.clearKey) localStorage.setItem('clearKey', payload.clearKey);
+      if (payload.setKey) localStorage.setItem('setpointKey', payload.setKey);
+      if (payload.device) localStorage.setItem('deviceKey', payload.device);
     },
     UPDATE_LIMITS_DATA(state, limits) {
       //console.log('[index] - UPDATE_LIMITS_DATA - limits:', limits);
@@ -89,35 +94,6 @@ const store = createStore({
         //console.log('[index] - UPDATE_LIMITS_DATA - After update:', JSON.stringify(state.setpointsManager.settingsData.limits));
         state.settingsData = { ...state.setpointsManager.settingsData };
         //console.log('[index] - UPDATE_LIMITS_DATA - state.settingsData.limits:', JSON.stringify(state.settingsData.limits));
-      }
-    },
-    SET_ROOM_KEY(state, key) {
-      if (typeof key === 'string' && state.roomKey !== key && key != null) {
-        logger.dev(`[index] MUTATION SET_ROOM_KEY: ${state.roomKey} -> ${key}`);
-        state.roomKey = key;
-        localStorage.setItem('roomKey', key);
-      }
-    },
-    SET_PARAM_KEY(state, key) {
-      if (typeof key === 'string' && state.paramKey !== key && key != null) {
-        logger.dev(`[index] MUTATION SET_PARAM_KEY: ${state.paramKey} -> ${key}`);
-        state.paramKey = key;
-        console.log('[index] - SET_PARAM_KEY - Обновление ключа в paramKey localStorage:', key);
-        localStorage.setItem('paramKey', key);
-      }
-    },
-    SET_DEVICE_KEY(state, key) {
-      if (typeof key === 'string' && state.deviceKey !== key && key != null) {
-        logger.dev(`[index] MUTATION SET_DEVICE_KEY: ${state.deviceKey} -> ${key}`);
-        state.deviceKey = key;
-        localStorage.setItem('deviceKey', key);
-      }
-    },
-    SET_SETPOINT_KEY(state, key) {
-      if (typeof key === 'string' && state.setpointKey !== key && key != null) {
-        logger.dev(`[index] MUTATION SET_SETPOINT_KEY: ${state.setpointKey} -> ${key}`);
-        state.setpointKey = key;
-        localStorage.setItem('setpointKey', key);
       }
     },
 
@@ -147,17 +123,25 @@ const store = createStore({
     initializeSetpointsManager({ commit, getters }) {
       const dID = getters.dID;
       if (dID) {
-        commit('INIT_SETPOINTS_MANAGER', { 
-          dID, 
-          config: 'setpoints' 
-        });
+        commit('INIT_SETPOINTS_MANAGER', { dID, config: 'setpoints' });
+        const roomKey = localStorage.getItem('roomKey');
+        const paramKey = localStorage.getItem('paramKey');
+        const deviceKey = localStorage.getItem('deviceKey');
+        const setpointKey = localStorage.getItem('setpointKey');
+        const clearKey = localStorage.getItem('clearKey');
+        if (roomKey) commit('UPDATE_PAYLOAD_DATA', { room: roomKey });
+        if (paramKey) commit('UPDATE_PAYLOAD_DATA', { param: paramKey });
+        if (deviceKey) commit('UPDATE_PAYLOAD_DATA', { device: deviceKey });
+        if (setpointKey) commit('UPDATE_PAYLOAD_DATA', { setKey: setpointKey });
+        if (clearKey) commit('UPDATE_PAYLOAD_DATA', { clearKey: clearKey });
       }
     },
     updateSettingsData({ commit }, { field, value }) { // Action для обновления данных настроек manageSetpoints
+      console.log('[index] - updateSettingsData - Обновляем поле:', field, 'значением-', value);
       commit('UPDATE_SETTINGS_DATA', { field, value });
     },
     updatePayloadData({ commit }, payload) {
-      console.log('[index] - updatePayloadData - Обновляем payload:', payload);
+      //console.log('[index] - updatePayloadData - Обновляем payload:', payload);
       commit('UPDATE_PAYLOAD_DATA', payload);
     },
     updateLimitsData({ commit }, limits) {
@@ -177,8 +161,12 @@ const store = createStore({
 
   },
   getters: {
-    settingsDataKey: (state) => state.settingsData?.payload?.key, 
-    settingsDataParam: (state) => state.settingsData?.payload?.param, 
+    key: (state) => state.settingsData?.payload?.key ?? null, 
+    roomKey: (state) => state.settingsData?.payload?.room ?? null,
+    paramKey: (state) => state.settingsData?.payload?.param ?? null,
+    deviceKey: (state) => state.settingsData?.payload?.device ?? null,
+    setpointKey: (state) => state.settingsData?.payload?.setKey ?? null,
+
 
     showSetpoint: (state) => state.showSetpoint,
     isAuthenticated: (state) => !!state.auth.token,
@@ -186,10 +174,10 @@ const store = createStore({
     user: (state) => state.auth.user.username || '',
     level: (state) => state.auth.level || 0,
     dID: (state) => state.auth.dID || null,
-    roomKey: (state) => state.roomKey,
-    paramKey: (state) => state.paramKey,
-    deviceKey: (state) => state.deviceKey,
-    setpointKey: (state) => state.setpointKey,
+    // roomKey: (state) => state.roomKey,
+    // paramKey: (state) => state.paramKey,
+    // deviceKey: (state) => state.deviceKey,
+    // setpointKey: (state) => state.setpointKey,
     typeSettingsKey: (state) => state.config.typeSettingsKey, // Тип конфигурации настроек 'schedule' 'notifications' 'statistics' 'setpoints'
     idSettingsKey: (state) => state.settingsConfig.idKey, // Идентификатор записи внутри конфигурации
     getSetpointsManager: (state) => state.setpointsManager, // Объект данных manageSetpoints

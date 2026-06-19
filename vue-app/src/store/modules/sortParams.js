@@ -56,10 +56,14 @@ function getUnit(key) {
 export default {
   namespaced: true,
     getters: {
-    getDeviceKey: (state, getters, rootState) => rootState.deviceKey,
-    getRoomKey: (state, getters, rootState) => rootState.roomKey,
-    getParamKey: (state, getters, rootState) => rootState.paramKey,
-    getSetpointKey: (state, getters, rootState) => rootState.setpointKey,
+      getDeviceKey: (state, getters, rootState, rootGetters) => rootGetters['deviceKey'],
+      getRoomKey: (state, getters, rootState, rootGetters) => rootGetters['roomKey'],
+      getParamKey: (state, getters, rootState, rootGetters) => rootGetters['paramKey'],
+      getSetpointKey: (state, getters, rootState, rootGetters) => rootGetters['setpointKey'],
+    // getDeviceKey: (state, getters, rootState) => rootState.deviceKey,
+    // getRoomKey: (state, getters, rootState) => rootState.roomKey,
+    // getParamKey: (state, getters, rootState) => rootState.paramKey,
+    // getSetpointKey: (state, getters, rootState) => rootState.setpointKey,
 
     currentSortType: state => state.sortType,
     getDeviceTitle: state => state.deviceTitle,
@@ -112,7 +116,7 @@ export default {
       console.log('[sortParams] - UPDATE_STATE Выполнено обновление состояния');
     },
     UPDATE_LIMITS(state, limits) {
-      logger.info('[sortParams] - UPDATE_LIMITS ', limits);
+      //logger.info('[sortParams] - UPDATE_LIMITS ', limits);
       //console.log('[sortParams] - UPDATE_LIMITS ', limits);
       if (limits.limHigh) state.limHigh = limits.limHigh;
       if (limits.limLow !== undefined) state.limLow = limits.limLow;
@@ -129,93 +133,30 @@ export default {
  
   actions: {
   ...mapActions(['updateSettingsData', 'updatePayloadData', 'updateLimitsData', 'updateViewData']),
-    // sortParams.js (actions)
-    // updateSortKey({ commit, dispatch}, { type, newKey }) {
-    //   //console.groupCollapsed('[sortParams] - updateSortKey');
-    //   logger.dev(`[sortParams] - updateSortKey - Обновляем ключ для ${type}:`, newKey);
-    //   //console.log(`[sortParams] - updateSortKey - Обновляем ключ для ${type}:`, newKey);
-      
-    //   // Проверка на валидность ключа
-    //   if (!newKey) {
-    //     logger.error(`[sortParams] - updateSortKey - Ключ для ${type} не определен:`, newKey);
-    //     return;
-    //   }
-
-    //   try {
-    //     // Обработка в зависимости от типа
-    //     switch (type) {
-    //       case 'rooms': {
-    //         // Обновляем ключ комнаты
-    //         commit('SET_ROOM_KEY', newKey, { root: true });
-    //         localStorage.setItem('roomKey', newKey);
-    //         //console.log(`[sortParams] - updateSortKey - Сохраняем в localStorage: roomKey:${newKey}`);
-            
-    //         // Выполняем дополнительное действие для комнат
-    //         logger.dev(`[sortParams] - updateSortKey - Выполняем дополнительное действие: updateRoomsTitle : ${newKey}`);
-    //         //console.log(`[sortParams] - updateSortKey - Выполняем дополнительное действие: updateRoomsTitle : ${newKey}`);
-    //         dispatch('updateRoomsTitle', newKey);
-    //         break;
-    //       }
-    //       case 'params': {
-    //         const cleanKey = newKey.replace(/\d+$/, '');
-    //         //console.log(`[sortParams] - updateSortKey - cleanKey: ${cleanKey}`);
-    //         // Обновляем ключ параметра
-    //         commit('SET_PARAM_KEY', cleanKey, { root: true });
-            
-    //         // Обновляем заголовок параметра
-    //         const paramTitle = getSensorTitle(cleanKey);
-    //         if (paramTitle !== undefined) {
-    //           commit('SET_PARAM_TITLE', paramTitle);
-    //         }
-    //         break;
-    //       }
-    //       case 'devices': {
-    //         // Обновляем ключ устройства
-    //         commit('SET_DEVICE_KEY', newKey, { root: true });
-    //         localStorage.setItem('deviceKey', newKey);
-    //         //console.log(`[sortParams] - updateSortKey - Сохраняем в localStorage: deviceKey:${newKey}`);
-    //         break;
-    //       }
-    //       case 'setpoints': {
-    //         // Обновляем ключ уставки
-    //         commit('SET_SETPOINT_KEY', newKey, { root: true });
-    //         localStorage.setItem('setpointKey', newKey);
-    //         //console.log(`[sortParams] - updateSortKey - Сохраняем в localStorage: setpointKey:${newKey}`);
-    //         break;
-    //       }
-    //       default:
-    //         logger.error(`[sortParams] - updateSortKey - Неизвестный тип: ${type}`);
-    //         console.error(`[sortParams] - updateSortKey - Неизвестный тип: ${type}`);
-    //         return;
-    //     }
-    //     commit('SET_FORCE_UPDATE', Date.now());
-    //     logger.info(`[sortParams] - updateSortKey - Ключ ${type} обновлен:`, newKey);
-    //     //console.log(`[sortParams] - updateSortKey - Ключ ${type} обновлен:`, newKey);
-
-    //   } catch (error) {
-    //     logger.error(`[sortParams] - updateSortKey - Ошибка при обновлении ${type}:`, error);
-    //   }
-    //   //console.groupEnd();
-    // },
-    updateSortKey({ commit, dispatch }, { type, newKey }) {
+  
+  updateSortKey({ commit, dispatch }, { type, newKey }) {
   // ----- Обработка сброса ключа -----
   if (!newKey) {
     switch (type) {
       case 'rooms':
-        commit('SET_ROOM_KEY', null, { root: true });
+        dispatch('updatePayloadData', { room: null }, { root: true });
         localStorage.removeItem('roomKey');
         break;
       case 'params':
-        commit('SET_PARAM_KEY', null, { root: true });
+        dispatch('updatePayloadData', { param: null }, { root: true });
         localStorage.removeItem('paramKey');
         break;
       case 'devices':
-        commit('SET_DEVICE_KEY', null, { root: true });
+        dispatch('updatePayloadData', { device: null }, { root: true });
         localStorage.removeItem('deviceKey');
         break;
       case 'setpoints':
-        commit('SET_SETPOINT_KEY', null, { root: true });
+        dispatch('updatePayloadData', { setKey: null }, { root: true });
         localStorage.removeItem('setpointKey');
+        break;
+      case 'key':
+        dispatch('updatePayloadData', { key: null }, { root: true });
+        localStorage.removeItem('clearKey');
         break;
       default:
         logger.error(`[sortParams] updateSortKey - неизвестный тип для сброса: ${type}`);
@@ -227,7 +168,7 @@ export default {
 
   // ----- Обновление ключа -----
   logger.dev(`[sortParams] updateSortKey - Обновляем ключ для ${type}:`, newKey);
-
+  console.log(`[sortParams] updateSortKey - Обновляем ключ для ${type}:`, newKey);
   // Проверка на валидность ключа
   if (!newKey) {
     logger.error(`[sortParams] updateSortKey - Ключ для ${type} не определен:`, newKey);
@@ -238,30 +179,36 @@ export default {
     switch (type) {
       case 'rooms': {
         // Обновляем ключ комнаты
-        commit('SET_ROOM_KEY', newKey, { root: true });
+        dispatch('updatePayloadData', { room: newKey }, { root: true });
         localStorage.setItem('roomKey', newKey);
         // Дополнительное действие для комнат
         dispatch('updateRoomsTitle', newKey);
         break;
       }
+      case 'key': {
+        // Очищаем ключ от цифр в конце (например, dSwitch03 → dSwitch)
+        // const cleanKey = newKey.replace(/\d+$/, '');
+        dispatch('updatePayloadData', { clearKey: newKey }, { root: true });
+        break;
+      }
       case 'params': {
         // Очищаем ключ от цифр в конце (например, dSwitch03 → dSwitch)
         const cleanKey = newKey.replace(/\d+$/, '');
-        commit('SET_PARAM_KEY', cleanKey, { root: true });
+        dispatch('updatePayloadData', { param: newKey }, { root: true });
         // Обновляем заголовок параметра
         const paramTitle = getSensorTitle(cleanKey);
         if (paramTitle) commit('SET_PARAM_TITLE', paramTitle);
         break;
       }
       case 'devices': {
-        commit('SET_DEVICE_KEY', newKey, { root: true });
+        dispatch('updatePayloadData', { device: newKey }, { root: true });
         localStorage.setItem('deviceKey', newKey);
         break;
       }
       case 'setpoints': {
         // Очищаем ключ от цифр в конце (например, sSwitch01 → sSwitch)
         const cleanKey = newKey.replace(/\d+$/, '');
-        commit('SET_SETPOINT_KEY', cleanKey, { root: true });
+        dispatch('updatePayloadData', { setKey: cleanKey }, { root: true });
         localStorage.setItem('setpointKey', cleanKey);
         break;
       }
@@ -303,7 +250,7 @@ export default {
       commit('SET_SORT_TYPE', type);
     },
     setLimits({ rootGetters, dispatch, commit }, params) {
-      console.groupCollapsed('[sortParams] - setLimits - Начало, params:', params);
+      //console.groupCollapsed('[sortParams] - setLimits - Начало, params:', params);
       logger.info(`[sortParams] - setLimits - Параметр -`, params);
 
       const { param, valueType } = params;
