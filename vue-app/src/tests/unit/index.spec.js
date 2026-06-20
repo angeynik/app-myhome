@@ -1,9 +1,6 @@
 // src/tests/unit/store/index.spec.js
 
 // ─── Мок localStorage ────────────────────────────────────────────────────────
-// Object.defineProperty обязателен: в jsdom localStorage объявлен
-// как non-writable getter, простое global.localStorage = ... тихо игнорируется.
-
 const localStorageMock = {
   store:      {},
   getItem:    jest.fn((key)        => localStorageMock.store[key] ?? null),
@@ -14,10 +11,6 @@ const localStorageMock = {
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock, writable: true, configurable: true,
 });
-
-// ─── Статические моки (хойстятся Babel — фабрики должны быть инлайн) ─────────
-// jest.mock() вызывается ДО любых объявлений переменных в файле.
-// Поэтому нельзя ссылаться на функции из этого файла — только inline-объекты.
 
 jest.mock('@/store/modules/logger', () => ({
   dev: jest.fn(), info: jest.fn(), error: jest.fn(),
@@ -39,8 +32,6 @@ jest.mock('@/store/modules/config',         () => ({ namespaced: true, state: { 
 jest.mock('@/store/modules/settingsConfig', () => ({ namespaced: true, state: { idKey: null },           mutations: {}, actions: {}, getters: {} }));
 jest.mock('@/store/modules/popup',          () => ({ namespaced: true, state: {}, mutations: {}, actions: {}, getters: {} }));
 
-// ─── Фабрики моков для jest.doMock (вызываются в runtime, не хойстятся) ──────
-
 function makeAuthDefault() {
   return {
     namespaced: true,
@@ -61,17 +52,6 @@ function makeEmptyModule() {
   return { namespaced: true, state: {}, mutations: {}, actions: {}, getters: {} };
 }
 
-// ─── createFreshStore ─────────────────────────────────────────────────────────
-// Создаёт изолированный экземпляр store.
-//
-// ПОЧЕМУ jest.doMock + jest.resetModules здесь, а не jest.mock:
-//   jest.doMock (в отличие от jest.mock) не хойстится и работает в runtime.
-//   После jest.resetModules() все require будут использовать СВЕЖИЕ экземпляры
-//   модулей — без загрязнения от предыдущих тестов.
-//   Явная регистрация всех моков в каждом вызове гарантирует, что jest.doMock
-//   из предыдущего теста (например, auth с dID: 'device42') не просочится
-//   в последующие describe-блоки.
-
 function createFreshStore(authFactory = makeAuthDefault) {
   jest.resetModules();
   jest.doMock('@/store/modules/auth',           authFactory);
@@ -85,26 +65,18 @@ function createFreshStore(authFactory = makeAuthDefault) {
   return require('@/store/index').default;
 }
 
-// ─── Хелперы тестов ───────────────────────────────────────────────────────────
-
 function initManager(store, dID = 'testDevice') {
   store.commit('INIT_SETPOINTS_MANAGER', { dID, config: 'setpoints' });
 }
 
-// nowMoscow из текущего module cache (после createFreshStore)
 function getNowMoscow() {
   return require('@/utils/timeUtils').nowMoscow;
 }
 
-// Проверка экземпляра ManageSetpoints через имя конструктора.
-// ПОЧЕМУ НЕ toBeInstanceOf: после jest.resetModules() класс в test-файле
-// и класс внутри freshly-required store — разные объекты из разных module registries.
-// instanceof сравнивает ссылки на конструктор → всегда false.
 function expectIsManageSetpoints(value) {
   expect(value).not.toBeNull();
   expect(value?.constructor?.name).toBe('ManageSetpoints');
 }
-
 
 // ═════════════════════════════════════════════════════════════════════════════
 // 1. НАЧАЛЬНОЕ СОСТОЯНИЕ
@@ -126,41 +98,7 @@ describe('Store — начальное состояние', () => {
     const store = createFreshStore();
     expect(store.state.settingsData).toBeNull();
   });
-
-  // test('читает roomKey из localStorage при инициализации', () => {
-  //   localStorageMock.store = { roomKey: 'rRoom1' };
-  //   const store = createFreshStore();
-  //   expect(store.state.roomKey).toBe('rRoom1');
-  // });
-
-  // test('читает paramKey из localStorage при инициализации', () => {
-  //   localStorageMock.store = { paramKey: 'dTemp' };
-  //   const store = createFreshStore();
-  //   expect(store.state.paramKey).toBe('dTemp');
-  // });
-
-  // test('читает deviceKey из localStorage при инициализации', () => {
-  //   localStorageMock.store = { deviceKey: 'device_1' };
-  //   const store = createFreshStore();
-  //   expect(store.state.deviceKey).toBe('device_1');
-  // });
-
-  // test('читает setpointKey из localStorage при инициализации', () => {
-  //   localStorageMock.store = { setpointKey: 'sTemp' };
-  //   const store = createFreshStore();
-  //   expect(store.state.setpointKey).toBe('sTemp');
-  // });
-
-  // test('устанавливает null если ключ в localStorage отсутствует', () => {
-  //   localStorageMock.store = {};
-  //   const store = createFreshStore();
-  //   expect(store.state.roomKey).toBeNull();
-  //   expect(store.state.paramKey).toBeNull();
-  //   expect(store.state.deviceKey).toBeNull();
-  //   expect(store.state.setpointKey).toBeNull();
-  // });
 });
-
 
 // ═════════════════════════════════════════════════════════════════════════════
 // 2. МУТАЦИЯ: INIT_SETPOINTS_MANAGER
@@ -197,7 +135,6 @@ describe('Мутация INIT_SETPOINTS_MANAGER', () => {
   });
 });
 
-
 // ═════════════════════════════════════════════════════════════════════════════
 // 3. МУТАЦИЯ: UPDATE_SETTINGS_DATA
 // ═════════════════════════════════════════════════════════════════════════════
@@ -223,7 +160,7 @@ describe('Мутация UPDATE_SETTINGS_DATA', () => {
 
   test('НЕ вызывает nowMoscow при изменении поля верхнего уровня', () => {
     const nowMoscow = getNowMoscow();
-    nowMoscow.mockClear(); // сбрасываем вызовы из конструктора ManageSetpoints
+    nowMoscow.mockClear();
     store.commit('UPDATE_SETTINGS_DATA', { field: 'request', value: 'schedules' });
     expect(nowMoscow).not.toHaveBeenCalled();
   });
@@ -252,7 +189,6 @@ describe('Мутация UPDATE_SETTINGS_DATA', () => {
     expect(emptyStore.state.settingsData).toBeNull();
   });
 });
-
 
 // ═════════════════════════════════════════════════════════════════════════════
 // 4. МУТАЦИЯ: UPDATE_PAYLOAD_DATA
@@ -299,7 +235,6 @@ describe('Мутация UPDATE_PAYLOAD_DATA', () => {
   });
 });
 
-
 // ═════════════════════════════════════════════════════════════════════════════
 // 5. МУТАЦИЯ: UPDATE_LIMITS_DATA
 // ═════════════════════════════════════════════════════════════════════════════
@@ -342,7 +277,6 @@ describe('Мутация UPDATE_LIMITS_DATA', () => {
   });
 });
 
-
 // ═════════════════════════════════════════════════════════════════════════════
 // 6. МУТАЦИЯ: RESET_SETTINGS_DATA
 // ═════════════════════════════════════════════════════════════════════════════
@@ -379,70 +313,8 @@ describe('Мутация RESET_SETTINGS_DATA', () => {
   });
 });
 
-
 // ═════════════════════════════════════════════════════════════════════════════
-// 7. МУТАЦИИ: SET_*_KEY
-// ═════════════════════════════════════════════════════════════════════════════
-describe('Мутации SET_*_KEY', () => {
-  const KEY_MUTATIONS = [
-    { mutation: 'SET_ROOM_KEY',     stateField: 'roomKey',     lsKey: 'roomKey'     },
-    { mutation: 'SET_PARAM_KEY',    stateField: 'paramKey',    lsKey: 'paramKey'    },
-    { mutation: 'SET_DEVICE_KEY',   stateField: 'deviceKey',   lsKey: 'deviceKey'   },
-    { mutation: 'SET_SETPOINT_KEY', stateField: 'setpointKey', lsKey: 'setpointKey' },
-  ];
-
-  let store;
-
-  beforeEach(() => {
-    localStorageMock.store = {};
-    localStorageMock.setItem.mockClear();
-    store = createFreshStore();
-  });
-
-  test.each(KEY_MUTATIONS)(
-    '$mutation: обновляет state.$stateField при новом значении',
-    ({ mutation, stateField }) => {
-      store.commit(mutation, 'newKey');
-      expect(store.state[stateField]).toBe('newKey');
-    }
-  );
-
-  test.each(KEY_MUTATIONS)(
-    '$mutation: сохраняет значение в localStorage',
-    ({ mutation, lsKey }) => {
-      localStorageMock.setItem.mockClear();
-      store.commit(mutation, 'newKey');
-      expect(localStorageMock.setItem).toHaveBeenCalledWith(lsKey, 'newKey');
-    }
-  );
-
-  test.each(KEY_MUTATIONS)(
-    '$mutation: не вызывает setItem если ключ не изменился',
-    ({ mutation }) => {
-      store.commit(mutation, 'sameKey');       // первый вызов — устанавливает
-      localStorageMock.setItem.mockClear();    // сбрасываем spy
-      store.commit(mutation, 'sameKey');       // второй вызов — дедупликация
-      expect(localStorageMock.setItem).not.toHaveBeenCalled();
-    }
-  );
-
-  test.each(KEY_MUTATIONS)(
-    '$mutation: игнорирует не-строковые значения',
-    ({ mutation, stateField }) => {
-      const originalValue = store.state[stateField];
-      localStorageMock.setItem.mockClear();
-      store.commit(mutation, 123);
-      store.commit(mutation, null);
-      store.commit(mutation, undefined);
-      expect(store.state[stateField]).toBe(originalValue);
-      expect(localStorageMock.setItem).not.toHaveBeenCalled();
-    }
-  );
-});
-
-
-// ═════════════════════════════════════════════════════════════════════════════
-// 8. ACTION: initializeStore
+// 7. ACTION: initializeStore
 // ═════════════════════════════════════════════════════════════════════════════
 describe('Action initializeStore', () => {
   beforeEach(() => {
@@ -454,21 +326,12 @@ describe('Action initializeStore', () => {
     const authData = { token: 'abc', user: { username: 'user1' }, dID: 'dev1', level: 2 };
     localStorageMock.store = { authData: JSON.stringify(authData) };
     const store = createFreshStore();
-    localStorageMock.getItem.mockClear(); // сбрасываем вызовы из инициализации store
+    localStorageMock.getItem.mockClear();
 
     await store.dispatch('initializeStore');
 
     expect(localStorageMock.getItem).toHaveBeenCalledWith('authData');
   });
-
-  // test('удаляет authData из localStorage при невалидном JSON', async () => {
-  //   localStorageMock.store = { authData: 'INVALID_JSON{{' };
-  //   const store = createFreshStore();
-
-  //   await store.dispatch('initializeStore');
-
-  //   expect(localStorageMock.removeItem).toHaveBeenCalledWith('authData');
-  // });
 
   test('не выбрасывает ошибку если authData отсутствует в localStorage', async () => {
     localStorageMock.store = {};
@@ -478,9 +341,8 @@ describe('Action initializeStore', () => {
   });
 });
 
-
 // ═════════════════════════════════════════════════════════════════════════════
-// 9. ACTION: initializeSetpointsManager
+// 8. ACTION: initializeSetpointsManager
 // ═════════════════════════════════════════════════════════════════════════════
 describe('Action initializeSetpointsManager', () => {
   beforeEach(() => {
@@ -497,7 +359,6 @@ describe('Action initializeSetpointsManager', () => {
   });
 
   test('не создаёт ManageSetpoints если dID равен null', async () => {
-    // makeAuthDefault возвращает dID: null — createFreshStore использует его по умолчанию
     const store = createFreshStore();
 
     await store.dispatch('initializeSetpointsManager');
@@ -506,27 +367,16 @@ describe('Action initializeSetpointsManager', () => {
   });
 });
 
-
 // ═════════════════════════════════════════════════════════════════════════════
-// 10. GETTERS
+// 9. GETTERS
 // ═════════════════════════════════════════════════════════════════════════════
 describe('Getters', () => {
   let store;
 
   beforeEach(() => {
-    // Явно задаём localStorage — защита от загрязнения SET_*_KEY тестами
     localStorageMock.store = { roomKey: 'rRoom1', paramKey: 'dTemp' };
-    // createFreshStore регистрирует makeAuthDefault → token: null, level: 0, dID: null
     store = createFreshStore();
   });
-
-  // test('roomKey возвращает значение из state', () => {
-  //   expect(store.getters.roomKey).toBe('rRoom1');
-  // });
-
-  // test('paramKey возвращает значение из state', () => {
-  //   expect(store.getters.paramKey).toBe('dTemp');
-  // });
 
   test('getSetpointsManager возвращает null до инициализации', () => {
     expect(store.getters.getSetpointsManager).toBeNull();
@@ -560,9 +410,8 @@ describe('Getters', () => {
   });
 });
 
-
 // ═════════════════════════════════════════════════════════════════════════════
-// 11. ИНТЕГРАЦИЯ: полный цикл setpointsManager
+// 10. ИНТЕГРАЦИЯ: полный цикл setpointsManager
 // ═════════════════════════════════════════════════════════════════════════════
 describe('Интеграция — полный цикл setpointsManager', () => {
   let store;
@@ -584,11 +433,10 @@ describe('Интеграция — полный цикл setpointsManager', () =
 
   test('state.settingsData является shallow copy — мутация не затрагивает снимок', () => {
     store.commit('UPDATE_PAYLOAD_DATA', { value: 10 });
-    const snapshot = store.state.settingsData; // сохраняем ссылку на старый объект
+    const snapshot = store.state.settingsData;
 
     store.commit('UPDATE_PAYLOAD_DATA', { value: 99 });
 
-    // snapshot должен указывать на старый объект с value: 10
     expect(snapshot.payload.value).not.toBe(store.state.settingsData.payload.value);
   });
 

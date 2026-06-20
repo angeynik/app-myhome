@@ -28,7 +28,7 @@ describe('🧩 Vuex WebSocket Module — Интеграционные тесты
 
     configActions = {
       handleConfigResponse: jest.fn(),
-      handleSensorUpdate: jest.fn()
+      handleValueUpdate: jest.fn()  // вместо handleSensorUpdate
     }
 
     logActions = {
@@ -85,6 +85,7 @@ describe('🧩 Vuex WebSocket Module — Интеграционные тесты
     await establishConnection(store)
 
     const message = {
+      type: 'response',   // важно: type должен быть 'response'
       request: 'config',
       payload: { foo: 'bar' }
     }
@@ -93,8 +94,11 @@ describe('🧩 Vuex WebSocket Module — Интеграционные тесты
       data: JSON.stringify(message)
     })
 
-    const [context, payload] = configActions.handleConfigResponse.mock.calls[0]
-    expect(payload).toEqual(message)
+    expect(configActions.handleConfigResponse).toHaveBeenCalledTimes(1)
+    // Проверяем, что вызвано с правильным payload (второй аргумент - это response)
+    const callArgs = configActions.handleConfigResponse.mock.calls[0]
+    // Первый аргумент - контекст (не проверяем), второй - payload
+    expect(callArgs[1]).toEqual(message)
   })
 
   test('handleMessage: sensor обновляет только при совпадающем dID', async () => {
@@ -111,8 +115,10 @@ describe('🧩 Vuex WebSocket Module — Интеграционные тесты
       data: JSON.stringify(sensorMessage)
     })
 
-    const [context, payload] = configActions.handleSensorUpdate.mock.calls[0]
-    expect(payload).toEqual({
+    expect(configActions.handleValueUpdate).toHaveBeenCalledTimes(1)
+    const callArgs = configActions.handleValueUpdate.mock.calls[0]
+    // Второй аргумент - объект { dID, payload, type }
+    expect(callArgs[1]).toEqual({
       dID: 'USER123',
       payload: { val: 42 },
       type: 'sensor'
@@ -137,8 +143,9 @@ describe('🧩 Vuex WebSocket Module — Интеграционные тесты
   test('handleMessage: невалидный JSON вызывает log/addError', async () => {
     await store.dispatch('websocket/handleMessage', { data: 'not-json' })
 
-    const [context, error] = logActions.addError.mock.calls[0]
-    expect(error).toBeInstanceOf(SyntaxError)
+    expect(logActions.addError).toHaveBeenCalledTimes(1)
+    const callArgs = logActions.addError.mock.calls[0]
+    expect(callArgs[1]).toBeInstanceOf(SyntaxError)
   })
 
   test('handleMessage: sensor с невалидным payload не вызывает update', async () => {
@@ -151,7 +158,7 @@ describe('🧩 Vuex WebSocket Module — Интеграционные тесты
       })
     })
 
-    expect(configActions.handleSensorUpdate).not.toHaveBeenCalled()
+    expect(configActions.handleValueUpdate).not.toHaveBeenCalled()
   })
 
   test('handleMessage: actuators обрабатывается как post-сообщение', async () => {
@@ -168,8 +175,9 @@ describe('🧩 Vuex WebSocket Module — Интеграционные тесты
       data: JSON.stringify(msg)
     })
 
-    const [context, payload] = configActions.handleSensorUpdate.mock.calls[0]
-    expect(payload).toEqual({
+    expect(configActions.handleValueUpdate).toHaveBeenCalledTimes(1)
+    const callArgs = configActions.handleValueUpdate.mock.calls[0]
+    expect(callArgs[1]).toEqual({
       dID: 'USER123',
       payload: { value: 42 },
       type: 'actuators'

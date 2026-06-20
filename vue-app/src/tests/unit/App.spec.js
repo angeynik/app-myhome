@@ -1,20 +1,44 @@
 import { shallowMount, flushPromises } from '@vue/test-utils';
 import App from '@/App.vue';
 
-// Моки
+// Мокаем store с геттерами для popup и dropdown
 const mockStore = {
   dispatch: jest.fn(),
   getters: {
+    // popup геттеры
+    'popup/popupIsVisible': false,
+    'popup/popupMessage': '',
+    'popup/popupType': 'info',
+    'popup/popupDuration': 3000,
+    // dropdown геттеры
+    'dropdown/isVisible': false,
+    'dropdown/menuItems': [],
+    'dropdown/anchorEl': null,
+    // auth геттеры
     isAuthenticated: false,
     level: 0,
     dID: null,
     roomKey: null,
     paramKey: null
+  },
+  state: {
+    auth: {
+      user: null
+    }
   }
 };
 
+// Мокаем маршрутизатор
 const mockRouter = {
   push: jest.fn()
+};
+
+// Мокаем $route с meta
+const mockRoute = {
+  path: '/',
+  meta: {
+    requiresAuth: false
+  }
 };
 
 describe('App.vue', () => {
@@ -24,7 +48,15 @@ describe('App.vue', () => {
     jest.clearAllMocks();
     // Сбрасываем значения геттеров
     mockStore.getters.isAuthenticated = false;
-    mockStore.getters.level = 0;
+    mockStore.getters['popup/popupIsVisible'] = false;
+    mockStore.getters['popup/popupMessage'] = '';
+    mockStore.getters['popup/popupType'] = 'info';
+    mockStore.getters['popup/popupDuration'] = 3000;
+    mockStore.getters['dropdown/isVisible'] = false;
+    mockStore.getters['dropdown/menuItems'] = [];
+    mockStore.getters['dropdown/anchorEl'] = null;
+    mockStore.state.auth.user = null;
+    mockRoute.meta.requiresAuth = false;
   });
 
   it('не вызывает инициализацию config если пользователь не аутентифицирован', async () => {
@@ -38,7 +70,7 @@ describe('App.vue', () => {
       global: {
         mocks: {
           $store: mockStore,
-          $route: { path: '/' },
+          $route: mockRoute,
           $router: mockRouter
         }
       }
@@ -63,7 +95,7 @@ describe('App.vue', () => {
       global: {
         mocks: {
           $store: mockStore,
-          $route: { path: '/' },
+          $route: mockRoute,
           $router: mockRouter
         }
       }
