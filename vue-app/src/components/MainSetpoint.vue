@@ -120,7 +120,7 @@
         newSetPointValue: this.setPoint,
         valueType: null,
         inactivityTimer: null,
-        valueTimer: 6000,
+        valueTimer: 8000,
       }
     },
     props: {   // Переменные полученные в компонент

@@ -138,6 +138,7 @@
 import logger from '../store/modules/logger.js';
 import { mapGetters, mapActions } from 'vuex';
 import { formatDate, formatTimeWithHighlight } from '@/utils/timeUtils';
+import { extractTimePart, getTimeLimits } from '@/utils/timeFieldEditor';
 
 const CONDITIONS = ['greater_than', 'less_than', 'equal', 'not_equal', 'greater_equal', 'less_equal'];
 
@@ -320,60 +321,87 @@ export default {
     },
 
     editStartTime(event) {
+      //console.log('[MainBodyNotifications] - Редактирование startTime:', timeString);
       event.stopPropagation();
       this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'startTime' });
       const timeString = this.notificationData.startTime || '00:00';
-      //console.log('[MainBodyNotifications] - Редактирование startTime:', timeString);
-      const [hours, minutes] = timeString.split(':').map(Number);
-      this.editTimeFieldWithToggle('startTime', hours, minutes);
+      this.editTimeFieldWithToggle('startTime', timeString);
     },
 
     editEndTime(event) {
       event.stopPropagation();
+      this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'endTime' });
       const timeString = this.notificationData.endTime || '00:05';
-      const [hours, minutes] = timeString.split(':').map(Number);      
-      this.editTimeFieldWithToggle('endTime', hours, minutes);
-
+      this.editTimeFieldWithToggle('endTime', timeString);
     },
 
-    editTimeFieldWithToggle(selectedField, currentHours, currentMinutes) {
-      this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
-        //console.log('[MainBodyNotifications] - Редактирование:', currentHours, currentMinutes, this.scheduleData[this.selectedField]);
-        this.updatePayloadData({ 
-              id: this.notificationData.id,
-              value: this.notificationData[selectedField],
-              value_name: selectedField,
-              value_type: '',
-              value_details: this.timeEditMode
-            });
-        const editMode = this.timeEditMode;
-        // Устанавливаем лимиты
-          const params = {
-            param: editMode, 
-            valueType: '', 
-          }
-          //console.log('[MainBodyNotifications] - editValue - params:', params);
-          this.setLimits(params);
+    // editTimeFieldWithToggle(selectedField, currentHours, currentMinutes) {
+    //   this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
+    //     //console.log('[MainBodyNotifications] - Редактирование:', currentHours, currentMinutes, this.scheduleData[this.selectedField]);
+    //     this.updatePayloadData({ 
+    //           id: this.notificationData.id,
+    //           value: this.notificationData[selectedField],
+    //           value_name: selectedField,
+    //           value_type: '',
+    //           value_details: this.timeEditMode
+    //         });
+    //     const editMode = this.timeEditMode;
+    //     // Устанавливаем лимиты
+    //       const params = {
+    //         param: editMode, 
+    //         valueType: '', 
+    //       }
+    //       //console.log('[MainBodyNotifications] - editValue - params:', params);
+    //       this.setLimits(params);
 
-        if (editMode === 'minutes') {
-            this.$emit('getDataNotificationItem', {
-                value: currentMinutes,
-                title: selectedField,
-                value_details: 'minutes'
-            });
-        } else {
-            this.$emit('getDataNotificationItem', {
-                value: currentHours,
-                title: selectedField,
-                value_details: 'hours'
-            });
-        }
+    //     if (editMode === 'minutes') {
+    //         this.$emit('getDataNotificationItem', {
+    //             value: currentMinutes,
+    //             title: selectedField,
+    //             value_details: 'minutes'
+    //         });
+    //     } else {
+    //         this.$emit('getDataNotificationItem', {
+    //             value: currentHours,
+    //             title: selectedField,
+    //             value_details: 'hours'
+    //         });
+    //     }
         
-        // Переключаем режим
-        this.timeEditMode = this.timeEditMode === 'minutes' ? 'hours' : 'minutes';
-        //console.groupEnd();
-    },
+    //     // Переключаем режим
+    //     this.timeEditMode = this.timeEditMode === 'minutes' ? 'hours' : 'minutes';
+    //     //console.groupEnd();
+    // },
 
+    editTimeFieldWithToggle(selectedField, timeString) {
+  this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
+
+  const editMode = this.timeEditMode; // 'hours' | 'minutes'
+  const currentPartValue = extractTimePart(timeString, editMode);
+  const limits = getTimeLimits(editMode);
+
+  // Сохраняем в payload строку "HH:MM" — не число
+  this.updatePayloadData({
+    id: this.notificationData.id,
+    value: timeString,         // всегда строка "HH:MM"
+    value_name: selectedField, // 'startTime' | 'endTime'
+    value_type: '',
+    value_details: editMode,   // 'hours' | 'minutes'
+  });
+
+  // Лимиты через утилиту
+  this.$store.dispatch('updateLimitsData', limits);
+
+  // Передаём числовое значение части для MainSetpoint
+  this.$emit('getDataNotificationItem', {
+    value: currentPartValue,   // число: часы ИЛИ минуты
+    title: selectedField,      // 'startTime' | 'endTime'
+    value_details: editMode,   // 'hours' | 'minutes'
+  });
+
+  // Переключаем режим для следующего нажатия
+  this.timeEditMode = editMode === 'minutes' ? 'hours' : 'minutes';
+},
 
     editFrequency(event) {
       event.stopPropagation();

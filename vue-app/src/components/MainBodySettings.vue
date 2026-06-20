@@ -159,7 +159,6 @@ export default {
       availableTitles: ['schedules', 'notifications', 'statistics'],
       typeToTitleMap: {
         'schedules': 'Расписание',
-        'schedule': 'Расписание',
         'notifications': 'Уведомления',
         'statistics': 'Аналитика'
       },
