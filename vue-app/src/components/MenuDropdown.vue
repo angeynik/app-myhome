@@ -1,7 +1,7 @@
 <!-- components/MenuDropdown.vue -->
 <template>
   <Teleport to="body">
-    <div v-if="visible" class="menu-dropdown-overlay" @click.self="close">
+    <div v-if="visibleDropdown" class="menu-dropdown-overlay" @click.self="close">
         <!-- <div class="menu-dropdown-overlay" @click.self="close"> -->
       <div class="menu-dropdown" :style="positionStyle">
 <div
@@ -26,7 +26,10 @@
 export default {
   name: 'MenuDropdown',
   props: {
-    visible: Boolean,
+    visibleDropdown: {
+      type: Boolean,
+      default: false
+    },
     items: {
       type: Array,
       default: () => []
@@ -55,7 +58,7 @@ export default {
   },
   methods: {
     handleOutsideClick(event) {
-      if (!this.visible) return;
+      if (!this.visibleDropdown) return;
       // Не закрывать, если клик был по кнопке, вызвавшей меню
       if (this.anchorElement && this.anchorElement.contains(event.target)) {
         return;

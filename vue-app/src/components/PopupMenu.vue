@@ -1,6 +1,6 @@
 <!-- components/PopupMenu.vue -->
 <template>
-  <div class="popup-overlay" v-show="visible" @click.self="closePopup">
+  <div class="popup-overlay" v-show="visiblePopup" @click.self="closePopup">
     <div class="popup-content" :class="popupTypeClass">
       <div class="popup-header">
         <span class="popup-title">{{ typeTitle }}</span>
@@ -19,7 +19,7 @@
 <script>
 export default {
   props: {
-    visible: {
+    visiblePopup: {
       type: Boolean,
       default: false
     },
@@ -53,7 +53,7 @@ export default {
     }
   },
   watch: {
-    visible(newVal) {
+    visiblePopup(newVal) {
       if (newVal && this.duration > 0) {
         this.autoCloseTimer = setTimeout(() => {
           this.$emit('auto-close');

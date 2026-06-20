@@ -1,26 +1,26 @@
 // store/modules/dropdown.js
 const state = {
-  visible: false,
-  items: [
-    { label: 'Профиль', action: 'profile' },
+  visibleDropdown: false,
+  itemsDropdown: [
+    { label: 'Профиль',   action: 'profile'  },
     { label: 'Настройки', action: 'settings' },
-    { label: 'Выйти', action: 'logout' }
+    { label: 'Выйти',     action: 'logout'   },
   ],
-  anchorElement: null,
+  anchorDropdown: null,
 };
 
 const mutations = {
   SHOW(state, { items, anchorElement }) {
-    state.visible = true;
-    if (items) state.items = items;
-    state.anchorElement = anchorElement;
+    state.visibleDropdown = true;
+    if (items) state.itemsDropdown = items;
+    state.anchorDropdown = anchorElement;
   },
   HIDE(state) {
-    state.visible = false;
-    state.anchorElement = null;
+    state.visibleDropdown = false;
+    state.anchorDropdown = null;
   },
   SET_ITEMS(state, items) {
-    state.items = items;
+    state.itemsDropdown = items;
   },
 };
 
@@ -36,10 +36,12 @@ const actions = {
   },
 };
 
+// Геттеры с уникальными именами — используются в App.vue через mapGetters.
+// Псевдонимы задаются на стороне App.vue, здесь имена «нейтральные».
 const getters = {
-  visible: (state) => state.visible,
-  items: (state) => state.items,
-  anchorElement: (state) => state.anchorElement,
+  isVisible:  (state) => state.visibleDropdown,
+  menuItems:  (state) => state.itemsDropdown,
+  anchorEl:   (state) => state.anchorDropdown,
 };
 
 export default {

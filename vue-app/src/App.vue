@@ -2,21 +2,24 @@
 <template>
   <div id="app">
     <router-view />
+
+    <!-- Popup: управляется через геттер popup/popupState -->
     <PopupMenu
-      v-if="!dropdownVisible"
-      :visible="popup.visible"
-      :message="popup.message"
-      :type="popup.type"
-      :duration="popup.duration"
-      @close="closePopup"
-      @auto-close="closePopup"
+      :visiblePopup="popupIsVisible"
+      :message="popupMessage"
+      :type="popupType"
+      :duration="popupDuration"
+      @close="onPopupClose"
+      @auto-close="onPopupClose"
     />
+
+    <!-- Dropdown: управляется через геттеры dropdown/*, рендерится поверх всего через Teleport внутри компонента -->
     <MenuDropdown
       v-if="$route.meta.requiresAuth !== false"
-      :visible="dropdownVisible"
-      :items="dropdownItems"
-      :anchor-element="anchorElement"
-      @close="closeDropdown"
+      :visibleDropdown="dropdownIsVisible"
+      :items="dropdownMenuItems"
+      :anchor-element="dropdownAnchorEl"
+      @close="onDropdownClose"
       @select="onDropdownSelect"
     />
   </div>
@@ -24,12 +27,15 @@
 
 <script>
 import logger from './store/modules/logger.js';
-import { mapState, mapMutations, mapActions } from 'vuex';
+import { mapGetters, mapMutations, mapActions } from 'vuex';
 import PopupMenu from '@/components/PopupMenu.vue';
 import MenuDropdown from '@/components/MenuDropdown.vue';
 
 export default {
   name: 'App',
+
+  components: { PopupMenu, MenuDropdown },
+
   data() {
     return {
       msg: 'Welcome to Your SmartHome App',
@@ -38,100 +44,100 @@ export default {
       serverPort: process.env.VUE_APP_SERVER_PORT,
     };
   },
- components: { PopupMenu, MenuDropdown },
+
   computed: {
-    ...mapState('popup', ['visible', 'message', 'type', 'duration']),
-    popup() {
-      return this;
-    },
-    ...mapState('dropdown', ['visible', 'items', 'anchorElement']),
-    dropdownVisible() {
-      console.log('[App] dropdownVisible computed, visible =', this.visible);
-      return this.visible;
-    },
-    dropdownItems() {
-      console.log('[App] dropdownItems computed, items =', this.items);
-      return this.items;
-    },
+    // Все геттеры с уникальными префиксами — конфликты между модулями исключены.
+    ...mapGetters({
+      // ── popup/  ──────────────────────────────────────────────────
+      popupIsVisible:     'popup/popupIsVisible',   // Boolean
+      popupMessage:       'popup/popupMessage',     // String
+      popupType:          'popup/popupType',        // String
+      popupDuration:      'popup/popupDuration',    // Number
+      // ── dropdown/ ───────────────────────────────────────────────
+      dropdownIsVisible:  'dropdown/isVisible',     // Boolean
+      dropdownMenuItems:  'dropdown/menuItems',     // Array
+      dropdownAnchorEl:   'dropdown/anchorEl',      // HTMLElement | null
+    }),
   },
-  // watch: {
-  //   'dropdownVisible'(newVal) {
-  //     console.log('[App] watch dropdownVisible changed to', newVal);
-  //   },
+
   async mounted() {
     try {
       // 1. Восстанавливаем сессию из localStorage
       await this.$store.dispatch('initializeStore');
-      
+
       // 2. Устанавливаем WebSocket соединение
       await this.$store.dispatch('websocket/connect');
-     
-      // // 3. Если пользователь был восстановлен из localStorage, автоматически отправляем логин/пароль
-      // if (this.$store.state.auth.user && this.$store.state.auth.user.username) {
-      //   const { username, password } = this.$store.state.auth.user;
-      //   console.log('Автоматическая отправка учетных данных из localStorage для пользователя:', username, password);
-        
-      //   // Используем существующий метод login из auth модуля
-      //   await this.$store.dispatch('auth/login', { username, password });
-      // }
 
-      // 3. Если пользователь был восстановлен из localStorage, автоматически отправляем логин/пароль
+      // 3. Авто-логин по сохранённым данным
       const user = this.$store.state.auth.user;
       if (user && user.username && user.password) {
-        logger.info('[APP] - mounted - Автоматическая отправка учетных данных из localStorage для пользователя:', user.username);
-        //console.log('Автоматическая отправка учетных данных из localStorage для пользователя:', user.username);
-        
-        // Используем существующий метод login из auth модуля
-        await this.$store.dispatch('auth/login', { 
-          username: user.username, 
-          password: user.password 
+        logger.info('[APP] mounted – авто-логин:', user.username);
+        await this.$store.dispatch('auth/login', {
+          username: user.username,
+          password: user.password,
         });
       } else {
-        logger.error('[APP] - mounted - Недостаточно данных для автоматического входа:', user);
-        //console.log('Недостаточно данных для автоматического входа:', user);
+        logger.error('[APP] mounted – недостаточно данных для авто-входа:', user);
         if (this.$route.meta.requiresAuth !== false) {
           this.$router.push('/login');
         }
       }
 
-      // 4. После успешного подключения загружаем конфигурацию
+      // 4. После успешной аутентификации загружаем конфигурацию
       if (this.$store.getters.isAuthenticated) {
         await this.$store.dispatch('config/initialize');
       }
+
       if (this.$route.path === '/dashboard') {
         this.$router.push({ name: 'DashboardMain' });
       }
     } catch (error) {
-      logger.error('[APP] - mounted - Ошибка инициализации приложения:', error);
-      //console.error('Ошибка инициализации приложения:', error);
+      logger.error('[APP] mounted – ошибка инициализации:', error);
     }
   },
-  methods: {
-    async sendLogToServer(type, message) {
-      await this.$store.dispatch('sendLogToServer', { type, message });
-    },
-    ...mapMutations('popup', ['HIDE']),
-    closePopup() {
-      this.HIDE();
-    },
-    ...mapActions('dropdown', ['hide']),
-    closeDropdown() {
-      this.hide();
-    },
-    async onDropdownSelect(item) {
-      console.log('[App] Выбран пункт:', item);
-      this.hide(); // закрываем меню сразу
 
-      if (item.action === 'profile') {
-        this.$router.push('/profile');
-      } else if (item.action === 'logout') {
-        await this.$store.dispatch('auth/logout');
-        this.$router.push('/login');
-      } else if (item.action === 'settings') {
-        this.$router.push('/users');
-      } else if (item.action === 'toggleMobile') {
-        await this.$store.dispatch('config/toggleMobileMode');
-        // Можно обновить заголовок, чтобы отразить изменение (необязательно)
+  methods: {
+    // ── popup ────────────────────────────────────────────────────
+    // Мутация модуля popup называется HIDE — импортируем с псевдонимом,
+    // чтобы не конфликтовать с возможным HIDE из dropdown.
+    ...mapMutations({
+      hidePopupMutation: 'popup/HIDE',
+    }),
+
+    onPopupClose() {
+      this.hidePopupMutation();
+    },
+
+    // ── dropdown ─────────────────────────────────────────────────
+    // Action модуля dropdown называется hide — импортируем с псевдонимом.
+    ...mapActions({
+      hideDropdownAction: 'dropdown/hide',
+    }),
+
+    onDropdownClose() {
+      this.hideDropdownAction();
+    },
+
+    async onDropdownSelect(item) {
+      console.log('[App] Выбран пункт дропдауна:', item);
+      this.hideDropdownAction(); // закрываем сразу после выбора
+
+      switch (item.action) {
+        case 'profile':
+          this.$router.push('/profile');
+          break;
+        case 'logout':
+          await this.$store.dispatch('auth/logout');
+          this.$router.push('/login');
+          break;
+        case 'settings':
+          this.$router.push('/users');
+          break;
+        case 'toggleMobile':
+          await this.$store.dispatch('config/toggleMobileMode');
+          break;
+        default:
+          logger.warn('[App] onDropdownSelect – неизвестный action:', item.action);
       }
     },
   },
