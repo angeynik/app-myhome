@@ -1,9 +1,14 @@
 // модуль работы с конфигурацией Расписания
 // store/modules/settingsConfig.js
 import logger from './logger';
-import { timeToMinutes, minutesToTime, formatDate,
-         formatTimeWithHighlight, validateScheduleTime } from '@/utils/timeUtils';
-import { applyTimePart } from '@/utils/timeFieldEditor';
+import { formatDate, formatTimeWithHighlight, validateScheduleTime } from '@/utils/timeUtils';
+import { applyTimePart, parseTimeString, buildTimeString } from '@/utils/timeFieldEditor';
+import {
+  checkOverlap as checkOverlapUtil,
+  checkTimeOverlap as checkTimeOverlapUtil,
+  checkStartTimeOverlap as checkStartTimeOverlapUtil,
+  checkEndTimeOverlap as checkEndTimeOverlapUtil,
+} from '@/utils/checkOverlap';
 
 const MUTATION_TYPES = {
   SET_NOTIFICATIONS: 'SET_NOTIFICATIONS',
@@ -433,260 +438,395 @@ export default {
   },
 
 
+  // actions
+checkOverlap: async ({ dispatch, rootGetters }, { startTime, endTime, configName, valueToCheck, id, value_name, mode }) => {
+  try {
+    const schedules = await dispatch('getConfigDataFromStore', { configName });
+    const settingsData = rootGetters['getSetpointsManager']?.settingsData;
+    const room = settingsData?.payload?.room;
+    const param = settingsData?.payload?.param;
 
+    const existingSchedules = schedules.filter(s => s.room === room && s.param === param);
+    let currentSchedule = null;
+    if (id) {
+      currentSchedule = existingSchedules.find(s => s.id === id);
+    }
 
+    const params = {
+      existingSchedules,
+      currentScheduleId: id || null,
+      startTime,
+      endTime,
+      mode: mode || 'new',
+      valueToCheck,
+      value_name,
+    };
 
+    if (mode === 'edit' && currentSchedule) {
+      params.currentStartTime = currentSchedule.startTime;
+      params.currentEndTime = currentSchedule.endTime;
+    }
 
+    const result = checkOverlapUtil(params);
+    return result;
+  } catch (error) {
+    console.error('[settingsConfig] - checkOverlap - Ошибка:', error);
+    return { message: 'Ошибка при проверке', hasOverlap: false };
+  }
+},
 
-    checkOverlap: async ({ dispatch, rootGetters }, { startTime, endTime, configName, valueToCheck, id, value_name, mode }) => {
-      try {
-        console.log('[settingsConfig] - checkOverlap - Начинаем проверку для - ', configName, 'startTime-', startTime, 'endTime', endTime);
+checkTimeOverlap: async ({ dispatch, rootGetters }, { valueToCheck, id }) => {
+  try {
+    const settingsData = rootGetters['getSetpointsManager']?.settingsData;
+    const configName = settingsData?.payload?.config || 'schedules';
+    const value_name = settingsData?.payload?.value_name;
 
-        const schedules = await dispatch('getConfigDataFromStore', {configName});
-        const settingsData = rootGetters['getSetpointsManager']?.settingsData;
-        const room = settingsData?.payload?.room;
-        const param = settingsData?.payload?.param;
+    const schedules = await dispatch('getConfigDataFromStore', { configName });
+    const room = settingsData?.payload?.room;
+    const param = settingsData?.payload?.param;
+    const existingSchedules = schedules.filter(s => s.room === room && s.param === param);
+    const currentSchedule = existingSchedules.find(s => s.id === id);
+
+    if (!currentSchedule) {
+      return { hasOverlap: false, checkedTime: valueToCheck };
+    }
+
+    const result = checkTimeOverlapUtil({
+      existingSchedules,
+      currentScheduleId: id,
+      valueToCheck,
+      value_name,
+      currentStartTime: currentSchedule.startTime,
+      currentEndTime: currentSchedule.endTime,
+    });
+    return result;
+  } catch (error) {
+    console.error('[settingsConfig] - checkTimeOverlap - Ошибка:', error);
+    return { message: 'Ошибка при проверке', hasOverlap: false, checkedTime: valueToCheck };
+  }
+},
+
+checkStartTimeOverlap: async (_, { startTime, endTime }) => {
+  return checkStartTimeOverlapUtil(startTime, endTime);
+},
+
+checkEndTimeOverlap: async (_, { startTime, endTime }) => {
+  return checkEndTimeOverlapUtil(startTime, endTime);
+},
+
+    // checkOverlap: async ({ dispatch, rootGetters }, { startTime, endTime, configName, valueToCheck, id, value_name, mode }) => {
+    //   try {
+    //     console.log('[settingsConfig] - checkOverlap - Начинаем проверку для - ', configName, 'startTime-', startTime, 'endTime', endTime);
+
+    //     const schedules = await dispatch('getConfigDataFromStore', {configName});
+    //     const settingsData = rootGetters['getSetpointsManager']?.settingsData;
+    //     const room = settingsData?.payload?.room;
+    //     const param = settingsData?.payload?.param;
         
 
-        const existingSchedules = schedules.filter(s => s.room === room && s.param === param);
-        const currentSchedule = id ? existingSchedules.find(s => s.id === id) : null;
+    //     const existingSchedules = schedules.filter(s => s.room === room && s.param === param);
+    //     const currentSchedule = id ? existingSchedules.find(s => s.id === id) : null;
 
-        let startMinutes, endMinutes;
-        let message = '';
-        let hasOverlap = false;
-        let adjustedValue = valueToCheck || startTime;
+    //     let startMinutes, endMinutes;
+    //     let message = '';
+    //     let hasOverlap = false;
+    //     let adjustedValue = valueToCheck || startTime;
 
-        // Определяем интервал в зависимости от режима
-        if (mode === 'new') {
-          startMinutes = timeToMinutes(startTime);
-          endMinutes = timeToMinutes(endTime);
-        } else if (mode === 'edit') {
-          if (value_name === 'startTime') {
-            startMinutes = timeToMinutes(valueToCheck);
-            endMinutes = currentSchedule ? timeToMinutes(currentSchedule.endTime) : startMinutes + 10;
-          } else if (value_name === 'endTime') {
-            endMinutes = timeToMinutes(valueToCheck);
-            startMinutes = currentSchedule ? timeToMinutes(currentSchedule.startTime) : endMinutes - 10;
-          }
-        }
+    //     // Определяем интервал в зависимости от режима
+    //     if (mode === 'new') {
+    //       startMinutes = timeToMinutes(startTime);
+    //       endMinutes = timeToMinutes(endTime);
+    //     } else if (mode === 'edit') {
+    //       if (value_name === 'startTime') {
+    //         startMinutes = timeToMinutes(valueToCheck);
+    //         endMinutes = currentSchedule ? timeToMinutes(currentSchedule.endTime) : startMinutes + 10;
+    //       } else if (value_name === 'endTime') {
+    //         endMinutes = timeToMinutes(valueToCheck);
+    //         startMinutes = currentSchedule ? timeToMinutes(currentSchedule.startTime) : endMinutes - 10;
+    //       }
+    //     }
 
-        // Проверяем валидность интервала
-        if (endMinutes <= startMinutes) {
-          if (mode === 'new') {
-            message = 'Некорректное время нового расписания';
-            return { message, hasOverlap: true };
-          } else {
-            if (value_name === 'startTime') {
-              startMinutes = endMinutes - 1;
-              adjustedValue = minutesToTime(startMinutes);
-              message = 'Время начала не может быть больше или равно времени окончания';
-            } else {
-              endMinutes = startMinutes + 1;
-              adjustedValue = minutesToTime(endMinutes);
-              message = 'Время окончания не может быть меньше или равно времени начала';
-            }
-            hasOverlap = true;
-            console.log('[settingsConfig] - checkOverlap - Интервал скорректирован:', startMinutes, endMinutes);
-            return { message, hasOverlap, checkedTime: adjustedValue, value_name };
-          }
-        }
+    //     // Проверяем валидность интервала
+    //     if (endMinutes <= startMinutes) {
+    //       if (mode === 'new') {
+    //         message = 'Некорректное время нового расписания';
+    //         return { message, hasOverlap: true };
+    //       } else {
+    //         if (value_name === 'startTime') {
+    //           startMinutes = endMinutes - 1;
+    //           adjustedValue = minutesToTime(startMinutes);
+    //           message = 'Время начала не может быть больше или равно времени окончания';
+    //         } else {
+    //           endMinutes = startMinutes + 1;
+    //           adjustedValue = minutesToTime(endMinutes);
+    //           message = 'Время окончания не может быть меньше или равно времени начала';
+    //         }
+    //         hasOverlap = true;
+    //         console.log('[settingsConfig] - checkOverlap - Интервал скорректирован:', startMinutes, endMinutes);
+    //         return { message, hasOverlap, checkedTime: adjustedValue, value_name };
+    //       }
+    //     }
 
-        console.log('[settingsConfig] - checkOverlap - Интервал корректен:', startMinutes, endMinutes);
+    //     console.log('[settingsConfig] - checkOverlap - Интервал корректен:', startMinutes, endMinutes);
 
-        // Проверяем пересечения с другими расписаниями
-        let allExistingEnds = [];
-        for (const scheduleItem of existingSchedules) {
-          if (id && scheduleItem.id === id) continue;
+    //     // Проверяем пересечения с другими расписаниями
+    //     let allExistingEnds = [];
+    //     for (const scheduleItem of existingSchedules) {
+    //       if (id && scheduleItem.id === id) continue;
 
-          const existingStart = timeToMinutes(scheduleItem.startTime);
-          const existingEnd = timeToMinutes(scheduleItem.endTime);
+    //       const existingStart = timeToMinutes(scheduleItem.startTime);
+    //       const existingEnd = timeToMinutes(scheduleItem.endTime);
 
-          allExistingEnds.push(existingEnd);
+    //       allExistingEnds.push(existingEnd);
 
-          if (startMinutes < existingEnd && endMinutes > existingStart) {
-            hasOverlap = true;
-            if (mode === 'new') {
-              console.log('[settingsConfig] - checkOverlap - Пересечение найдено для нового расписания');
-            } else {
-              // Корректируем время для edit
-              if (value_name === 'startTime') {
-                startMinutes = existingEnd;
-                adjustedValue = minutesToTime(startMinutes);
-                message = 'Обнаружено пересечение, время скорректировано';
-                if (startMinutes >= endMinutes) {
-                  startMinutes = endMinutes - 1;
-                  adjustedValue = minutesToTime(startMinutes);
-                  message = 'Время начала скорректировано из-за пересечения и ограничений интервала';
-                }
-              } else if (value_name === 'endTime') {
-                endMinutes = existingStart;
-                adjustedValue = minutesToTime(endMinutes);
-                message = 'Обнаружено пересечение, время скорректировано';
-                if (startMinutes >= endMinutes) {
-                  endMinutes = startMinutes + 1;
-                  adjustedValue = minutesToTime(endMinutes);
-                  message = 'Время окончания скорректировано из-за пересечения и ограничений интервала';
-                }
-              }
-              console.log('[settingsConfig] - checkOverlap - Скорректировано:', adjustedValue);
-              break;
-            }
-          }
-        }
+    //       if (startMinutes < existingEnd && endMinutes > existingStart) {
+    //         hasOverlap = true;
+    //         if (mode === 'new') {
+    //           console.log('[settingsConfig] - checkOverlap - Пересечение найдено для нового расписания');
+    //         } else {
+    //           // Корректируем время для edit
+    //           if (value_name === 'startTime') {
+    //             startMinutes = existingEnd;
+    //             adjustedValue = minutesToTime(startMinutes);
+    //             message = 'Обнаружено пересечение, время скорректировано';
+    //             if (startMinutes >= endMinutes) {
+    //               startMinutes = endMinutes - 1;
+    //               adjustedValue = minutesToTime(startMinutes);
+    //               message = 'Время начала скорректировано из-за пересечения и ограничений интервала';
+    //             }
+    //           } else if (value_name === 'endTime') {
+    //             endMinutes = existingStart;
+    //             adjustedValue = minutesToTime(endMinutes);
+    //             message = 'Обнаружено пересечение, время скорректировано';
+    //             if (startMinutes >= endMinutes) {
+    //               endMinutes = startMinutes + 1;
+    //               adjustedValue = minutesToTime(endMinutes);
+    //               message = 'Время окончания скорректировано из-за пересечения и ограничений интервала';
+    //             }
+    //           }
+    //           console.log('[settingsConfig] - checkOverlap - Скорректировано:', adjustedValue);
+    //           break;
+    //         }
+    //       }
+    //     }
 
-        // Для нового режима, если пересечение, предложить новое время
-        if (mode === 'new' && hasOverlap) {
-          const latestEndTime = Math.max(...allExistingEnds);
-          const newStartMinutes = latestEndTime + 1;
-          const newEndMinutes = newStartMinutes + 10;
+    //     // Для нового режима, если пересечение, предложить новое время
+    //     if (mode === 'new' && hasOverlap) {
+    //       const latestEndTime = Math.max(...allExistingEnds);
+    //       const newStartMinutes = latestEndTime + 1;
+    //       const newEndMinutes = newStartMinutes + 10;
 
-          if (newEndMinutes > 1440) {
-            return { 
-              hasOverlap: true,
-              newStartTime: null,
-              newEndTime: null,
-              message: 'Невозможно найти свободный промежуток в течение суток'
-            };
-          }
+    //       if (newEndMinutes > 1440) {
+    //         return { 
+    //           hasOverlap: true,
+    //           newStartTime: null,
+    //           newEndTime: null,
+    //           message: 'Невозможно найти свободный промежуток в течение суток'
+    //         };
+    //       }
 
-          const newStartTimeStr = minutesToTime(newStartMinutes);
-          const newEndTimeStr = minutesToTime(newEndMinutes);
+    //       const newStartTimeStr = minutesToTime(newStartMinutes);
+    //       const newEndTimeStr = minutesToTime(newEndMinutes);
 
-          message = `Предложено новое время от ${newStartTimeStr} до ${newEndTimeStr}`;
-          return {
-            message,
-            newStartTime: newStartTimeStr,
-            newEndTime: newEndTimeStr,
-            hasOverlap: true
-          };
-        }
+    //       message = `Предложено новое время от ${newStartTimeStr} до ${newEndTimeStr}`;
+    //       return {
+    //         message,
+    //         newStartTime: newStartTimeStr,
+    //         newEndTime: newEndTimeStr,
+    //         hasOverlap: true
+    //       };
+    //     }
 
-        // Проверка границ суток для edit
-        if (mode === 'edit') {
-          const checkedTimeInMinutes = timeToMinutes(adjustedValue);
-          if (checkedTimeInMinutes < 0) {
-            adjustedValue = '00:00';
-            message = 'Время не может быть меньше 00:00';
-            hasOverlap = true;
-          } else if (checkedTimeInMinutes > 1440) {
-            adjustedValue = '24:00';
-            message = 'Время не может быть больше 24:00';
-            hasOverlap = true;
-          }
-        }
+    //     // Проверка границ суток для edit
+    //     if (mode === 'edit') {
+    //       const checkedTimeInMinutes = timeToMinutes(adjustedValue);
+    //       if (checkedTimeInMinutes < 0) {
+    //         adjustedValue = '00:00';
+    //         message = 'Время не может быть меньше 00:00';
+    //         hasOverlap = true;
+    //       } else if (checkedTimeInMinutes > 1440) {
+    //         adjustedValue = '24:00';
+    //         message = 'Время не может быть больше 24:00';
+    //         hasOverlap = true;
+    //       }
+    //     }
 
-        if (mode === 'new') {
-          return { hasOverlap };
-        } else {
-          return { 
-            message, 
-            hasOverlap, 
-            checkedTime: adjustedValue,
-            value_name
-          };
-        }
+    //     if (mode === 'new') {
+    //       return { hasOverlap };
+    //     } else {
+    //       return { 
+    //         message, 
+    //         hasOverlap, 
+    //         checkedTime: adjustedValue,
+    //         value_name
+    //       };
+    //     }
         
-      } catch (error) {
-        console.error('[settingsConfig] - checkOverlap - Ошибка:', error);
-        return { message: 'Ошибка при проверке', hasOverlap: false };
-      }
-    },
+    //   } catch (error) {
+    //     console.error('[settingsConfig] - checkOverlap - Ошибка:', error);
+    //     return { message: 'Ошибка при проверке', hasOverlap: false };
+    //   }
+    // },
+    // checkTimeOverlap: async ({ dispatch, rootGetters }, { valueToCheck, id }) => {
+    //   try {
+    //     const settingsData = rootGetters['getSetpointsManager']?.settingsData;
+    //     const value_name = settingsData?.payload?.value_name;
+    //     const configName = settingsData?.payload?.config; 
 
-    checkTimeOverlap: async ({ dispatch, rootGetters }, { valueToCheck, id }) => {
-      try {
-        const settingsData = rootGetters['getSetpointsManager']?.settingsData;
-        const value_name = settingsData?.payload?.value_name;
-        const configName = settingsData?.payload?.config; 
+    //     console.log('[settingsConfig] - checkTimeOverlap - Проверяем пересечение времени:', { valueToCheck, id, value_name });
 
-        console.log('[settingsConfig] - checkTimeOverlap - Проверяем пересечение времени:', { valueToCheck, id, value_name });
+    //     // Используем общую функцию проверки
+    //     const result = await dispatch('checkOverlap', {
+    //       valueToCheck,
+    //       id,
+    //       value_name,
+    //       configName,
+    //       mode: 'edit'
+    //     });
 
-        // Используем общую функцию проверки
-        const result = await dispatch('checkOverlap', {
-          valueToCheck,
-          id,
-          value_name,
-          configName,
-          mode: 'edit'
-        });
-
-        return result;
+    //     return result;
         
-      } catch (error) {
-        console.error('[settingsConfig] - checkTimeOverlap - Ошибка:', error);
-        return { message: 'Ошибка при проверке', hasOverlap: false, checkedTime: valueToCheck };
-      }
-    },
-    checkStartTimeOverlap: async (_, { startTime, endTime }) => {
-        if (startTime >= endTime) {
-         console.log('[settingsConfig] - checkStartTimeOverlap - Значение:', startTime, ' больше чем:', endTime);
-            return endTime - 1;
-        }
-        console.log('[settingsConfig] - checkStartTimeOverlap - Значение:', startTime, ' не превышает:', endTime);
-        return startTime;
-    },
-    checkEndTimeOverlap: async (_, { startTime, endTime }) => {
-        if (startTime >= endTime) {
-         console.log('[settingsConfig] - checkStartTimeOverlap - Значение:', endTime, ' меньше чем:', startTime);
-            return startTime + 1;
-        }
-        console.log('[settingsConfig] - checkStartTimeOverlap - Значение:', endTime , ' не снижается менее:', startTime);
-        return endTime;
-    },
+    //   } catch (error) {
+    //     console.error('[settingsConfig] - checkTimeOverlap - Ошибка:', error);
+    //     return { message: 'Ошибка при проверке', hasOverlap: false, checkedTime: valueToCheck };
+    //   }
+    // },
+    // checkStartTimeOverlap: async (_, { startTime, endTime }) => {
+    //     if (startTime >= endTime) {
+    //      console.log('[settingsConfig] - checkStartTimeOverlap - Значение:', startTime, ' больше чем:', endTime);
+    //         return endTime - 1;
+    //     }
+    //     console.log('[settingsConfig] - checkStartTimeOverlap - Значение:', startTime, ' не превышает:', endTime);
+    //     return startTime;
+    // },
+    // checkEndTimeOverlap: async (_, { startTime, endTime }) => {
+    //     if (startTime >= endTime) {
+    //      console.log('[settingsConfig] - checkStartTimeOverlap - Значение:', endTime, ' меньше чем:', startTime);
+    //         return startTime + 1;
+    //     }
+    //     console.log('[settingsConfig] - checkStartTimeOverlap - Значение:', endTime , ' не снижается менее:', startTime);
+    //     return endTime;
+    // },
+
+
     // Преобразуем в стрелочную функцию с async/await
     settingsConfigUpdate: async ({ dispatch, rootGetters }, { newValue, value_details }) => {
-      console.log('[settingsConfig] - settingsConfigUpdate - Параметры запроса:', { newValue, value_details });
-      
-      try {
-        const settingsData = rootGetters['getSetpointsManager']?.settingsData;
-        const dID = settingsData?.name;
-        const value = settingsData?.payload?.value;
-        const value_name = settingsData?.payload?.value_name;
-        const id = settingsData?.payload?.id;
+  try {
+    const settingsData = rootGetters['getSetpointsManager']?.settingsData;
+    const value      = settingsData?.payload?.value;      // строка "HH:MM"
+    const value_name = settingsData?.payload?.value_name;
+    const id         = settingsData?.payload?.id;
+    const dID        = settingsData?.name;
 
-        if (!dID || !newValue || !value || !value_details || !value_name) {
-          logger.warn('[settingsConfig] - settingsConfigUpdate - Параметры обновления не определены');
-          return { updateStatus: false, message: 'Параметры обновления не определены' };
-        }
+    if (!dID || newValue == null || !value || !value_details || !value_name) {
+      console.warn('[settingsConfig] - settingsConfigUpdate - Параметры не определены');
+      return { updateStatus: false, message: 'Параметры обновления не определены' };
+    }
 
-        // Формируем новое значение времени
-        const updatedValue = applyTimePart(value, value_details, newValue);
-        // let updatedValue;
-        // const [hours, minutes] = value.split(':').map(Number);
-
-        // if (value_details === 'hours') {
-        //   const totalMinutes = value_details === 'hours'
-        //     ? newValue * 60 + minutes
-        //     : hours * 60 + newValue;
-        //   updatedValue = minutesToTime(Math.min(Math.max(totalMinutes, 0), 1439));
-        // } else if (value_details === 'minutes') {
-        //   updatedValue = hours < 10 ? `0${hours}:${newValue < 10 ? '0' + newValue : newValue}` : `${hours}:${newValue < 10 ? '0' + newValue : newValue}`;
-        // }
-
-        // Ждем результат проверки пересечений
-        const overlapResult = await dispatch('checkTimeOverlap', {
-          valueToCheck: updatedValue,
-          id: id
-        });
-
-        console.log('[settingsConfig] - settingsConfigUpdate - Результат проверки:', overlapResult);
-
-        // Обновляем данные в store с проверенным/скорректированным значением
-        await dispatch('updatePayloadData', { 
-          value: overlapResult.checkedTime 
-        }, { root: true });
-
-        return { 
-          updateStatus: true, 
-          updatedValue: overlapResult.checkedTime,
-          message: overlapResult.message,
-          hasOverlap: overlapResult.hasOverlap
+    // ── Перенос при редактировании минут ──────────────────────────────────
+    // MainSetpoint зажимает значение лимитами [0, 59].
+    // Чтобы определить перенос, сравниваем newValue со старым значением минут.
+    let valueToApply = newValue;
+    if (value_details === 'minutes') {
+      const { minutes: oldMinutes, hours: oldHours } = parseTimeString(value); // импорт из timeFieldEditor
+      const limit = 59;
+      if (oldMinutes === limit && newValue === 0) {
+        // Достигли верхней границы, следующий шаг → +1 час, минуты = 0
+        valueToApply = oldHours < 23 ? `${buildTimeString(oldHours + 1, 0)}` : '23:59';
+        await dispatch('updatePayloadData', { value: valueToApply }, { root: true });
+        return {
+          updateStatus: true,
+          updatedValue: valueToApply,
+          hasOverlap: false,
+          message: '',
         };
-
-      } catch (error) {
-        console.error('[settingsConfig] - settingsConfigUpdate - Ошибка:', error);
-        return { updateStatus: false, message: 'Ошибка при обновлении', error };
       }
-    },
+      if (oldMinutes === 0 && newValue === limit) {
+        // Достигли нижней границы, предыдущий шаг → -1 час, минуты = 59
+        valueToApply = oldHours > 0 ? `${buildTimeString(oldHours - 1, 59)}` : '00:00';
+        await dispatch('updatePayloadData', { value: valueToApply }, { root: true });
+        return {
+          updateStatus: true,
+          updatedValue: valueToApply,
+          hasOverlap: false,
+          message: '',
+        };
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
+    const updatedValue = applyTimePart(value, value_details, valueToApply);
+
+    const overlapResult = await dispatch('checkTimeOverlap', { valueToCheck: updatedValue, id });
+
+    await dispatch('updatePayloadData', { value: overlapResult.checkedTime }, { root: true });
+
+    return {
+      updateStatus:  true,
+      updatedValue:  overlapResult.checkedTime,
+      hasOverlap:    overlapResult.hasOverlap,
+      message:       overlapResult.message,
+    };
+
+  } catch (error) {
+    console.error('[settingsConfig] - settingsConfigUpdate - Ошибка:', error);
+    return { updateStatus: false, message: 'Ошибка при обновлении', error };
+  }
+},
+    // settingsConfigUpdate: async ({ dispatch, rootGetters }, { newValue, value_details }) => {
+    //   console.log('[settingsConfig] - settingsConfigUpdate - Параметры запроса:', { newValue, value_details });
+      
+    //   try {
+    //     const settingsData = rootGetters['getSetpointsManager']?.settingsData;
+    //     const dID = settingsData?.name;
+    //     const value = settingsData?.payload?.value;
+    //     const value_name = settingsData?.payload?.value_name;
+    //     const id = settingsData?.payload?.id;
+
+    //     if (!dID || !newValue || !value || !value_details || !value_name) {
+    //       logger.warn('[settingsConfig] - settingsConfigUpdate - Параметры обновления не определены');
+    //       return { updateStatus: false, message: 'Параметры обновления не определены' };
+    //     }
+
+    //     // Формируем новое значение времени
+    //     const updatedValue = applyTimePart(value, value_details, newValue);
+    //     // let updatedValue;
+    //     // const [hours, minutes] = value.split(':').map(Number);
+
+    //     // if (value_details === 'hours') {
+    //     //   const totalMinutes = value_details === 'hours'
+    //     //     ? newValue * 60 + minutes
+    //     //     : hours * 60 + newValue;
+    //     //   updatedValue = minutesToTime(Math.min(Math.max(totalMinutes, 0), 1439));
+    //     // } else if (value_details === 'minutes') {
+    //     //   updatedValue = hours < 10 ? `0${hours}:${newValue < 10 ? '0' + newValue : newValue}` : `${hours}:${newValue < 10 ? '0' + newValue : newValue}`;
+    //     // }
+
+    //     // Ждем результат проверки пересечений
+    //     const overlapResult = await dispatch('checkTimeOverlap', {
+    //       valueToCheck: updatedValue,
+    //       id: id
+    //     });
+
+    //     console.log('[settingsConfig] - settingsConfigUpdate - Результат проверки:', overlapResult);
+
+    //     // Обновляем данные в store с проверенным/скорректированным значением
+    //     await dispatch('updatePayloadData', { 
+    //       value: overlapResult.checkedTime 
+    //     }, { root: true });
+
+    //     return { 
+    //       updateStatus: true, 
+    //       updatedValue: overlapResult.checkedTime,
+    //       message: overlapResult.message,
+    //       hasOverlap: overlapResult.hasOverlap
+    //     };
+
+    //   } catch (error) {
+    //     console.error('[settingsConfig] - settingsConfigUpdate - Ошибка:', error);
+    //     return { updateStatus: false, message: 'Ошибка при обновлении', error };
+    //   }
+    // },
 
 
 

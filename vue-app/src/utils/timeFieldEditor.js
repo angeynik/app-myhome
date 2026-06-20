@@ -73,3 +73,42 @@ export function getTimeLimits(field) {
   const lim = TIME_LIMITS[field] ?? TIME_LIMITS.hours;
   return { limLow: lim.min, limHigh: lim.max, limStep: lim.step };
 }
+
+/**
+ * Применяет изменение одного поля (hours или minutes) с переносом через границу.
+ * При minutes > 59 → прибавляет часы. При minutes < 0 → убавляет часы.
+ * При hours > 23 → зажимается до 23:59. При hours < 0 → зажимается до 00:00.
+ *
+ * @param {string} currentTimeStr  — текущее значение "HH:MM"
+ * @param {'hours'|'minutes'} field — какое поле меняем
+ * @param {number} newPartValue     — новое значение (может выходить за лимиты)
+ * @returns {string}               — новая строка "HH:MM"
+ */
+export function applyTimePartWithCarry(currentTimeStr, field, newPartValue) {
+  const { hours, minutes } = parseTimeString(currentTimeStr);
+
+  if (field === 'hours') {
+    // Для часов просто зажимаем — перенос через сутки не нужен
+    return buildTimeString(newPartValue, minutes);
+  }
+
+  if (field === 'minutes') {
+    let totalMinutes = newPartValue;
+    let newHours = hours;
+
+    if (totalMinutes > 59) {
+      newHours += Math.floor(totalMinutes / 60);
+      totalMinutes = totalMinutes % 60;
+    } else if (totalMinutes < 0) {
+      const borrow = Math.ceil(Math.abs(totalMinutes) / 60);
+      newHours -= borrow;
+      totalMinutes = totalMinutes + borrow * 60;
+    }
+
+    // Зажимаем итоговые часы в пределах суток
+    newHours = Math.min(Math.max(newHours, 0), 23);
+    return buildTimeString(newHours, totalMinutes);
+  }
+
+  return currentTimeStr;
+}
