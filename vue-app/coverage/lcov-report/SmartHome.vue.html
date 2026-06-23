@@ -3,15 +3,15 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for src/ManufactAutomatation.vue</title>
+    <title>Code coverage report for SmartHome.vue</title>
     <meta charset="utf-8" />
-    <link rel="stylesheet" href="../prettify.css" />
-    <link rel="stylesheet" href="../base.css" />
-    <link rel="shortcut icon" type="image/x-icon" href="../favicon.png" />
+    <link rel="stylesheet" href="prettify.css" />
+    <link rel="stylesheet" href="base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style type='text/css'>
         .coverage-summary .sorter {
-            background-image: url(../sort-arrow-sprite.png);
+            background-image: url(sort-arrow-sprite.png);
         }
     </style>
 </head>
@@ -19,13 +19,13 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../index.html">All files</a> / <a href="index.html">src</a> ManufactAutomatation.vue</h1>
+        <h1><a href="index.html">All files</a> SmartHome.vue</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">60% </span>
+                <span class="strong">62.5% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>9/15</span>
+                <span class='fraction'>10/16</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">60% </span>
+                <span class="strong">62.5% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>9/15</span>
+                <span class='fraction'>10/16</span>
             </div>
         
             
@@ -102,13 +102,10 @@
 <a name='L37'></a><a href='#L37'>37</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -127,17 +124,20 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span></td><td class="text"><pre class="prettyprint lang-js">&lt;template&gt;
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">&lt;template&gt;
   &lt;div&gt;
-    &lt;div&gt;
+    &lt;div class="header-bottom"&gt;
       &lt;nav&gt;
               &lt;router-link to="/login"&gt;Login&lt;/router-link&gt; |
               &lt;router-link to="/dashboard"&gt;Dashboard&lt;/router-link&gt; |
@@ -148,19 +148,19 @@
                   &lt;!-- Users (доступна для level 3) --&gt;
               &lt;router-link v-if="userLevel &gt;= 3" to="/users"&gt;Users&lt;/router-link&gt;
             &lt;/nav&gt;
-          &lt;/div&gt;
-            &lt;p style="width: 100%; height: 1px; background-color: var(--orange);"&gt; &lt;/p&gt;
+      &lt;/div&gt;
+      &lt;p style="width: 100%; height: 1px; background-color: var(--orange);"&gt; &lt;/p&gt;
       &lt;div&gt;
-      &lt;h1&gt;Manufact Automation&lt;/h1&gt;
-      &lt;p&gt;Welcome to the Manufact Automation page!&lt;/p&gt;
+      &lt;h1&gt;Smart Home&lt;/h1&gt;
+      &lt;p&gt;Welcome to the Smart Home page!&lt;/p&gt;
     &lt;/div&gt;
   &lt;/div&gt;
   &lt;/template&gt;
- 
+&nbsp;
   &lt;script&gt;
   import { mapGetters } from 'vuex'; 
   export default {
-    name: 'ManufactAutomatation',
+    name: 'SmartHome',
     computed: {
     ...mapGetters(['level']), // Получаем уровень доступа из Vuex
     userLevel() {
@@ -170,7 +170,7 @@
   },
   };
   &lt;/script&gt;
- 
+  
 &lt;style lang="css" src="@/assets/mainStyle.css"&gt;&lt;/style&gt;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -178,16 +178,16 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-23T06:57:06.474Z
+                at 2026-06-23T06:56:07.589Z
             </div>
-        <script src="../prettify.js"></script>
+        <script src="prettify.js"></script>
         <script>
             window.onload = function () {
                 prettyPrint();
             };
         </script>
-        <script src="../sorter.js"></script>
-        <script src="../block-navigation.js"></script>
+        <script src="sorter.js"></script>
+        <script src="block-navigation.js"></script>
     </body>
 </html>
     

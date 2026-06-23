@@ -26,7 +26,7 @@ describe('Router — конфигурация маршрутов', () => {
   test('содержит все ожидаемые именованные маршруты', () => {
     const names = router.getRoutes().map(r => r.name).filter(Boolean);
     expect(names).toEqual(expect.arrayContaining([
-      'Intro', 'DashBoard', 'DashboardMain', 'DashboardSort', 'DashboardSettings',
+      'DashBoard', 'DashboardMain', 'DashboardSort', 'DashboardSettings',
       'SmartHome', 'ManufactAutomatation',
       'Login', 'AppProfile', 'Users', 'AccessDenied',
     ]));
@@ -34,8 +34,8 @@ describe('Router — конфигурация маршрутов', () => {
 
   // ── Проверка корневых маршрутов ──
 
-  test('корневой маршрут / ведёт к Intro', () => {
-    expect(router.resolve('/').name).toBe('Intro');
+  test('корневой маршрут / ведёт к DashboardMain', () => {
+    expect(router.resolve('/').name).toBe('DashboardMain');
   });
 
   test('маршрут /login является публичным', () => {
