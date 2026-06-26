@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
+    "serve:local": "vue-cli-service serve --mode local",
     "build": "vue-cli-service build",
+    "build:local": "vue-cli-service build --mode local",
     "lint": "vue-cli-service lint",
     "test:unit": "jest",
     "test:unit:watch": "jest --watch",
