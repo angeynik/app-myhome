@@ -1,9 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Dashboard from '../DashBoard.vue';
-// import Configuration from '../ConFiguration.vue';
 import SmartHome from '../SmartHome.vue';
 import ManufactAutomatation from '../ManufactAutomatation.vue';
-//import IntroduceHome from '../IntroduceHome.vue';
 import Login from '../components/AppLogin.vue';
 import Profile from '../components/AppProfile.vue';
 import UserConfig from '../components/UserConfig.vue';
@@ -23,14 +21,14 @@ const featureRoutes = [
     path: '/configuration',
     name: 'Configuration',
     component: () => import('../ConFiguration.vue'),
-    meta: { requiresAuth: true, requiredLevel: 2 },
+    meta: { public: true },
   }] : []),
 
   ...(isFeatureEnabled('VUE_APP_FEATURE_ABOUT') ? [{
     path: '/about',
     name: 'About',
     component: () => import('../IntroduceHome.vue'),
-    meta: { requiresAuth: true, requiredLevel: 1 },
+    meta: { public: true },
   }] : []),
 ];
 
@@ -39,8 +37,8 @@ const routes = [
   {
     path: '/',
     name: 'AppHome',
-    component: { render: () => null }, // App.vue перехватывает рендер через v-if="isHomePage"
-    meta: { requiresAuth: true, requiredLevel: 1 },
+    component: () => import('../IntroduceHome.vue'),
+    meta: { public: true },
   },
   // Временно перенаправляем стартовый запрос на DashBoard
   {
@@ -71,10 +69,6 @@ const routes = [
   },
     // ── Feature-управляемые разделы ───────────────────────────────────────────
   ...featureRoutes,
-  {
-    path: '/dashboard',
-    redirect: '/'
-  },
 
   {
     path: '/smart-home',
@@ -123,9 +117,21 @@ export const navigationGuard = (to, from, next) => {
   const isAuthenticated = !!store.getters.isAuthenticated;
   const userLevel = store.getters.level || 0;
 
+    // ── ВРЕМЕННЫЙ ЛОГ ─────────────────────────────────────────────
+  console.log('[GUARD]', {
+    to: to.path,
+    isAuthenticated,
+    userLevel,
+    meta: to.meta,
+    storeState: JSON.stringify(store.state.auth),
+  });
+  // ──────────────────────────────────────────────────────────────
+
+  // Публичные маршруты — пропускаем без проверки
   if (to.matched.some(record => record.meta.public)) {
     return next();
   }
+
   
   const authRecord = to.matched.find(record => record.meta.requiresAuth);
   if (authRecord) {

@@ -614,7 +614,7 @@ export default {
       const configData = this.buildConfigJson();
       this.saveToLocalStorage();
       logger.info('[ConFiguration] - finishConfiguration - configSent:', this.configSent, 'config:', configData);
-
+        console.log('[ConFiguration] - finishConfiguration - configSent:', this.configSent, 'config:', configData);
       try {
         // config/userConfigRequest разбирает isEdit → request: 'userConfigRequest' или 'userConfigEdit'
         await this.$store.dispatch('config/userConfigRequest', {

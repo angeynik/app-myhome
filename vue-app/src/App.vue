@@ -3,7 +3,8 @@
   <div id="app">
 
     <!-- ── Стартовая страница: выбор раздела (только на маршруте "/") ────── -->
-    <div v-if="isHomePage && isAuthenticated" class="introduce-place">
+    <!-- <div v-if="isHomePage && isAuthenticated" class="introduce-place"> -->
+      <div v-if="isHomePage" class="introduce-place">
       <button
         v-for="item in visibleNavItems"
         :key="item.name"
@@ -120,32 +121,11 @@ export default {
 
   async mounted() {
     try {
-      // 1. Восстанавливаем сессию из localStorage
-      await this.$store.dispatch('initializeStore');
-
-      // 2. Устанавливаем WebSocket соединение
       await this.$store.dispatch('websocket/connect');
-
-      // 3. Авто-логин по сохранённым данным
-      const user = this.$store.state.auth.user;
-      if (user && user.username && user.password) {
-        logger.info('[APP] mounted – авто-логин:', user.username);
-        await this.$store.dispatch('auth/login', {
-          username: user.username,
-          password: user.password,
-        });
-      } else {
-        logger.error('[APP] mounted – недостаточно данных для авто-входа:', user);
-        if (this.$route.meta.requiresAuth !== false) {
-          this.$router.push('/login');
-        }
-      }
-
-      // 4. После успешной аутентификации загружаем конфигурацию
+      // После успешной аутентификации загружаем конфигурацию
       if (this.$store.getters.isAuthenticated) {
         await this.$store.dispatch('config/initialize');
       }
-
     } catch (error) {
       logger.error('[APP] mounted – ошибка инициализации:', error);
     }
