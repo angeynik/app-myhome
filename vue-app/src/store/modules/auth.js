@@ -22,14 +22,14 @@ export default {
       state.level = level;
       state.status = 'success';
     },
-  RESTORE_AUTH(state, data) {
-    state.token = data.token;
-    state.user = data.user;
-    state.password = data.password;
-    state.dID = data.dID;
-    state.level = data.level;
-    state.status = 'success';
-  },
+    RESTORE_AUTH(state, data) {
+      state.token = data.token;
+      state.user = data.user;
+      state.password = data.password;
+      state.dID = data.dID;
+      state.level = data.level;
+      state.status = 'success';
+    },
     AUTH_ERROR(state) {
       state.status = 'error';
     },
@@ -47,6 +47,24 @@ export default {
     async login({ commit, dispatch }, user) {
       logger.dev('[auth] - login - Данные пользователя для подключения:', user);
       //console.log('[auth] - login - Данные пользователя для подключения:', user);
+      if (user.token === 'local-token') {
+        logger.dev('[auth] - login - Локальный вход, восстанавливаем состояние из localStorage');
+        const authData = localStorage.getItem('authData');
+        if (!authData) {
+          throw new Error('Нет данных для локального входа');
+        }
+        const parsed = JSON.parse(authData);
+        // Восстанавливаем состояние через мутацию
+        commit('RESTORE_AUTH', {
+          token: 'local-token',
+          user: parsed.user,
+          dID: parsed.dID || parsed.user.dID,
+          level: parsed.level || 0,
+          password: parsed.user.password,
+        });
+        return parsed.user;
+      }
+
       commit('AUTH_REQUEST');
       try {
         await dispatch('websocket/connect', null, { root: true });
@@ -93,6 +111,34 @@ export default {
         commit('AUTH_ERROR');
         throw error;
       }
+    },
+    localLogin({ commit }, { dID, password, level = 0 }) {
+      logger.dev('[auth] - localLogin - Локальный вход с dID:', dID);
+      
+      const userData = {
+        username: dID,
+        password: password,
+        userlevel: level,
+        dID: dID,
+      };
+
+      // Сохраняем в localStorage
+      localStorage.setItem('authData', JSON.stringify({
+        token: 'local-token', // фиктивный токен
+        user: userData,
+        dID: dID,
+        level: level,
+        password: password,
+      }));
+
+      // Восстанавливаем состояние через существующую мутацию
+      commit('RESTORE_AUTH', {
+        token: 'local-token',
+        user: userData,
+        dID: dID,
+        level: level,
+        password: password,
+      });
     },
     
     logout({ commit, dispatch }) {

@@ -215,15 +215,36 @@ export default {
   },
   
   actions: {
-    async initialize({ dispatch, rootGetters, state }) {
+    async initialize({ dispatch, commit, rootGetters, rootState, state }) {
       dispatch('detectDevice'); 
       logger.dev('[config] - initialize - Начинаем Инициализацию конфига - state.configs: ', state.configs);
       //console.log('[config] - initialize - Начинаем Инициализацию конфига');
 
       const dID = rootGetters['dID'];
+      const token = rootState.auth.token;
       logger.dev('[config] - initialize - dID: ', dID);
       //console.log('[config] - initialize - dID: ', dID);
       //console.log('[config] - initialize - state.configs[dID] до ensureConfig: ', state.configs[dID]);
+
+      if (token === 'local-token' && dID) {
+        const savedConfig = localStorage.getItem(`${dID}_config`);
+        if (savedConfig) {
+          console.log('[config] - initialize - savedConfig: ', savedConfig);
+          try {
+            const config = JSON.parse(savedConfig);
+            commit('SET_CONFIG', { name: dID, config });
+            await dispatch('handleRoomsSet', config);
+            await dispatch('handleParamsSet', config);
+            await dispatch('handleDevicesSet', config);
+            await dispatch('handleSetpointsSet', config);
+            logger.info('[config] - initialize - Конфиг загружен из localStorage для dID:', dID);
+            return; // не запрашиваем с сервера
+          } catch (e) {
+            logger.warn('[config] - initialize - Ошибка парсинга конфига из localStorage:', e);
+            localStorage.removeItem(`${dID}_config`);
+          }
+        }
+      }
       
       if (dID && !state.configs[dID]) {
         logger.dev('[config] - initialize - Конфиг для dID -', dID, ' не был загружен -',state.configs[dID], ' инициализируем');

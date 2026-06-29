@@ -7,22 +7,50 @@ import router from './router/routes.js';
 const app = createApp(App);
 app.use(store);
 
-store.dispatch('initializeStore').then(async () => {
-  // Авто-логин ДО подключения роутера
-  const user = store.state.auth.user;
-  if (user && user.username && user.password) {
-    await store.dispatch('auth/login', {
-      username: user.username,
-      password: user.password,
-    });
-    console.log('[MAIN] после auth/login, isAuthenticated:', store.getters.isAuthenticated);
-  } else {
-    console.log('[MAIN] нет данных для авто-логина, user:', user);
-  }
+// store.dispatch('initializeStore').then(async () => {
+//   // Авто-логин ДО подключения роутера
+//   const user = store.state.auth.user;
+//   const token = store.state.auth.token;
+//   if (user && user.username && user.password && token !== 'local-token') {
+//     await store.dispatch('auth/login', {
+//       username: user.username,
+//       password: user.password,
+//     });
+//     console.log('[MAIN] после auth/login, isAuthenticated:', store.getters.isAuthenticated);
+//   } else if (user && token === 'local-token') {
+//     // уже восстановлено через RESTORE_AUTH, просто логируем
+//     console.log('[MAIN] Локальная сессия восстановлена, dID:', user.dID);
+//   } else {
+//     console.log('[MAIN] нет данных для авто-логина, user:', user);
+//   }
 
-  // Роутер подключаем ПОСЛЕ — guard увидит уже заполненный store
-  app.use(router);
-  app.mount('#app');
+//   // Роутер подключаем ПОСЛЕ — guard увидит уже заполненный store
+//   app.use(router);
+//   app.mount('#app');
+// });
+store.dispatch('initializeStore').then(async () => {
+  const user = store.state.auth.user;
+  const token = store.state.auth.token;
+
+  try {
+    if (user && user.username && user.password && token !== 'local-token') {
+      await store.dispatch('auth/login', {
+        username: user.username,
+        password: user.password,
+      });
+      console.log('[MAIN] после auth/login, isAuthenticated:', store.getters.isAuthenticated);
+    } else if (user && token === 'local-token') {
+      console.log('[MAIN] Локальная сессия восстановлена, dID:', user.dID);
+    } else {
+      console.log('[MAIN] нет данных для авто-логина, user:', user);
+    }
+  } catch (error) {
+    console.error('[MAIN] Ошибка при авто-логине:', error);
+    // Можно показать попап, но приложение всё равно монтируется
+  } finally {
+    app.use(router);
+    app.mount('#app');
+  }
 });
 // store.dispatch('initializeStore').then(() => {
 //   app.mount('#app');

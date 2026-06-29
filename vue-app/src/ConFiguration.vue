@@ -285,6 +285,7 @@
 import logger from '@/store/modules/logger.js';
 import { mapActions } from 'vuex';
 import MainFooter from '@/components/MainFooter.vue';
+import { nowMoscow } from '@/utils/timeUtils';
 
 
 const STORAGE_KEY = 'cfg_configuration';
@@ -610,75 +611,274 @@ export default {
     },
 
     // ── Отправка конфигурации ──────────────────────────────────────────────
-    async finishConfiguration() {
-      const configData = this.buildConfigJson();
-      this.saveToLocalStorage();
-      logger.info('[ConFiguration] - finishConfiguration - configSent:', this.configSent, 'config:', configData);
-        console.log('[ConFiguration] - finishConfiguration - configSent:', this.configSent, 'config:', configData);
-      try {
-        // config/userConfigRequest разбирает isEdit → request: 'userConfigRequest' или 'userConfigEdit'
-        await this.$store.dispatch('config/userConfigRequest', {
-          configData,
-          isEdit: this.configSent,
-        });
+    // async finishConfiguration() {
+    //   const configData = this.buildConfigJson();
+    //   this.saveToLocalStorage();
+    //   logger.info('[ConFiguration] - finishConfiguration - configSent:', this.configSent, 'config:', configData);
+    //     console.log('[ConFiguration] - finishConfiguration - configSent:', this.configSent, 'config:', configData);
+    //   try {
+    //     // config/userConfigRequest разбирает isEdit → request: 'userConfigRequest' или 'userConfigEdit'
+    //     await this.$store.dispatch('config/userConfigRequest', {
+    //       configData,
+    //       isEdit: this.configSent,
+    //     });
 
-        this.configSent = true; // после первой успешной отправки — переходим в режим редактирования
+    //     this.configSent = true; // после первой успешной отправки — переходим в режим редактирования
+    //     this.saveToLocalStorage();
+
+    //     this.$store.dispatch('popup/show', {
+    //       message: this.configSent
+    //         ? 'Конфигурация обновлена'
+    //         : 'Конфигурация сохранена и отправлена на сервер',
+    //       type: 'success',
+    //       duration: 3000,
+    //     });
+
+    //   } catch (err) {
+    //     logger.error('[ConFiguration] - finishConfiguration - Ошибка отправки:', err);
+    //     this.$store.dispatch('popup/show', {
+    //       message: 'Ошибка отправки на сервер. Данные сохранены локально.',
+    //       type: 'error',
+    //       duration: 4000,
+    //     });
+    //   }
+    // },
+    async finishConfiguration() {
+        const configData = this.buildConfigJson();
         this.saveToLocalStorage();
 
-        this.$store.dispatch('popup/show', {
-          message: this.configSent
-            ? 'Конфигурация обновлена'
-            : 'Конфигурация сохранена и отправлена на сервер',
-          type: 'success',
-          duration: 3000,
-        });
+        logger.info('[ConFiguration] - finishConfiguration - configSent:', this.configSent, 'config:', configData);
+        console.log('[ConFiguration] - finishConfiguration - configSent:', this.configSent, 'config:', configData);
 
-      } catch (err) {
-        logger.error('[ConFiguration] - finishConfiguration - Ошибка отправки:', err);
-        this.$store.dispatch('popup/show', {
-          message: 'Ошибка отправки на сервер. Данные сохранены локально.',
-          type: 'error',
-          duration: 4000,
-        });
-      }
-    },
+        try {
+            // Отправляем конфигурацию на сервер (fire-and-forget, не ждём ответа)
+            this.$store.dispatch('config/userConfigRequest', {
+            configData,
+            isEdit: this.configSent,
+            }).catch(err => {
+            logger.warn('[ConFiguration] - Ошибка отправки конфигурации на сервер:', err);
+            // Показываем предупреждение, но не прерываем поток
+            this.$store.dispatch('popup/show', {
+                message: 'Конфигурация сохранена локально, но не отправлена на сервер.',
+                type: 'warning',
+                duration: 4000,
+            });
+            });
+
+const currentDID = this.$store.getters.dID;
+    const configName = configData.newConfigID;
+    // Новая конфигурация, если:
+    // - configSent === false (ещё не сохраняли)
+    // - или текущий dID не совпадает с именем конфигурации (мы под другим пользователем)
+    const isNew = !this.configSent || (currentDID !== configName);
+
+    if (isNew) {
+      const password = this.userConfigID || 'newConfig';
+
+            // --- СОХРАНЯЕМ ПОЛНУЮ КОНФИГУРАЦИЮ В localStorage ---
+            localStorage.setItem(`${configName}_config`, JSON.stringify(configData));
+
+            // --- ЗАПИСЫВАЕМ В state.configs (через мутацию) ---
+            this.$store.commit('config/SET_CONFIG', {
+                name: configName,
+                config: configData,
+            });
+        // Обновляем списки комнат/параметров/устройств/уставок
+        await this.$store.dispatch('config/handleRoomsSet', configData);
+        await this.$store.dispatch('config/handleParamsSet', configData);
+        await this.$store.dispatch('config/handleDevicesSet', configData);
+        await this.$store.dispatch('config/handleSetpointsSet', configData);
+
+            // Вызываем localLogin из модуля auth
+            await this.$store.dispatch('auth/localLogin', {
+                dID: configName,
+                password: password,
+                level: 1,
+            });
+
+            this.configSent = true;
+            this.saveToLocalStorage();
+
+            this.$store.dispatch('popup/show', {
+                message: `Конфигурация "${configName}" создана. Выполнен вход.`,
+                type: 'success',
+                duration: 3000,
+            });
+
+            } else {
+      // Редактирование существующей конфигурации
+      localStorage.setItem(`${currentDID}_config`, JSON.stringify(configData));
+      this.$store.commit('config/SET_CONFIG', { name: currentDID, config: configData });
+      await this.$store.dispatch('config/handleRoomsSet', configData);
+      await this.$store.dispatch('config/handleParamsSet', configData);
+      await this.$store.dispatch('config/handleDevicesSet', configData);
+      await this.$store.dispatch('config/handleSetpointsSet', configData);
+      this.$store.dispatch('popup/show', {
+        message: 'Конфигурация обновлена',
+        type: 'success',
+        duration: 3000,
+      });
+            }
+
+            this.$router.push('/dashboard');
+        } catch (err) {
+            logger.error('[ConFiguration] - finishConfiguration - Ошибка:', err);
+            this.$store.dispatch('popup/show', {
+            message: 'Ошибка сохранения конфигурации. Данные сохранены локально.',
+            type: 'error',
+            duration: 4000,
+            });
+        }
+        },
 
     // ── Построение JSON конфигурации ───────────────────────────────────────
-    // buildConfigJson() {
-    //   return {
-    //     roomCount: this.roomCount,
-    //     rooms: this.rooms.map((room, idx) => ({
-    //       index: idx + 1,
-    //       name:  room.name || `Комната ${idx + 1}`,
-    //       groop: 'группа',
-    //       sensors: Object.fromEntries(
-    //         ROOM_SENSOR_DEFS.map(def => [
-    //           def.key,
-    //           room.sensors[def.key].enabled ? room.sensors[def.key].count : 0,
-    //         ])
-    //       ),
-    //       devices: {
-    //         tempControl: room.devices.tempControl.enabled ? {
-    //           relay:      room.devices.tempControl.relay,
-    //           thermostat: room.devices.tempControl.thermostat,
-    //           ir:         room.devices.tempControl.ir,
-    //           count:      this.tempControlCount(room),
-    //         } : null,
-    //         humControl: room.devices.humControl.enabled ? {
-    //           relay: room.devices.humControl.relay,
-    //           ir:    room.devices.humControl.ir,
-    //           count: this.humControlCount(room),
-    //         } : null,
-    //       },
-    //     })),
-    //     general: Object.fromEntries(
-    //       GENERAL_DEFS.map(def => [
-    //         def.key,
-    //         this.general[def.key].enabled ? this.general[def.key].count : 0,
-    //       ])
-    //     ),
-    //   };
-    // },
+// buildConfigJson() {
+//     const counters = {
+//         dTemp: 0,
+//         dHum: 0,
+//         dMove: 0,
+//         dDoor: 0,
+//         dCo: 0,
+//         dLeak: 0,
+//         aSwitch: 0,
+//         aThermostat: 0,
+//         aIR: 0,
+//     };
+//     const normRooms = this.normalizedRooms;
+//     let baseName = this.userConfigID ? this.userConfigID.trim() : '';
+//     baseName = baseName.replace(/\s+/g, '');
+//     baseName = baseName.replace(/[^a-zA-Z0-9_-]/g, '');
+//     if (!baseName) baseName = 'newConfig';
+//     const configName = baseName + '_' + this.dateStr || 'newConfig_'+ this.dateStr ;
+//     const result = {
+//         newConfigID: configName,
+//         password: this.userConfigID || 'newConfig',
+//         init: {
+//         dID: "",
+//         limits: {
+//             Default: { high: 30, low: 4, step: 1 },
+//             Bool: { high: true, low: false, step: 1 },
+//             Actuator: { high: 100, low: 0, step: 0.1 },
+//             Temp: { high: 36, low: 8, step: 0.25 },
+//             Hum: { high: 60, low: 12, step: 0.5 },
+//             Switch: { high: 1, low: 0, step: 1 },
+//             hours: { high: 23, low: 0, step: 1 },
+//             minutes: { high: 59, low: 0, step: 1 }
+//         },
+//         title: ""
+//         }
+//     };
+//     result.room00 = {
+//     group: '',
+//     id: 0,
+//     title: 'Общие настройки',
+//     sensors: {},
+//     powers:{},
+//     manages: {},
+//     setpoints: {},
+//     batteries: {}
+//   };
+
+//     // Добавляем комнаты как room00, room01, ...
+//     normRooms.forEach((room, idx) => {
+//         const roomKey = `room${String(idx + 1).padStart(2, '0')}`;
+//         const roomObj = {
+//         group: room.groop || '',
+//         id:idx + 1,
+//         title: room.name || `Комната ${idx + 1}`,
+//         sensors: {},
+//         manages: {},
+//         setpoints: {},
+//         batteries: {}
+//         };
+
+//         // Датчики – только включённые
+// ROOM_SENSOR_DEFS.forEach(def => {
+//       const sensorData = room.sensors[def.key];
+//       if (sensorData?.enabled) {
+//         const count = sensorData.count || 1;
+//         for (let i = 0; i < count; i++) {
+//           counters[def.key] += 1;
+//           const sensorId = def.key + String(counters[def.key]).padStart(2, '0');
+//           let type = 'num';
+//           if (['dMove', 'dDoor', 'dLeak'].includes(def.key)) type = 'bool';
+//           if (def.key === 'dCo') type = null;
+//           roomObj.sensors[sensorId] = {
+//             sensorID: null,
+//             value: null,
+//             type: type,
+//             lastUpdate: null
+//           };
+//         }
+//       }
+//     });
+
+//         // Управление температурой – если включено
+// if (room.devices.tempControl?.enabled) {
+//       roomObj.tempManage = {};
+//       const temp = room.devices.tempControl;
+//       if (temp.aSwitch) {
+//         counters.aSwitch += 1;
+//         roomObj.tempManage['aSwitch' + String(counters.aSwitch).padStart(2, '0')] = {
+//           sensorID: null,
+//           value: null,
+//           type: 'bool',
+//           lastUpdate: null
+//         };
+//       }
+//       if (temp.aThermostat) {
+//         counters.aThermostat += 1;
+//         roomObj.tempManage['aThermostat' + String(counters.aThermostat).padStart(2, '0')] = {
+//           sensorID: null,
+//           value: null,
+//           type: null,
+//           lastUpdate: null
+//         };
+//       }
+//       if (temp.aIR) {
+//         counters.aIR += 1;
+//         roomObj.tempManage['aIR' + String(counters.aIR).padStart(2, '0')] = {
+//           sensorID: null,
+//           value: null,
+//           type: null,
+//           lastUpdate: null
+//         };
+//       }
+//     }
+
+//         // Управление влажностью – если включено
+//     if (room.devices.humControl?.enabled) {
+//       roomObj.humManage = {};
+//       const hum = room.devices.humControl;
+//       if (hum.aSwitch) {
+//         counters.aSwitch += 1;
+//         roomObj.humManage['aSwitch' + String(counters.aSwitch).padStart(2, '0')] = {
+//           sensorID: null,
+//           value: null,
+//           type: 'bool',
+//           lastUpdate: null
+//         };
+//       }
+//       if (hum.aIR) {
+//         counters.aIR += 1;
+//         roomObj.humManage['aIR' + String(counters.aIR).padStart(2, '0')] = {
+//           sensorID: null,
+//           value: null,
+//           type: null,
+//           lastUpdate: null
+//         };
+//       }
+//     }
+
+//         result[roomKey] = roomObj;
+//     });
+
+//     // Добавляем общую конфигурацию (если нужно) – можно добавить в init или отдельно
+//     // Но сервер ожидает только комнаты, поэтому general пока игнорируем.
+//     // Если нужно, можно добавить отдельный ключ, но пока пропустим.
+
+//     return result;
+//     },
 buildConfigJson() {
     const counters = {
         dTemp: 0,
@@ -690,129 +890,250 @@ buildConfigJson() {
         aSwitch: 0,
         aThermostat: 0,
         aIR: 0,
+        sTemp: 0,
+        sHum: 0,
+        sSwitchT: 0,
+        sSwitchH: 0,
     };
     const normRooms = this.normalizedRooms;
     let baseName = this.userConfigID ? this.userConfigID.trim() : '';
     baseName = baseName.replace(/\s+/g, '');
     baseName = baseName.replace(/[^a-zA-Z0-9_-]/g, '');
     if (!baseName) baseName = 'newConfig';
-    const configName = baseName + '_' + this.dateStr || 'newConfig_'+ this.dateStr ;
+    const configName = baseName + '_' + this.dateStr || 'newConfig_'+ this.dateStr;
+    
     const result = {
         newConfigID: configName,
+        password: this.userConfigID || 'newConfig',
         init: {
-        dID: "",
-        limits: {
-            Default: { high: 30, low: 4, step: 1 },
-            Bool: { high: true, low: false, step: 1 },
-            Actuator: { high: 100, low: 0, step: 0.1 },
-            Temp: { high: 36, low: 8, step: 0.25 },
-            Hum: { high: 60, low: 12, step: 0.5 },
-            Switch: { high: 1, low: 0, step: 1 },
-            hours: { high: 23, low: 0, step: 1 },
-            minutes: { high: 59, low: 0, step: 1 }
-        },
-        title: ""
+            dID: "",
+            limits: {
+                Default: { high: 30, low: 4, step: 1 },
+                Bool: { high: true, low: false, step: 1 },
+                Actuator: { high: 100, low: 0, step: 0.1 },
+                Temp: { high: 36, low: 8, step: 0.25 },
+                Hum: { high: 60, low: 12, step: 0.5 },
+                Switch: { high: 1, low: 0, step: 1 },
+                hours: { high: 23, low: 0, step: 1 },
+                minutes: { high: 59, low: 0, step: 1 }
+            },
+            title: ""
         }
     };
-
-    // Добавляем комнаты как room00, room01, ...
-    normRooms.forEach((room, idx) => {
-        const roomKey = `room${String(idx + 1).padStart(2, '0')}`;
-        const roomObj = {
-        group: room.groop || '',
-        title: room.name || `Комната ${idx + 1}`,
+    
+    // Общая комната room00
+    result.room00 = {
+        group: '',
+        id: 0,
+        title: 'Общие настройки',
         sensors: {},
+        powers: {},
+        manages: {},
         setpoints: {},
         batteries: {}
+    };
+
+    // Переменные для хранения количества сенсоров в каждой комнате
+    let roomTempCount = 0;
+    let roomHumCount = 0;
+
+    // Добавляем комнаты как room01, room02, ...
+    normRooms.forEach((room, idx) => {
+        const roomKey = `room${String(idx + 1).padStart(2, '0')}`;
+        
+        // Сброс счётчиков для каждой комнаты
+        roomTempCount = 0;
+        roomHumCount = 0;
+        
+        const roomObj = {
+            group: room.groop || '',
+            id: idx + 1,
+            title: room.name || `Комната ${idx + 1}`,
+            sensors: {},
+            manages: {},
+            setpoints: {},
+            batteries: {}
         };
 
-        // Датчики – только включённые
-ROOM_SENSOR_DEFS.forEach(def => {
-      const sensorData = room.sensors[def.key];
-      if (sensorData?.enabled) {
-        const count = sensorData.count || 1;
-        for (let i = 0; i < count; i++) {
-          counters[def.key] += 1;
-          const sensorId = def.key + String(counters[def.key]).padStart(2, '0');
-          let type = 'num';
-          if (['dMove', 'dDoor', 'dLeak'].includes(def.key)) type = 'bool';
-          if (def.key === 'dCo') type = null;
-          roomObj.sensors[sensorId] = {
-            sensorID: null,
-            value: null,
-            type: type,
-            lastUpdate: null
-          };
+        // ── ДАТЧИКИ ──────────────────────────────────────────────
+        ROOM_SENSOR_DEFS.forEach(def => {
+            const sensorData = room.sensors[def.key];
+            if (sensorData?.enabled) {
+                const count = sensorData.count || 1;
+                for (let i = 0; i < count; i++) {
+                    counters[def.key] += 1;
+                    const sensorId = def.key + String(counters[def.key]).padStart(2, '0');
+                    let type = 'num';
+                    let value = 18;
+                    let lastUpdate = nowMoscow();
+                    if (['dMove', 'dDoor', 'dLeak'].includes(def.key)) type = 'bool'; value = true;
+                    if (def.key === 'dCo') type = null; value = 30;
+                    roomObj.sensors[sensorId] = {
+                        sensorID: null,
+                        value: value,
+                        type: type,
+                        lastUpdate: lastUpdate
+                    };
+                    
+                    // Подсчёт количества сенсоров температуры и влажности
+                    if (def.key === 'dTemp') roomTempCount++;
+                    if (def.key === 'dHum') roomHumCount++;
+                }
+            }
+        });
+
+        // ── УПРАВЛЕНИЕ ТЕМПЕРАТУРОЙ ─────────────────────────────
+        let hasTempManage = false;
+        let hasTempSwitch = false;
+        
+        if (room.devices.tempControl?.enabled) {
+            hasTempManage = true;
+            roomObj.tempManage = {};
+            const temp = room.devices.tempControl;
+            
+            // Проверяем, что включён хотя бы один тип управления
+            const hasAnyTempControl = temp.aSwitch || temp.aThermostat || temp.aIR;
+            
+            if (!hasAnyTempControl) {
+                // Если управление температурой включено, но ничего не выбрано – добавляем по умолчанию реле
+                temp.aSwitch = true;
+            }
+            
+            if (temp.aSwitch) {
+                hasTempSwitch = true;
+                counters.aSwitch += 1;
+                roomObj.tempManage['aSwitch' + String(counters.aSwitch).padStart(2, '0')] = {
+                    sensorID: null,
+                    value: null,
+                    type: 'bool',
+                    lastUpdate: null
+                };
+            }
+            if (temp.aThermostat) {
+                counters.aThermostat += 1;
+                roomObj.tempManage['aThermostat' + String(counters.aThermostat).padStart(2, '0')] = {
+                    sensorID: null,
+                    value: null,
+                    type: null,
+                    lastUpdate: null
+                };
+            }
+            if (temp.aIR) {
+                counters.aIR += 1;
+                roomObj.tempManage['aIR' + String(counters.aIR).padStart(2, '0')] = {
+                    sensorID: null,
+                    value: null,
+                    type: null,
+                    lastUpdate: null
+                };
+            }
         }
-      }
-    });
 
-        // Управление температурой – если включено
-if (room.devices.tempControl?.enabled) {
-      roomObj.tempManage = {};
-      const temp = room.devices.tempControl;
-      if (temp.aSwitch) {
-        counters.aSwitch += 1;
-        roomObj.tempManage['aSwitch' + String(counters.aSwitch).padStart(2, '0')] = {
-          sensorID: null,
-          value: null,
-          type: 'bool',
-          lastUpdate: null
-        };
-      }
-      if (temp.aThermostat) {
-        counters.aThermostat += 1;
-        roomObj.tempManage['aThermostat' + String(counters.aThermostat).padStart(2, '0')] = {
-          sensorID: null,
-          value: null,
-          type: null,
-          lastUpdate: null
-        };
-      }
-      if (temp.aIR) {
-        counters.aIR += 1;
-        roomObj.tempManage['aIR' + String(counters.aIR).padStart(2, '0')] = {
-          sensorID: null,
-          value: null,
-          type: null,
-          lastUpdate: null
-        };
-      }
-    }
+        // ── УСТАВКИ ДЛЯ ТЕМПЕРАТУРЫ ─────────────────────────────
+        // Если есть Управление температурой (любой тип) И есть датчик температуры
+        if (hasTempManage && roomTempCount > 0) {
+            // Добавляем sTemp (уставка температуры)
+            counters.sTemp += 1;
+            const setpointId = 'sTemp' + String(counters.sTemp).padStart(2, '0');
+            roomObj.setpoints[setpointId] = {
+                sensorID: null,
+                value: 22,
+                type: 'num',
+                lastUpdate: null,
+                limits: {
+                    high: 36,
+                    low: 8,
+                    step: 0.25
+                }
+            };
+            
+            // Если есть Реле (aSwitch) – добавляем sSwitchT (управляющий сигнал)
+            if (hasTempSwitch) {
+                counters.sSwitchT += 1;
+                const manageId = 'sSwitchT' + String(counters.sSwitchT).padStart(2, '0');
+                roomObj.manages[manageId] = {
+                    sensorID: null,
+                    value: 0,
+                    type: 'bool',
+                    lastUpdate: null
+                };
+            }
+        }
 
-        // Управление влажностью – если включено
-    if (room.devices.humControl?.enabled) {
-      roomObj.humManage = {};
-      const hum = room.devices.humControl;
-      if (hum.aSwitch) {
-        counters.aSwitch += 1;
-        roomObj.humManage['aSwitch' + String(counters.aSwitch).padStart(2, '0')] = {
-          sensorID: null,
-          value: null,
-          type: 'bool',
-          lastUpdate: null
-        };
-      }
-      if (hum.aIR) {
-        counters.aIR += 1;
-        roomObj.humManage['aIR' + String(counters.aIR).padStart(2, '0')] = {
-          sensorID: null,
-          value: null,
-          type: null,
-          lastUpdate: null
-        };
-      }
-    }
+        // ── УПРАВЛЕНИЕ ВЛАЖНОСТЬЮ ────────────────────────────────
+        let hasHumManage = false;
+        let hasHumSwitch = false;
+        
+        if (room.devices.humControl?.enabled) {
+            hasHumManage = true;
+            roomObj.humManage = {};
+            const hum = room.devices.humControl;
+            
+            // Проверяем, что включён хотя бы один тип управления
+            const hasAnyHumControl = hum.aSwitch || hum.aIR;
+            
+            if (!hasAnyHumControl) {
+                // Если управление влажностью включено, но ничего не выбрано – добавляем по умолчанию реле
+                hum.aSwitch = true;
+            }
+            
+            if (hum.aSwitch) {
+                hasHumSwitch = true;
+                counters.aSwitch += 1;
+                roomObj.humManage['aSwitch' + String(counters.aSwitch).padStart(2, '0')] = {
+                    sensorID: null,
+                    value: null,
+                    type: 'bool',
+                    lastUpdate: null
+                };
+            }
+            if (hum.aIR) {
+                counters.aIR += 1;
+                roomObj.humManage['aIR' + String(counters.aIR).padStart(2, '0')] = {
+                    sensorID: null,
+                    value: null,
+                    type: null,
+                    lastUpdate: null
+                };
+            }
+        }
+
+        // ── УСТАВКИ ДЛЯ ВЛАЖНОСТИ ────────────────────────────────
+        // Если есть Управление влажностью (любой тип) И есть датчик влажности
+        if (hasHumManage && roomHumCount > 0) {
+            // Добавляем sHum (уставка влажности)
+            counters.sHum += 1;
+            const setpointId = 'sHum' + String(counters.sHum).padStart(2, '0');
+            roomObj.setpoints[setpointId] = {
+                sensorID: null,
+                value: 45,
+                type: 'num',
+                lastUpdate: null,
+                limits: {
+                    high: 60,
+                    low: 12,
+                    step: 0.5
+                }
+            };
+            
+            // Если есть Реле (aSwitch) – добавляем sSwitchH (управляющий сигнал)
+            if (hasHumSwitch) {
+                counters.sSwitchH += 1;
+                const manageId = 'sSwitchH' + String(counters.sSwitchH).padStart(2, '0');
+                roomObj.manages[manageId] = {
+                    sensorID: null,
+                    value: 0,
+                    type: 'bool',
+                    lastUpdate: null
+                };
+            }
+        }
 
         result[roomKey] = roomObj;
     });
 
-    // Добавляем общую конфигурацию (если нужно) – можно добавить в init или отдельно
-    // Но сервер ожидает только комнаты, поэтому general пока игнорируем.
-    // Если нужно, можно добавить отдельный ключ, но пока пропустим.
-
     return result;
-    },
+},
 
     // ── localStorage ───────────────────────────────────────────────────────
     saveToLocalStorage() {
