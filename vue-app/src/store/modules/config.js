@@ -629,106 +629,52 @@ export default {
         throw error;
       }
     },
-    // async ensureSortingKeys({ state, dispatch, rootGetters }) {
-    //   //console.groupCollapsed('[config] - ensureSortingKeys');
-    //   logger.dev('Проверяем наличие ключей сортировки');
-    //   //console.log('Проверяем наличие ключей сортировки');
-      
-    //   const processKey = async (type, stateArrayName, getterName, storageKey) => {
-    //     const key = rootGetters[getterName] || localStorage.getItem(storageKey);
-    //     const arrayItems = state[stateArrayName];
-        
-    //     // Проверка валидности ключа
-    //     if (key && !arrayItems.includes(key)) {
-    //       logger.error(`[config] - ensureSortingKeys - ${storageKey} невалиден, сбрасываем`, key, arrayItems);
-    //       //console.warn(`[config] - ensureSortingKeys - ${storageKey} невалиден, сбрасываем`);
-    //       localStorage.removeItem(storageKey);
-    //       return null;
-    //     }
-        
-    //     // Установка первого элемента если ключа нет
-    //     if (!key && arrayItems.length > 0) {
-    //       const newKey = arrayItems[0];
-    //       localStorage.setItem(storageKey, newKey);
-    //       logger.dev(`[config] - Установлен первый ${type}:`, newKey);
-    //       //console.log(`[config] - Установлен первый ${type}:`, newKey);
-    //       return newKey;
-    //     }
-        
-    //     return key;
-    //   };
+    async ensureSortingKeys({ state, dispatch, rootGetters }) {
+      logger.dev('Проверяем наличие ключей сортировки');
 
-    //   // Обработка всех типов ключей
-    //   const keyConfigs = [
-    //     { type: 'rooms', stateArray: 'allRooms', getter: 'roomKey', storage: 'roomKey', specialAction: 'updateRoomsTitle' },
-    //     { type: 'params', stateArray: 'allParams', getter: 'paramKey', storage: 'paramKey' },
-    //     { type: 'devices', stateArray: 'allDevices', getter: 'deviceKey', storage: 'deviceKey' },
-    //     { type: 'setpoints', stateArray: 'allSetpoints', getter: 'setpointKey', storage: 'setpointKey' }
-    //   ];
+      const processKey = async (type, stateArrayName, getterName, storageKey, shouldStripNumbers = false) => {
+        let key = rootGetters[getterName];
+        let storedKey = localStorage.getItem(storageKey);
+        let currentKey = key || storedKey;
 
-    //   for (const config of keyConfigs) {
-    //     const key = await processKey(config.type, config.stateArray, config.getter, config.storage);
-        
-    //     if (key) {
-    //       await dispatch('sortParams/updateSortKey', { 
-    //         type: config.type, 
-    //         newKey: key 
-    //       }, { root: true });
-          
-    //       // Специальное действие для комнат
-    //       if (config.specialAction) {
-    //         await dispatch(`sortParams/${config.specialAction}`, key, { root: true });
-    //       }
-    //     }
-    //   }
-    // },
-// config.js, action ensureSortingKeys
-async ensureSortingKeys({ state, dispatch, rootGetters }) {
-  logger.dev('Проверяем наличие ключей сортировки');
+        if (currentKey && shouldStripNumbers) {
+          currentKey = currentKey.replace(/\d+$/, '');
+        }
 
-  const processKey = async (type, stateArrayName, getterName, storageKey, shouldStripNumbers = false) => {
-    let key = rootGetters[getterName];
-    let storedKey = localStorage.getItem(storageKey);
-    let currentKey = key || storedKey;
+        const arrayItems = state[stateArrayName] || [];
 
-    if (currentKey && shouldStripNumbers) {
-      currentKey = currentKey.replace(/\d+$/, '');
-    }
+        // Невалидный ключ – сбрасываем
+        if (currentKey && !arrayItems.includes(currentKey)) {
+          logger.warn(`[config] - ensureSortingKeys - ${storageKey} невалиден (${currentKey}), сбрасываем`);
+          localStorage.removeItem(storageKey);
+          await dispatch('sortParams/updateSortKey', { type, newKey: null }, { root: true });
+          currentKey = null;
+        }
 
-    const arrayItems = state[stateArrayName] || [];
+        // Если ключа нет, берём первый из массива
+        if (!currentKey && arrayItems.length > 0) {
+          currentKey = arrayItems[0];
+          logger.dev(`[config] - Установлен первый ${type}:`, currentKey);
+          await dispatch('sortParams/updateSortKey', { type, newKey: currentKey }, { root: true });
+        }
 
-    // Невалидный ключ – сбрасываем
-    if (currentKey && !arrayItems.includes(currentKey)) {
-      logger.warn(`[config] - ensureSortingKeys - ${storageKey} невалиден (${currentKey}), сбрасываем`);
-      localStorage.removeItem(storageKey);
-      await dispatch('sortParams/updateSortKey', { type, newKey: null }, { root: true });
-      currentKey = null;
-    }
+        return currentKey;
+      };
 
-    // Если ключа нет, берём первый из массива
-    if (!currentKey && arrayItems.length > 0) {
-      currentKey = arrayItems[0];
-      logger.dev(`[config] - Установлен первый ${type}:`, currentKey);
-      await dispatch('sortParams/updateSortKey', { type, newKey: currentKey }, { root: true });
-    }
+      const keyConfigs = [
+        { type: 'rooms', stateArray: 'allRooms', getter: 'roomKey', storage: 'roomKey', shouldStripNumbers: false, specialAction: 'updateRoomsTitle' },
+        { type: 'params', stateArray: 'allParams', getter: 'paramKey', storage: 'paramKey', shouldStripNumbers: true },
+        { type: 'devices', stateArray: 'allDevices', getter: 'deviceKey', storage: 'deviceKey', shouldStripNumbers: false },
+        { type: 'setpoints', stateArray: 'allSetpoints', getter: 'setpointKey', storage: 'setpointKey', shouldStripNumbers: true }
+      ];
 
-    return currentKey;
-  };
-
-  const keyConfigs = [
-    { type: 'rooms', stateArray: 'allRooms', getter: 'roomKey', storage: 'roomKey', shouldStripNumbers: false, specialAction: 'updateRoomsTitle' },
-    { type: 'params', stateArray: 'allParams', getter: 'paramKey', storage: 'paramKey', shouldStripNumbers: true },
-    { type: 'devices', stateArray: 'allDevices', getter: 'deviceKey', storage: 'deviceKey', shouldStripNumbers: false },
-    { type: 'setpoints', stateArray: 'allSetpoints', getter: 'setpointKey', storage: 'setpointKey', shouldStripNumbers: true }
-  ];
-
-  for (const cfg of keyConfigs) {
-    const key = await processKey(cfg.type, cfg.stateArray, cfg.getter, cfg.storage, cfg.shouldStripNumbers);
-    if (key && cfg.specialAction) {
-      await dispatch(`sortParams/${cfg.specialAction}`, key, { root: true });
-    }
-  }
-},
+      for (const cfg of keyConfigs) {
+        const key = await processKey(cfg.type, cfg.stateArray, cfg.getter, cfg.storage, cfg.shouldStripNumbers);
+        if (key && cfg.specialAction) {
+          await dispatch(`sortParams/${cfg.specialAction}`, key, { root: true });
+        }
+      }
+    },
 
 
     async updateSetpointServer( {rootGetters}) {
@@ -748,6 +694,28 @@ async ensureSortingKeys({ state, dispatch, rootGetters }) {
         logger.info('[config] - updateSetpointServer - Уставка обновлена и отправлена на сервер');
         //console.log('[config] - updateSetpointServer - Уставка обновлена и отправлена на сервер');
     },
+    // ── Отправка пользовательской конфигурации на сервер ─────────────────
+    async userConfigRequest({ dispatch, rootGetters }, { configData, isEdit }) {
+      const dID = rootGetters['dID'];
+      if (!dID) {
+        logger.error('[config] - userConfigRequest - dID не определён');
+        throw new Error('dID не определён');
+      }
+
+      const request = isEdit ? 'userConfigEdit' : 'userConfigRequest';
+      logger.info('[config] - userConfigRequest - Отправка конфигурации:', request, 'dID:', dID);
+      console.table(configData);
+
+      await dispatch('websocket/send', {
+        type: 'post',
+        request,
+        name: dID,
+        payload: configData,
+      }, { root: true });
+
+      logger.info('[config] - userConfigRequest - Конфигурация отправлена:', request);
+    },
+
     clearKey(context, { key }) { // гетер clearKeySync используем для внешней очистки
       //console.log('[config] - clearKey - key: ', key);
       const withoutPrefix = key.slice(1);
@@ -756,14 +724,7 @@ async ensureSortingKeys({ state, dispatch, rootGetters }) {
       //console.log(`[config] - clearKey - key: ${clearKey}`);
       return clearKey;
     },
-    // clearKey_a: () => (key) => {
-    //   if (!key) return '';
-    //   if (key[0] === 'a') {
-    //     // aSwitch01 → sSwitch01
-    //     return 's' + key.slice(1);
-    //   }
-    //   return '';
-    // },
+
     checkLimitBeforeAdd({ rootState, rootGetters }, configType) {
       console.log('[config] - checkLimitBeforeAdd - Для ', configType);
       // configType ожидается 'schedules', 'notifications', 'statistics'

@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Dashboard from '../DashBoard.vue';
+// import Configuration from '../ConFiguration.vue';
 import SmartHome from '../SmartHome.vue';
 import ManufactAutomatation from '../ManufactAutomatation.vue';
 //import IntroduceHome from '../IntroduceHome.vue';
@@ -9,15 +10,41 @@ import UserConfig from '../components/UserConfig.vue';
 import AccessDenied from '../components/AccessDenied.vue';
 import store from '@/store';
 
+// ─── Хелпер feature-флагов ────────────────────────────────────────────────
+// VUE_APP_FEATURE_* подставляется webpack при сборке из .env-файла.
+// Если переменная не задана — раздел считается включённым (безопасный дефолт).
+function isFeatureEnabled(envKey) {
+  return process.env[envKey] !== 'false';
+}
+
+// ─── Маршруты, управляемые feature-флагами сборки ─────────────────────────
+const featureRoutes = [
+  ...(isFeatureEnabled('VUE_APP_FEATURE_CONFIGURATION') ? [{
+    path: '/configuration',
+    name: 'Configuration',
+    component: () => import('../ConFiguration.vue'),
+    meta: { requiresAuth: true, requiredLevel: 2 },
+  }] : []),
+
+  ...(isFeatureEnabled('VUE_APP_FEATURE_ABOUT') ? [{
+    path: '/about',
+    name: 'About',
+    component: () => import('../IntroduceHome.vue'),
+    meta: { requiresAuth: true, requiredLevel: 1 },
+  }] : []),
+];
+
 const routes = [
-  // {
-  //   path: '/',
-  //   name: 'Intro',
-  //   component: IntroduceHome,
-  // },
-  // Временно перенаправляем стартовый запрос на DashBoard
+// ── Стартовая страница (навигация по разделам рендерится в App.vue) ──────
   {
     path: '/',
+    name: 'AppHome',
+    component: { render: () => null }, // App.vue перехватывает рендер через v-if="isHomePage"
+    meta: { requiresAuth: true, requiredLevel: 1 },
+  },
+  // Временно перенаправляем стартовый запрос на DashBoard
+  {
+    path: '/dashboard',
     name: 'DashBoard',
     component: Dashboard,
     meta: { requiresAuth: true, requiredLevel: 1 },
@@ -42,36 +69,12 @@ const routes = [
       }
     ]
   },
+    // ── Feature-управляемые разделы ───────────────────────────────────────────
+  ...featureRoutes,
   {
     path: '/dashboard',
     redirect: '/'
   },
-  // {
-  //   path: '/dashboard',
-  //   name: 'DashBoard',
-  //   component: Dashboard,
-  //   meta: { requiresAuth: true, requiredLevel: 1 },
-  //   children: [
-  //     {
-  //       path: '', // Главное меню с AppPlace
-  //       name: 'DashboardMain',
-  //       component: null
-  //     },
-  //     {
-  //       path: 'sort/:sortType', // Динамический параметр для типа сортировки
-  //       name: 'DashboardSort',
-  //       component: () => import('@/components/MainBody.vue'),
-  //       props: true // Передаем параметры как props
-  //     },
-  //     {
-  //       path: 'settings/:settingsType', //динамический параметр для выбора компонента отображения настроек Расписания или Уведомдений
-  //       name: 'DashboardSettings',
-  //       component: () => import('@/components/MainBodySettings.vue'),
-  //       meta: { requiresAuth: true, requiredLevel: 2 },
-  //       props: true, 
-  //     }
-  //   ]
-  // },
 
   {
     path: '/smart-home',

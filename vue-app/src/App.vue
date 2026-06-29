@@ -1,7 +1,22 @@
 <!-- App.vue -->
 <template>
   <div id="app">
-    <router-view />
+
+    <!-- ── Стартовая страница: выбор раздела (только на маршруте "/") ────── -->
+    <div v-if="isHomePage && isAuthenticated" class="introduce-place">
+      <button
+        v-for="item in visibleNavItems"
+        :key="item.name"
+        class="introduce-button"
+        :class="[item.colorClass || 'color_dark', item.cssClass]"
+        @click="navigate(item)"
+      >
+        <span class="button-text">{{ item.label }}</span>
+      </button>
+    </div>
+
+    <!-- ── Все остальные страницы ─────────────────────────────────────────── -->
+    <router-view v-else />
 
     <!-- Popup: управляется через геттер popup/popupState -->
     <PopupMenu
@@ -31,6 +46,36 @@ import { mapGetters, mapMutations, mapActions } from 'vuex';
 import PopupMenu from '@/components/PopupMenu.vue';
 import MenuDropdown from '@/components/MenuDropdown.vue';
 
+// Полный реестр разделов навигации.
+// cssClass — существующий класс из mainStyle.css с фоновым изображением кнопки.
+// feature  — имя VUE_APP_FEATURE_* переменной; подставляется webpack при сборке.
+const ALL_NAV_ITEMS = [
+  {
+    name: 'DashBoard',
+    label: 'Панель Управления',
+    path: '/dashboard',
+    cssClass: 'dash',
+    colorClass: 'color_dark',
+    feature: 'VUE_APP_FEATURE_DASHBOARD',
+  },
+  {
+    name: 'Configuration',
+    label: 'Выбор Конфигурации',
+    path: '/configuration',
+    cssClass: 'home',
+    colorClass: 'color-light',
+    feature: 'VUE_APP_FEATURE_CONFIGURATION',
+  },
+  {
+    name: 'About',
+    label: 'О Продукте',
+    path: '/about',
+    cssClass: 'manuft',
+    colorClass: 'color_dark',
+    feature: 'VUE_APP_FEATURE_ABOUT',
+  },
+];
+
 export default {
   name: 'App',
 
@@ -46,18 +91,31 @@ export default {
   },
 
   computed: {
-    // Все геттеры с уникальными префиксами — конфликты между модулями исключены.
     ...mapGetters({
-      // ── popup/  ──────────────────────────────────────────────────
-      popupIsVisible:     'popup/popupIsVisible',   // Boolean
-      popupMessage:       'popup/popupMessage',     // String
-      popupType:          'popup/popupType',        // String
-      popupDuration:      'popup/popupDuration',    // Number
-      // ── dropdown/ ───────────────────────────────────────────────
-      dropdownIsVisible:  'dropdown/isVisible',     // Boolean
-      dropdownMenuItems:  'dropdown/menuItems',     // Array
-      dropdownAnchorEl:   'dropdown/anchorEl',      // HTMLElement | null
+      // ── auth ──────────────────────────────────────────────────────
+      isAuthenticated:    'isAuthenticated',
+      // ── popup/ ────────────────────────────────────────────────────
+      popupIsVisible:     'popup/popupIsVisible',
+      popupMessage:       'popup/popupMessage',
+      popupType:          'popup/popupType',
+      popupDuration:      'popup/popupDuration',
+      // ── dropdown/ ─────────────────────────────────────────────────
+      dropdownIsVisible:  'dropdown/isVisible',
+      dropdownMenuItems:  'dropdown/menuItems',
+      dropdownAnchorEl:   'dropdown/anchorEl',
     }),
+
+    // Показываем стартовую страницу только на маршруте "/"
+    isHomePage() {
+      return this.$route.name === 'AppHome';
+    },
+
+    // Фильтрация пунктов по feature-флагам — вычисляется один раз при сборке
+    visibleNavItems() {
+      return ALL_NAV_ITEMS.filter(item => {
+        return process.env[item.feature] !== 'false';
+      });
+    },
   },
 
   async mounted() {
@@ -88,18 +146,19 @@ export default {
         await this.$store.dispatch('config/initialize');
       }
 
-      if (this.$route.path === '/dashboard') {
-        this.$router.push({ name: 'DashboardMain' });
-      }
     } catch (error) {
       logger.error('[APP] mounted – ошибка инициализации:', error);
     }
   },
 
   methods: {
-    // ── popup ────────────────────────────────────────────────────
-    // Мутация модуля popup называется HIDE — импортируем с псевдонимом,
-    // чтобы не конфликтовать с возможным HIDE из dropdown.
+    // ── Навигация со стартовой страницы ───────────────────────────
+    navigate(item) {
+      logger.info('[App] - navigate - Переход в раздел:', item.name, item.path);
+      this.$router.push(item.path);
+    },
+
+    // ── popup ──────────────────────────────────────────────────────
     ...mapMutations({
       hidePopupMutation: 'popup/HIDE',
     }),
@@ -108,8 +167,7 @@ export default {
       this.hidePopupMutation();
     },
 
-    // ── dropdown ─────────────────────────────────────────────────
-    // Action модуля dropdown называется hide — импортируем с псевдонимом.
+    // ── dropdown ───────────────────────────────────────────────────
     ...mapActions({
       hideDropdownAction: 'dropdown/hide',
     }),
@@ -119,8 +177,8 @@ export default {
     },
 
     async onDropdownSelect(item) {
-      console.log('[App] Выбран пункт дропдауна:', item);
-      this.hideDropdownAction(); // закрываем сразу после выбора
+      logger.info('[App] - onDropdownSelect - Выбран пункт дропдауна:', item.action);
+      this.hideDropdownAction();
 
       switch (item.action) {
         case 'profile':
@@ -137,7 +195,7 @@ export default {
           await this.$store.dispatch('config/toggleMobileMode');
           break;
         default:
-          logger.warn('[App] onDropdownSelect – неизвестный action:', item.action);
+          logger.warn('[App] - onDropdownSelect – неизвестный action:', item.action);
       }
     },
   },
