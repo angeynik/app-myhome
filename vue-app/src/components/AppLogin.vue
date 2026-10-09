@@ -14,24 +14,19 @@
     <div style="padding: 0 10px 0 10px;">
       <h1>Авторизация</h1>
       <form @submit.prevent="login">
-        <input ref="usernameInput" 
-               type="text" 
-               placeholder="Имя пользователя" 
-               required 
-               autocomplete="username" />
-        <input ref="passwordInput" 
-               type="password" 
-               placeholder="Пароль" 
-               required 
-               autocomplete="current-password" />
-        <button type="submit">Вход</button>
+        <input ref="usernameInput" type="text" placeholder="Имя пользователя"
+               required autocomplete="username" :disabled="loading" />
+        <input ref="passwordInput" type="password" placeholder="Пароль"
+               required autocomplete="current-password" :disabled="loading" />
+        <button type="submit" :disabled="loading">
+          {{ loading ? 'Вход…' : 'Вход' }}
+        </button>
       </form>
       <p v-if="error" class="error">{{ error }}</p>
     </div>
 
-    <!-- Компонент всплывающих сообщений -->
-    <PopupMenu 
-      :visible="showPopup" 
+    <PopupMenu
+      :visible="showPopup"
       :message="popupMessage"
       :type="popupType"
       @close="closePopup"
@@ -41,157 +36,105 @@
 
 <script>
 import PopupMenu from './PopupMenu.vue';
-
 import logger from '../store/modules/logger.js';
 
 export default {
   name: 'AppLogin',
-  components: {
-    PopupMenu
-  },
+  components: { PopupMenu },
   data() {
     return {
       error: '',
       loading: false,
-      // Данные для всплывающих сообщений
       showPopup: false,
       popupMessage: '',
-      popupType: 'info', // 'success', 'error', 'warning', 'info'
+      popupType: 'info',
       popupTimeout: null,
-      autoCloseDelay: 6000 // 6 секунд
+      autoCloseDelay: 6000,
     };
   },
   computed: {
-    userLevel() {
-      return this.$store.getters.level;
-    },
-    dID() {
-      return this.$store.getters.dID;
-    },
-    isConnected() {
-      // Используем правильный геттер для проверки подключения WebSocket
-      return this.$store.getters['websocket/isConnected'];
-    }
+    userLevel() { return this.$store.getters.level; },
+    dID() { return this.$store.getters.dID; },
+    isConnected() { return this.$store.getters['websocket/isConnected']; },
   },
   mounted() {
     this.$refs.usernameInput?.focus();
   },
   beforeUnmount() {
-    // Очищаем таймер при размонтировании компонента
-    if (this.popupTimeout) {
-      clearTimeout(this.popupTimeout);
-    }
+    if (this.popupTimeout) clearTimeout(this.popupTimeout);
   },
   methods: {
     async login() {
       this.error = '';
       this.loading = true;
-      
+
       try {
-        const username = this.$refs.usernameInput.value.toLowerCase();
+        const username = this.$refs.usernameInput.value.trim().toLowerCase();
         const password = this.$refs.passwordInput.value;
 
-        if (!username || !password) {
-          throw new Error('Имя пользователя и пароль обязательны');
-        }
-        logger.info('[AppLogin] - login - Попытка входа для пользователя:', username);
-        //console.log('Попытка входа для пользователя:', username);
-        
-        // Проверяем состояние WebSocket через вычисляемое свойство
-        logger.info('[AppLogin] - login - Проверка состояния WebSocket:', this.isConnected);
-        //console.log('WebSocket connected:', this.isConnected);
-        
+        if (!username || !password) throw new Error('Введите логин и пароль');
+
+        // Убедимся, что WS поднят (или поднимем)
         if (!this.isConnected) {
-          this.showPopupMessage('Нет подключения к серверу', 'error');
-          throw new Error('WebSocket не подключен');
+          try { await this.$store.dispatch('websocket/connect'); }
+          catch { throw new Error('Нет соединения с сервером'); }
         }
 
-        const userData = await this.$store.dispatch('auth/login', { 
-          username, 
-          password 
+        const userData = await this.$store.dispatch('auth/login', { username, password });
+        logger.info('[AppLogin] вход:', userData.username, 'level', this.userLevel, 'dID', this.dID);
+
+        this.showPopupMessage(`Вход выполнен: ${username}`, 'success');
+
+        // Загружаем конфиг (best-effort, не блокируем)
+        this.$store.dispatch('config/ensureConfig', this.dID).catch((err) => {
+          logger.error('[AppLogin] конфиг не загружен:', err);
+          this.showPopupMessage('Конфигурация не загружена — часть функций недоступна', 'warning');
         });
-        logger.info('[AppLogin] - login - Текущий уровень после логина:', this.userLevel, 'Текущий dID после логина:', this.dID);
-        // console.log('Текущий уровень после логина:', this.userLevel);
-        // console.log('Текущий dID после логина:', this.dID);
 
-        if (userData) {
-          // Показываем сообщение об успехе
-          this.showPopupMessage(`✅ Вход для пользователя ${username} прошел успешно! Уровень доступа: ${this.userLevel}`, 'success');
-          
-          // Добавляем проверку конфигурации
-          try {
-            await this.$store.dispatch('config/ensureConfig', this.dID);
-          } catch (err) {
-            logger.error('[AppLogin] - login - Ошибка при загрузке конфигурации:', err);
-            //console.error('Ошибка при загрузке конфигурации:', err);
-            logger.error('[AppLogin] - login - ⚠️ Конфигурация не загружена! Некоторые функции могут работать некорректно');
-            this.showPopupMessage('⚠️ Конфигурация не загружена! Некоторые функции могут работать некорректно', 'warning');
-          }
+        // Если требуется смена пароля — роутер сам перекинет на /change-password
+        // (guard смотрит на auth/mustChangePassword).
+        const target = this.$store.getters['auth/mustChangePassword']
+          ? '/change-password'
+          : (localStorage.getItem('redirectPath') || '/');
+        localStorage.removeItem('redirectPath');
 
-          // Ждем немного перед переходом, чтобы пользователь увидел сообщение
-          setTimeout(() => {
-            const redirectPath = localStorage.getItem('redirectPath') || '/';
-            localStorage.removeItem('redirectPath');
-            this.$router.push(redirectPath);
-          }, 1500);
-          
-        } else {
-          logger.error('[AppLogin] - login - ❌ Проблемы авторизации в AppLogin.vue');
-          //console.log('❌ Проблемы авторизации в AppLogin.vue');
-          this.showPopupMessage('❌ Ошибка авторизации пользователя!', 'error');
-        }
+        setTimeout(() => this.$router.push(target), 500);
       } catch (err) {
-        this.error = err.message || 'Ошибка авторизации';
-        
-        // Определяем тип сообщения в зависимости от ошибки
-        let messageType = 'error';
-        let message = err.message || 'Ошибка авторизации';
-        
-        if (err.message.includes('WebSocket') || err.message.includes('подключен')) {
-          messageType = 'warning';
-          message = 'Нет подключения к серверу. Проверьте соединение.';
-        } else if (err.message.includes('USER_NOT_FOUND') || err.message.includes('INVALID_PASSWORD')) {
-          message = 'Неверное имя пользователя или пароль';
-        }
-        this.showPopupMessage(`❌ ${message}`, messageType);
-        logger.error('Ошибка входа:', err);
-        //console.error('Ошибка входа:', err);
+        this.error = this.mapErrorToText(err);
+        this.showPopupMessage(`❌ ${this.error}`, 'error');
+        logger.error('[AppLogin] ошибка входа:', err);
       } finally {
         this.loading = false;
       }
     },
 
-    // Метод для показа всплывающих сообщений
+    mapErrorToText(err) {
+      const code = err?.code;
+      const msg = err?.message || 'Ошибка авторизации';
+      switch (code) {
+        case 'BAD_CREDENTIALS': return 'Неверный логин или пароль';
+        case 'LOCKED':          return msg; // содержит «Повторите через N сек»
+        case 'MISSING_FIELDS':  return 'Введите логин и пароль';
+        case 'TIMEOUT':         return 'Сервер не отвечает. Проверьте соединение.';
+        default:                return msg;
+      }
+    },
+
     showPopupMessage(message, type = 'info') {
       this.popupMessage = message;
       this.popupType = type;
       this.showPopup = true;
-      
-      // Автоматическое закрытие через указанное время
-      if (this.popupTimeout) {
-        clearTimeout(this.popupTimeout);
-      }
-      
-      this.popupTimeout = setTimeout(() => {
-        this.closePopup();
-      }, this.autoCloseDelay);
+      if (this.popupTimeout) clearTimeout(this.popupTimeout);
+      this.popupTimeout = setTimeout(() => this.closePopup(), this.autoCloseDelay);
     },
-
-    // Метод для закрытия popup
     closePopup() {
       this.showPopup = false;
-      if (this.popupTimeout) {
-        clearTimeout(this.popupTimeout);
-        this.popupTimeout = null;
-      }
-    }
-  }
+      if (this.popupTimeout) { clearTimeout(this.popupTimeout); this.popupTimeout = null; }
+    },
+  },
 };
 </script>
 
 <style scoped>
-.error {
-  color: red;
-  margin-top: 10px;
-}
+.error { color: red; margin-top: 10px; }
 </style>

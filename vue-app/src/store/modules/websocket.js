@@ -1,66 +1,51 @@
-// // Добавляем константы в начале файла
+// store/modules/websocket.js
 import logger from './logger';
 
 const RECONNECT_DELAY = 1000;
 const MAX_RECONNECT_ATTEMPTS = 8;
-logger.info('[WebSocket] - WebSocket connection details:', {
-  adr: process.env.VUE_APP_EXP,
-  port: process.env.VUE_APP_PORT,
-  fullUrl: `ws://${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`
-});
+const WS_URL = `ws://${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`;
 
-// console.log('WebSocket connection details:', {
-//   adr: process.env.VUE_APP_EXP,
-//   port: process.env.VUE_APP_PORT,
-//   fullUrl: `ws://${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`
-// });
+// Запрос → (какой ответ считать успехом, какой ошибкой)
+const AWAIT_MAP = {
+  login:          { success: 'loginSuccess',          error: 'loginError' },
+  resume:         { success: 'loginSuccess',          error: 'resumeError' },
+  refresh:        { success: 'refreshSuccess',        error: 'refreshError' },
+  changePassword: { success: 'changePasswordSuccess', error: 'changePasswordError' },
+};
 
 export default {
   namespaced: true,
+
   state: {
     socket: null,
     reconnectAttempts: 0,
     explicitDisconnect: false,
-    pendingResponse: null
+    pendingResponse: null, // { type, resolve, reject, timer }
   },
-  
+
   mutations: {
-    SET_SOCKET(state, socket) {
-      state.socket = socket;
-    },
-    SET_RECONNECT_ATTEMPTS(state, attempts) {
-      state.reconnectAttempts = attempts;
-    },
-    SET_EXPLICIT_DISCONNECT(state, value) {
-      state.explicitDisconnect = value;
-    },
-    SET_PENDING_RESPONSE(state, { type, resolve }) {
-      state.pendingResponse = { type, resolve };
-    },
-    CLEAR_PENDING_RESPONSE(state) {
-      state.pendingResponse = null;
-    }
+    SET_SOCKET(state, socket) { state.socket = socket; },
+    SET_RECONNECT_ATTEMPTS(state, n) { state.reconnectAttempts = n; },
+    SET_EXPLICIT_DISCONNECT(state, v) { state.explicitDisconnect = v; },
+    SET_PENDING_RESPONSE(state, payload) { state.pendingResponse = payload; },
+    CLEAR_PENDING_RESPONSE(state) { state.pendingResponse = null; },
   },
 
   actions: {
     async connect({ state, commit, dispatch }) {
-      if (state.socket?.readyState === WebSocket.OPEN) {
-        return state.socket;
-      }
-      
+      if (state.socket?.readyState === WebSocket.OPEN) return state.socket;
+
       if (state.reconnectAttempts > 0) {
         const delay = RECONNECT_DELAY * Math.pow(2, Math.min(state.reconnectAttempts, 5));
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise(r => setTimeout(r, delay));
         return dispatch('connect');
       }
-     
+
       return new Promise((resolve, reject) => {
-        const socket = new WebSocket(`ws://${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`);
-        //const socket = new WebSocket(`ws://192.168.1.94:${process.env.VUE_APP_PORT}`);
-        
+        const socket = new WebSocket(WS_URL);
+
         socket.onopen = () => {
-          logger.info('[WebSocket] WebSocket connected to ' + process.env.VUE_APP_EXP + ':' + process.env.VUE_APP_PORT);
-          //console.log(`WebSocket connected to ${process.env.VUE_APP_EXP}:${process.env.VUE_APP_PORT}`);
+          logger.info('[WebSocket] connected to ' + WS_URL);
           commit('SET_RECONNECT_ATTEMPTS', 0);
           socket.onmessage = (event) => dispatch('handleMessage', event);
           commit('SET_SOCKET', socket);
@@ -68,8 +53,7 @@ export default {
         };
 
         socket.onerror = (error) => {
-          logger.error('[WebSocket] WebSocket error:', error);
-          //console.error('WebSocket error:', error);
+          logger.error('[WebSocket] error:', error);
           if (!state.explicitDisconnect) {
             setTimeout(() => dispatch('connect'), RECONNECT_DELAY);
           }
@@ -77,13 +61,10 @@ export default {
         };
 
         socket.onclose = () => {
-          logger.info('[WebSocket] WebSocket closed');
-          //console.log('WebSocket closed');
+          logger.info('[WebSocket] closed');
           commit('SET_SOCKET', null);
           if (!state.explicitDisconnect && state.reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
             const delay = RECONNECT_DELAY * Math.pow(2, Math.min(state.reconnectAttempts, 5));
-            logger.error(`[WebSocket] Reconnecting in ${delay}ms...`);
-            //console.log(`Reconnecting in ${delay}ms...`);
             setTimeout(() => {
               commit('SET_RECONNECT_ATTEMPTS', state.reconnectAttempts + 1);
               dispatch('connect');
@@ -95,97 +76,108 @@ export default {
 
     disconnect({ state, commit }) {
       commit('SET_EXPLICIT_DISCONNECT', true);
-      if (state.socket) {
-        state.socket.close();
-      }
+      state.socket?.close();
     },
 
-    async send({ state, commit, dispatch}, message) {
+    /**
+     * Отправка сообщения.
+     * Для auth-запросов (login/resume/refresh/changePassword) возвращает Promise,
+     * который резолвится ответом сервера (loginSuccess и т.п.) или реджектится
+     * ошибкой (loginError и т.п.) с полем .code.
+     * Для остальных типов — fire-and-forget, возвращает null.
+     */
+    async send({ state, commit, dispatch }, message) {
       if (!state.socket || state.socket.readyState !== WebSocket.OPEN) {
-    // Попытаемся переподключиться перед ошибкой
-      try {
         await dispatch('connect');
-      // Проверка после подключения
-      if (!state.socket || state.socket.readyState !== WebSocket.OPEN) {
-        throw new Error('WebSocket connection failed');
       }
-      } catch (err) {
+      if (!state.socket || state.socket.readyState !== WebSocket.OPEN) {
         throw new Error('WebSocket connection not established');
       }
-        //throw new Error('WebSocket connection not established');
+
+      const awaits = message.type === 'auth' && AWAIT_MAP[message.request];
+
+      if (!awaits) {
+        state.socket.send(JSON.stringify(message));
+        return null;
       }
-      
-      return new Promise((resolve) => {
-        if (message.type === 'auth') {
-          commit('SET_PENDING_RESPONSE', {
-            type: message.request,
-            resolve
-          });
-        }
-        // Вернуть console.log
-        //console.log('[WebSocket] Sending:', message);
+
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          commit('CLEAR_PENDING_RESPONSE');
+          const err = new Error(`Таймаут ожидания ответа на ${message.request}`);
+          err.code = 'TIMEOUT';
+          reject(err);
+        }, 15000);
+
+        commit('SET_PENDING_RESPONSE', {
+          type: message.request,
+          resolve,
+          reject,
+          timer,
+        });
         state.socket.send(JSON.stringify(message));
       });
     },
 
-    async handleMessage({ state, commit, dispatch, rootGetters}, event) {
+    async handleMessage({ state, commit, dispatch, rootGetters }, event) {
+      let response;
+      try { response = JSON.parse(event.data); }
+      catch { return; }
 
-      try {
-        const response = JSON.parse(event.data);
-        logger.dev(`[WebSocket] Received: ${JSON.stringify(response)}`);
-        // Вернуть console.log
-        console.log('[WebSocket] Received:', response);
-        const dID = response.name;
-        const auth_dID = rootGetters['dID'];
-        if (response.request === 'loginSuccess' && state.pendingResponse?.type === 'login') {
-          const { resolve } = state.pendingResponse;
+      const request = response?.request;
+      const type = response?.type;
+
+      // 1) Auth-ответ → резолвим/реджектим pending
+      const pending = state.pendingResponse;
+      if (pending) {
+        const cfg = AWAIT_MAP[pending.type];
+        if (cfg && request === cfg.success) {
+          clearTimeout(pending.timer);
           commit('CLEAR_PENDING_RESPONSE');
-          resolve(response);
+          pending.resolve(response);
           return;
         }
+        if (cfg && (request === cfg.error || request === 'authError')) {
+          clearTimeout(pending.timer);
+          commit('CLEAR_PENDING_RESPONSE');
+          const err = new Error(response.payload?.message || 'Auth error');
+          err.code = response.payload?.code;
+          pending.reject(err);
+          return;
+        }
+      }
 
-        if (response.type === 'response') {
-          //console.log('[WebSocket] Обрабатываем сообщение type = response');
+      // 2) accessError → auth-модуль решает (разлогин / попап)
+      if (request === 'accessError') {
+        await dispatch('auth/handleAccessError', response.payload, { root: true });
+        return;
+      }
+
+      // 3) Обычные ответы
+      try {
+        if (type === 'response') {
           await dispatch('config/handleConfigResponse', response, { root: true });
         }
-        // if (response.request === 'config') {
-        //   await dispatch('config/handleConfigResponse', response, { root: true });
-        // }
-       
-        if (response.type === 'post') {
-          logger.info('[WebSocket] Обрабатываем сообщение type = post');
-          //console.log('[WebSocket] Обрабатываем сообщение type = post');
-          //console.log('dID сообщения - ', dID, ' dID активного пользователя - ', auth_dID, 'request - ', response.request);
-
-            // Валидация payload
-              if (!response.payload || typeof response.payload !== 'object') {
-                logger.error('[WebSocket] Невалидный payload сенсора'); 
-                //console.warn('[WebSocket] Невалидный payload сенсора');
-                return;
-              }
-
-          // Обновляем значение
-            if (dID === auth_dID) {
-              logger.dev('[WebSocket] Обрабатываем сообщение request-', response.request);
-              //console.log('[WebSocket] Обрабатываем сообщение request-', response.request);
-              await dispatch('config/handleValueUpdate', {dID, payload: response.payload, type: response.request}, { root: true });
-            }  else {
-              logger.error('[WebSocket] dID сообщения запроса', dID, ' не соответствует dID текущего пользователя - ', auth_dID); 
-                //console.log('[WebSocket] dID сообщения запроса', dID, ' не соответствует dID текущего пользователя - ', auth_dID);
-                return;
-            }
-
+        if (type === 'post') {
+          const dID = response.name;
+          const auth_dID = rootGetters['dID'];
+          if (!response.payload || typeof response.payload !== 'object') return;
+          if (dID === auth_dID) {
+            await dispatch(
+              'config/handleValueUpdate',
+              { dID, payload: response.payload, type: request },
+              { root: true }
+            );
+          }
         }
-
       } catch (error) {
-        logger.error('[WebSocket] Message handling error:', error);
-        //console.error('[WebSocket] Message handling error:', error);
+        logger.error('[WebSocket] handleMessage error:', error);
         dispatch('log/addError', error, { root: true });
       }
-    }
+    },
   },
-  
+
   getters: {
-    isConnected: (state) => state.socket?.readyState === WebSocket.OPEN
-  }
+    isConnected: (state) => state.socket?.readyState === WebSocket.OPEN,
+  },
 };

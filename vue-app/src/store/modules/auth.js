@@ -1,150 +1,248 @@
+// store/modules/auth.js
 import logger from './logger';
+import { getTokenExpiry } from '@/utils/jwt';
+
+const STORAGE_KEY = 'authSession';
 
 export default {
   namespaced: true,
+
   state: () => ({
     token: '',
     user: {},
-    password: '',
-    status: '',
+    status: '',           // '' | 'loading' | 'success' | 'error'
     level: 0,
-    dID: null
+    dID: null,
+    mustChangePassword: false,
+    error: null,
+    expiresAt: null,
   }),
-  
+
   mutations: {
     AUTH_REQUEST(state) {
       state.status = 'loading';
+      state.error = null;
     },
-    AUTH_SUCCESS(state, { token, user, dID, level }) {
+    AUTH_SUCCESS(state, { token, user, dID, level, mustChangePassword }) {
       state.token = token;
       state.user = user;
       state.dID = dID;
       state.level = level;
       state.status = 'success';
+      state.error = null;
+      state.mustChangePassword = !!mustChangePassword;
+      state.expiresAt = getTokenExpiry(token);
     },
-    RESTORE_AUTH(state, data) {
-      state.token = data.token;
-      state.user = data.user;
-      state.password = data.password;
-      state.dID = data.dID;
-      state.level = data.level;
-      state.status = 'success';
-    },
-    AUTH_ERROR(state) {
+    AUTH_ERROR(state, error) {
       state.status = 'error';
+      state.error = error?.message || String(error);
+    },
+    RESTORE_AUTH(state, { token, user, dID, level, mustChangePassword }) {
+      state.token = token || '';
+      state.user = user || {};
+      state.dID = dID || null;
+      state.level = level || 0;
+      state.status = token ? 'success' : '';
+      state.mustChangePassword = !!mustChangePassword;
+      state.expiresAt = token ? getTokenExpiry(token) : null;
     },
     LOGOUT(state) {
       state.status = '';
       state.token = '';
       state.user = {};
-      state.password = '',
       state.dID = null;
       state.level = 0;
-    }
+      state.error = null;
+      state.mustChangePassword = false;
+      state.expiresAt = null;
+    },
+    SET_MUST_CHANGE_PASSWORD(state, value) {
+      state.mustChangePassword = !!value;
+    },
   },
-  
-  actions: {
-    async login({ commit, dispatch }, user) {
-      logger.dev('[auth] - login - Данные пользователя для подключения:', user);
-      //console.log('[auth] - login - Данные пользователя для подключения:', user);
-      if (user.token === 'local-token') {
-        logger.dev('[auth] - login - Локальный вход, восстанавливаем состояние из localStorage');
-        const authData = localStorage.getItem('authData');
-        if (!authData) {
-          throw new Error('Нет данных для локального входа');
-        }
-        const parsed = JSON.parse(authData);
-        // Восстанавливаем состояние через мутацию
-        commit('RESTORE_AUTH', {
-          token: 'local-token',
-          user: parsed.user,
-          dID: parsed.dID || parsed.user.dID,
-          level: parsed.level || 0,
-          password: parsed.user.password,
-        });
-        return parsed.user;
-      }
 
+  actions: {
+    // ── Логин ────────────────────────────────────────────────────────
+    async login({ commit, dispatch }, { username, password }) {
       commit('AUTH_REQUEST');
       try {
         await dispatch('websocket/connect', null, { root: true });
-        
         const response = await dispatch('websocket/send', {
           type: 'auth',
           request: 'login',
           name: '',
-          payload: {
-            username: user.username,
-            password: user.password
-          }
+          payload: { username, password },
         }, { root: true });
-        logger.dev('Ответ сервера:', response);
-        //console.log('Ответ сервера:', response);
 
-        if (response?.request === 'loginSuccess') {
-          const userData = {
-            username: response.payload.username,
-            password: user.password,
-            userlevel: response.payload.userlevel,
-            dID: response.name
-          };
-        // Сохраняем данные в localStorage
-          localStorage.setItem('authData', JSON.stringify({
-            token: response.payload.token,
-            user: userData,
-            dID: userData.dID,
-            level: userData.userlevel
-          }));
-
-          commit('AUTH_SUCCESS', {
-            token: response.payload.token,
-            user: userData,
-            dID: userData.dID,
-            level: userData.userlevel
-          });
-
-          
-          return userData;
+        if (response?.request !== 'loginSuccess') {
+          throw new Error(response?.payload?.message || 'Неверный ответ сервера');
         }
-        throw new Error(response?.payload?.message || 'Неверный формат ответа сервера');
+
+        const { token, username: uname, userlevel, dID, mustChangePassword } = response.payload;
+        const userData = { username: uname, userlevel, dID };
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          token, user: userData, dID, level: userlevel, mustChangePassword: !!mustChangePassword,
+        }));
+
+        commit('AUTH_SUCCESS', {
+          token, user: userData, dID, level: userlevel, mustChangePassword,
+        });
+        logger.info('[auth] - login успешен:', uname, 'level', userlevel);
+        return userData;
       } catch (error) {
-        commit('AUTH_ERROR');
+        commit('AUTH_ERROR', error);
         throw error;
       }
     },
-    localLogin({ commit }, { dID, password, level = 0 }) {
-      logger.dev('[auth] - localLogin - Локальный вход с dID:', dID);
-      
-      const userData = {
-        username: dID,
-        password: password,
-        userlevel: level,
-        dID: dID,
-      };
 
-      // Сохраняем в localStorage
-      localStorage.setItem('authData', JSON.stringify({
-        token: 'local-token', // фиктивный токен
-        user: userData,
-        dID: dID,
-        level: level,
-        password: password,
-      }));
+    // ── Восстановление сессии по JWT ────────────────────────────────
+    async resume({ commit, dispatch }) {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
 
-      // Восстанавливаем состояние через существующую мутацию
-      commit('RESTORE_AUTH', {
-        token: 'local-token',
-        user: userData,
-        dID: dID,
-        level: level,
-        password: password,
-      });
+      let saved;
+      try { saved = JSON.parse(raw); }
+      catch { localStorage.removeItem(STORAGE_KEY); return null; }
+      if (!saved?.token) return null;
+
+      try {
+        await dispatch('websocket/connect', null, { root: true });
+        const response = await dispatch('websocket/send', {
+          type: 'auth',
+          request: 'resume',
+          name: '',
+          payload: { token: saved.token },
+        }, { root: true });
+
+        if (response?.request !== 'loginSuccess') {
+          throw new Error(response?.payload?.message || 'Сессия недействительна');
+        }
+
+        const { token, username, userlevel, dID, mustChangePassword } = response.payload;
+        const userData = { username, userlevel, dID };
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          token, user: userData, dID, level: userlevel, mustChangePassword: !!mustChangePassword,
+        }));
+
+        commit('AUTH_SUCCESS', {
+          token, user: userData, dID, level: userlevel, mustChangePassword,
+        });
+        logger.info('[auth] - resume успешен:', username);
+        return userData;
+      } catch (error) {
+        logger.warn('[auth] - resume не удался:', error.code || error.message);
+        localStorage.removeItem(STORAGE_KEY);
+        commit('LOGOUT');
+        return null;
+      }
     },
-    
-    logout({ commit, dispatch }) {
+
+    // ── Продление JWT ───────────────────────────────────────────────
+    async refresh({ commit, dispatch, state }) {
+      if (!state.token) return null;
+      try {
+        const response = await dispatch('websocket/send', {
+          type: 'auth', request: 'refresh', name: '', payload: {},
+        }, { root: true });
+
+        if (response?.request !== 'refreshSuccess') return null;
+
+        const newToken = response.payload.token;
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        saved.token = newToken;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+
+        commit('AUTH_SUCCESS', {
+          token: newToken,
+          user: saved.user,
+          dID: saved.dID,
+          level: saved.level,
+          mustChangePassword: saved.mustChangePassword,
+        });
+        return newToken;
+      } catch (e) {
+        logger.error('[auth] - refresh:', e.message);
+        return null;
+      }
+    },
+
+    // ── Смена собственного пароля ───────────────────────────────────
+    async changePassword({ commit, dispatch }, { oldPassword, newPassword }) {
+      const response = await dispatch('websocket/send', {
+        type: 'auth',
+        request: 'changePassword',
+        name: '',
+        payload: { oldPassword, newPassword },
+      }, { root: true });
+
+      if (response?.request !== 'changePasswordSuccess') {
+        throw new Error(response?.payload?.message || 'Ошибка смены пароля');
+      }
+
+      const newToken = response.payload.token;
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      saved.token = newToken;
+      saved.mustChangePassword = false;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+
+      commit('AUTH_SUCCESS', {
+        token: newToken,
+        user: saved.user,
+        dID: saved.dID,
+        level: saved.level,
+        mustChangePassword: false,
+      });
+      return true;
+    },
+
+    // ── Выход ───────────────────────────────────────────────────────
+    async logout({ commit, dispatch, state }) {
+      try {
+        if (state.token) {
+          await dispatch('websocket/send', {
+            type: 'auth', request: 'logout', name: '', payload: {},
+          }, { root: true });
+        }
+      } catch (e) {
+        logger.warn('[auth] - logout на сервере не удался:', e.message);
+      }
       commit('LOGOUT');
-      localStorage.removeItem('authData'); // Очищаем хранилище
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('authData'); // старый ключ
       dispatch('dropdown/hide', null, { root: true });
-    }
-  }
+    },
+
+    // ── Обработка accessError, прилетевшего в WS ────────────────────
+    handleAccessError({ commit, dispatch }, payload) {
+      const code = payload?.code;
+      logger.warn('[auth] - accessError:', payload);
+
+      if (code === 'NO_SESSION' || code === 'TIMEOUT' || code === 'TOKEN_REVOKED') {
+        commit('LOGOUT');
+        localStorage.removeItem(STORAGE_KEY);
+        dispatch('popup/show', {
+          message: 'Сессия истекла. Войдите снова.',
+          type: 'warning',
+          duration: 2500,
+        }, { root: true });
+        if (window.location.pathname !== '/login') {
+          setTimeout(() => { window.location.href = '/login'; }, 800);
+        }
+      } else if (code === 'FORBIDDEN') {
+        dispatch('popup/show', {
+          message: payload.message || 'Недостаточно прав для этой операции',
+          type: 'error',
+          duration: 3000,
+        }, { root: true });
+      }
+    },
+  },
+
+  getters: {
+    isAuthenticated: (state) => !!state.token,
+    mustChangePassword: (state) => state.mustChangePassword,
+    tokenExpiresAt: (state) => state.expiresAt,
+  },
 };

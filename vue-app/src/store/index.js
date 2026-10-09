@@ -106,16 +106,39 @@ const store = createStore({
     toLowerCase(_, str) {
       return str.toLowerCase();
     },
+    // initializeStore({ commit }) {
+    //   const authData = localStorage.getItem('authData');
+    //   if (authData) {
+    //     try {
+    //       const parsedData = JSON.parse(authData);
+    //       commit('auth/RESTORE_AUTH', parsedData);
+    //     } catch (e) {
+    //       localStorage.removeItem('authData');
+    //       console.error('Ошибка восстановления сессии', e);
+    //     }
+    //   }
+    // },
     initializeStore({ commit }) {
-      const authData = localStorage.getItem('authData');
-      if (authData) {
+      // новый ключ
+      const raw = localStorage.getItem('authSession');
+      if (raw) {
         try {
-          const parsedData = JSON.parse(authData);
-          commit('auth/RESTORE_AUTH', parsedData);
+          const parsed = JSON.parse(raw);
+          commit('auth/RESTORE_AUTH', {
+            token: parsed.token,
+            user: parsed.user,
+            dID: parsed.dID,
+            level: parsed.level,
+            mustChangePassword: parsed.mustChangePassword,
+          });
         } catch (e) {
-          localStorage.removeItem('authData');
-          console.error('Ошибка восстановления сессии', e);
+          localStorage.removeItem('authSession');
+          console.error('[store] не удалось восстановить сессию', e);
         }
+      }
+      // старый ключ — чистим
+      if (localStorage.getItem('authData')) {
+        localStorage.removeItem('authData');
       }
     },
 

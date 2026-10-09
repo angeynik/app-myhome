@@ -89,6 +89,12 @@ const routes = [
     meta: { public: true }
   },
   {
+    path: '/change-password',
+    name: 'ChangePassword',
+    component: () => import('../components/ChangePassword.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/profile',
     name: 'AppProfile',
     component: Profile,
@@ -116,6 +122,7 @@ export const routesArray = routes;
 export const navigationGuard = (to, from, next) => {
   const isAuthenticated = !!store.getters.isAuthenticated;
   const userLevel = store.getters.level || 0;
+  const mustChange = !!store.getters['auth/mustChangePassword'];
 
     // ── ВРЕМЕННЫЙ ЛОГ ─────────────────────────────────────────────
   console.log('[GUARD]', {
@@ -134,19 +141,39 @@ export const navigationGuard = (to, from, next) => {
 
   
   const authRecord = to.matched.find(record => record.meta.requiresAuth);
-  if (authRecord) {
-    if (!isAuthenticated) {
-      localStorage.setItem('redirectPath', to.fullPath);
-      next('/login');
-    } else if (authRecord.meta.requiredLevel && userLevel < authRecord.meta.requiredLevel) {
-      next('/access-denied');
-    } else {
-      next();
+    if (authRecord) {
+      if (!isAuthenticated) {
+        localStorage.setItem('redirectPath', to.fullPath);
+        return next('/login');
+      }
+
+      // Принудительная смена пароля
+      if (mustChange && to.path !== '/change-password') {
+        return next('/change-password');
+      }
+
+      // Уровень доступа
+      if (authRecord.meta.requiredLevel && userLevel < authRecord.meta.requiredLevel) {
+        return next('/access-denied');
+      }
+      return next();
     }
-  } else {
+
     next();
-  }
-};
+  };
+//   if (authRecord) {
+//     if (!isAuthenticated) {
+//       localStorage.setItem('redirectPath', to.fullPath);
+//       next('/login');
+//     } else if (authRecord.meta.requiredLevel && userLevel < authRecord.meta.requiredLevel) {
+//       next('/access-denied');
+//     } else {
+//       next();
+//     }
+//   } else {
+//     next();
+//   }
+// };
 
 const router = createRouter({
   history: createWebHistory(),
