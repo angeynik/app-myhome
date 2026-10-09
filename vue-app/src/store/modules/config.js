@@ -215,13 +215,13 @@ export default {
   },
   
   actions: {
-    async initialize({ dispatch, commit, rootGetters, rootState, state }) {
+    async initialize({ dispatch, rootGetters, state }) {
       dispatch('detectDevice'); 
       logger.dev('[config] - initialize - Начинаем Инициализацию конфига - state.configs: ', state.configs);
       //console.log('[config] - initialize - Начинаем Инициализацию конфига');
 
       const dID = rootGetters['dID'];
-      const token = rootState.auth.token;
+      //const token = rootState.auth.token;
       logger.dev('[config] - initialize - dID: ', dID);
       //console.log('[config] - initialize - dID: ', dID);
       //console.log('[config] - initialize - state.configs[dID] до ensureConfig: ', state.configs[dID]);
