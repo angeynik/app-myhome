@@ -223,7 +223,7 @@ export default {
       const dID = rootGetters['dID'];
       //const token = rootState.auth.token;
       logger.dev('[config] - initialize - dID: ', dID);
-      //console.log('[config] - initialize - dID: ', dID);
+      console.log('[config] - initialize - dID: ', dID);
       //console.log('[config] - initialize - state.configs[dID] до ensureConfig: ', state.configs[dID]);
 
       // if (token === 'local-token' && dID) {
