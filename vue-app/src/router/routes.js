@@ -176,7 +176,7 @@ export const navigationGuard = (to, from, next) => {
 // };
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory('/app/'),
   routes,
 });
 
