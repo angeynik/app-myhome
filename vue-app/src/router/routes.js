@@ -7,6 +7,7 @@ import Profile from '../components/AppProfile.vue';
 import UserConfig from '../components/UserConfig.vue';
 import AccessDenied from '../components/AccessDenied.vue';
 import store from '@/store';
+import logger from './logger';
 
 // ─── Хелпер feature-флагов ────────────────────────────────────────────────
 // VUE_APP_FEATURE_* подставляется webpack при сборке из .env-файла.
@@ -124,14 +125,22 @@ export const navigationGuard = (to, from, next) => {
   const userLevel = store.getters.level || 0;
   const mustChange = !!store.getters['auth/mustChangePassword'];
 
-    // ── ВРЕМЕННЫЙ ЛОГ ─────────────────────────────────────────────
-  console.log('[GUARD]', {
+  logger.dev('[GUARD]', {
     to: to.path,
     isAuthenticated,
     userLevel,
     meta: to.meta,
-    storeState: JSON.stringify(store.state.auth),
+    //storeState: JSON.stringify(store.state.auth),
   });
+
+    // ── ВРЕМЕННЫЙ ЛОГ ─────────────────────────────────────────────
+  // console.log('[GUARD]', {
+  //   to: to.path,
+  //   isAuthenticated,
+  //   userLevel,
+  //   meta: to.meta,
+  //   //storeState: JSON.stringify(store.state.auth),
+  // });
   // ──────────────────────────────────────────────────────────────
 
   // Публичные маршруты — пропускаем без проверки
