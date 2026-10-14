@@ -7,7 +7,7 @@ import Profile from '../components/AppProfile.vue';
 import UserConfig from '../components/UserConfig.vue';
 import AccessDenied from '../components/AccessDenied.vue';
 import store from '@/store';
-import logger from './logger';
+import logger from '../store/modules/logger';
 
 // ─── Хелпер feature-флагов ────────────────────────────────────────────────
 // VUE_APP_FEATURE_* подставляется webpack при сборке из .env-файла.
