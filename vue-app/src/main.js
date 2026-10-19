@@ -1,45 +1,78 @@
+// main.js
 import { createApp } from 'vue';
 import App from './App.vue';
-// import router from './router';
-import config from './myhome_config.js'; // Импортируйте конфигурацию
+import store from './store/index.js';
+import router from './router/routes.js';
 
 const app = createApp(App);
-// app.use(router); // Подключаем маршрутизацию
+app.use(store);
+(async () => {
+  try {
+    await store.dispatch('initializeStore');
 
-app.config.globalProperties.sPointRoom_all= config.sPointRoom_all;
-app.config.globalProperties.sPointRoom_01 = config.sPointRoom_01;
-app.config.globalProperties.sPointRoom_02 = config.sPointRoom_02;
-app.config.globalProperties.sPointRoom_03 = config.sPointRoom_03;
-app.config.globalProperties.sPointRoom_04 = config.sPointRoom_04;
-app.config.globalProperties.sPointRoom_05 = config.sPointRoom_05;
-app.config.globalProperties.sPointRoom_06 = config.sPointRoom_06;
-app.config.globalProperties.sPointRoom_07 = config.sPointRoom_07;
-app.config.globalProperties.sPointRoom_08 = config.sPointRoom_08;
+    // Пробуем поднять WS-соединение и восстановить сессию по JWT.
+    // Если токена нет или он недействителен — resume вернёт null,
+    // и роутер отправит на /login через navigation guard.
+    await store.dispatch('websocket/connect');
+    if (store.state.auth.token) {
+      await store.dispatch('auth/resume');
+    }
+  } catch (e) {
+    console.warn('[MAIN] bootstrap:', e.message);
+    // Сервер недоступен — монтируем приложение всё равно;
+    // WS переподключится сам, роутер отправит на /login.
+  } finally {
+    app.use(router);
+    app.mount('#app');
+  }
+})();
 
-app.config.globalProperties.sensorTemp_01 = config.sensorTemp_01;
-app.config.globalProperties.sensorTemp_02 = config.sensorTemp_02;
-app.config.globalProperties.sensorTemp_03 = config.sensorTemp_03;
-app.config.globalProperties.sensorTemp_04 = config.sensorTemp_04;
-app.config.globalProperties.sensorTemp_05 = config.sensorTemp_05;
-app.config.globalProperties.sensorTemp_06 = config.sensorTemp_06;
-app.config.globalProperties.sensorTemp_07 = config.sensorTemp_07;
-app.config.globalProperties.sensorTemp_08 = config.sensorTemp_08;
 
-app.config.globalProperties.relayRoom_01 = config.relayRoom_01;
-app.config.globalProperties.relayRoom_02 = config.relayRoom_02;
-app.config.globalProperties.relayRoom_03 = config.relayRoom_03;
-app.config.globalProperties.relayRoom_04 = config.relayRoom_04;
-app.config.globalProperties.relayRoom_05 = config.relayRoom_05;
-app.config.globalProperties.relayRoom_06 = config.relayRoom_06;
-app.config.globalProperties.relayRoom_07 = config.relayRoom_07;
-app.config.globalProperties.relayRoom_08 = config.relayRoom_08;
+// store.dispatch('initializeStore').then(async () => {
+//   // Авто-логин ДО подключения роутера
+//   const user = store.state.auth.user;
+//   const token = store.state.auth.token;
+//   if (user && user.username && user.password && token !== 'local-token') {
+//     await store.dispatch('auth/login', {
+//       username: user.username,
+//       password: user.password,
+//     });
+//     console.log('[MAIN] после auth/login, isAuthenticated:', store.getters.isAuthenticated);
+//   } else if (user && token === 'local-token') {
+//     // уже восстановлено через RESTORE_AUTH, просто логируем
+//     console.log('[MAIN] Локальная сессия восстановлена, dID:', user.dID);
+//   } else {
+//     console.log('[MAIN] нет данных для авто-логина, user:', user);
+//   }
 
-app.config.globalProperties.sensorMove_01 = config.sensorMove_01;
-app.config.globalProperties.sensorMove_02 = config.sensorMove_02;
-app.config.globalProperties.sensorMove_03 = config.sensorMove_03;
-app.config.globalProperties.sensorFire_01 = config.sensorFire_01;
-app.config.globalProperties.sensorFire_02 = config.sensorFire_02;
-app.config.globalProperties.sensorLeak_01 = config.sensorLeak_01;
-app.config.globalProperties.sensorLeak_02 = config.sensorLeak_02;
+//   // Роутер подключаем ПОСЛЕ — guard увидит уже заполненный store
+//   app.use(router);
+//   app.mount('#app');
+// });
+// store.dispatch('initializeStore').then(async () => {
+//   const user = store.state.auth.user;
+//   const token = store.state.auth.token;
 
-app.mount('#app');
+//   try {
+//     if (user && user.username && user.password && token !== 'local-token') {
+//       await store.dispatch('auth/login', {
+//         username: user.username,
+//         password: user.password,
+//       });
+//       console.log('[MAIN] после auth/login, isAuthenticated:', store.getters.isAuthenticated);
+//     } else if (user && token === 'local-token') {
+//       console.log('[MAIN] Локальная сессия восстановлена, dID:', user.dID);
+//     } else {
+//       console.log('[MAIN] нет данных для авто-логина, user:', user);
+//     }
+//   } catch (error) {
+//     console.error('[MAIN] Ошибка при авто-логине:', error);
+//     // Можно показать попап, но приложение всё равно монтируется
+//   } finally {
+//     app.use(router);
+//     app.mount('#app');
+//   }
+// });
+// store.dispatch('initializeStore').then(() => {
+//   app.mount('#app');
+// });

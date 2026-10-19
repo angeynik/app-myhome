@@ -3,19 +3,19 @@
     "short_name": "MySmartHome",
     "start_url": "/",
     "display": "standalone",
-    // "background_color": "#ffffff",
-    // "theme_color": "#000000",
+    "theme_color": "#1E1E31",
+    "background_color": "#1E1E31",
     "icons": [
-      {
-        // "src": "path/to/your/icon.png",
-        // "sizes": "192x192",
-        // "type": "image/png"
-      },
-      {
-        // "src": "path/to/your/icon.png",
-        // "sizes": "512x512",
-        // "type": "image/png"
-      }
-    ]
+    {
+      "src": "/webicons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "/webicons/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
   }
   

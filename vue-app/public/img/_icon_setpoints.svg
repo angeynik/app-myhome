@@ -1,0 +1,54 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" width="512" height="512">
+<title>Уставки (заданные значения)</title>
+<style>
+  .bg { fill: #1a2332; }
+  .card { fill: #232e3e; stroke: #2e3d52; stroke-width: 6; }
+  .orange { fill: #f07820; }
+  .orange-dark { fill: #c05e10; }
+  .gray { fill: #4a5568; }
+  .gray-light { fill: #6b7a8e; }
+  .gray-lighter { fill: #8b9ab0; }
+</style>
+<rect x="40" y="40" width="432" height="432" rx="64" class="bg"/>
+<rect x="40" y="40" width="432" height="432" rx="64" class="card"/>
+<rect x="88" y="116" width="336" height="52" rx="12" class="gray"/>
+<rect x="100" y="128" width="200" height="28" rx="6" fill="#3a4a5e"/>
+<rect x="100" y="128" width="120" height="28" rx="6" class="orange"/>
+<rect x="310" y="124" width="40" height="36" rx="8" class="gray-lighter"/>
+<rect x="320" y="131" width="20" height="8" rx="3" fill="#3a4a5e"/>
+<rect x="318" y="143" width="24" height="4" rx="2" fill="#f07820"/>
+<polygon points="356,135 368,142 356,149" fill="#f07820"/>
+<polygon points="310,135 298,142 310,149" fill="#6b7a8e"/>
+<rect x="88" y="192" width="336" height="52" rx="12" class="gray"/>
+<rect x="100" y="204" width="200" height="28" rx="6" fill="#3a4a5e"/>
+<rect x="100" y="204" width="160" height="28" rx="6" class="orange-dark"/>
+<rect x="310" y="200" width="40" height="36" rx="8" class="gray-lighter"/>
+<rect x="318" y="207" width="24" height="4" rx="2" fill="#f07820"/>
+<rect x="318" y="215" width="24" height="8" rx="3" fill="#3a4a5e"/>
+<polygon points="356,211 368,218 356,225" fill="#6b7a8e"/>
+<polygon points="310,211 298,218 310,225" fill="#f07820"/>
+<rect x="88" y="268" width="336" height="52" rx="12" class="gray-light"/>
+<rect x="100" y="280" width="200" height="28" rx="6" fill="#3a4a5e"/>
+<rect x="100" y="280" width="72" height="28" rx="6" class="orange"/>
+<rect x="310" y="276" width="40" height="36" rx="8" class="orange-dark"/>
+<rect x="318" y="283" width="24" height="8" rx="3" fill="#141c28" opacity="0.4"/>
+<rect x="318" y="295" width="24" height="4" rx="2" fill="#f07820"/>
+<polygon points="356,287 368,294 356,301" fill="#f07820"/>
+<polygon points="310,287 298,294 310,301" fill="#f07820"/>
+<rect x="88" y="348" width="336" height="30" rx="12" class="gray"/>
+<rect x="100" y="354" width="110" height="18" rx="5" class="orange"/>
+<circle cx="116" cy="363" r="5" fill="#141c28"/>
+<circle cx="128" cy="363" r="5" fill="#141c28"/>
+<circle cx="140" cy="363" r="5" fill="#141c28"/>
+<circle cx="152" cy="363" r="5" fill="#141c28"/>
+<rect x="220" y="354" width="60" height="18" rx="5" class="gray-lighter"/>
+<circle cx="246" cy="363" r="7" class="orange"/>
+<circle cx="246" cy="363" r="3" fill="#141c28"/>
+<rect x="290" y="356" width="120" height="14" rx="5" fill="#3a4a5e"/>
+<rect x="290" y="356" width="56" height="14" rx="5" class="orange-dark"/>
+<circle cx="430" cy="80" r="14" fill="#141c28"/>
+<circle cx="412" cy="70" r="7" fill="#f07820"/>
+<circle cx="82" cy="80" r="10" fill="#f07820"/>
+<circle cx="430" cy="430" r="12" fill="#141c28"/>
+<circle cx="82" cy="430" r="10" fill="#141c28"/>
+</svg>

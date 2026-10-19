@@ -1,9 +1,7 @@
+<!-- components/MainSetpoint.vue -->
 <template>
   
     <div class="setpointBlock" 
-    @touchstart="handleTouchStart" 
-    @touchend="handleTouchEnd('setpointBlock')"
-    @touchmove="handleTouchMove"
     >
     <svg display="none"> // Задаем код для визуализации области скрола для изменения уставки
         <symbol id="iconTelegram" viewBox="0 0 24 24">
@@ -17,88 +15,45 @@
         height="100%" 
         preserveAspectRatio="xMidYMid meet"
         >         
-          <!-- <line x1="261.5" y1="10" x2="261.5" y2="50" stroke="white"/>
-          <line x1="204.5" y1="10" x2="204.5" y2="50" stroke="white"/>
-          <line x1="147.5" y1="10" x2="147.5" y2="50" stroke="white"/>
-          <line x1="90.5" y1="10" x2="90.5" y2="50" stroke="white"/>
-          <line x1="33.5" y1="10" x2="33.5" y2="50" stroke="white"/>
-          <line x1="250.5" y1="10" x2="250.5" y2="50" stroke="white"/>
-          <line x1="193.5" y1="10" x2="193.5" y2="50" stroke="white"/>
-          <line x1="136.5" y1="10" x2="136.5" y2="50" stroke="white"/>
-          <line x1="79.5" y1="10" x2="79.5" y2="50" stroke="white"/>
-          <line x1="22.5" y1="10" x2="22.5" y2="50" stroke="white"/>
-          <line x1="239.5" y1="10" x2="239.5" y2="50" stroke="white"/>
-          <line x1="182.5" y1="10" x2="182.5" y2="50" stroke="white"/>
-          <line x1="125.5" y1="10" x2="125.5" y2="50" stroke="white"/>
-          <line x1="68.5" y1="10" x2="68.5" y2="50" stroke="white"/>
-          <line x1="11.5" y1="10" x2="11.5" y2="50" stroke="white"/>
-          <line x1="228.5" y1="10" x2="228.5" y2="50" stroke="white"/>
-          <line x1="171.5" y1="10" x2="171.5" y2="50" stroke="white"/>
-          <line x1="114.5" y1="10" x2="114.5" y2="50" stroke="white"/>
-          <line x1="57.5" y1="10" x2="57.5" y2="50" stroke="white"/>
-          <line x1="0.5" y1="10" x2="0.499998" y2="50" stroke="white"/>
-          <line x1="273.5" y1="6.55671e-08" x2="273.5" y2="60" stroke="white" stroke-width="3"/>
-          <line x1="216.5" y1="6.55671e-08" x2="216.5" y2="60" stroke="white" stroke-width="3"/>
-          <line x1="159.5" y1="6.55671e-08" x2="159.5" y2="60" stroke="white" stroke-width="3"/>
-          <line x1="102.5" y1="6.55671e-08" x2="102.5" y2="60" stroke="white" stroke-width="3"/>
-          <line x1="45.5" y1="4" x2="45.5" y2="64" stroke="white" stroke-width="3"/>
-          <line x1="285.5" y1="10" x2="285.5" y2="50" stroke="white"/>
-          <line x1="296.5" y1="10" x2="296.5" y2="50" stroke="white"/>
-          <line x1="307.5" y1="10" x2="307.5" y2="50" stroke="white"/>
-          <line x1="318.5" y1="10" x2="318.5" y2="50" stroke="white"/> -->
-
-
-
-
-            <!-- <svg width="433" height="60" viewBox="0 0 433 60" fill="none" xmlns="http://www.w3.org/2000/svg"> -->
-
-<line x1="261.5" y1="10" x2="261.5" y2="50" stroke="white"/>
-<line x1="204.5" y1="10" x2="204.5" y2="50" stroke="white"/>
-<line x1="147.5" y1="10" x2="147.5" y2="50" stroke="white"/>
-<line x1="90.5" y1="10" x2="90.5" y2="50" stroke="white"/>
-<line x1="33.5" y1="10" x2="33.5" y2="50" stroke="white"/>
-<line x1="250.5" y1="10" x2="250.5" y2="50" stroke="white"/>
-<line x1="193.5" y1="10" x2="193.5" y2="50" stroke="white"/>
-<line x1="136.5" y1="10" x2="136.5" y2="50" stroke="white"/>
-<line x1="79.5" y1="10" x2="79.5" y2="50" stroke="white"/>
-<line x1="22.5" y1="10" x2="22.5" y2="50" stroke="white"/>
-<line x1="239.5" y1="10" x2="239.5" y2="50" stroke="white"/>
-<line x1="182.5" y1="10" x2="182.5" y2="50" stroke="white"/>
-<line x1="125.5" y1="10" x2="125.5" y2="50" stroke="white"/>
-<line x1="68.5" y1="10" x2="68.5" y2="50" stroke="white"/>
-<line x1="11.5" y1="10" x2="11.5" y2="50" stroke="white"/>
-<line x1="228.5" y1="10" x2="228.5" y2="50" stroke="white"/>
-<line x1="171.5" y1="10" x2="171.5" y2="50" stroke="white"/>
-<line x1="114.5" y1="10" x2="114.5" y2="50" stroke="white"/>
-<line x1="57.5" y1="10" x2="57.5" y2="50" stroke="white"/>
-<line x1="0.5" y1="10" x2="0.499998" y2="50" stroke="white"/>
-<line x1="273.5" y1="6.55671e-08" x2="273.5" y2="60" stroke="white" stroke-width="3"/>
-<line x1="330.5" y1="6.55671e-08" x2="330.5" y2="60" stroke="white" stroke-width="3"/>
-<line x1="387.5" y1="6.55671e-08" x2="387.5" y2="60" stroke="white" stroke-width="3"/>
-<line x1="216.5" y1="6.55671e-08" x2="216.5" y2="60" stroke="white" stroke-width="3"/>
-<line x1="159.5" y1="6.55671e-08" x2="159.5" y2="60" stroke="white" stroke-width="3"/>
-<line x1="102.5" y1="6.55671e-08" x2="102.5" y2="60" stroke="white" stroke-width="3"/>
-<line x1="45.5" y1="6.55671e-08" x2="45.5" y2="60" stroke="white" stroke-width="3"/>
-<line x1="285.5" y1="10" x2="285.5" y2="50" stroke="white"/>
-<line x1="342.5" y1="10" x2="342.5" y2="50" stroke="white"/>
-<line x1="399.5" y1="10" x2="399.5" y2="50" stroke="white"/>
-<line x1="296.5" y1="10" x2="296.5" y2="50" stroke="white"/>
-<line x1="353.5" y1="10" x2="353.5" y2="50" stroke="white"/>
-<line x1="410.5" y1="10" x2="410.5" y2="50" stroke="white"/>
-<line x1="307.5" y1="10" x2="307.5" y2="50" stroke="white"/>
-<line x1="364.5" y1="10" x2="364.5" y2="50" stroke="white"/>
-<line x1="421.5" y1="10" x2="421.5" y2="50" stroke="white"/>
-<line x1="318.5" y1="10" x2="318.5" y2="50" stroke="white"/>
-<line x1="375.5" y1="10" x2="375.5" y2="50" stroke="white"/>
-<line x1="432.5" y1="10" x2="432.5" y2="50" stroke="white"/>
-
-
-
-
-
-
-
-
+      <line x1="261.5" y1="10" x2="261.5" y2="50" stroke="white"/>
+      <line x1="204.5" y1="10" x2="204.5" y2="50" stroke="white"/>
+      <line x1="147.5" y1="10" x2="147.5" y2="50" stroke="white"/>
+      <line x1="90.5" y1="10" x2="90.5" y2="50" stroke="white"/>
+      <line x1="33.5" y1="10" x2="33.5" y2="50" stroke="white"/>
+      <line x1="250.5" y1="10" x2="250.5" y2="50" stroke="white"/>
+      <line x1="193.5" y1="10" x2="193.5" y2="50" stroke="white"/>
+      <line x1="136.5" y1="10" x2="136.5" y2="50" stroke="white"/>
+      <line x1="79.5" y1="10" x2="79.5" y2="50" stroke="white"/>
+      <line x1="22.5" y1="10" x2="22.5" y2="50" stroke="white"/>
+      <line x1="239.5" y1="10" x2="239.5" y2="50" stroke="white"/>
+      <line x1="182.5" y1="10" x2="182.5" y2="50" stroke="white"/>
+      <line x1="125.5" y1="10" x2="125.5" y2="50" stroke="white"/>
+      <line x1="68.5" y1="10" x2="68.5" y2="50" stroke="white"/>
+      <line x1="11.5" y1="10" x2="11.5" y2="50" stroke="white"/>
+      <line x1="228.5" y1="10" x2="228.5" y2="50" stroke="white"/>
+      <line x1="171.5" y1="10" x2="171.5" y2="50" stroke="white"/>
+      <line x1="114.5" y1="10" x2="114.5" y2="50" stroke="white"/>
+      <line x1="57.5" y1="10" x2="57.5" y2="50" stroke="white"/>
+      <line x1="0.5" y1="10" x2="0.499998" y2="50" stroke="white"/>
+      <line x1="273.5" y1="6.55671e-08" x2="273.5" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="330.5" y1="6.55671e-08" x2="330.5" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="387.5" y1="6.55671e-08" x2="387.5" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="216.5" y1="6.55671e-08" x2="216.5" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="159.5" y1="6.55671e-08" x2="159.5" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="102.5" y1="6.55671e-08" x2="102.5" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="45.5" y1="6.55671e-08" x2="45.5" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="285.5" y1="10" x2="285.5" y2="50" stroke="white"/>
+      <line x1="342.5" y1="10" x2="342.5" y2="50" stroke="white"/>
+      <line x1="399.5" y1="10" x2="399.5" y2="50" stroke="white"/>
+      <line x1="296.5" y1="10" x2="296.5" y2="50" stroke="white"/>
+      <line x1="353.5" y1="10" x2="353.5" y2="50" stroke="white"/>
+      <line x1="410.5" y1="10" x2="410.5" y2="50" stroke="white"/>
+      <line x1="307.5" y1="10" x2="307.5" y2="50" stroke="white"/>
+      <line x1="364.5" y1="10" x2="364.5" y2="50" stroke="white"/>
+      <line x1="421.5" y1="10" x2="421.5" y2="50" stroke="white"/>
+      <line x1="318.5" y1="10" x2="318.5" y2="50" stroke="white"/>
+      <line x1="375.5" y1="10" x2="375.5" y2="50" stroke="white"/>
+      <line x1="432.5" y1="10" x2="432.5" y2="50" stroke="white"/>
 
         </symbol>
   
@@ -116,15 +71,25 @@
   
     </svg>
  
-    <div class="setpointValue">
+    <div class="setpointValue"
+          @touchstart="handleTouchStart" 
+          @touchend="handleTouchEnd('setpointBlock')"
+          @touchmove="handleTouchMove"
+          >
         <svg class="setpointValue_icon"
-        @click="clickChangeSetpoint(-50)"
+          @click="clickChangeSetpoint(-50)"
         >
           <use href="#setpointSelector"></use>
         </svg>
 
-      <div class="setpointValue_number"> 
-      <h1> {{ newSetPointValue }} </h1>
+      <!-- <div class="setpointValue_number"> 
+        <h1 v-if="newSetPointValue !== null">{{ newSetPointValue }}</h1>
+        <h1 v-else> NONE </h1>
+        <span v-if="unit && newSetPointValue !== null" class="unit">{{ unit }}</span>
+      </div> -->
+      <div class="setpointValue_number" @click="toggleBooleanValue">
+        <h1>{{ displayValue }}</h1>
+        <span v-if="!isBoolean && unit" class="unit">{{ unit }}</span>
       </div>
 
         <svg class="setpointValue_icon"
@@ -135,67 +100,166 @@
 
     </div>
     <div class="setpointLimits">
-      <h4> {{ lowLimit }} </h4>
-      <h4> {{ highLimit }} </h4>
+      <h4> {{ limLow }} </h4>
+      <h4> {{ limHigh }} </h4>
     </div>
   
   
     </div>
   </template>
-  
+ 
   <script>
+  import { mapActions } from 'vuex';
+  import logger from '../store/modules/logger.js';
+
   export default {
     data() {
       return {
         startX: 0,
         isTouching: false,
         newSetPointValue: this.setPoint,
+        valueType: null,
+        inactivityTimer: null,
+        valueTimer: 8000,
       }
     },
+    props: {   // Переменные полученные в компонент
+      // setPoint: Number,
+      setPoint: {
+        required: true,
+        validator: (value) => typeof value === 'number' || typeof value === 'boolean' || value === null || value === undefined
+      },
+      request: String,
+      roomKey: String,
+      setpointKey: String,
+      valueTitle: String,
+    },
     watch: {
-      setPoint(newSetPoint) {
-        // console.log('Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
-        this.newSetPointValue = parseFloat(newSetPoint).toFixed(1);
-        // console.log('Обновили newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
+      // setPoint(newSetPoint) {
+      //   this.resetInactivityTimer();
+      //   //logger.dev('[MainSetpoint] - setPoint - Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
+      //   //console.log('Изменилось значение Уставки setPoint :', newSetPoint, 'BodySetpontBlock');
+      //   //this.newSetPointValue = parseFloat(newSetPoint).toFixed(1);
+      //   this.newSetPointValue = newSetPoint;
+      //   logger.dev('[MainSetpoint] - setPoint - Обновили newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
+      //   //console.log('[MainSetpoint] - setPoint - Преобразовали newSetPointValue значение Уставки:', this.newSetPointValue, 'BodySetpontBlock');
+      // },
+      setPoint: {
+        immediate: true,
+        handler(newVal) {
+          this.resetInactivityTimer();
+          if (typeof newVal === 'boolean') {
+            this.newSetPointValue = newVal;
+          } else if (typeof newVal === 'number' && !isNaN(newVal)) {
+            this.newSetPointValue = newVal;
+          } else if (typeof newVal === 'string') {
+            if (newVal === 'ON') this.newSetPointValue = true;
+            else if (newVal === 'OFF') this.newSetPointValue = false;
+            else {
+              const num = parseFloat(newVal);
+              this.newSetPointValue = isNaN(num) ? null : num;
+            }
+          } else {
+            this.newSetPointValue = null;
+          }
+          logger.dev('[MainSetpoint] watch setPoint -> localValue:', this.newSetPointValue);
+        },
+      },
+      '$store.state.settingsData.limits': {
+        handler(newLimits) {
+          console.log('Limits обновились:', newLimits);
+          // Здесь можно выполнить дополнительные действия
+        },
+        deep: true
+      }
+    },
+    computed: {
+      isBoolean() {
+        // if (typeof this.newSetPointValue === 'boolean' || this.newSetPointValue === 'OFF' || this.newSetPointValue === "ON"){
+        //   return true;
+        // }
+        // return false;
+        return typeof this.newSetPointValue === 'boolean';
+      },
+      displayValue() {
+        console.log('[MainSetpoint] - displayValue Определяем значение для пользователя для', this.newSetPointValue);
+        if (this.newSetPointValue === null || this.newSetPointValue === undefined) return '—';
+        if (this.isBoolean) return this.newSetPointValue ? 'ON' : 'OFF';
+        return this.newSetPointValue;
+      },
+      limHigh() {
+        return this.$store.state.settingsData?.limits?.limHigh ?? 36;
+      },
+      limLow() {
+        return this.$store.state.settingsData?.limits?.limLow ?? 5;
+      },
+      limStep() {
+        return this.$store.state.settingsData?.limits?.limStep ?? 1;
       },
     },
     created() {
       this.debouncedCalculateSetpoint = this.debounce(this.calculateSetpoint, 16);
-      this.debouncedUpdatePermitions = this.debounce(this.sendEmitMessage, 800);
+      //this.debouncedUpdatePermitions = this.debounce(this.sendEmitMessage, 2000);
+      // if (this.isBoolean) this.valueType = true;
+      console.log('[MainSetpoint] - created', {
+        setPoint: this.setPoint,
+        request: this.request,
+        roomKey: this.roomKey,
+        setpointKey: this.setpointKey,
+        valueTitle: this.valueTitle
+      });
+       //console.log('[MainSetpoint] - created - Полученные props', JSON.stringify(this.$store.state.settingsData, null, 2));
+    },
+    mounted() {
+      this.startInactivityTimer();
+    },
+    beforeUnmount() {
+      this.clearInactivityTimer();
+    },
+      
+
+    methods: {
+      ...mapActions(['updateSettingsData']),
+      sendEmitMessage(event, value) {
+        //console.groupCollapsed('[MainSetpoint] - sendEmitMessage ');
+        // value = parseFloat(value).toFixed(3);
+        console.log('[MainSetpoint] - sendEmitMessage - Формируем сообщение для отправки на сервер - message: ', value, 'event: ', event);
+        // Проверяем, что все параметры переданы
+        if (!event || value == undefined || value === null) {
+          console.error('sendEmitMessage - параметры не переданы:', { event, value });
+          return;
+        }    
+        logger.dev('[MainSetpoint] - sendEmitMessage для Уставки - value:', value, 'title:', this.valueTitle, 'request:', this.request);
+        // console.log('[MainSetpoint] - sendEmitMessage для Уставки - value:', value, 'title:', this.valueTitle, 'request:', this.request);
+        // console.groupEnd();
+
+        this.$emit('eventsMainSetpoint', {
+            [event]: {
+              request: this.request,
+              value: value,
+              title: this.valueTitle,
+            }
+          });
+
       },
-    props: {   // Переменные полученные в компонент
-      setPoint: Number,
-      highLimit: Number,
-      lowLimit: Number,
-      step: Number,
-    },
-      methods: {
-    sendEmitMessage(event, name, message) {
-      if (!event || !name || !message) return console.error('sendEmitMessage - event', event,'name - ', name, 'message - ', message, ' не переданы');
-      console.log('Функция sendEmitMessage (MainSetpoint) формирует сообщение для отправки на сервер - type: ', name, 'message: ', message, 'event: ', event);
-                this.$emit('eventsComponent',{
-                    [event]: {
-                        type: name,
-                        message: message
-                    }
-                });
-    },
+
+
     handleTouchStart(event) {
+      this.resetInactivityTimer();
+      logger.dev('[MainSetpoint] - handleTouchStart', event.touches[0].clientX, event.touches[0].clientY);
         // console.log('Компонент bodySetpointBlock событие - handleTouchStart', event.touches[0].clientX, event.touches[0].clientY);
         this.startX = event.touches[0].clientX;
         this.isTouching = true;
     },
     handleTouchEnd(component) {
+      logger.dev('[MainSetpoint] - handleTouchEnd (MainSetpoint) событие - handleTouchEnd, secectedComponent - ', component);
         //console.log('Функция handleTouchEnd (MainSetpoint) событие - handleTouchEnd, secectedComponent - ', component);
         if (component === 'setpointBlock') {
+          logger.dev('[MainSetpoint] - handleTouchEnd (MainSetpoint) Разрешаем изменять значение для Компонента setpointBlock');
         // console.log('Разрешаем изменять значение для Компонента setpointBlock');
         const currentTime = new Date().getTime();
         this.lastTouchTime = currentTime;
-        this.debouncedUpdatePermitions('updatePermission', 'permission', true);
-        // this.$emit('updateState', { 
-        //   type: 'updatePermission',
-        //   value: true 
-        // }); // Разрешаем обновление Уставки
+        //this.debouncedUpdatePermitions('updatePermission', 'permission', true); // Разрешаем обновление Уставки
         return;
       } else {
         return;
@@ -207,76 +271,96 @@
         const deltaX = touch.clientX - this.startX;
   
         if (deltaX < 8 && deltaX > - 8) {
-          console.log('Недостаточное смещение контролла');
+          logger.error('[MainSetpoint] - handleTouchMove Недостаточное смещение контролла');
+          //console.log('Недостаточное смещение контролла');
         } else {
-          // console.log('Достаточное смещение контролла. Вызываем функцию calculateSetpoint. Смещение - ', deltaX, ' Шаг - ', this.step, ' Минимум - ', this.lowLimit, ' Максимум - ', this.highLimit);
-          this.debouncedCalculateSetpoint(deltaX, this.step, this.lowLimit, this.highLimit);
+          logger.dev('[MainSetpoint] - handleTouchMove - Вызываем функцию calculateSetpoint. Смещение - ', deltaX, ' Шаг - ', this.limStep, ' Минимум - ', this.lowLimit, ' Максимум - ', this.highLimit);
+          // console.log('Достаточное смещение контролла. Вызываем функцию calculateSetpoint. Смещение - ', deltaX, ' Шаг - ', this.limStep, ' Минимум - ', this.lowLimit, ' Максимум - ', this.highLimit);
+          this.debouncedCalculateSetpoint(deltaX, this.limStep, this.limLow, this.limHigh);
         }
     },
     calculateSetpoint(value, step, min, max) {
-        // console.log('BodySetpointBlock Функция calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
+      this.resetInactivityTimer();
+      logger.dev('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
+      console.log('[MainSetpoint] - calculateSetpoint Приступаем к вычислению уставки. Смещение - ', value,' Шаг - ', step, ' Минимум - ', min, ' Максимум - ', max, 'Текущее значение Уставки - ', this.setPoint);
+        
         let newValue, currentSetPoint;
-        if (this.setPoint === null || this.setPoint === undefined) {
-          currentSetPoint = min;
-        } else {
-          currentSetPoint = this.setPoint;
+        console.log('[MainSetpoint] - calculateSetpoint this.setPoint',this.setPoint);
+        if (!this.isBoolean) {
+          console.log('[MainSetpoint] - calculateSetpoint Определяем числовое значение');
+          if (this.setPoint === null || this.setPoint === undefined) {
+            currentSetPoint = parseFloat(min);
+          } else {
+            currentSetPoint = parseFloat(this.setPoint);
+          }
         }
+        currentSetPoint = this.setPoint;
+      if (this.isBoolean) {
+        newValue = !this.newSetPointValue;
+        this.newSetPointValue = newValue;
+        console.log('[MainSetpoint] - calculateSetpoint Инвертируем значение', newValue);
+        this.sendEmitMessage('updateState', newValue);
+        return;
+      }
+
         try {
           if (value > 5 && value < 120) {
           newValue = currentSetPoint + step;
-        // console.log('Увеличили SetPoint:', newSetPointValue);
-        } else if (value < -5 && value > -120) {
+          logger.dev('[MainSetpoint] - calculateSetpoint  Увеличили SetPoint:', newValue);
+          //console.log('Увеличили SetPoint:', newValue);
+        }  else if (value < -5 && value > -120) {
           newValue = currentSetPoint - step;
-          // console.log('Уменьшили SetPoint:', newSetPointValue);
+          logger.dev('[MainSetpoint] - calculateSetpoint  Уменьшили SetPoint:', newValue);
+          //console.log('Уменьшили SetPoint:', newValue);
         } else if (value > 120) {
           newValue = currentSetPoint + (step*10);
-          // console.log('Увеличили SetPoint:', newSetPointValue);
+          logger.dev('[MainSetpoint] - calculateSetpoint  Увеличили SetPoint:', newValue);
+          //console.log('Увеличили SetPoint:', newValue);
         } else if (value < - 120) {
           newValue = currentSetPoint - (step*10);
-          // console.log('Уменьшили SetPoint:', newSetPointValue);
+          logger.dev('[MainSetpoint] - calculateSetpoint  Уменьшили SetPoint:', newValue);
+          //console.log('Уменьшили SetPoint:', newValue);
         }
+        // Вернуть console.log
+        //console.log('[MainSetpoint] - calculateSetpoint  Обновленное значение:', newValue);
+          try {
+              if (newValue > max) {
+              newValue = min;
+              logger.dev('[MainSetpoint] - calculateSetpoint  Ограничиваем Верхняю границу Уставки', newValue);
+              //console.log('[MainSetpoint] - calculateSetpoint  Ограничиваем Верхняю границу Уставки', newValue);
+            } else if (newValue < min) {
+              newValue = max;
+              logger.dev('[MainSetpoint] - calculateSetpoint  Ограничиваем Нижнюю границу Уставки', newValue);
+              //console.log('[MainSetpoint] - calculateSetpoint  Ограничиваем Нижнюю границу Уставки', newValue);
+            }
+
+            //newValue = parseFloat(newValue.toFixed(1));
+            logger.dev('[MainSetpoint] - calculateSetpoint  Обновили значение Уставки:', newValue, 'request', this.request);
+            //console.log('[MainSetpoint] - calculateSetpoint  Обновили значение Уставки:', newValue, 'request', this.request);
+            this.sendEmitMessage('updateState', newValue);
+            
+            } catch (error) {
+              logger.error('[MainSetpoint] - calculateSetpoint  Ошибка проверки ограничений диапазона Уставки', error);
+              console.error('[MainSetpoint] - calculateSetpoint  Ошибка проверки ограничений диапазона Уставки', error);
+              //this.sendEmitMessage('error', '[MainSetpoint] - calculateSetpoint Ошибка проверки ограничений диапазона Уставки', error); // отправка логов на сервер для сохранения в файл
+            }
         } catch (error) {
-          console.error('BodySetpointBlock Функция calculateSetpoint Ошибка вычисления изменения Уставки', error);
-          this.sendEmitMessage('error', 'BodySetpointBlock Функция calculateSetpoint Ошибка вычисления изменения Уставки', error); // отправка логов на сервер для сохранения в файл
+          logger.error('[MainSetpoint] - calculateSetpoint Ошибка вычисления изменения Уставки', error);
+          console.error('[MainSetpoint] - calculateSetpoint Ошибка вычисления изменения Уставки', error);
+          //this.sendEmitMessage('error', '[MainSetpoint] - calculateSetpoint Ошибка вычисления изменения Уставки', error); // отправка логов на сервер для сохранения в файл
         }
-  
-       this.sendSetPoint(newValue, min, max);
+        logger.dev('[MainSetpoint] - calculateSetpoint Расчет, проверка и отправка обновленного значения выполнена успешно')
+        //console.log('[MainSetpoint] - calculateSetpoint Расчет, проверка и отправка обновленного значения выполнена успешно')
+       //this.sendSetPoint(newValue, min, max);
     },
     clickChangeSetpoint(value) {
-      this.calculateSetpoint(value, this.step, this.lowLimit, this.highLimit);
-      this.debouncedUpdatePermitions('updatePermission', 'permission', true);
-    },
-    sendSetPoint(setPoint, min, max) {
-        if (setPoint === undefined || setPoint === null || min === undefined || max === undefined) {
-          console.error('BodySetpointBlock Функция sendSetPoint Попытка проверки с неопределенными значениями setPoint', setPoint, 'min', min, 'max', max);
-          this.sendEmitMessage('error', 'BodySetpointBlock Функция sendSetPoint Попытка проверки с неопределенными значениями setPoint: ', setPoint); 
-        } else {
-          //const paramKey = localStorage.getItem('param_key');
-            try {
-              if (setPoint > max) {
-              setPoint = max;
-              // this.$emit('updateState', { newSetPoint: setPoint });
-              // console.log(' BodySetpointBlock Функция sendSetPoint Ограничиваем Верхняю границу Уставки');
-            } else if (setPoint < min) {
-              setPoint = min;
-              // console.log(' BodySetpointBlock Функция sendSetPoint Ограничиваем Нижнюю границу Уставки');
-              // this.$emit('updateState', { newSetPoint: setPoint });
-            } else {
-              // console.log(' BodySetpointBlock Функция sendSetPoint Отправляем Уставку без изменений');
-              this.sendEmitMessage('newSetPoint', 'setpoint', setPoint);
-              //this.sendEmitMessage('updateState', 'newSetPoint', setPoint);
-              // this.$emit('updateState', { 
-              //   type: 'newSetPoint',
-              //   value: setPoint 
-              //   }); 
-            }
-            } catch (error) {
-              console.error('BodySetpointBlock Функция sendSetPoint Ошибка проверки ограничений диапазона Уставки', error);
-              this.sendEmitMessage('error', 'BodySetpointBlock Функция sendSetPoint Ошибка проверки ограничений диапазона Уставки', error); // отправка логов на сервер для сохранения в файл
-            }
-         }
+      logger.dev('[MainSetpoint] - clickChangeSetpoint Смещение скрола Клик или :', value);
+      //console.log('[MainSetpoint] - clickChangeSetpoint Смещение скрола Клик или :', value);
+      this.calculateSetpoint(value, this.limStep, this.limLow, this.limHigh);
+      //this.debouncedUpdatePermitions('updatePermission', 'permission', true);
     },
     debounce(func, wait) {
+      logger.dev('[MainSetpoint] - debounce Активирована задержка выполнения функции', func, 'в', wait, 'мсек');
         // console.log('Активирована задержка выполнения функции', func, 'в', wait, 'мсек');
       let timeout;
       return function() {
@@ -284,9 +368,27 @@
         timeout = setTimeout(() => func.apply(this, arguments), wait);
       };
     },
+    resetInactivityTimer() {
+      if (this.inactivityTimer) {
+        clearTimeout(this.inactivityTimer);
+      }
+      this.startInactivityTimer();
+    },
+    startInactivityTimer() {
+      this.inactivityTimer = setTimeout(() => {
+        logger.dev('[MainSetpoint] - Бездействие 5 секунд, генерируем событие скрытия');
+        this.$emit('inactivity-timeout');
+      }, this.valueTimer);
+    },
+    clearInactivityTimer() {
+      if (this.inactivityTimer) {
+        clearTimeout(this.inactivityTimer);
+        this.inactivityTimer = null;
+      }
+    },
  
   
-      },
+    },
   }
   </script>
   

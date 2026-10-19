@@ -1,456 +1,663 @@
+<!-- components/MainBody.vue -->
 <template>
-    <div id="app_mainBody" class="mainBody">
-        <!-- <MainBodyValue 
-                class="mainBodyValue"
-                  v-for="(param, index) in viewArray"
-                  :key="index"
-                  :id="param.id"
-                  :paramKey="param.key" 
-                  :roomKey="param.roomKey"
-                  :title="param.title" 
-                  :value="param.value"
-                  :group="param.group" 
-                  :timeUpdated="param.timeDiff"
-                  :resetSelected="resetSelected"
-                  :isSelected="isSelected_(param.id, param.key)"
-                  @select="getEventsComponent"
-                  @doubleclick="sortingDoubleClick"
-                  @touchstart="handleTouchStart($event, param.id)" 
-                  @touchend="handleTouchEnd(param.id)" 
-                  @touchmove="handleTouchMove($event)" 
-                  :class="{ 'bordered': longPressId === param.id }"
-                  />  -->
 
-                  <!-- :paramKey="(param.key).substring(1)"  -->
-
-                <MainBodyValue 
-                class="mainBodyValue"
-                  v-for="(param, index) in viewArray"
-                  :key="index"
-                  :id="param.roomId"
-                  :paramKey="param.paramKey" 
-                  :roomKey="param.roomKey"
-                  :title="param.Title" 
-                  :roomTitle="param.roomTitle" 
-                  :value="param.value"
-                  :group="param.group" 
-                  :timeUpdated="param.timeDiff"
-                  :resetSelected="resetSelected"
-                  :isSelected="isSelected_(param.roomId, param.paramKey)"
-                  @select="getEventsComponent"
-                  @doubleclick="sortingDoubleClick"
-                  @doubletouch="sortingDoubleClick"
-                  :class="{ 'bordered': longPressId === param.id }"
-                  /> 
+    <div v-if="isLoading" class="loading">Загрузка...</div>
+    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-else id="app_mainBody" class="mainBody"
+     @touchstart.passive="handleTouchStart" 
+    @touchend.passive="handleTouchEnd">
+    <MainBodyValue 
+        v-for="(item, index) in viewArray"
+        :key="`${index}-${item.paramKey}-${item.roomKey}-${item.deviceKey}-${item.setpointKey}`"
+        :value="item.value"
+        :unit="item.unit"
+        :sortType="item.sortType"
+        :roomTitle="item.roomTitle"
+        :paramTitle="item.paramTitle"
+        :setValue="item.setValue"
+        :timeUpdated="item.timeDiff"
+        :isSelected="isSelected(item)"
+        @click="selectItem(item)"
+      /> 
     </div>
+
 </template>
 
 <script>
-import MainBodyValue from './MainBodyValue.vue';
-// import checkConfigs from '../utils/transformConfigs'
+import { mapGetters, mapMutations, mapActions} from 'vuex'
+import MainBodyValue from './MainBodyValue.vue'
+import logger from '../store/modules/logger.js';
+import { parseMoscowDate } from '@/utils/timeUtils';
+const EXCLUDED_SECTIONS = new Set(['init', 'id', 'group', 'title', 'setpoints']);
+const STRIP_DIGITS = /\d+$/;
+
 export default {
-    inject: ['checkConfigs'],
-    name: 'MainBody',
-    components: {
-        MainBodyValue,
-    },
-    data() {
-        return {
-            commonConfig: {}, // Конфигурация выгруженная из localStorage
-            viewArray: {}, // Список данных для вывода пользователю
-    // Переменные сортировки по параметрам
-            customerSorting: this.propsTitle, // Переменная используемая для смены сортировки при двойном клике
-            // key: '', // Индекс сортировки
-            // keys: [], // Массив ключей для сортировки значений
-            // paramsList: [], // Список отсортированных парметров (по комнатам или по типу параметра)
-            // paramKeysArray: [],
-            // keyIndex: 0, // Индекс ключа сортировки получаем по значению param_key для комнаты с room_id (получены из App.vue)
-            // paramKey_value: this.param_key || '', 
-            id: null, // Идентификатор комнаты используется для промежуточных расчетов 
+  name: 'MainBody',
+  components: { MainBodyValue },
+  data() {
+    return {
+      selectedItem: null,
+      viewArray: [],
+      initializationError: null,
+      touchStartX: 0,
+      isSwiping: false,
+      doubleClickTimer: null, // Таймер для определения двойного клика
+      pendingItem: null,
+    }
+  },
 
-    // Управление экземплярами MainBodyValue
-        isSelected: null,
-        isSelectedID: null,
-        isSelectedParam: null,
-        isSelectedRoom: null,
-        }
-    },
-    props: {
-        propsTitle: String,
-        isMobile: Boolean,
-        changeSorting: String,
-    },
-    created() {
-        this.sendEmitMessage('sendLogToServer','customer_message', 'Открыт компонент MainBody -  сортировки данных');
-        this.init();
-
-    },
-    mounted() {
-        // this.checkConfigs = new checkConfigs(); // Создаемм объект класса checkConfigs
-
-    },
-    beforeUnmount() {
-    },
-    watch: {
-        changeSorting: function(newValue) {
-            //console.log('watch -  - changeSorting (MainBody) изменилось - ', newValue);
-            if (newValue === undefined || newValue === null || newValue === false) {
-                return;
-            } if (newValue === true) {
-                //console.log('watch -  - changeSorting (MainBody) инициируем обновление сортировки  selectSorting');
-                this.selectSorting(this.propsTitle);
-                //console.log('watch -  - changeSorting (MainBody) Отправляем в App сообщение updatedSorting с типом updated и значением true');
-                this.sendEmitMessage('updatedSorting', 'updated', true);
+  props: {
+    sortType: {
+      type: String,
+      required: true
+    }
+  },
+  // async created() {
+  //   // При создании компонента форсируем обновление view
+  //   logger.dev('[MainBody] - created - Компонент создан');
+  //   this.SET_ROOM_KEY(localStorage.getItem('roomKey'));
+  //   this.SET_PARAM_KEY(localStorage.getItem('paramKey'));
+  //   console.log('[MainBody] - created - roomKey:', this.getRoomKey, ' paramKey:', this.getParamKey);
+  // },
+  computed: {
+    ...mapGetters('config', ['isLoading', 'error', 'getConfig', 'clearKeySync', 'clearKey_a']),
+    ...mapGetters('sortParams', [
+      'currentSortType', 
+      'getRoomId', 
+      'getRoomKey', 
+      'getParamKey', 
+      'getRoomTitle', 
+      'getParamTitle',
+      'getSensorTitle',
+      'getDeviceKey',
+      'getDeviceTitle',
+      'getSetpointKey',
+      'getSetpointTitle',
+      'getUnit']),
+    ...mapGetters(['dID', 'typeSettingsKey']),
+    
+  },
+  watch: {
+    '$store.state.sortParams.forceUpdate': {
+        handler(newTimestamp) {
+          //console.log('[MainBody] - Watch - handler - Изменилась временная метка');
+          if (newTimestamp) {
+          
+            // Очищаем предыдущий таймаут, если он есть
+            if (this.updateViewTimeout) {
+              clearTimeout(this.updateViewTimeout);
+              //console.log('[MainBody] - Очищен предыдущий таймаут');
             }
+            
+            // Устанавливаем новый таймаут с задержкой 100 мс
+            this.updateViewTimeout = setTimeout(() => {
+              logger.dev('[MainBody] - Watch - handler - Принудительное обновление view');
+              //console.log('[MainBody] - Watch - handler - Принудительное обновление view');
+              this.updateView();
+            }, 250);
+          }
+        },
+        immediate: true
+      },
+    sortType(newSortType) {
+      // Реагируем на изменение sortType извне
+      this.$store.commit('sortParams/SET_SORT_TYPE', newSortType);
+      // this.initializeComponent();
+    },
+    '$store.state.showSetpoint'(newVal) {
+      if (newVal === false && this.selectedItem) {
+        this.clearSelection();
+      }
+    },
+  },
+  methods: {
+    // ...mapMutations({
+    //   SET_ROOM_KEY: 'SET_ROOM_KEY',
+    //   SET_PARAM_KEY: 'SET_PARAM_KEY', 
+    //   SET_DEVICE_KEY: 'SET_DEVICE_KEY', 
+    //   SET_SETPOINT_KEY: 'SET_SETPOINT_KEY' 
+    // }),
+    ...mapMutations('sortParams', ['SET_SORT_TYPE']),
+    ...mapActions('sortParams', [
+      'setLimits',
+    ]),
+    ...mapActions(['updateSettingsData', 'updatePayloadData']),
 
-           
+_resolveSetpoint(room, cleanKey) {
+  if (!room?.setpoints || !cleanKey) return { setValue: null, setpointKey: null };
+
+  // Строим ожидаемый ключ уставки: Temp → sTemp, Hum → sHum
+  const sKey = 's' + cleanKey;
+
+  // Точное совпадение — sTemp, sHum и т.д.
+  let setpointKey = room.setpoints[sKey] ? sKey : null;
+
+  if (!setpointKey) {
+    // Partial match: ищем ключ который начинается с sKey (sTemp01, sHum02...)
+    setpointKey = Object.keys(room.setpoints).find(k => k.startsWith(sKey)) ?? null;
+  }
+
+  if (!setpointKey) return { setValue: null, setpointKey: null };
+
+  const spData = room.setpoints[setpointKey];
+  
+  // Для bool: null не показываем
+  if (spData?.type === 'bool' && spData?.value === null) return { setValue: null, setpointKey: null };
+  
+  const spType = spData?.type ?? 'num';
+  const setValue = this.getSensorValue(spType, { value: spData?.value });
+
+  return { setValue, setpointKey };
+},
+
+// Строитель объекта элемента — единая схема для всех 4 функций
+_buildItem(overrides) {
+  return {
+    key: null,
+    sortType: null,
+    paramTitle: null,
+    paramType: null,
+    paramKey: null,
+    value: null,
+    setValue: null,
+    setpointKey: null,
+    unit: null,
+    timeDiff: null,
+    roomTitle: null,
+    roomId: null,
+    roomKey: null,
+    deviceKey: null,
+    ...overrides,
+  };
+},
+    
+
+    getSensorValue(key, data) {
+      switch (key) {
+        case 'num':{
+          const numValue = data?.value != null ? parseFloat(data.value) : 0;
+          return numValue;
+          }
+        case 'bool':{
+          const boolValue = data?.value != null ? data.value : null;
+          //console.log('[MainBody] - getSensorValue - boolValue:', boolValue);
+          if (boolValue === true) {
+            return 'ON'
+          }
+          return 'OFF';
+          }
+        default:
+          return null;
+
+      }
+    },
+    isSelected(item) {
+      return this.selectedItem && 
+             this.selectedItem.roomId === item.roomId && 
+             this.selectedItem.paramKey === item.paramKey &&
+             this.selectedItem.deviceKey === item.deviceKey &&
+             this.selectedItem.setpointKey === item.setpointKey;
+    },
+    
+  selectItem(item) {
+    // Если уже есть ожидающий элемент и это тот же – двойной тач
+    if (this.doubleClickTimer && this.pendingItem === item) {
+      clearTimeout(this.doubleClickTimer);
+      this.doubleClickTimer = null;
+      this.pendingItem = null;
+      this.DclickSelectItem(item);  // вызываем двойное действие
+      return;
+    }
+    
+    // Первое нажатие – запоминаем элемент и запускаем таймер
+    this.pendingItem = item;
+    
+    if (this.doubleClickTimer) {
+      clearTimeout(this.doubleClickTimer);
+    }
+    
+    this.doubleClickTimer = setTimeout(() => {
+      this.singleClickAction(item);
+      this.doubleClickTimer = null;
+      this.pendingItem = null;
+    }, 300); // 300 мс – типичный интервал для двойного тача
+  },
+
+singleClickAction(item) {
+  const clearParam = this.clearKeySync(item.paramKey); // 'Temp', 'Switch' — без префикса, без цифр
+  console.log('[MainBody] - singleClickAction - Исходный ключ:', item.paramKey, 'Очищенный:', clearParam);
+
+    if (this.selectedItem === item) {
+      // Скрыть панель уставки
+      this.selectedItem = null;
+      this.$emit('getComponentData', { 
+        action: 'hide',
+        updateState: {
+          value: item.setValue,
+          title: 'value',
+          key:clearParam,
+          roomKey: item.roomKey,
+          paramKey: item.paramKey,
         }
-    },
-    methods: {
-    init () {
-            console.log('INIT - Инициализация');
-                try {
-                    this.commonConfig = JSON.parse(localStorage.getItem('commonConfig'));
-                
-                if (!this.commonConfig) {
-                    this.sendEmitMessage('sendLogToServer','warning', 'Конфигурация commonConfig не загружена');
-                }
-                // console.log('INIT  - commonConfig:', this.commonConfig);
+      });
+    } else {
+      // Показать панель уставки
+      this.selectedItem = item;
+      this.updatePayloadData({ 
+        value: item.setValue,
+        param: item.paramKey,   // ← полный ключ из конфига
+        key: clearParam,        // ← чистый базовый ключ
+        setKey: item.setpointKey,
+        id: item.roomId,
+        room: item.roomKey
+      });
+      
+      this.setLimits({ param: ('d'+clearParam), valueType: 'absolute' });
+      
+      if ((item.setValue !== undefined && item.setValue !== null) && clearParam && item.setpointKey) {
+        this.$emit('getComponentData', {
+          action: 'show',
+          request: 'setpoints',
+          updateState: {
+            value: item.setValue,
+            title: 'value',
+            key:clearParam,
+            roomKey: item.roomKey,
+            paramKey: item.paramKey,
+          }
+        });
+      } else {
+        console.error(`Не определены значения уставки: ${item.setValue}, ключ параметра ${clearParam}, ключ уставки ${item.setpointKey}`);
+      }
+    }
+    this.$store.dispatch('updatePayloadData', { param: item.paramKey });
+    this.updateSettingsData({ field: 'request', value: 'setpoints' });
+    console.groupEnd();
+  },
 
-                // console.log('INIT  - title_room:', this.title_room);
-                if (!this.propsTitle) {
-                    this.sendEmitMessage('sendLogToServer','warning', 'INIT - propsTitle не определен');
-                }
-                this.selectSorting(this.propsTitle); // Выбор сортировки
-                } catch (error) {
-                    this.sendEmitMessage('sendLogToServer','error', 'INIT - ошибка процесса инициализации параметров ${error}');
-                }
+  DclickSelectItem(item) {
+      
+      const clearParam = this.clearKeySync(item.paramKey);
+      console.log('[MainBody] - DclickSelectItem - Определяем key для settingsData.payload ', clearParam);
 
-    },
-    sendEmitMessage(event, name, message) {
-                //console.log('MainBody - Функция sendEmitMessage формирует сообщение для отправки на сервер - ', event, name );    
-                this.$emit('eventsComponent',{
-                    [event]: {
-                        type: name,
-                        message: message
-                    }
-                });
-    },
-    selectSorting(sort_type) {
-            //console.log(' Функция selectSorting (MainBody) - Выбор сортировки:', sort_type);
-            try {
-                const commonConfig = JSON.parse(localStorage.getItem('commonConfig'));
-                let roomKey = localStorage.getItem('room_key');
-                const paramKey = localStorage.getItem('param_key');
-                // console.log(' 0 ---- Функция selectSorting (MainBody). Из localStorage получили paramKey:', paramKey, 'roomKey:', roomKey);
-                if (commonConfig === null || roomKey === null || paramKey === null) {
-                    //console.log('Ошибка функция selectSorting. commonConfig:', commonConfig, 'roomKey:', roomKey, 'paramKey:', paramKey);
-                    this.sendEmitMessage('sendLogToServer','error', 'selectSorting(MainBody) - ошибка чтения данных из localStorage при выборе commonConfig - ${commonConfig}, roomKey - ${roomKey}, paramKey - ${paramKey}');
-                } 
-                let sortArray = [];
-                switch (sort_type) {
-                    case 'rooms':
-                        //console.log('Sort Room 1      -     Функция selectSorting (MainBody.vue). Приступаем к сортировке по комнатам - Case: rooms');
+      if (this.doubleClickTimer) {
+        clearTimeout(this.doubleClickTimer);
+        this.doubleClickTimer = null;
+      }
 
-                        sortArray = this.getSortedRooms(commonConfig, roomKey);
-                        if (!sortArray) {
-                            this.sendEmitMessage('sendLogToServer','error', 'selectSorting - Массив данных с утройств для отображения пользователю  viewArray не определен');
-                        }
-                        //console.log('Sort Room 2      -     sortArray:', localStorage.getItem('room_title'));
-                        this.viewArray = sortArray;
-                        this.sendEmitMessage('changeTitle', sort_type, sortArray[0].roomTitle);
-                        localStorage.setItem('room_title', sortArray[0].roomTitle);
-                        break;
+      const config = this.getConfig(this.dID);
+      if (!config) {
+        console.error('Конфигурация не загружена');
+        return;
+      }
+      const roomConfig = config[item.roomKey];
+      console.log(roomConfig.setpoints , null, 2);
 
-                    case 'params':
-                        //console.log('Sort Param 2      -     Функция selectSorting (MainBody.vue). Вызываем функцию getSortedParams с параметрамом paramKey - ', paramKey);
-                        sortArray = this.getSortedParams(commonConfig, paramKey);
-                        console.log('sortArray:', sortArray);
-                        if (!sortArray) {
-                            this.sendEmitMessage('sendLogToServer','warning', 'selectSorting - Массив данных с утройств для отображения пользователюviewArray не определен');
-                        }
-                        this.viewArray = sortArray;
-                        //console.log(' Функция selectSorting (MainBody) Результат сортировки объекта - viewArray :', this.viewArray);
-                        localStorage.setItem('param_title', sortArray[0].paramTitle);
-                        this.sendEmitMessage('changeTitle', sort_type, sortArray[0].paramTitle);
+      if (!roomConfig || !roomConfig.setpoints || !item.setpointKey || !roomConfig.setpoints[item.setpointKey].value) {
+        // Отображаем Уведомление для пользователя - PopupMenu.vue 
+        this.$store.dispatch('popup/show', {
+          message: `Уставка для параметра "${item.paramTitle}" в комнате "${item.roomTitle}" не настроена.`,
+          type: 'warning',
+          duration: 3000
+        });
+        return;
+      }
 
-                        break;
-                    default:
-                        console.error('MainBody.vue: Функция selectSorting. Не опознаный тип сортировки:', sort_type);
-                        break;
-                }
+      logger.dev('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', clearParam, ' и значение:', item.setValue);
+      console.groupCollapsed('[MainBody] - DclickSelectItem ');
+      console.log('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', clearParam, ' и значение:', item);
+      if (!clearParam) {
+        console.error (`[MainBody] - DclickSelectItem - Отсутствует ключ выбранного элемента:', ${clearParam}`);
+        return; 
+      }
+      this.updatePayloadData({ 
+        param: item.paramKey,
+        key: clearParam,
+        room: item.roomKey,
+        config: this.typeSettingsKey,
+        value: item.setValue
+      });
 
-                //console.log(' Функция selectSorting (MainBody) Результат сортировки объекта - viewArray :', this.viewArray);
-            } catch (error) {
-                this.sendEmitMessage('sendLogToServer','error', 'selectSorting(MainBody) - ошибка сортировки данных для отображения пользователю ${error}');
-            }    
+      let settingsType = this.typeSettingsKey || 'schedule';
 
-    },
-    getSortedParams(config, key) {
-                    //console.log('MainInfoParam функция getSortedParams получила config - ', config, 'key - ', key);
-                    // console.log('1   -------   Функция getSortedParams (MainBody) получила key - ', key);
-                    const params = [];
-                    let keys = [];
-                    try {
-                        const foundKeys = [];
-                        for (let roomKey in config) {
-                            const room = config[roomKey];
-                            // console.log('Функция getSortedParams вычислила  room - ', room);
-                            if (room.sensors) {
-                            for (let sensorKey in room.sensors) {
-                                // console.log('Функция getSortedParams вычислила  sensorKey - ', sensorKey);
-                                if (sensorKey.includes(key)) {
-                                    // console.log('Функция getSortedParams выявила в sensorKey  ключ - ', key);
-                                    foundKeys.push(sensorKey);
-                                    }
-                                }
-                            }
-                        }
-                        keys = [...new Set(foundKeys)]; // Удаляем дубликаты
-                    } catch (error) {
-                        this.sendEmitMessage('sendLogToServer','error', 'getSortedParams(MainBody) - ошибка сортировки данных для отображения пользователю ${error}');
-                    }
-                    try {
-                        for (let roomKey in config) {
-                            const room = config[roomKey];
-                            // console.log('MainInfoParam функция getSortedParams получила room - ', room);
-                            keys.forEach(sensorKey => {
-                            if (room.sensors && room.sensors[sensorKey]) {
-                                const paramKey = this.findParamTitleRu(config, sensorKey);
-                                //console.log('MainInfoParam функция getSortedParams получила paramKey - ', paramKey);
-                                const timeDiff = this.calculateTime(new Date(room.time[`${sensorKey}_time`]));
-                               
-                                params.push({
-                                Title: room.title,
-                                value: room.sensors[sensorKey],
-                                roomTitle: room.title,
-                                group: room.group,
-                                timeDiff: timeDiff,
-                                roomId: room.id,
-                                paramKey: paramKey.title,
-                                paramTitle: paramKey.titleRu,
-                                roomKey: roomKey
-                                });
-                                // console.log('params - ', params);
-                            }
-                            });
-                        }
-                    } catch (error) {
-                        this.sendEmitMessage('sendLogToServer','error', 'getSortedParams(MainBody) - ошибка сортировки данных для отображения пользователю ${error}');
-                    }
-                    if (!params) {
-                        console.error('Функция getSortedParams не нашел ни одного ключа в config - ', config);
-                        this.sendEmitMessage('sendLogToServer','warning', 'getSortedParams(MainBody) -  не найден ни один ключ в config - ', params);
-                    } else {
-                        return params;
-                    }
-                        
-    },
-    getSortedRooms(config, room) {
-        // console.log ('Функция getSortedRooms --- MainInfoParam получила config - ', config, 'room - ', room);
+      // Отправляем событие с данными в DashBoard
+      console.log('[MainBody] - DclickSelectItem - Отправляем событие с данными в DashBoard, value: ', item.setValue, ', title: value');
+          this.$emit('getComponentData', {
+            action: 'hide',
+            request: settingsType,
+            updateState: {
+              key: clearParam,
+              value: item.setValue,
+              title: 'value',
+            }
+          });
+
+      this.$router.push({
+        name: 'DashboardSettings',
+        params: { settingsType }
+      });
+      console.groupEnd();
+  },
+  async updateView() { // Формируем массив для отображения пользователю в соответствии с типом сортировки и текущим ключем
+      //console.log('[MainBody] - updateView - started');
         try {
-            const dataArray = []; // массив для хранения данных сенсоров
-            if (config[room].sensors && config[room]) {
-                // console.log('Проверяем условие  getSortedRooms получила config[room].sensors - ', config[room].sensors);
+          logger.info('[MainBody] - updateView - started');
+          console.groupCollapsed('[MainBody] - updateView - Сортировка по - ', this.currentSortType);
+          //console.log('[MainBody] - updateView - started');
+          const config = this.getConfig(this.dID);
+          if (!config) {
+            logger.error('[MainBody] - updateView - Конфигурация не доступна');
+            //console.warn('[MainBody] - updateView - Конфигурация не доступна');
+            this.viewArray = [];
+            return;
+          }
 
-                Object.keys(config[room].sensors).forEach(sensorKey => {
-                //console.log('2 --- Функция getSortedRooms получила sensorKey - ', sensorKey);
-                    const timeDiff = this.calculateTime(new Date(config[room].time[`${sensorKey}_time`]));
-                    // console.log('timeDiff', timeDiff);
 
-                    const paramKey = this.findParamTitleRu(config, sensorKey);
+          if (this.currentSortType === 'rooms') {
+            logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: комнаты -(', this.getRoomKey, ')');
+            //console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: комнаты -(${this.getRoomKey})`);
+            let checkKey = this.getRoomKey;
 
-                        dataArray.push({
-                            Title: paramKey.titleRu,
-                            value: config[room].sensors[sensorKey],
-                            paramTitle: paramKey.titleRu,
-                            group: config[room].group,
-                            timeDiff: timeDiff,
-                            roomId: config[room].id,
-                            roomTitle: config[room].title,
-                            paramKey: paramKey.title,
-                            roomKey: localStorage.getItem('room_key')
-                        });
-                    });
-                } else {
-                    console.error(' ---------   Функция getSortedRooms получила пустой массив sensors - ', config[room].sensors);
-                    this.sendEmitMessage('sendLogToServer','error', 'selectSorting(MainBody) - получила пустой массив sensors - ${config[room].sensors}');
-                }
-            return dataArray; 
+            if (!checkKey) {
+              checkKey = 'room01';
+            }
+            // this.viewArray = this.getSortedRooms(config, this.getRoomKey);
+            this.viewArray = this.getSortedRooms(config, checkKey);
+          } else if (this.currentSortType === 'params') {
+            logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: параметров -(', this.getParamKey, ')');
+            console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: параметров -(${this.getParamKey})`);
+            let actualParam = this.getParamKey;
+            if (actualParam.includes("Switch")) {
+              actualParam = 'dTemp';
+              this.$store.dispatch('updatePayloadData', { param: actualParam });
+              // this.SET_PARAM_KEY(actualParam);  // мутация из mapMutations
+            }
+            this.viewArray = this.getSortedParams(config, actualParam);
+          } else if (this.currentSortType === 'devices') {
+            logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: Устройств -(', this.getDeviceKey, ')');
+            //console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: Устройств -(${this.getDeviceKey})`);
+            this.viewArray = this.getSortedDevices(config, this.getDeviceKey);
+          } else if (this.currentSortType === 'setpoints') {
+            logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: Уставки -(', this.getSetpointKey, ')');
+            //console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: Уставки -(${this.getSetpointKey})`);
+            this.viewArray = this.getSortedSetpoints(config, this.getSetpointKey);
+          }
+        
+          logger.dev('[MainBody] updateView  Отображаемые элементы:', this.viewArray);
+          console.log(' [MainBody] updateView  Отображаемые элементы:', this.viewArray);
+          localStorage.setItem('viewArray', JSON.stringify(this.viewArray));
+          logger.dev('[MainBody] View array length:', this.viewArray.length);
+          //console.log('[MainBody] View array length:', this.viewArray.length);
+          //console.groupEnd();
         } catch (error) {
-            this.sendEmitMessage('sendLogToServer','error', 'getSortedRooms(MainBody) - ошибка сортировки данных Комнаты для отображения пользователю ${error}');
-        }   
-    },  
+          logger.error('[MainBody] - updateView - Ошибка обновления:', error);
+          //console.error('[MainBody] Ошибка обновления:', error);
+          this.viewArray = [];
+          console.groupEnd();
+        }
+        console.groupEnd();
+  },
 
-    findParamTitleRu(config, key) {
-            // console.log('Функция findParamTitleRu Key - ', key);
-            try {
-                // const sensorKey = (key.replace(/[^a-zA-Z]/g, '')).substring(1); // оставляем только буквы и убираем первый символ
-                const sensorKey = key.replace(/[^a-zA-Z]/g, ''); // оставляем только буквы
-            // console.log('Функция findParamTitleRu сохраняет в localStorage(param_key) значение из sensorKey - ', sensorKey);
-            const array = config['room00'].info;
-            // console.log('Функция findParamTitleRu получила sensorKey - ', sensorKey);
-            // console.log('Функция findParamTitleRu получила array - ', array);
 
-            for (let titleKey in array) {
-                // console.log('titleKey - ', titleKey);
-                if (titleKey.includes(sensorKey)) {
-                    const sign = array[titleKey+'_sign'];
-                    // console.log('sign - ', sign);
-                    if (sign) {
-                        const n = array[titleKey]+' '+sign;
-                        return {
-                            title: sensorKey, 
-                            titleRu: n
-                        };
-                    } 
-                    return {
-                            title: sensorKey, 
-                            titleRu: array[titleKey]
-                        };
-                } 
-            }
-            console.error ('Функция findParamTitleRu - Наименование параметра по ключу', sensorKey, ' не найдено');
-            this.sendEmitMessage('sendLogToServer','error', 'findParamTitleRu(MainBody) - Наименование параметра по ключу ${sensorKey} не найдено');
-            return 'NaN';
-            } catch (error) {
-                this.sendEmitMessage('sendLogToServer','error', 'findParamTitleRu(MainBody) - ошибка - ${error} - определения руского наименования параметра по ключу ${key}');
-            }
-    },
-    calculateTime(time) {
-        const currentTime = new Date(); 
-        const sensorTime = new Date(time);
-        const timeDiff = Math.abs(currentTime - sensorTime)/1000;
-        if (timeDiff > 3600) {
-            return 'более часа';
-        } if (timeDiff < 60) {
-            return 'менее минуты';
+getSortedRooms(config, roomKey) {
+  const room = config[roomKey];
+  if (!room || typeof room !== 'object') return [];
+
+  const result = [];
+
+  for (const [sectionKey, sectionData] of Object.entries(room)) {
+    if (EXCLUDED_SECTIONS.has(sectionKey)) continue;
+    if (!sectionData || typeof sectionData !== 'object') continue;
+
+    for (const [itemKey, itemData] of Object.entries(sectionData)) {
+      const clearKey = this.clearKeySync(itemKey);
+      // Вычисляем cleanKey один раз по чёткому правилу
+      // const base = itemKey.slice(1).replace(STRIP_DIGITS, '');
+      // const cleanKey = itemKey.startsWith('a')
+      //   ? 's' + itemKey.slice(1)  // aSwitch01 → sSwitch01
+      //   : 's' + base;             // dTemp01   → sTemp
+
+      const { setValue, setpointKey } = this._resolveSetpoint(room, clearKey);
+
+      result.push(this._buildItem({
+        key: itemKey.slice(1).replace(STRIP_DIGITS, ''),
+        sortType: 'rooms',
+        paramTitle: this.getSensorTitle(itemKey),
+        paramType: itemData?.type,
+        paramKey: itemKey,
+        value: this.getSensorValue(itemData?.type, itemData),
+        setValue,
+        setpointKey,
+        unit: this.getUnit(itemKey),
+        timeDiff: this.getTimeDiff(itemData?.lastUpdate),
+        roomTitle: room.title,
+        roomId: room.id,
+        roomKey,
+      }));
+    }
+  }
+
+  return result;
+},
+
+//Формируем массив для отображения сортировки по параметрам
+getSortedParams(config, paramPrefix) {
+  const result = [];
+
+  for (const [roomKey, room] of Object.entries(config)) {
+    if (!room?.sensors || typeof room.sensors !== 'object') continue;
+
+    for (const [sensorKey, sensorData] of Object.entries(room.sensors)) {
+      if (!sensorKey.startsWith(paramPrefix)) continue;
+      const clearKey = this.clearKeySync(sensorKey);
+      // --- начало изменений ---
+      // const base = sensorKey.slice(1).replace(STRIP_DIGITS, '');
+      // const cleanKey = sensorKey.startsWith('a')
+      //   ? 's' + sensorKey.slice(1)
+      //   : 's' + base;
+      // --- конец изменений ---
+
+      const { setValue, setpointKey } = this._resolveSetpoint(room, clearKey);
+      console.log('[MainBody] - getSortedParams - setpointKey:', setpointKey, 'setValue:', setValue);
+
+      result.push(this._buildItem({
+        key: sensorKey.slice(1).replace(STRIP_DIGITS, ''),
+        sortType: 'params',
+        paramTitle: this.getSensorTitle(paramPrefix),
+        paramType: sensorData?.type,
+        paramKey: sensorKey,
+        value: this.getSensorValue(sensorData?.type, sensorData),
+        setValue,
+        setpointKey,
+        unit: this.getUnit(paramPrefix),
+        timeDiff: this.getTimeDiff(sensorData?.lastUpdate),
+        roomTitle: room.title,
+        roomId: room.id,
+        roomKey,
+      }));
+    }
+  }
+
+  logger.dev('[MainBody] - getSortedParams - Получен список сенсоров:', result);
+  console.log('[MainBody] - getSortedParams - Получен список сенсоров:', result);
+  return result;
+},
+
+
+// Формируем массив для отображения сортировки по устройствам
+getSortedDevices(config, deviceKey) {
+  const result = [];
+
+  for (const [roomKey, room] of Object.entries(config)) {
+    if (!room || typeof room !== 'object') continue;
+
+    for (const [sectionKey, sectionData] of Object.entries(room)) {
+      if (EXCLUDED_SECTIONS.has(sectionKey)) continue;
+      if (!sectionData || typeof sectionData !== 'object') continue;
+
+      for (const [itemKey, itemData] of Object.entries(sectionData)) {
+        const baseItemKey = itemKey.replace(STRIP_DIGITS, '');
+        if (baseItemKey !== deviceKey) continue;
+        const clearKey = this.clearKeySync(baseItemKey);
+
+        // Вычисляем cleanKey по правилам из getSortedRooms
+        // const base = itemKey.slice(1).replace(STRIP_DIGITS, '');
+        // const cleanKey = itemKey.startsWith('a')
+        //   ? 's' + itemKey.slice(1)
+        //   : 's' + base;
+
+        const { setValue, setpointKey } = this._resolveSetpoint(room, clearKey);
+
+        result.push(this._buildItem({
+          key: itemKey.slice(1).replace(STRIP_DIGITS, ''),
+          sortType: 'devices',
+          paramTitle: this.getSensorTitle(deviceKey),
+          paramType: itemData?.type,
+          paramKey: itemKey,
+          value: this.getSensorValue(itemData?.type, itemData),
+          setValue,
+          setpointKey,
+          unit: this.getUnit(itemKey),
+          timeDiff: this.getTimeDiff(itemData?.lastUpdate),
+          roomTitle: room.title,
+          roomId: room.id,
+          roomKey,
+        }));
+      }
+    }
+  }
+
+  return result;
+},
+
+getSortedSetpoints(config, setpointKey) {
+  const normalizedKey = setpointKey.replace(/\d+$/, '');
+  console.log('[MainBody] - getSortedSetpoints - normalizedKey:', normalizedKey);
+  const result = [];
+
+  for (const [roomKey, room] of Object.entries(config)) {
+    if (!room?.setpoints || typeof room.setpoints !== 'object') continue;
+
+    for (const [setKey, spData] of Object.entries(room.setpoints)) {
+      
+      // ← ФИЛЬТР: оставляем только ключи совпадающие с normalizedKey
+      const baseSetKey = setKey.replace(/\d+$/, '');
+      if (baseSetKey !== normalizedKey) continue;
+
+      if (!spData || spData.value === undefined) continue; // null разрешаем
+
+      const spType = spData?.type ?? 'num';
+
+      // Для bool: null/undefined → показываем как OFF (неинициализированный переключатель)
+      let value;
+      if (spType === 'bool') {
+        value = this.getSensorValue('bool', { value: spData.value ?? false });
+      } else {
+        if (spData.value === null) continue; // для num null всё ещё пропускаем
+        value = this.getSensorValue(spType, { value: spData.value });
+        if (value === null || value === undefined) continue;
+      }
+
+      result.push(this._buildItem({
+        key: setKey.slice(1).replace(STRIP_DIGITS, ''), // ← setKey вместо itemKey
+        sortType: 'setpoints',
+        paramTitle: this.getSensorTitle(normalizedKey),
+        paramType: spType,
+        paramKey: setKey,
+        value: value,
+        setValue: value,
+        setpointKey: normalizedKey,
+        unit: this.getUnit(normalizedKey),
+        timeDiff: this.getTimeDiff(spData?.lastUpdate),
+        roomTitle: room.title,
+        roomId: room.id,
+        roomKey,
+      }));
+    }
+  }
+  console.log('[MainBody] - getSortedSetpoints - Результат:', result);
+  return result;
+},
+
+
+    getTimeDiff(timestamp) {
+      if (!timestamp) return 'Неизвестно';
+      //console.log('timestamp:', timestamp, '→ UTC:', new Date(timestamp).toISOString());
+      let time;
+
+      try {
+        const now = Date.now();
+        // const time = new Date(timestamp).getTime();
+        // //console.log('[MainBody] getSortedSetpoints - getTimeDiff - Текущая дата', now, ' дата обновления - ', time);
+        // if (isNaN(time)) return 'Неизвестно';
+
+        if (typeof timestamp === 'number') {
+          time = timestamp;
+        } else if (typeof timestamp === 'string') {
+          // Сначала пробуем распознать ваш московский формат
+          time = parseMoscowDate(timestamp);
+          // Если не удалось, пробуем стандартный парсинг
+          if (isNaN(time)) {
+            time = new Date(timestamp).getTime();
+          }
         } else {
-            const timeDiffMin = parseFloat(Math.abs(timeDiff / 60).toFixed(0))+' мин.';
-            return timeDiffMin;
+          return 'Неизвестно';
         }
+        if (isNaN(time)) return 'Неизвестно';
+        
+        const diff = Math.floor((now - time) / 60000);
+        //console.log('[MainBody] getSortedSetpoints - getTimeDiff - Результат -', diff);
+        if (diff < 1) return 'сейчас';
+        if (diff < 60) return `${diff} мин назад`;
+        if (diff < 1440) return `${Math.floor(diff / 60)} ч назад`;
+        return `${Math.floor(diff / 1440)} дн назад`;
+      } catch (e) {
+        return 'Неизвестно';
+      }
     },
-    isSelected_(id, paramKey) {
-        return id === this.isSelectedID && paramKey === this.isSelectedParam;
-       
+    handleTouchStart(event) {
+      logger.dev('[MainBody] - handleTouchStart ', event.touches[0].clientX, event.touches[0].clientY);
+      console.log('[MainBody] - handleTouchStart ', event.touches[0].clientX, event.touches[0].clientY);
+      this.touchStartX = event.touches[0].clientX;
+      this.isSwiping = true;
     },
-    getEventsComponent(event) {
-        //console.log('MainBody - Функция getEventsComponent получила событие - ', event);
-        try {
-            const isSelectedNum = this.checkConfigs.typeofName(event.message.paramKey); // Проверка на возможность выбора Уставки 
-            //console.log(' Функция getEventsComponent (MainBody) получила событие результат проверки на возможность выбора Уставки из checkConfigs.typeofName isSelectedNum - ', isSelectedNum);
-
-            switch (event.type) {
-            case 'select':  {
-                //console.log(' -- 345 --- Функция getEventsComponent (MainBody) case - select получила событие - ', event);
-                const { id, paramKey, roomKey} = event.message; 
-                    if (this.isSelectedID === id && this.isSelectedParam === paramKey) { 
-                        this.selectedId = null; // Снять выбор при повторном клике 
-                        this.isSelectedParam = null;
-                        this.isSelectedRoom = null;
-                        this.sendEmitMessage('showSetpoint', 'isSelected', false);
-                    } else { 
-                        this.isSelectedID= id; // Установить выбор 
-                        this.isSelectedParam = paramKey;
-                        this.isSelectedRoom = roomKey;
-                        localStorage.setItem('room_key', roomKey);
-                        localStorage.setItem('param_key', this.checkConfigs.checkSymbol(paramKey, 0, 'd'));
-                        localStorage.setItem('room_id', id);
-                        localStorage.setItem('room_title', JSON.parse(localStorage.getItem('commonConfig'))[roomKey].title);
-                        // localStorage.setItem('param_key', paramKey);
-                      
-                        //console.log('  ---- 357    ------  Функция getEventsComponent (MainBody) case - select получила наименование выбранной комнаты - ', id, paramKey, roomKey, localStorage.getItem('room_title'));
-                        if (isSelectedNum === true) {
-                            this.sendEmitMessage('showSetpoint', 'isSelected', true);
-                        } else {
-                            this.sendEmitMessage('showSetpoint', 'isSelected', false);
-                        }
-                        this.sendEmitMessage('selectedItem', 'isSelected', {id: id, paramKey: paramKey});
-                       
-                    } 
-                    break;
-                }
-            default:
-                break;
+    handleTouchMove(event) {
+      if (!this.isSwiping) return;
+      
+      const touchX = event.touches[0].clientX;
+      const diffX = touchX - this.touchStartX;
+      logger.dev('[MainBody] - handleTouchMove Смещение по Х', diffX);
+      console.log('[MainBody] - handleTouchMove Смещение по Х', diffX);
+    },
+    handleTouchEnd(event) {
+      if (!this.isSwiping ) return;
+      this.isSwiping = false;
+      
+      const touchEndX = event.changedTouches[0].clientX;
+      const diffX = touchEndX - this.touchStartX;
+      logger.dev('[MainBody] - handleTouchEnd Смещение по Х', diffX);
+      console.log('[MainBody] - handleTouchEnd Смещение по Х', diffX);
+      // Определяем минимальную длину свайпа для активации
+      this.$emit('swipe', diffX);
+    },
+    clearSelection() {
+      console.log('[MainBody] - clearSelection ВЫЗВАН, selectedItem =', this.selectedItem);
+      if (this.selectedItem) {
+        logger.dev('[MainBody] - clearSelection - сбрасываем выделение');
+        console.log('[MainBody] - clearSelection - сбрасываем выделение');
+        this.selectedItem = null;
+        // Также сбрасываем ожидание двойного клика, чтобы не было артефактов
+        if (this.doubleClickTimer) {
+          clearTimeout(this.doubleClickTimer);
+          this.doubleClickTimer = null;
         }
-        } catch (error) {
-            this.sendEmitMessage('sendLogToServer','error', 'getEventsComponent(MainBody) - ошибка обработки сообщения от экземпляра компонента со значениями датчика');
-        }
-
-    },
-    sortingDoubleClick(event) {
-        console.log('Функция sortingDoubleClick (MainBody) получила событие - ', event);
-        try {
-        //console.log('Функция sortingDoubleClick (MainBody) получила roomKey и paramKey - ', event.roomKey, event.paramKey, 'event.roomId - ', event.roomId);
-            if (event.paramKey === null || event.roomKey === null || event.roomId === null) {
-                this.sendEmitMessage('sendLogToServer','warning', `sortingDoubleClick(MainBody) - Ошибка попытки изменить сортировку при двойном клике на область датчика - Не получены корректные значения roomId - ${event.roomId}, roomKey - ${event.roomKey}, paramKey - ${event.paramKey} `);
-            } else  {
-                console.log('Функция sortingDoubleClick (MainBody)  Собираемся сохранять в localStorage');
-                localStorage.setItem('room_id', event.roomId);
-                localStorage.setItem('room_key', event.roomKey);
-                localStorage.setItem('param_key', event.paramKey);
-                //console.log( 'Функция SortingDoubleClick - обновили локальные переменные: room_id - ', localStorage.getItem('room_id'), 'room_key - ', localStorage.getItem('room_key'), 'param_key - ', localStorage.getItem('param_key'));
-                if (this.customerSorting === 'rooms') {
-                    this.customerSorting = 'params';
-                    //console.log('Функция sortingDoubleClick (MainBody) Наименование комнаты - ', localStorage.getItem('room_title'));
-                    const currentRoomTitle = localStorage.getItem('room_title');
-                    this.sendEmitMessage('changeTitle', this.customerSorting, currentRoomTitle);
-                } else {
-                    this.customerSorting = 'rooms'
-                    //console.log('Функция sortingDoubleClick (MainBody) Наименование параметра - ', localStorage.getItem('param_title'));
-                    const currentParamTitle = localStorage.getItem('param_title');
-                    this.sendEmitMessage('changeTitle', this.customerSorting, currentParamTitle);
-                }
-                
-                this.selectSorting(this.customerSorting); 
-            }
-        } catch (error) {
-            console.error(`  Catch -------  DoubleClick      -------------    MainBody - Функция sortingDoubleClick - ошибка обработки события - ${error}`);
-            this.sendEmitMessage('sendLogToServer', 'error', `sortingDoubleClick(MainBody) - Ошибка попытки изменить сортировку при двойном клике на область датчика - Общая ошибка ${error}`);
-        }
+        this.pendingItem = null;
+      }
     },
 
 
-
-
-
-
-    // updateParamsList() { 
-    //             while (this.viewArray.length === 0) { 
-    //                 this.keyIndex = (this.keyIndex + 1) % this.paramKeysArray.length; 
-    //                 this.key = this.paramKeysArray[this.keyIndex]; 
-    //                 this.viewArray = this.getSortedParams(localStorage.getItem('commonConfig'), localStorage.getItem('param_key')); 
-    //             } 
-    //             this.paramKey_value = this.key; 
-    // },
-    // messageFromInfoRoom(n) {
-    //         // console.log('MainInfo.vue: Функция messageFromInfo - Room: Получено ообщение', n);
-    //         if (n !== undefined && n !== null) {
-    //             if (n.customer_message) {
-    //                 // console.log('MainInfo Функция messageFromInfo - Room. customer_message: ', n.customer_message);
-    //                 this.sendEmitMessage('sendLogToServer','customer_message', n.customer_message);
-    //             }
-    //         } else {
-    //             console.error('MainInfo Функция messageFromInfo - Room. Value: undefined');
-    //             this.sendEmitMessage('sendLogToServer','error', `MainInfo Функция messageFromInfo - Room. Value: undefined`);
-    //         }
-    // },
-    // messageFromInfoParam(n) {
-    //         // console.log('MainInfo.vue: Функция messageFromInfo - Param: Получено ообщение', n);
-    //         if (n !== undefined && n !== null) {
-    //             if (n.customer_message) {
-    //                 // console.log('MainInfo Функция messageFromInfo - Param. customer_message: ', n.customer_message);
-    //                 this.sendEmitMessage('sendLogToServer','customer_message', n.customer_message);
-    //             }
-    //         } else {
-    //             console.error('MainInfo Функция messageFromInfo - Param. Value: undefined');
-    //             this.sendEmitMessage('sendLogToServer','error', `MainInfo Функция messageFromInfo - Param. Value: undefined`);
-    //         }
-    // }, 
-    },
+  }
 }
 </script>
 
-<style>
-
-</style>
+<style lang="css" src="@/assets/mainStyle.css"></style>

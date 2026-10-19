@@ -1,34 +1,49 @@
-name: client-test
+name: Client - test
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ serverInterface ]
   pull_request:
-    branches: [ main ]
+    branches: [ serverInterface ]
 
 jobs:
   test:
-    runs-on: ubuntu-latest        # дешёвый раннер
-    timeout-minutes: 10           # ограничение времени
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'            # кэширует node_modules
-
-      - name: Install dependencies
-        run: npm ci               # быстрее, чем npm install
-
-      - name: Run tests
-        run: npm test
-
-      - name: Upload coverage (опционально)
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: coverage/
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    # Переходим в директорию vue-app и работаем там
+    - name: Navigate to vue-app directory
+      run: cd vue-app
+      
+    - name: Cache node modules
+      uses: actions/cache@v3
+      with:
+        path: vue-app/node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('vue-app/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+        
+    - name: Install dependencies
+      run: |
+        cd vue-app
+        npm ci
+      
+    - name: Run tests with Jest
+      run: |
+        cd vue-app
+        npm test -- --coverage
+        
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: vue-app/coverage/

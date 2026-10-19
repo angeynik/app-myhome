@@ -1,0 +1,57 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" width="512" height="512">
+<title>Комнаты — план квартиры</title>
+<defs>
+  <clipPath id="frame">
+    <rect x="58" y="58" width="396" height="396" rx="64"/>
+  </clipPath>
+</defs>
+<style>
+  .wf { fill: #2e3d52; }
+  .fa { fill: #232e3e; }
+  .fb { fill: #1e2a38; }
+  .fc { fill: #253040; }
+  .fd { fill: #1c2836; }
+  .fn { fill: #4a5568; }
+  .fo { fill: #c05e10; }
+  .fl { fill: #6b7a8e; }
+</style>
+<g clip-path="url(#frame)">
+<rect x="58" y="58" width="185" height="231" class="fa"/>
+<rect x="249" y="58" width="205" height="112" class="fb"/>
+<rect x="249" y="176" width="205" height="113" class="fd"/>
+<rect x="58" y="289" width="396" height="165" class="fc"/>
+<rect x="58" y="58" width="396" height="8" class="wf"/>
+<rect x="58" y="446" width="396" height="8" class="wf"/>
+<rect x="58" y="58" width="8" height="396" class="wf"/>
+<rect x="446" y="58" width="8" height="396" class="wf"/>
+<rect x="243" y="58" width="12" height="92" class="wf"/>
+<rect x="243" y="194" width="12" height="95" class="wf"/>
+<rect x="58" y="283" width="80" height="12" class="wf"/>
+<rect x="192" y="283" width="262" height="12" class="wf"/>
+<rect x="243" y="170" width="130" height="12" class="wf"/>
+<rect x="419" y="170" width="35" height="12" class="wf"/>
+<rect x="93" y="88" width="51" height="37" rx="3" class="fo"/>
+<rect x="93" y="88" width="51" height="11" rx="2" fill="#141c28" opacity="0.4"/>
+<rect x="160" y="88" width="39" height="12" rx="3" class="fn"/>
+<rect x="160" y="104" width="39" height="12" rx="3" class="fl"/>
+<rect x="160" y="120" width="39" height="12" rx="3" class="fn"/>
+<rect x="93" y="135" width="106" height="11" rx="3" class="wf"/>
+<rect x="84" y="185" width="90" height="60" rx="4" class="fn"/>
+<rect x="93" y="193" width="72" height="42" rx="2" fill="#3a4a5e"/>
+<rect x="263" y="72" width="166" height="76" rx="4" class="fn"/>
+<rect x="272" y="81" width="66" height="58" rx="3" fill="#3a4a5e"/>
+<rect x="345" y="81" width="76" height="32" rx="3" class="fo"/>
+<rect x="345" y="117" width="76" height="23" rx="3" class="fl"/>
+<rect x="263" y="188" width="120" height="58" rx="4" class="fn"/>
+<rect x="272" y="197" width="101" height="40" rx="3" fill="#3a4a5e"/>
+<rect x="72" y="308" width="67" height="99" rx="4" class="fn"/>
+<rect x="81" y="317" width="48" height="80" rx="2" fill="#3a4a5e"/>
+<rect x="152" y="308" width="92" height="51" rx="4" class="fn"/>
+<rect x="161" y="317" width="74" height="32" rx="2" fill="#3a4a5e"/>
+<rect x="152" y="366" width="44" height="41" rx="4" class="fo"/>
+<rect x="200" y="366" width="42" height="41" rx="4" class="fl"/>
+<rect x="265" y="302" width="162" height="110" rx="4" class="fn"/>
+<rect x="274" y="311" width="144" height="92" rx="3" fill="#3a4a5e"/>
+</g>
+<rect x="58" y="58" width="396" height="396" rx="64" fill="none" stroke="#f07820" stroke-width="8"/>
+</svg>
