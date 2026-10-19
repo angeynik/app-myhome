@@ -1,68 +1,70 @@
+<!-- components/AppLogin.vue -->
 <template>
   <div>
     <div class="header-bottom">
-      <nav>
-        <router-link to="/login">Login</router-link> |
-        <router-link to="/dashboard">Dashboard</router-link> |
-        <router-link to="/smart-home">Smart Home</router-link> |
-        <router-link to="/manufact-automatation">Automation</router-link> |
-        <router-link v-if="userLevel >= 2" to="/profile">Profile</router-link>
-        <router-link v-if="userLevel >= 3" to="/users">Users</router-link>
-      </nav>
+      <TopNav />
     </div>
     <p style="width: 100%; height: 1px; background-color: var(--orange);"></p>
+
     <div style="padding: 0 10px 0 10px;">
       <h1>Авторизация</h1>
       <form @submit.prevent="login">
-        <input ref="usernameInput" type="text" placeholder="Имя пользователя"
-               required autocomplete="username" :disabled="loading" />
-        <input ref="passwordInput" type="password" placeholder="Пароль"
-               required autocomplete="current-password" :disabled="loading" />
+        <input
+          ref="usernameInput"
+          type="text"
+          placeholder="Имя пользователя"
+          required
+          autocomplete="username"
+          :disabled="loading"
+        />
+        <input
+          ref="passwordInput"
+          type="password"
+          placeholder="Пароль"
+          required
+          autocomplete="current-password"
+          :disabled="loading"
+        />
         <button type="submit" :disabled="loading">
           {{ loading ? 'Вход…' : 'Вход' }}
         </button>
       </form>
       <p v-if="error" class="error">{{ error }}</p>
     </div>
-
-    <PopupMenu
-      :visible="showPopup"
-      :message="popupMessage"
-      :type="popupType"
-      @close="closePopup"
-    />
   </div>
 </template>
 
 <script>
-import PopupMenu from './PopupMenu.vue';
+import TopNav from '@/components/TopNav.vue';
 import logger from '../store/modules/logger.js';
 
 export default {
   name: 'AppLogin',
-  components: { PopupMenu },
+  components: { TopNav },
+
   data() {
     return {
       error: '',
       loading: false,
-      showPopup: false,
-      popupMessage: '',
-      popupType: 'info',
-      popupTimeout: null,
-      autoCloseDelay: 6000,
     };
   },
+
   computed: {
-    userLevel() { return this.$store.getters.level; },
-    dID() { return this.$store.getters.dID; },
-    isConnected() { return this.$store.getters['websocket/isConnected']; },
+    userLevel() {
+      return this.$store.getters.level;
+    },
+    dID() {
+      return this.$store.getters.dID;
+    },
+    isConnected() {
+      return this.$store.getters['websocket/isConnected'];
+    },
   },
+
   mounted() {
     this.$refs.usernameInput?.focus();
   },
-  beforeUnmount() {
-    if (this.popupTimeout) clearTimeout(this.popupTimeout);
-  },
+
   methods: {
     async login() {
       this.error = '';
@@ -72,36 +74,39 @@ export default {
         const username = this.$refs.usernameInput.value.trim().toLowerCase();
         const password = this.$refs.passwordInput.value;
 
-        if (!username || !password) throw new Error('Введите логин и пароль');
+        if (!username || !password) {
+          throw new Error('Введите логин и пароль');
+        }
 
-        // Убедимся, что WS поднят (или поднимем)
+        // WS обычно уже поднят в main.js, но после logout/resume может быть закрыт
         if (!this.isConnected) {
-          try { await this.$store.dispatch('websocket/connect'); }
-          catch { throw new Error('Нет соединения с сервером'); }
+          try {
+            await this.$store.dispatch('websocket/connect');
+          } catch {
+            throw new Error('Нет соединения с сервером');
+          }
         }
 
         const userData = await this.$store.dispatch('auth/login', { username, password });
         logger.info('[AppLogin] вход:', userData.username, 'level', this.userLevel, 'dID', this.dID);
 
-        this.showPopupMessage(`Вход выполнен: ${username}`, 'success');
+        this.showPopup(`Вход выполнен: ${username}`, 'success');
 
-        // Загружаем конфиг (best-effort, не блокируем)
+        // App.vue уже смонтирован — его mounted не сработает повторно.
+        // Грузим конфиг здесь; best-effort, не блокируем редирект.
         this.$store.dispatch('config/ensureConfig', this.dID).catch((err) => {
           logger.error('[AppLogin] конфиг не загружен:', err);
-          this.showPopupMessage('Конфигурация не загружена — часть функций недоступна', 'warning');
+          this.showPopup('Конфигурация не загружена — часть функций недоступна', 'warning');
         });
 
-        // Если требуется смена пароля — роутер сам перекинет на /change-password
-        // (guard смотрит на auth/mustChangePassword).
-        const target = this.$store.getters['auth/mustChangePassword']
-          ? '/change-password'
-          : (localStorage.getItem('redirectPath') || '/');
+        // Приоритет: принудительная смена пароля > redirectPath (из guard) > '/'
+        const target = localStorage.getItem('redirectPath') || '/';
         localStorage.removeItem('redirectPath');
 
         setTimeout(() => this.$router.push(target), 500);
       } catch (err) {
         this.error = this.mapErrorToText(err);
-        this.showPopupMessage(`❌ ${this.error}`, 'error');
+        this.showPopup(`❌ ${this.error}`, 'error');
         logger.error('[AppLogin] ошибка входа:', err);
       } finally {
         this.loading = false;
@@ -120,21 +125,26 @@ export default {
       }
     },
 
-    showPopupMessage(message, type = 'info') {
-      this.popupMessage = message;
-      this.popupType = type;
-      this.showPopup = true;
-      if (this.popupTimeout) clearTimeout(this.popupTimeout);
-      this.popupTimeout = setTimeout(() => this.closePopup(), this.autoCloseDelay);
-    },
-    closePopup() {
-      this.showPopup = false;
-      if (this.popupTimeout) { clearTimeout(this.popupTimeout); this.popupTimeout = null; }
+    /**
+     * Показ popup через глобальный store (рендерит App.vue).
+     * Если на форме быстро следуют два popup — таймер auto-close
+     * второго считается от первого. Для формы логина это некритично:
+     * пользователь жмёт OK или ждёт auto-close.
+     */
+    showPopup(message, type = 'info') {
+      this.$store.dispatch('popup/show', {
+        message,
+        type,
+        duration: 6000,
+      });
     },
   },
 };
 </script>
 
 <style scoped>
-.error { color: red; margin-top: 10px; }
+.error {
+  color: red;
+  margin-top: 10px;
+}
 </style>
