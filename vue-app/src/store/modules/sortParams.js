@@ -31,6 +31,7 @@ function getSensorTitle(key) {
     'sSwitch': 'Переключатель',
     'aController': 'Контроллер',
     'dBat': 'Батарея',
+'dStat': 'Статус',
     'sTemp': 'Уставка температуры',
     'sHum': 'Уставка влажности',
     'sActuator': 'Уставка актуатор',
