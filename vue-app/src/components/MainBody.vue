@@ -26,7 +26,7 @@
         </div>
       </section>
     </template>
-    <p v-else class="mainBody-empty">Нет данных для отображения</p>
+    <p v-else class="mainBody-empty">{{ emptyText }}</p>
   </div>
 </template>
 
@@ -36,32 +36,32 @@ import MainBodyValue from './MainBodyValue.vue';
 import logger from '../store/modules/logger.js';
 import { parseMoscowDate } from '@/utils/timeUtils';
 
-// Метаданные комнаты (не являются «секциями с данными»)
-const ROOM_META_KEYS = new Set(['init', 'id', 'group', 'title', '_meta']);
-
-// Секции, которые НЕ создают отдельных карточек.
-// setpoints уже отображаются рядом с парным sensors на одной плашке.
-const NON_CARD_SECTIONS = new Set(['setpoints']);
-
-// Порядок секций внутри группы
-const SECTION_ORDER = { sensors: 0, system: 1 };
-
 const STRIP_DIGITS = /\d+$/;
-
-// Только комнаты вида room01, room02, ... Отсекает init/common
+// Только реальные комнаты. `common` — не комната, обрабатывается отдельно
 const ROOM_KEY_RE = /^room\d+$/;
+const COMMON_KEY = 'common';
+
+// Какие секции комнаты создают карточки для вкладки.
+// Для control setpoints НЕ создают карточек — они паруются к sensors.
+const TAB_SECTIONS = {
+  control: ['sensors'],
+  devices: ['system'],
+};
 
 export default {
   name: 'MainBody',
   components: { MainBodyValue },
 
+  // activeTab приходит из MainView.vue через <router-view :active-tab="activeTab">
+  props: {
+    activeTab: { type: String, default: 'control' },
+  },
+
   data() {
     return {
       selectedItem: null,
-      groupedView: [],       // [{ roomKey, header, roomId, items: [...] }]
       doubleClickTimer: null,
       pendingItem: null,
-      updateViewTimeout: null,
     };
   },
 
@@ -69,31 +69,34 @@ export default {
     ...mapGetters('config', ['isLoading', 'error', 'getConfig', 'clearKeySync']),
     ...mapGetters('sortParams', ['getSensorTitle', 'getUnit']),
     ...mapGetters(['dID', 'typeSettingsKey']),
+
+    groupedView() {
+      const config = this.getConfig(this.dID);
+      if (!config || Object.keys(config).length === 0) return [];
+      return this.getAllData(config, this.activeTab);
+    },
+
+    emptyText() {
+      switch (this.activeTab) {
+        case 'devices': return 'Нет данных о состоянии устройств';
+        case 'general': return 'Нет данных общих настроек';
+        default:        return 'Нет данных для отображения';
+      }
+    },
   },
 
   watch: {
-    '$store.state.sortParams.forceUpdate': {
-      handler(newTimestamp) {
-        if (!newTimestamp) return;
-        if (this.updateViewTimeout) clearTimeout(this.updateViewTimeout);
-        this.updateViewTimeout = setTimeout(() => {
-          logger.dev('[MainBody] - watch forceUpdate');
-          this.updateView();
-        }, 250);
-      },
-      immediate: true,
-    },
     '$store.state.showSetpoint'(newVal) {
       if (newVal === false && this.selectedItem) this.clearSelection();
     },
-  },
 
-  mounted() {
-    if (!this.groupedView.length) this.updateView();
+    // При смене вкладки — снимаем выделение. Сохранение делает MainView.
+    activeTab() {
+      this.clearSelection();
+    },
   },
 
   beforeUnmount() {
-    if (this.updateViewTimeout) clearTimeout(this.updateViewTimeout);
     if (this.doubleClickTimer) clearTimeout(this.doubleClickTimer);
   },
 
@@ -101,6 +104,7 @@ export default {
     ...mapActions('sortParams', ['setLimits']),
     ...mapActions(['updateSettingsData', 'updatePayloadData']),
 
+    // ── Карточка ────────────────────────────────────────────────
     _buildItem(overrides) {
       return {
         key: null,
@@ -121,18 +125,12 @@ export default {
       };
     },
 
-    /**
-     * Ищет парную уставку для sensor-ключа по СОВПАДЕНИЮ НОМЕРА.
-     *   dTemp02 → sTemp02 (если есть в room.setpoints)
-     *   dTemp05 → sTemp05 (не найдётся → карточка read-only)
-     * Без startsWith: иначе dTemp05 приклеился бы к sTemp02.
-     */
     _resolveSetpoint(room, sensorKey) {
       if (!room?.setpoints || !sensorKey) return { setValue: null, setpointKey: null };
 
       const num  = (sensorKey.match(/(\d+)$/) || [])[1] || '';
-      const base = 's' + sensorKey.slice(1).replace(/\d+$/, '');   // dTemp02 → sTemp
-      const candidate = `${base}${num}`;                            // sTemp02
+      const base = 's' + sensorKey.slice(1).replace(/\d+$/, '');
+      const candidate = `${base}${num}`;
 
       const spData = room.setpoints[candidate];
       if (!spData) return { setValue: null, setpointKey: null };
@@ -151,17 +149,6 @@ export default {
 
       switch (key) {
         case 'num':
-        case 'dTemp':
-        case 'dHum':
-        case 'dPress':
-        case 'dPower':
-        case 'dVoltage':
-        case 'dСurrent':
-        case 'dFrequency':
-        case 'dEnergy':
-        case 'xStatus':
-        case 'sTemp':
-        case 'sHum':
           return raw != null ? parseFloat(raw) : 0;
 
         case 'bool':
@@ -181,7 +168,6 @@ export default {
       if (!timestamp) return 'Неизвестно';
       let time;
       try {
-        const now = Date.now();
         if (typeof timestamp === 'number') {
           time = timestamp;
         } else if (typeof timestamp === 'string') {
@@ -192,7 +178,7 @@ export default {
         }
         if (isNaN(time)) return 'Неизвестно';
 
-        const diff = Math.floor((now - time) / 60000);
+        const diff = Math.floor((Date.now() - time) / 60000);
         if (diff < 1) return 'сейчас';
         if (diff < 60) return `${diff} мин назад`;
         if (diff < 1440) return `${Math.floor(diff / 60)} ч назад`;
@@ -202,57 +188,41 @@ export default {
       }
     },
 
-    /**
-     * Собирает группы [{ roomKey, header, roomId, items }].
-     *  - Только roomNN
-     *  - header = room.group (fallback: room.title, roomKey)
-     *  - Итерируем sensors + system; setpoints НЕ создают карточек
-     *  - Заголовок карточки: room._meta[section|item].title → getSensorTitle
-     */
-    getAllData(config) {
+    // ── Сборка вкладок ──────────────────────────────────────────
+    getAllData(config, tab = 'control') {
+      if (tab === 'general') return this._getGeneralData(config);
+      return this._getRoomData(config, tab);
+    },
+
+    _getGeneralData(config) {
+      const common = config[COMMON_KEY];
+      if (!common?.system) return [];
+
+      const items = this._collectItems(COMMON_KEY, common, 'system', /* withSetpoint */ false);
+      if (!items.length) return [];
+
+      return [{
+        roomKey: COMMON_KEY,
+        header: common.group || common.title || 'Общие настройки',
+        roomId: common.id,
+        items,
+      }];
+    },
+
+    _getRoomData(config, tab) {
+      const sections = TAB_SECTIONS[tab] || [];
+      const withSetpoint = tab === 'control';
       const groups = [];
 
       for (const [roomKey, room] of Object.entries(config)) {
         if (!ROOM_KEY_RE.test(roomKey)) continue;
         if (!room || typeof room !== 'object') continue;
 
-        const roomMeta = room._meta || {};
         const items = [];
-
-        const sections = Object.entries(room)
-          .filter(([k, v]) =>
-            !ROOM_META_KEYS.has(k) &&
-            !NON_CARD_SECTIONS.has(k) &&
-            v && typeof v === 'object'
-          )
-          .sort(([a], [b]) => (SECTION_ORDER[a] ?? 99) - (SECTION_ORDER[b] ?? 99));
-
-        for (const [sectionKey, sectionData] of sections) {
-          for (const [itemKey, itemData] of Object.entries(sectionData)) {
-            const { setValue, setpointKey } = this._resolveSetpoint(room, itemKey);
-
-            const meta = roomMeta[`${sectionKey}|${itemKey}`] || {};
-            const title = meta.title || this.getSensorTitle(itemKey);
-
-            items.push(this._buildItem({
-              key: itemKey.slice(1).replace(STRIP_DIGITS, ''),
-              paramTitle: title,
-              paramType: itemData?.type,
-              paramKey: itemKey,
-              value: this.getSensorValue(itemData?.type, itemData),
-              setValue,
-              setpointKey,
-              unit: this.getUnit(itemKey),
-              timeDiff: this.getTimeDiff(itemData?.lastUpdate),
-              roomTitle: room.title,
-              roomGroup: room.group,
-              roomId: room.id,
-              roomKey,
-            }));
-          }
+        for (const sectionKey of sections) {
+          items.push(...this._collectItems(roomKey, room, sectionKey, withSetpoint));
         }
-
-        if (items.length === 0) continue;
+        if (!items.length) continue;
 
         groups.push({
           roomKey,
@@ -266,30 +236,45 @@ export default {
       return groups;
     },
 
-    async updateView() {
-      try {
-        const config = this.getConfig(this.dID);
-        if (!config || Object.keys(config).length === 0) {
-          logger.error('[MainBody] - updateView - конфигурация недоступна');
-          this.groupedView = [];
-          return;
-        }
+    _collectItems(roomKey, room, sectionKey, withSetpoint) {
+      const sectionData = room[sectionKey];
+      if (!sectionData || typeof sectionData !== 'object') return [];
 
-        this.groupedView = this.getAllData(config);
-        logger.dev('[MainBody] - updateView - групп:', this.groupedView.length,
-          'карточек:', this.groupedView.reduce((s, g) => s + g.items.length, 0));
-        localStorage.setItem('groupedView', JSON.stringify(this.groupedView));
-      } catch (error) {
-        logger.error('[MainBody] - updateView - Ошибка:', error);
-        this.groupedView = [];
+      const roomMeta = room._meta || {};
+      const items = [];
+
+      for (const [itemKey, itemData] of Object.entries(sectionData)) {
+        const { setValue, setpointKey } = withSetpoint
+          ? this._resolveSetpoint(room, itemKey)
+          : { setValue: null, setpointKey: null };
+
+        const meta = roomMeta[`${sectionKey}|${itemKey}`] || {};
+        const title = meta.title || this.getSensorTitle(itemKey);
+
+        items.push(this._buildItem({
+          key: itemKey.slice(1).replace(STRIP_DIGITS, ''),
+          paramTitle: title,
+          paramType: itemData?.type,
+          paramKey: itemKey,
+          value: this.getSensorValue(itemData?.type, itemData),
+          setValue,
+          setpointKey,
+          unit: this.getUnit(itemKey),
+          timeDiff: this.getTimeDiff(itemData?.lastUpdate),
+          roomTitle: room.title,
+          roomGroup: room.group,
+          roomId: room.id,
+          roomKey,
+        }));
       }
+      return items;
     },
 
+    // ── Выбор карточки ──────────────────────────────────────────
     isSelected(item) {
       return this.selectedItem
         && this.selectedItem.roomId === item.roomId
         && this.selectedItem.paramKey === item.paramKey
-        && this.selectedItem.deviceKey === item.deviceKey
         && this.selectedItem.setpointKey === item.setpointKey;
     },
 
@@ -314,7 +299,7 @@ export default {
     singleClickAction(item) {
       const clearParam = this.clearKeySync(item.paramKey);
 
-      if (this.selectedItem === item) {
+      if (this.isSelected(item)) {
         this.selectedItem = null;
         this.$emit('getComponentData', {
           action: 'hide',
@@ -326,41 +311,37 @@ export default {
             paramKey: item.paramKey,
           },
         });
-      } else {
-        this.selectedItem = item;
-        this.updatePayloadData({
-          value: item.setValue,
-          param: item.paramKey,
-          key: clearParam,
-          setKey: item.setpointKey,
-          id: item.roomId,
-          room: item.roomKey,
-        });
-
-        this.setLimits({ param: clearParam, valueType: 'absolute' });
-
-        if (item.setValue !== undefined && item.setValue !== null && clearParam && item.setpointKey) {
-          this.$emit('getComponentData', {
-            action: 'show',
-            request: 'setpoints',
-            updateState: {
-              value: item.setValue,
-              title: 'value',
-              key: clearParam,
-              roomKey: item.roomKey,
-              paramKey: item.paramKey,
-              setpointKey: item.setpointKey,
-            },
-          });
-        } else {
-          logger.error(
-            '[MainBody] - singleClickAction - уставка не определена:',
-            item.setValue, clearParam, item.setpointKey,
-          );
-        }
+        return;
       }
 
-      this.$store.dispatch('updatePayloadData', { param: item.paramKey });
+      this.selectedItem = item;
+      this.updatePayloadData({
+        value: item.setValue,
+        param: item.paramKey,
+        key: clearParam,
+        setKey: item.setpointKey,
+        id: item.roomId,
+        room: item.roomKey,
+      });
+      this.setLimits({ param: clearParam, valueType: 'absolute' });
+
+      if (item.setpointKey && item.setValue !== undefined && item.setValue !== null && clearParam) {
+        this.$emit('getComponentData', {
+          action: 'show',
+          request: 'setpoints',
+          updateState: {
+            value: item.setValue,
+            title: 'value',
+            key: clearParam,
+            roomKey: item.roomKey,
+            paramKey: item.paramKey,
+            setpointKey: item.setpointKey,
+          },
+        });
+      } else {
+        logger.dev('[MainBody] - singleClickAction - карточка без уставки:', item.paramKey);
+      }
+
       this.updateSettingsData({ field: 'request', value: 'setpoints' });
     },
 
@@ -394,7 +375,7 @@ export default {
         value: item.setValue,
       });
 
-      const settingsType = this.typeSettingsKey || 'schedule';
+      const settingsType = this.typeSettingsKey || 'schedules';
       this.$emit('getComponentData', {
         action: 'hide',
         request: settingsType,
@@ -415,18 +396,3 @@ export default {
   },
 };
 </script>
-
-<style lang="css" src="@/assets/mainStyle.css"></style>
-
-<style scoped>
-.room-group { margin-bottom: 1.5em; }
-.room-group-header {
-  margin: 0 0 0.5em 0;
-  font-size: 1.2em;
-  font-weight: 600;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
-  padding-bottom: 0.25em;
-}
-.room-group-items { display: flex; flex-wrap: wrap; gap: 0.5em; }
-.mainBody-empty { padding: 1em; opacity: 0.6; text-align: center; }
-</style>

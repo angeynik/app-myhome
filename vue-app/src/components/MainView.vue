@@ -1,4 +1,4 @@
-<!-- components/MainView.vue (бывший DashBoard.vue) -->
+<!-- components/MainView.vue -->
 <template>
   <div class="app">
     <svg display="none">
@@ -21,9 +21,36 @@
             <use href="#homeIcon"></use>
           </svg>
         </div>
-        <div style="display: flex; justify-content: center; flex: 1;">
+
+        <!-- На главной — одна активная вкладка (клик = следующая) -->
+        <nav
+          v-if="showTabs"
+          class="top-nav"
+          role="tablist"
+          style="flex: 1; justify-content: center; margin: 0;"
+        >
+          <div
+            class="settings-block-title clickable selected"
+            role="tab"
+            aria-selected="true"
+            :aria-label="`Вкладка: ${currentTabLabel}. Нажмите, чтобы переключить на следующую.`"
+            tabindex="0"
+            @click="cycleTab"
+            @keydown.enter.prevent="cycleTab"
+            @keydown.space.prevent="cycleTab"
+          >
+            <p>{{ currentTabLabel }}</p>
+            <span
+              aria-hidden="true"
+              style="opacity: 0.6; margin-left: 0.35em; font-weight: 400;"
+            >›</span>
+          </div>
+        </nav>
+
+        <div v-else style="display: flex; justify-content: center; flex: 1;">
           <h2>{{ headerTitle }}</h2>
         </div>
+
         <div class="icon" @click="openMenu">
           <svg width="24" height="24" viewBox="0 0 24 24">
             <use href="#menuIcon"></use>
@@ -37,6 +64,7 @@
     <div class="body">
       <router-view
         :key="routeKey"
+        :active-tab="activeTab"
         @getComponentData="getComponentData"
         @updateTypeValue="editValueMainSetpoint"
       />
@@ -67,23 +95,38 @@ import { mapGetters, mapActions } from 'vuex';
 import MainSetpoint from '@/components/MainSetpoint.vue';
 import { nowMoscow } from '@/utils/timeUtils';
 
+// Вкладки главного экрана. Должны совпадать с TAB_SECTIONS в MainBody.vue
+const TABS = [
+  { key: 'control', label: 'Панель управления' },
+  { key: 'devices', label: 'Состояние устройств' },
+  { key: 'general', label: 'Общие настройки' },
+];
+const TAB_KEYS = TABS.map((t) => t.key);
+const TAB_STORAGE_KEY = 'mainViewTab';
+
 export default {
   name: 'MainView',
   components: { MainSetpoint },
 
   provide() {
     return {
-      // MainBodySettings использует это, чтобы не снимать выделение
-      // при кликах по панели уставки (Teleport → вне DOM-дерева страницы).
       getMainSetpointEl: () => this.$refs.mainSetpoint?.$el ?? null,
     };
   },
 
   data() {
+    let initialTab = 'control';
+    try {
+      const saved = localStorage.getItem(TAB_STORAGE_KEY);
+      if (TAB_KEYS.includes(saved)) initialTab = saved;
+    } catch { /* приватный режим */ }
+
     return {
       request: null,
       setpoint: null,
       selectedItemData: {},
+      activeTab: initialTab,
+      tabs: TABS,
     };
   },
 
@@ -93,6 +136,17 @@ export default {
 
     headerTitle() {
       return this.$route.params.settingsType ? 'Настройки' : 'Панель управления';
+    },
+
+    // Вкладки — только на главной. На /settings/:settingsType — заголовок.
+    showTabs() {
+      return this.$route.name === 'Home';
+    },
+
+    // Лейбл текущей вкладки для заголовка шапки
+    currentTabLabel() {
+      const t = this.tabs.find((x) => x.key === this.activeTab);
+      return t ? t.label : 'Панель управления';
     },
 
     showFooterSetpoint() {
@@ -107,13 +161,31 @@ export default {
   },
 
   beforeUnmount() {
-    // ✅ Flush pending-отправки, чтобы не потерять последнее изменение
     this.flushPendingUpdate();
   },
 
   methods: {
     ...mapActions(['updatePayloadData']),
     ...mapActions('dropdown', ['show']),
+
+    // ── Вкладки ─────────────────────────────────────────────────────
+    // Клик по активной вкладке → следующая (control → devices → general → …)
+    cycleTab() {
+      const idx = TAB_KEYS.indexOf(this.activeTab);
+      const next = TAB_KEYS[(idx + 1) % TAB_KEYS.length];
+      this.setActiveTab(next);
+    },
+
+    // Прямая установка (используется из cycleTab; сохраняет в localStorage)
+    setActiveTab(tabKey) {
+      if (!TAB_KEYS.includes(tabKey) || this.activeTab === tabKey) return;
+      this.activeTab = tabKey;
+      try {
+        localStorage.setItem(TAB_STORAGE_KEY, tabKey);
+      } catch (e) {
+        logger.warn('[MainView] setActiveTab - localStorage:', e.message);
+      }
+    },
 
     // ── Навигация ────────────────────────────────────────────────────
     goHome() {
@@ -327,11 +399,6 @@ export default {
       }, 300);
     },
 
-    /**
-     * Немедленная отправка накопленного значения, если таймер ещё активен.
-     * Используется при размонтировании и автоскрытии — чтобы не потерять
-     * последнее изменение при быстром уходе пользователя.
-     */
     async flushPendingUpdate() {
       if (!this.setpointUpdateTimer) return;
       clearTimeout(this.setpointUpdateTimer);
@@ -344,7 +411,6 @@ export default {
       }
     },
 
-    // ── Бездействие в MainSetpoint ──────────────────────────────────
     async handleSetpointInactivity() {
       logger.dev('[MainView] - handleSetpointInactivity - скрываем панель');
       await this.flushPendingUpdate();
@@ -356,4 +422,3 @@ export default {
   },
 };
 </script>
-

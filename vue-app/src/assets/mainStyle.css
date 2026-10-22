@@ -205,6 +205,35 @@ nav a.router-link-exact-active {
   opacity: 0.6;
   text-align: center;
 }
+/* Вкладки главного экрана */
+.mainBody-tabs {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5em;
+  width: 100%;
+  margin-bottom: 0.5em;
+}
+.mainBody-tab {
+  padding: 0.5em 1em;
+  background: rgba(0, 0, 0, 0.15);
+  color: var(--light_font);
+  border: 1px solid rgba(224, 223, 231, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background 0.2s, color 0.2s;
+  touch-action: manipulation;
+}
+.mainBody-tab:hover { background: rgba(255, 255, 255, 0.1); }
+.mainBody-tab--active {
+  background: var(--orange);
+  color: var(--dark_font);
+  border-color: var(--orange);
+  font-weight: 600;
+}
+.mainBody-tab:active { transform: scale(0.98); }
 
 /* Группа комнат: заголовок + своя сетка карточек. Занимает всю ширину .mainBody. */
 .room-group {
