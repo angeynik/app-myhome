@@ -44,17 +44,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.top-nav {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.25em;
-}
-
-.top-nav-separator {
-  opacity: 0.5;
-  margin: 0 0.25em;
-}
-</style>

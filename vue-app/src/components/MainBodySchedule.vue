@@ -120,7 +120,6 @@ export default {
     return {
       timeEditMode: 'hours',
       localValueType: this.scheduleData.value_type || 'absolute',
-      // selectedField: null,
     };
   },
   
@@ -135,15 +134,12 @@ export default {
       return this.localValueType === 'absolute' ? 'Новое значение' : 'Отклонение от Уставки';
     },
    value() {
-    // Если данные еще не созданы
     if (!this.scheduleData || this.scheduleData.value === null || this.scheduleData.value === undefined) {
       return 'Не задано';
     }
     
-    // Получаем значение и преобразуем в число для форматирования
     const rawValue = this.scheduleData.value;
     
-    // Функция для безопасного форматирования числа
     const safeToFixed = (val, digits = 1) => {
       if (typeof val === 'number') {
         return val.toFixed(digits);
@@ -154,7 +150,6 @@ export default {
       return val; // Возвращаем как есть, если не число
     };
     
-    // Форматирование в зависимости от типа значения
     if (this.localValueType === 'deviation') {
       const numericValue = typeof rawValue === 'number' ? rawValue : parseFloat(rawValue);
       if (!isNaN(numericValue)) {
@@ -164,15 +159,12 @@ export default {
       return rawValue; // Если не удалось преобразовать в число
     }
     
-    // Для absolute типа
     return safeToFixed(rawValue, 1);
     },
     displayStartTime() {
-      //console.log('[MainBodySchedule] - displayStartTime - startTime:', this.scheduleData.startTime);
       return String(this.scheduleData.startTime || '00:00');
     },
     
-    // Единое свойство для отображения времени окончания
     displayEndTime() {
       return String(this.scheduleData.endTime || '00:05');
     },
@@ -187,52 +179,17 @@ export default {
       );
     },
 
-
     
   },
   
   watch: {
-    scheduleData: {
-      handler(newData) {
-        logger.dev('[MainBodySchedule] - Данные расписания обновлены:', newData);
-      },
-      deep: true
+    // Локальный тип значения синхронизируется с данными (например, после ответа сервера)
+    'scheduleData.value_type'(newType) {
+      this.localValueType = newType || 'absolute';
     },
-    // '$store.state.setpointsManager?.settingsData?.payload': {
-    //   handler(newPayload) {
-    //     // Если обновился value_type в store, обновляем локальные данные
-    //     if (newPayload && newPayload.id === this.scheduleData.id) {
-    //       // Можно обновить scheduleData если нужно
-    //       this.$emit('update-schedule', {
-    //         id: this.scheduleData.id,
-    //         valueType: newPayload.value_type
-    //       });
-    //     }
-    //   },
-    //   deep: true
-    // },
-  },
-  // created() {
-  //   this.updateSettingsData({ field: 'type', value: 'post' });
-  //   this.updateSettingsData({ field: 'request', value: 'updateschedules' });
-  //   this.updatePayloadData({ config: 'schedules'});
-  //   console.log('[MainBodySchedule] - created component - ', this.scheduleData, null, 2);
-  // },
-  mounted() {
-    document.addEventListener('click', this.handleClickOutside);
-  },
-
-  beforeUnmount() {
-    document.removeEventListener('click', this.handleClickOutside);
   },
   methods: {
     formatDate,
-    ...mapActions('settingsConfig', [
-      'timeToMinutes',
-      'minutesToTime',
-      'validateScheduleTime',
-      'checkScheduleOverlap'
-    ]),
     ...mapActions('sortParams', [
       'setLimits',
     ]),
@@ -241,19 +198,11 @@ export default {
       return this.activeSelection?.scheduleId === this.scheduleData.id 
           && this.activeSelection?.field === fieldName;
     },
-    handleClickOutside(event) {
-      if (this.$el && !this.$el.contains(event.target)) {
-        this.selectedField = null;
-      }
-    },
 
-
-    // Переключение типа значения
     toggleValueType(event) {
       event.stopPropagation();
       
       this.updateSettingsData({ field: 'request', value: 'updateschedules' });
-      // Определяем новый тип (переключаем)
       const currentType = this.localValueType;
       const newType = currentType === 'absolute' ? 'deviation' : 'absolute';
       this.localValueType = newType;
@@ -266,7 +215,6 @@ export default {
         defaultValue = 0;
       }
 
-      // Обновляем в store
       this.updatePayloadData({ 
         id: this.scheduleData.id,
         value: defaultValue,
@@ -278,18 +226,14 @@ export default {
               value_type: newType
                         
       });
-      //this.$emit('field-selected', { scheduleId: this.scheduleData.id, field: 'valueType' });
       
     },
-    // Редактирование значения расписания
     editValue() {
       if (!this.scheduleData) console.error('[MainBodySchedule] - editValue Значение scheduleData не определено', this.scheduleData);
       logger.dev('[MainBodySchedule] - editValue - Начало редактирования значения  - scheduleData', this.scheduleData);
 
-      console.log('[MainBodySchedule] - editValue - Текущее значение value_type:', this.scheduleData);
       let currentValueType = this.localValueType;
       if ( currentValueType === undefined) {
-        //console.error('[MainBodySchedule] - editValue - value_type не задан', currentValueType);
         currentValueType = 'absolute';
         this.updateSettingsData({ field: 'value_type', value: 'absolute' });
       }
@@ -305,7 +249,6 @@ export default {
       const currentValue = this.scheduleData.value !== null && this.scheduleData.value !== undefined
         ? this.scheduleData.value
         : (this.localValueType === 'absolute' ? 20 : 0);
-      //const currentValue = this.scheduleData.valueType === 'absolute' ? 20 : 0;
 
       logger.dev('[MainBodySchedule] - editValue - Начало редактирования значения');
       this.updatePayloadData({ 
@@ -337,48 +280,9 @@ export default {
       this.editTimeFieldWithToggle('endTime', timeString);
     },
     
-    // editTimeFieldWithToggle(selectedField, currentHours, currentMinutes) {
-    //   this.updateSettingsData({ field: 'request', value: 'updateschedules' });
-    //   //console.groupCollapsed('[MainBodySchedule] - editTimeFieldWithToggle');
-    //   // if (this.scheduleData[this.selectedField] === undefined) {
-    //   //   this.scheduleData[this.selectedField] = `00:00`;
-    //   // }
-    //     //console.log('[MainBodySchedule] - Редактирование:', currentHours, currentMinutes, this.scheduleData[this.selectedField]);
-    //     this.updatePayloadData({ 
-    //           id: this.scheduleData.id,
-    //           value: this.scheduleData[selectedField],
-    //           value_name: selectedField,
-    //           value_details: this.timeEditMode
-    //         });
-    //     const editMode = this.timeEditMode;
-    //     // Устанавливаем лимиты
-    //       const params = {
-    //         param: editMode, 
-    //         valueType: '', 
-    //       }
-    //       //console.log('[MainBodySettings] - editValue - params:', params);
-    //       this.setLimits(params);
 
-    //     if (editMode === 'minutes') {
-    //         this.$emit('getDataScheduleItem', {
-    //             value: currentMinutes,
-    //             title: selectedField,
-    //             value_details: 'minutes'
-    //         });
-    //     } else {
-    //         this.$emit('getDataScheduleItem', {
-    //             value: currentHours,
-    //             title: selectedField,
-    //             value_details: 'hours'
-    //         });
-    //     }
         
-    //     // Переключаем режим
-    //     this.timeEditMode = this.timeEditMode === 'minutes' ? 'hours' : 'minutes';
-    //     //console.groupEnd();
-    // },
     
-    // Удаление расписания
   editTimeFieldWithToggle(selectedField, timeString) {
     this.updateSettingsData({ field: 'request', value: 'updateschedules' });
 
@@ -386,7 +290,6 @@ export default {
     const currentPartValue = extractTimePart(timeString, editMode);
     const limits = getTimeLimits(editMode);
 
-    // Сохраняем в payload: храним оригинальную строку "HH:MM" — не число
     this.updatePayloadData({ 
       id: this.scheduleData.id,
       value: timeString,          // ← всегда строка "HH:MM"
@@ -394,17 +297,14 @@ export default {
       value_details: editMode,    // 'hours' или 'minutes'
     });
 
-    // Устанавливаем лимиты через утилиту (не через строковый ключ param)
     this.$store.dispatch('updateLimitsData', limits);
 
-    // Передаём числовое значение части для MainSetpoint
     this.$emit('getDataScheduleItem', {
       value: currentPartValue,      // число: часы ИЛИ минуты
       title: selectedField,         // 'startTime' | 'endTime'
       value_details: editMode,      // 'hours' | 'minutes'
     });
 
-    // Переключаем режим для следующего нажатия
     this.timeEditMode = editMode === 'minutes' ? 'hours' : 'minutes';
   },
 
@@ -413,71 +313,26 @@ export default {
         logger.error('[MainBodySchedule] - deleteScheduleItem - Невозможно удалить: нет ID расписания');
         return;
       }
-      console.log('[MainBodySchedule] - deleteScheduleItem - Список Расписаний ', this.scheduleData);
       const scheduleTitle = this.scheduleData.paramTitle || `расписание ID: ${this.scheduleData.id}`;
       
-      // Запрос подтверждения
       if (!confirm(`Удалить расписание "${scheduleTitle}"?\n\nУдаление будет применено после сохранения изменений.`)) {
         return;
       }
       
-      // Добавляем ID в список для отложенного удаления
       this.$emit('delete-schedule', {
         id: this.scheduleData.id,
         scheduleData: this.scheduleData
       });
       
-      // Сразу скрываем элемент визуально (опционально)
       this.$el.style.opacity = '0.35';
       this.$el.style.pointerEvents = 'none';
       
       logger.info('[MainBodySchedule] - deleteScheduleItem - Расписание добавлено в список для удаления:', this.scheduleData.id);
-      console.log('[MainBodySchedule] - deleteScheduleItem - Расписание добавлено в список для удаления:', this.scheduleData.id);
     },
    
     
-    validateScheduleTimeSync(schedule) {
-      // Используем синхронную логику через геттер
-      const timeToMinutes = this.dateUtils.timeToMinutes;
-      
-      if (!schedule || !schedule.startTime || !schedule.endTime) {
-        return {
-          valid: false,
-          message: 'Отсутствует время начала или окончания'
-        };
-      }
-      
-      const startMinutes = timeToMinutes(schedule.startTime);
-      const endMinutes = timeToMinutes(schedule.endTime);
-      
-      if (endMinutes <= startMinutes) {
-        return {
-          valid: false,
-          message: 'Время окончания должно быть позже времени начала'
-        };
-      }
-      
-      return { valid: true };
-    },
-    // async checkScheduleOverlap(startTime, endTime, existingSchedules) {
-    //   try {
-    //     const result = await this.checkScheduleOverlap({
-    //       startTime,
-    //       endTime,
-    //       existingSchedules
-    //     });
-    //     return result;
-    //   } catch (error) {
-    //     logger.error('[MainBodySchedule] - checkScheduleOverlap - Ошибка проверки:', error);
-    //     return true; // В случае ошибки считаем, что есть пересечение
-    //   }
-    // },
   
   }
 };
 </script>
 
-
-<style lang="css" src="../assets/mainStyle.css"> 
-
-</style>

@@ -62,7 +62,6 @@
             :activeSelection="activeSelection"
             class="schedule-item"
             @getDataNotificationItem="checkDataNotificationItem"
-            @edit-notification="handleEditNotification(notification.id, $event)"
             @delete-notification="handleDeleteConfigItem(notification.id, 'notifications')"
             @field-selected="handleFieldSelected"
           />
@@ -82,7 +81,6 @@
             :activeSelection="activeSelection"
             class="schedule-item"
             @getDataStatisticItem="checkDataStatisticItem"
-            @edit-analytic="handleEditAnalytic(statistic.id, $event)"
             @delete-statistic="handleDeleteConfigItem(statistic.id, 'statistics')"
             @field-selected="handleFieldSelected"
           />
@@ -107,140 +105,113 @@ import MainBodyNotifications from './MainBodyNotifications.vue';
 import MainBodyStatistic from './MainBodyStatistic.vue';
 import { nowMoscow, createTimePoint } from '@/utils/timeUtils';
 
+const TYPES = ['schedules', 'notifications', 'statistics'];
+const TYPE_TITLES = {
+  schedules: 'Расписание',
+  notifications: 'Уведомления',
+  statistics: 'Аналитика',
+};
+const LIMIT_TEXT = {
+  schedules: 'расписания',
+  notifications: 'уведомлений',
+  statistics: 'аналитики',
+};
+const CREATED_TEXT = {
+  schedules: 'Расписание успешно создано',
+  notifications: 'Уведомление успешно создано',
+  statistics: 'Аналитика успешно создана',
+};
+
 export default {
   name: 'MainBodySettings',
 
   inject: {
     getMainSetpointEl: {
-      default: () => () => null, // fallback если provide не доступен
+      default: () => () => null, // fallback, если provide недоступен
     },
   },
 
   components: { MainBodySchedule, MainBodyStatistic, MainBodyNotifications },
 
   props: {
-    // Имя prop не совпадает с :settingsType в URL — в routes.js
-    // используется mapper: props: (route) => ({ setting_Type: route.params.settingsType })
-    setting_Type: {
-      type: String,
-      required: true,
-    },
-    keepActiveRefs: {
-      type: Array,
-      default: () => [],
-    },
+    setting_Type: { type: String, required: true },
   },
+
+  emits: ['getComponentData', 'close', 'title-changed'],
 
   data() {
     return {
       activeSelection: null,
-      availableTitles: ['schedules', 'notifications', 'statistics'],
-      typeToTitleMap: {
-        schedules: 'Расписание',
-        notifications: 'Уведомления',
-        statistics: 'Аналитика',
-      },
-      title: localStorage.getItem('typeSettingsKey') || this.typeSettingsKey || 'schedules',
-
-      showAddDialog: false,
-      currentItemType: '',
-      defaultItemValues: {},
-
+      availableTitles: TYPES,
+      typeToTitleMap: TYPE_TITLES,
+      // Источник истины — параметр маршрута. Раньше значение бралось из localStorage
+      // (и из this.typeSettingsKey, недоступного в data()).
+      title: TYPES.includes(this.setting_Type) ? this.setting_Type : 'schedules',
       schedules: [],
       notifications: [],
       statistics: [],
-
-      unit: '',
-
-      configDataToDelete: [],
-      pendingDeletions: {},
-      editedSchedules: {},
-
-      isEditingSchedule: false,
-      editScheduleValue: null,
+      // Элементы, удаление которых отложено до закрытия экрана:
+      // { configName, room, param, id }
+      pendingDeletes: [],
+      loadSeq: 0,
+      closing: false,
     };
   },
 
   computed: {
-    ...mapGetters('settingsConfig', ['typeSettings']),
-    ...mapGetters([
-      'getSetpointsManager',
-      'roomKey',
-      'paramKey',
-      'deviceKey',
-      'setpointKey',
-      'typeSettingsKey',
-    ]),
-    ...mapGetters('sortParams', [
-      'getRoomTitle',
-      'getParamTitle',
-      'getDeviceTitle',
-      'getSetpointTitle',
-    ]),
-    ...mapGetters(['level', 'dID']),
-    ...mapGetters('config', ['getConfig']),
+    ...mapGetters(['getSetpointsManager', 'dID']),
+    ...mapGetters('sortParams', ['getUnit']),
 
     settingsData() {
       return this.getSetpointsManager?.settingsData || null;
     },
-
+    payloadRoom() {
+      return this.settingsData?.payload?.room || '';
+    },
+    payloadParam() {
+      return this.settingsData?.payload?.param || '';
+    },
+    unit() {
+      return this.payloadParam ? this.getUnit(this.payloadParam) : '';
+    },
     selectedTitle() {
       return this.typeToTitleMap[this.title];
     },
-
     otherTitles() {
-      return Object.values(this.typeToTitleMap)
-        .filter(title => title !== this.selectedTitle);
+      return Object.values(this.typeToTitleMap).filter((t) => t !== this.selectedTitle);
     },
 
-    userLevel() {
-      return this.level || 0;
+    // Срез хранилища только для активного типа и текущего dID.
+    // Раньше следили за ВСЕМ $store.state.config (deep) — это перезапускало
+    // загрузку при каждом обновлении датчика, пришедшем по WebSocket.
+    storeSlice() {
+      return this.$store.state.config?.[this.title]?.[this.dID];
     },
+  },
 
-    effectiveParamKey() {
-      return this.$store.state.settingsData?.payload?.param || '';
+  watch: {
+    title() {
+      this.setComponentParam();
     },
-
-    isEditingMode() {
-      return this.isEditingSchedule && this.editingSchedule !== null;
+    storeSlice: {
+      deep: true,
+      handler() {
+        this.loadList(this.title);
+      },
+    },
+    payloadRoom() { this.loadList(this.title); },
+    payloadParam() { this.loadList(this.title); },
+    '$store.state.showSetpoint'(newVal) {
+      if (newVal === false) this.activeSelection = null;
+    },
+    setting_Type(newVal) {
+      if (TYPES.includes(newVal) && newVal !== this.title) this.title = newVal;
     },
   },
 
   created() {
-    this.initialize();
-    this.schedules = this.loadConfigDataFromStore('schedules');
-    this.setComponentParam(this.selectedTitle);
-  },
-
-  watch: {
-    title(newTitle, oldTitle) {
-      if (newTitle !== oldTitle) {
-        this.loadCurrentSettings();
-        this.setComponentParam(this.selectedTitle);
-      }
-    },
-
-    '$store.state.config': {
-      handler() {
-        this.loadConfigDataFromStore(this.title);
-      },
-      deep: true,
-      immediate: false,
-    },
-
-    '$store.state.showSetpoint'(newVal) {
-      if (newVal === false) this.activeSelection = null;
-    },
-
-    setting_Type: {
-      handler(newVal) {
-        if (newVal && newVal !== this.title) {
-          this.title = newVal;
-          this.SET_TYPE_SETTINGS_ITEM(newVal);
-        }
-      },
-      immediate: true,
-    },
+    this.initialize().catch((e) => logger.error('[MainBodySettings] initialize:', e));
+    this.setComponentParam();
   },
 
   mounted() {
@@ -249,480 +220,280 @@ export default {
 
   beforeUnmount() {
     document.removeEventListener('click', this.handleClickOutside);
+    // Пользователь ушёл «назад» браузером, не нажав «Закрыть» — отложенные удаления не теряем
+    if (this.pendingDeletes.length > 0) this.flushDeletions();
   },
 
   methods: {
     ...mapMutations('config', ['SET_TYPE_SETTINGS_ITEM']),
-    ...mapActions('settingsConfig', [
-      'initialize',
-      'updateTypePopupItem',
-      'saveConfigItems',
-      'checkScheduleOverlap',
-      'updateSchedule',
-      'deleteConfigItems',
-      'getConfigDataFromStore',
-    ]),
-    ...mapActions([
-      'updateSettingsData',
-      'updatePayloadData',
-      'updateLimitsData',
-      'updateViewData',
-    ]),
+    ...mapActions('settingsConfig', ['initialize', 'saveConfigItems', 'deleteConfigItems']),
+    ...mapActions(['updateSettingsData', 'updatePayloadData']),
 
-    checkDataScheduleItem(event) {
-      logger.dev('[MainBodySettings] - checkDataScheduleItem:', event);
-      let action = 'show';
-      if (event.value_type === 'deviation' && event.title === 'value_type') action = 'hide';
-      const arrayTitle = this.settingsData?.payload?.config;
+    // ── Передача событий наверх (MainView.getComponentData) ──────────
+    emitToParent(action, event) {
       this.$emit('getComponentData', {
         action,
         updateState: event,
-        request: arrayTitle,
+        request: this.settingsData?.payload?.config,
       });
+    },
+
+    checkDataScheduleItem(event) {
+      let action = 'show';
+      if (event.value_type === 'deviation' && event.title === 'value_type') action = 'hide';
+      this.emitToParent(action, event);
     },
 
     checkDataNotificationItem(event) {
-      logger.dev('[MainBodySettings] - checkDataNotificationItem:', event);
-      let action = 'show';
-      if (
-        event.title === 'condition'
-        || event.title === 'notificationСhannel'
-        || event.title === 'permission'
-      ) {
-        action = 'hide';
-      }
-      const arrayTitle = this.settingsData?.payload?.config;
-      this.$emit('getComponentData', {
-        action,
-        updateState: event,
-        request: arrayTitle,
-      });
+      // ВНИМАНИЕ: в 'notificationСhannel' кириллическая «С» — ключ совпадает с серверным
+      const hideTitles = ['condition', 'notificationСhannel', 'permission'];
+      this.emitToParent(hideTitles.includes(event.title) ? 'hide' : 'show', event);
     },
 
     checkDataStatisticItem(event) {
-      logger.dev('[MainBodySettings] - checkDataStatisticItem:', event);
-      let action = 'hide';
-      if (event.title === 'sensityRate') action = 'show';
-      const arrayTitle = this.settingsData?.payload?.config;
-      this.$emit('getComponentData', {
-        action,
-        updateState: event,
-        request: arrayTitle,
-      });
+      this.emitToParent(event.title === 'sensityRate' ? 'show' : 'hide', event);
     },
 
-    setComponentParam(selectTitle) {
+    // ── Тип настроек ────────────────────────────────────────────────
+    setComponentParam() {
+      this.SET_TYPE_SETTINGS_ITEM(this.title);
       this.updateSettingsData({ field: 'type', value: 'post' });
-
-      if (selectTitle === 'Расписание') {
-        this.updatePayloadData({ config: 'schedules' });
-        this.loadConfigDataFromStore('schedules');
-      } else if (selectTitle === 'Уведомления') {
-        this.updatePayloadData({ config: 'notifications' });
-        this.loadConfigDataFromStore('notifications');
-      } else if (selectTitle === 'Аналитика') {
-        this.updatePayloadData({ config: 'statistics' });
-        this.loadConfigDataFromStore('statistics');
-      } else {
-        logger.warn('[MainBodySettings] - setComponentParam - неизвестный selectTitle:', selectTitle);
-      }
-    },
-
-    async loadConfigDataFromStore(configName) {
-      try {
-        const configData = await this.$store.dispatch(
-          'settingsConfig/getConfigDataFromStore',
-          { configName },
-        );
-        this[configName] = configData;
-        return configData;
-      } catch (error) {
-        logger.error('[MainBodySettings] - loadConfigDataFromStore - Ошибка:', error);
-        this[configName] = [];
-      }
-    },
-
-    formattedValue(value) {
-      if (typeof value === 'number') return value.toFixed(1);
-      return value;
-    },
-
-    async loadCurrentSettings() {
-      try {
-        const type = this.title;
-        switch (type) {
-          case 'schedules':
-          case 'notifications':
-          case 'statistics':
-            await this.loadData(type);
-            break;
-          default:
-            logger.warn('[MainBodySettings] - loadCurrentSettings - неизвестный type:', type);
-        }
-      } catch (error) {
-        logger.error('[MainBodySettings] - loadCurrentSettings:', error);
-      }
+      this.updatePayloadData({ config: this.title });
+      this.loadList(this.title);
     },
 
     cycleTitle() {
-      const currentIndex = this.availableTitles.indexOf(this.title);
-      const nextIndex = (currentIndex + 1) % this.availableTitles.length;
+      const nextIndex = (this.availableTitles.indexOf(this.title) + 1) % this.availableTitles.length;
       const nextTitle = this.availableTitles[nextIndex];
       logger.info(`[MainBodySettings] Title changed: ${this.title} → ${nextTitle}`);
       this.title = nextTitle;
-      this.SET_TYPE_SETTINGS_ITEM(nextTitle);
       this.$emit('title-changed', nextTitle);
     },
 
+    // ── Загрузка списка из хранилища ────────────────────────────────
+    isPendingDelete(configName, item) {
+      return this.pendingDeletes.some(
+        (p) => p.configName === configName
+          && p.id === item.id
+          && p.room === this.payloadRoom
+          && p.param === this.payloadParam,
+      );
+    },
+
+    async loadList(configName) {
+      // Защита от гонки: ответы могут приходить не в порядке запросов
+      const seq = ++this.loadSeq;
+      try {
+        const list = await this.$store.dispatch('settingsConfig/getConfigDataFromStore', { configName });
+        if (seq !== this.loadSeq) return;
+        this[configName] = list.filter((item) => !this.isPendingDelete(configName, item));
+      } catch (error) {
+        logger.error('[MainBodySettings] - loadList:', error);
+        if (seq === this.loadSeq) this[configName] = [];
+      }
+    },
+
+    // ── Добавление элементов ────────────────────────────────────────
     addNewItem() {
-      const type = this.title;
-      this.currentItemType = type;
-      switch (type) {
-        case 'schedules':
-          this.addNewSchedule();
-          break;
-        case 'notifications':
-          this.defaultItemValues = {
-            roomKey: this.settingsData.payload.room,
-            paramKey: this.effectiveParamKey,
-            threshold: this.effectiveSetpointValue || 0,
-            condition: 'greater_than',
-          };
-          this.addNewNotification();
-          break;
-        case 'statistics':
-          this.defaultItemValues = {
-            roomKey: this.settingsData.payload.room,
-            paramKey: this.effectiveParamKey,
-            chartType: 'line',
-            period: 'day',
-          };
-          this.addNewStatistic();
-          break;
-        default:
-          logger.warn(`[MainBodySettings] - addNewItem - неизвестный type: ${type}`);
+      if (!this.settingsData || !this.payloadRoom || !this.payloadParam) {
+        this.showWarning('Сначала выберите комнату и параметр.');
+        return;
       }
+      this.createConfigItem(this.title).catch(() => { /* ошибка уже показана пользователю */ });
     },
 
+    // Подбирает свободное время для нового элемента.
+    // Возвращает { startTime, endTime } или null, если свободного интервала нет.
     async generationTime(configName) {
-      let startTime, endTime;
       try {
-        const { startTime: st, endTime: et } = createTimePoint();
-        startTime = st;
-        endTime = et;
-        const hasOverlap = await this.$store.dispatch('settingsConfig/checkScheduleOverlap', {
-          startTime,
-          endTime,
-          configName,
+        const { startTime, endTime } = createTimePoint();
+        const result = await this.$store.dispatch('settingsConfig/checkScheduleOverlap', {
+          startTime, endTime, configName,
         });
 
-        if (hasOverlap.massage) {
-          alert(hasOverlap.massage);
-          return;
+        if (result?.hasOverlap) {
+          if (result.newStartTime && result.newEndTime) {
+            return { startTime: result.newStartTime, endTime: result.newEndTime };
+          }
+          // Раньше здесь была опечатка (result.massage) и сообщение не показывалось,
+          // а элемент создавался с ПЕРЕСЕКАЮЩИМСЯ временем.
+          this.showWarning(result.message || 'Не удалось найти свободное время.');
+          return null;
         }
-        if (hasOverlap.newStartTime || hasOverlap.newEndTime) {
-          startTime = hasOverlap.newStartTime;
-          endTime = hasOverlap.newEndTime;
-        }
+        return { startTime, endTime };
       } catch (error) {
-        logger.error('[MainBodySettings] - generationTime - Ошибка:', error);
-        if (!confirm('Ошибка проверки пересечения. Создать расписание вручную?')) {
-          return;
-        }
-      }
-      if (startTime != undefined && endTime != undefined) return { startTime, endTime };
-      return undefined;
-    },
-
-    async addNewSchedule() {
-      const limitCheck = await this.$store.dispatch('config/checkLimitBeforeAdd', 'schedules');
-      if (!limitCheck.allowed) {
-        this.$store.dispatch('popup/show', {
-          message: `Достигнут предел количества элементов расписания (${limitCheck.limit}).`,
-          type: 'warning',
-          duration: 2000,
-        });
-        return;
-      }
-
-      const settingsData = this.$store.state.setpointsManager?.settingsData;
-      const room = settingsData?.payload?.room;
-      const param = settingsData?.payload?.param;
-      const value = settingsData?.payload?.value || 0;
-
-      await this.loadConfigDataFromStore('schedules');
-      const existingSchedules = this.schedules.filter(s => s.room === room && s.param === param);
-
-      const newTime = await this.generationTime('schedules');
-      if (!newTime) return;
-      const { startTime, endTime } = newTime;
-
-      let newId = 1;
-      if (existingSchedules.length > 0) {
-        const existingIds = existingSchedules
-          .map(s => s.id)
-          .filter(id => id != null && typeof id === 'number');
-        if (existingIds.length > 0) newId = Math.max(...existingIds) + 1;
-      }
-
-      const newSchedule = {
-        id: newId,
-        startTime,
-        endTime,
-        value,
-        value_type: 'absolute',
-        unit: this.unit || '',
-        room,
-        param,
-        createdAt: nowMoscow(),
-        updatedAt: nowMoscow(),
-        days: [1, 2, 3, 4, 5],
-      };
-
-      this.schedules = [...this.schedules, newSchedule];
-
-      try {
-        await this.$store.dispatch('settingsConfig/addConfigLocally', {
-          room, param, configName: 'schedules', configData: newSchedule,
-        });
-        await this.saveConfigItems({
-          room: this.settingsData.payload.room,
-          param: this.effectiveParamKey,
-          configName: 'schedules',
-          configData: newSchedule,
-        });
-        this.showSuccessNotification('Расписание успешно создано');
-        await this.loadData('schedules');
-        return newSchedule;
-      } catch (error) {
-        logger.error('[MainBodySettings] - addNewSchedule - Ошибка:', error);
-        this.schedules = this.schedules.filter(s => s.id !== newId);
-        alert('Не удалось сохранить расписание на сервере. Попробуйте еще раз.');
-        throw error;
+        logger.error('[MainBodySettings] - generationTime:', error);
+        this.showWarning('Ошибка проверки пересечения времени.');
+        return null;
       }
     },
 
-    handleDeleteConfigItem(id, configName) {
-      this.pendingDeletions[id] = id;
-      if (!this.configDataToDelete.includes(id)) this.configDataToDelete.push(id);
-      this[configName] = this[configName].filter(s => s.id !== id);
-      logger.info(`[MainBodySettings] - handleDeleteConfigItem - ${id} → удаление`);
+    // Следующий id: учитываем и существующие, и ожидающие удаления элементы —
+    // иначе новый элемент получил бы id удаляемого и был бы удалён вместе с ним.
+    nextId(configName, room, param) {
+      const ids = [
+        ...this[configName].filter((i) => i.room === room && i.param === param).map((i) => i.id),
+        ...this.pendingDeletes
+          .filter((p) => p.configName === configName && p.room === room && p.param === param)
+          .map((p) => p.id),
+      ].filter((id) => typeof id === 'number');
+      return ids.length ? Math.max(...ids) + 1 : 1;
     },
 
-    async addNewNotification() {
-      const limitCheck = await this.$store.dispatch('config/checkLimitBeforeAdd', 'notifications');
-      if (!limitCheck.allowed) {
-        this.$store.dispatch('popup/show', {
-          message: `Достигнут предел количества элементов уведомлений (${limitCheck.limit}).`,
-          type: 'warning',
-          duration: 2000,
-        });
-        return;
+    buildItem(configName, { id, room, param, value, time }) {
+      const now = nowMoscow();
+      const base = { id, room, param, createdAt: now, updatedAt: now };
+
+      if (configName === 'schedules') {
+        return {
+          ...base,
+          startTime: time.startTime,
+          endTime: time.endTime,
+          value,
+          value_type: 'absolute',
+          unit: this.unit || '',
+          days: [1, 2, 3, 4, 5],
+        };
       }
-
-      const settingsData = this.$store.state.setpointsManager?.settingsData;
-      const value = settingsData?.payload?.value || 0;
-      const room = this.settingsData.payload.room;
-      const param = this.effectiveParamKey;
-
-      const existingNotifications = this.notifications.filter(n => n.room === room && n.param === param);
-
-      let newId = 1;
-      if (existingNotifications.length > 0) {
-        const existingIds = existingNotifications
-          .map(n => n.id)
-          .filter(id => typeof id === 'number');
-        if (existingIds.length > 0) newId = Math.max(...existingIds) + 1;
+      if (configName === 'notifications') {
+        return {
+          ...base,
+          condition: 'greater_than',
+          value,
+          notificationСhannel: 0, // кириллическая «С» — ключ сервера
+          frequency: 0,
+          permission: true,
+          status: false,
+          startTime: time.startTime,
+          endTime: time.endTime,
+        };
       }
-
-      const newTime = await this.generationTime('notifications');
-      if (!newTime) return;
-      const { startTime, endTime } = newTime;
-
-      const newNotification = {
-        id: newId,
-        condition: 'greater_than',
-        value,
-        notificationСhannel: 0,
-        frequency: 0,
-        permission: true,
-        status: false,
-        startTime,
-        endTime,
-        createdAt: nowMoscow(),
-        updatedAt: nowMoscow(),
-        room,
-        param,
-      };
-
-      this.notifications = [...this.notifications, newNotification];
-
-      try {
-        await this.$store.dispatch('settingsConfig/addConfigLocally', {
-          room, param, configName: 'notifications', configData: newNotification,
-        });
-        await this.saveConfigItems({
-          room: this.settingsData.payload.room,
-          param: this.effectiveParamKey,
-          configName: 'notifications',
-          configData: newNotification,
-        });
-        this.showSuccessNotification('Уведомление успешно создано');
-        await this.loadData('notifications');
-        return newNotification;
-      } catch (error) {
-        logger.error('[MainBodySettings] - addNewNotification - Ошибка:', error);
-        this.notifications = this.notifications.filter(s => s.id !== newId);
-        alert('Не удалось сохранить Уведомление на сервере. Попробуйте еще раз.');
-        throw error;
-      }
-    },
-
-    async addNewStatistic() {
-      const limitCheck = await this.$store.dispatch('config/checkLimitBeforeAdd', 'statistics');
-      if (!limitCheck.allowed) {
-        this.$store.dispatch('popup/show', {
-          message: `Достигнут предел количества элементов аналитики (${limitCheck.limit}).`,
-          type: 'warning',
-          duration: 2000,
-        });
-        return;
-      }
-
-      const room = this.settingsData.payload.room;
-      const param = this.effectiveParamKey;
-
-      const existingStatistics = this.statistics.filter(n => n.room === room && n.param === param);
-
-      let newId = 1;
-      if (existingStatistics.length > 0) {
-        const existingIds = existingStatistics
-          .map(n => n.id)
-          .filter(id => typeof id === 'number');
-        if (existingIds.length > 0) newId = Math.max(...existingIds) + 1;
-      }
-
-      const newStatistic = {
-        id: newId,
+      return {
+        ...base,
         value: true,
         setpoint: false,
         devSetpoint: false,
         changeSeason: false,
         savePeriod: 0,
         sensityRate: 0.5,
-        createdAt: nowMoscow(),
-        updatedAt: nowMoscow(),
-        room,
-        param,
       };
+    },
 
-      this.statistics = [...this.statistics, newStatistic];
+    async createConfigItem(configName) {
+      const limitCheck = await this.$store.dispatch('config/checkLimitBeforeAdd', configName);
+      if (!limitCheck.allowed) {
+        this.$store.dispatch('popup/show', {
+          message: `Достигнут предел количества ${LIMIT_TEXT[configName]} (${limitCheck.limit}).`,
+          type: 'warning',
+          duration: 2000,
+        });
+        return null;
+      }
+
+      const room = this.payloadRoom;
+      const param = this.payloadParam;
+      const value = this.settingsData?.payload?.value ?? 0;
+
+      let time = null;
+      if (configName !== 'statistics') {
+        time = await this.generationTime(configName);
+        if (!time) return null;
+      }
+
+      const item = this.buildItem(configName, {
+        id: this.nextId(configName, room, param),
+        room, param, value, time,
+      });
 
       try {
+        // Оптимистично — в локальное хранилище; список обновится через storeSlice
         await this.$store.dispatch('settingsConfig/addConfigLocally', {
-          room, param, configName: 'statistics', configData: newStatistic,
+          room, param, configName, configData: item,
         });
-        await this.saveConfigItems({
-          room: this.settingsData.payload.room,
-          param: this.effectiveParamKey,
-          configName: 'statistics',
-          configData: newStatistic,
-        });
-        this.showSuccessNotification('Аналитика успешно создана');
-        await this.loadData('statistics');
-        return newStatistic;
+        await this.saveConfigItems({ room, param, configName, configData: item });
+        this.showSuccessNotification(CREATED_TEXT[configName]);
+        return item;
       } catch (error) {
-        logger.error('[MainBodySettings] - addNewStatistic - Ошибка:', error);
-        this.statistics = this.statistics.filter(s => s.id !== newId);
-        alert('Не удалось сохранить Аналитику на сервере. Попробуйте еще раз.');
+        logger.error(`[MainBodySettings] - createConfigItem(${configName}):`, error);
+        // Откат оптимистичного добавления
+        await this.$store.dispatch('config/removeConfigItemsLocally', {
+          configName, room, param, ids: [item.id],
+        });
+        this.$store.dispatch('popup/show', {
+          message: 'Не удалось сохранить на сервере. Попробуйте ещё раз.',
+          type: 'error',
+          duration: 3000,
+        });
         throw error;
       }
     },
 
-    async saveNewConfig({ configName, configData, room, param }) {
-      try {
-        await this.$store.dispatch('settingsConfig/addConfigLocally', {
-          room, param, configName, configData,
-        });
-        await this.saveConfigItems({
-          room: this.settingsData.payload.room,
-          param: this.effectiveParamKey,
-          configName,
-          configData,
-        });
-        alert('Настройка успешно сохранена');
-        return configData;
-      } catch (error) {
-        logger.error(`[MainBodySettings] saveNewConfig error for ${configName}:`, error);
-        throw error;
+    // ── Удаление (отложенное до закрытия экрана) ────────────────────
+    handleDeleteConfigItem(id, configName) {
+      const room = this.payloadRoom;
+      const param = this.payloadParam;
+      if (id == null || !room || !param) return;
+
+      const exists = this.pendingDeletes.some(
+        (p) => p.configName === configName && p.id === id && p.room === room && p.param === param,
+      );
+      if (!exists) this.pendingDeletes.push({ configName, room, param, id });
+      this[configName] = this[configName].filter((item) => item.id !== id);
+      logger.info(`[MainBodySettings] - удаление ${configName}#${id} отложено до закрытия`);
+    },
+
+    // Отправляет накопленные удаления. Группируем по (тип, комната, параметр):
+    // раньше id всех типов собирались в один список и уходили с текущим title.
+    async flushDeletions() {
+      if (this.pendingDeletes.length === 0) return true;
+
+      const batch = this.pendingDeletes.splice(0);
+      const groups = new Map();
+      batch.forEach((p) => {
+        const key = `${p.configName}|${p.room}|${p.param}`;
+        if (!groups.has(key)) groups.set(key, { ...p, ids: [] });
+        groups.get(key).ids.push(p.id);
+      });
+
+      let ok = true;
+      for (const g of groups.values()) {
+        try {
+          await this.deleteConfigItems({
+            room: g.room, param: g.param, configName: g.configName, configsIds: g.ids,
+          });
+        } catch (error) {
+          ok = false;
+          logger.error('[MainBodySettings] - flushDeletions:', error);
+          this.$store.dispatch('popup/show', {
+            message: 'Не удалось удалить элементы на сервере.',
+            type: 'error',
+            duration: 3000,
+          });
+        }
       }
+      return ok;
     },
 
     async closeMainBodySettings() {
-      logger.dev('[MainBodySettings] - closeMainBodySettings:', this.title);
-
-      if (this.configDataToDelete.length > 0) {
-        this.$store.dispatch('settingsConfig/deleteConfigItems', {
-          room: this.settingsData.payload.room,
-          param: this.effectiveParamKey,
-          configName: this.title,
-          configsIds: [...this.configDataToDelete],
-        });
-        this.configDataToDelete = [];
-        this.pendingDeletions = {};
-      }
-
-      // Возврат на главный экран. При прямом заходе по URL history.length может быть 1 —
-      // тогда сразу push('/'), минуя go(-1).
-      if (window.history.length > 1) {
-        this.$router.go(-1);
-      } else {
-        this.$router.push('/');
-      }
-
-      this.$emit('close');
-    },
-
-    async loadData(dataType, room, param) {
+      if (this.closing) return;
+      this.closing = true;
       try {
-        let result = [];
-        const dID = this.dID;
-        const configData = this.$store.state.config?.[dataType]?.[dID];
-
-        if (configData && configData[room] && configData[room][param]) {
-          result = configData[room][param];
-        } else {
-          const localKey = `${dID}_${dataType}`;
-          const localConfig = localStorage.getItem(localKey);
-          if (localConfig) {
-            try {
-              const parsedConfig = JSON.parse(localConfig);
-              if (parsedConfig[room] && parsedConfig[room][param]) {
-                result = parsedConfig[room][param];
-              }
-            } catch (error) {
-              logger.error('[MainBodySettings] - loadData - ошибка парсинга localStorage:', error);
-            }
-          }
-        }
-
-        switch (dataType) {
-          case 'schedules': this.schedules = [...result]; break;
-          case 'notifications': this.notifications = [...result]; break;
-          case 'statistics': this.statistics = [...result]; break;
-        }
-      } catch (error) {
-        logger.error('[MainBodySettings] - loadData - Ошибка:', error);
-        switch (dataType) {
-          case 'schedules': this.schedules = []; break;
-          case 'notifications': this.notifications = []; break;
-          case 'statistics': this.statistics = []; break;
-        }
+        await this.flushDeletions();
+      } finally {
+        // history.length учитывает и чужие сайты. vue-router кладёт в history.state.back
+        // предыдущий маршрут ПРИЛОЖЕНИЯ — по нему и определяем, есть ли куда вернуться.
+        if (window.history.state?.back) this.$router.back();
+        else this.$router.push('/');
+        this.$emit('close');
       }
     },
 
-    handleFieldSelected({ scheduleId, field }) {
-      this.activeSelection = { scheduleId, field };
+    // ── Выделение полей / клики ─────────────────────────────────────
+    // Дочерние компоненты шлют разные ключи ({scheduleId, field}, {notificationId, field}…).
+    // Раньше сохранялись только scheduleId и field — выделение в уведомлениях
+    // и аналитике не работало. Теперь сохраняем объект целиком.
+    handleFieldSelected(selection) {
+      this.activeSelection = selection;
     },
 
     handleClickOutside(event) {
@@ -732,24 +503,12 @@ export default {
       this.activeSelection = null;
     },
 
-    handleEditNotification(id, event) {
-      logger.dev('[MainBodySettings] - handleEditNotification', id, event);
-    },
-
-    handleEditAnalytic(id, event) {
-      logger.dev('[MainBodySettings] - handleEditAnalytic', id, event);
-    },
-
     showSuccessNotification(message) {
-      this.$store.dispatch('popup/show', {
-        message,
-        type: 'success',
-        duration: 2000,
-      });
+      this.$store.dispatch('popup/show', { message, type: 'success', duration: 2000 });
+    },
+    showWarning(message) {
+      this.$store.dispatch('popup/show', { message, type: 'warning', duration: 3000 });
     },
   },
 };
 </script>
-
-<style lang="css" src="../assets/mainStyle.css">
-</style>

@@ -4,6 +4,47 @@ import { getTokenExpiry } from '@/utils/jwt';
 
 const STORAGE_KEY = 'authSession';
 
+// Ключи localStorage, которые принадлежат конкретной сессии пользователя.
+// При выходе их нужно чистить, иначе следующий пользователь на этом
+// устройстве унаследует выбранную комнату/параметр.
+const SESSION_BOUND_KEYS = ['roomKey', 'paramKey', 'deviceKey', 'setpointKey', 'clearKey'];
+
+const MIN_REFRESH_DELAY = 60 * 1000;          // не чаще раза в минуту (защита от кривых часов)
+const MAX_TIMER_DELAY = 2 ** 31 - 1;          // лимит setTimeout
+const SESSION_ERROR_CODES = ['NO_SESSION', 'TIMEOUT', 'TOKEN_REVOKED'];
+// Ошибки сети — НЕ повод разлогинивать: токен может быть валиден
+const TRANSIENT_CODES = ['TIMEOUT', 'NO_CONNECTION', 'SUPERSEDED'];
+
+let refreshTimer = null;
+
+function isTransient(error) {
+  return !error?.code || TRANSIENT_CODES.includes(error.code);
+}
+
+function readSession() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    localStorage.removeItem(STORAGE_KEY);
+    return null;
+  }
+}
+
+function writeSession(data) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    logger.warn('[auth] не удалось сохранить сессию:', e.message);
+  }
+}
+
+function clearStoredSession() {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem('authData'); // старый ключ
+  SESSION_BOUND_KEYS.forEach((k) => localStorage.removeItem(k));
+}
+
 export default {
   namespaced: true,
 
@@ -56,9 +97,6 @@ export default {
       state.mustChangePassword = false;
       state.expiresAt = null;
     },
-    SET_MUST_CHANGE_PASSWORD(state, value) {
-      state.mustChangePassword = !!value;
-    },
   },
 
   actions: {
@@ -66,7 +104,6 @@ export default {
     async login({ commit, dispatch }, { username, password }) {
       commit('AUTH_REQUEST');
       try {
-        await dispatch('websocket/connect', null, { root: true });
         const response = await dispatch('websocket/send', {
           type: 'auth',
           request: 'login',
@@ -78,17 +115,8 @@ export default {
           throw new Error(response?.payload?.message || 'Неверный ответ сервера');
         }
 
-        const { token, username: uname, userlevel, dID, mustChangePassword } = response.payload;
-        const userData = { username: uname, userlevel, dID };
-
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          token, user: userData, dID, level: userlevel, mustChangePassword: !!mustChangePassword,
-        }));
-
-        commit('AUTH_SUCCESS', {
-          token, user: userData, dID, level: userlevel, mustChangePassword,
-        });
-        logger.info('[auth] - login успешен:', uname, 'level', userlevel);
+        const userData = await dispatch('applyLoginResponse', response.payload);
+        logger.info('[auth] - login успешен:', userData.username, 'level', userData.userlevel);
         return userData;
       } catch (error) {
         commit('AUTH_ERROR', error);
@@ -96,18 +124,27 @@ export default {
       }
     },
 
-    // ── Восстановление сессии по JWT ────────────────────────────────
-    async resume({ commit, dispatch }) {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return null;
+    // Общая часть login/resume: сохранить сессию и запустить авто-refresh
+    applyLoginResponse({ commit, dispatch }, payload) {
+      const { token, username, userlevel, dID, mustChangePassword } = payload;
+      const userData = { username, userlevel, dID };
 
-      let saved;
-      try { saved = JSON.parse(raw); }
-      catch { localStorage.removeItem(STORAGE_KEY); return null; }
+      writeSession({
+        token, user: userData, dID, level: userlevel, mustChangePassword: !!mustChangePassword,
+      });
+      commit('AUTH_SUCCESS', {
+        token, user: userData, dID, level: userlevel, mustChangePassword,
+      });
+      dispatch('scheduleRefresh');
+      return userData;
+    },
+
+    // ── Восстановление сессии по JWT ────────────────────────────────
+    async resume({ dispatch }) {
+      const saved = readSession();
       if (!saved?.token) return null;
 
       try {
-        await dispatch('websocket/connect', null, { root: true });
         const response = await dispatch('websocket/send', {
           type: 'auth',
           request: 'resume',
@@ -118,23 +155,17 @@ export default {
         if (response?.request !== 'loginSuccess') {
           throw new Error(response?.payload?.message || 'Сессия недействительна');
         }
-
-        const { token, username, userlevel, dID, mustChangePassword } = response.payload;
-        const userData = { username, userlevel, dID };
-
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          token, user: userData, dID, level: userlevel, mustChangePassword: !!mustChangePassword,
-        }));
-
-        commit('AUTH_SUCCESS', {
-          token, user: userData, dID, level: userlevel, mustChangePassword,
-        });
-        logger.info('[auth] - resume успешен:', username);
+        const userData = await dispatch('applyLoginResponse', response.payload);
+        logger.info('[auth] - resume успешен:', userData.username);
         return userData;
       } catch (error) {
-        logger.warn('[auth] - resume не удался:', error.code || error.message);
-        localStorage.removeItem(STORAGE_KEY);
-        commit('LOGOUT');
+        if (isTransient(error)) {
+          // Сервер недоступен — сессию НЕ трогаем, resume повторится при реконнекте
+          logger.warn('[auth] - resume отложен (нет связи):', error.code || error.message);
+          return null;
+        }
+        logger.warn('[auth] - resume отклонён сервером:', error.code || error.message);
+        await dispatch('clearSession');
         return null;
       }
     },
@@ -150,16 +181,16 @@ export default {
         if (response?.request !== 'refreshSuccess') return null;
 
         const newToken = response.payload.token;
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        const saved = readSession() || {};
         saved.token = newToken;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+        writeSession(saved);
 
         commit('AUTH_SUCCESS', {
           token: newToken,
-          user: saved.user,
-          dID: saved.dID,
-          level: saved.level,
-          mustChangePassword: saved.mustChangePassword,
+          user: saved.user ?? state.user,
+          dID: saved.dID ?? state.dID,
+          level: saved.level ?? state.level,
+          mustChangePassword: saved.mustChangePassword ?? state.mustChangePassword,
         });
         return newToken;
       } catch (e) {
@@ -168,8 +199,30 @@ export default {
       }
     },
 
+    // Планирует продление токена на ~75% оставшегося срока жизни
+    scheduleRefresh({ state, dispatch }) {
+      clearTimeout(refreshTimer);
+      refreshTimer = null;
+      if (!state.token || !state.expiresAt) return;
+
+      const remaining = state.expiresAt - Date.now();
+      const delay = Math.min(Math.max(remaining * 0.75, MIN_REFRESH_DELAY), MAX_TIMER_DELAY);
+
+      refreshTimer = setTimeout(async () => {
+        refreshTimer = null;
+        if (!state.token) return;
+        const newToken = await dispatch('refresh');
+        if (newToken) {
+          dispatch('scheduleRefresh');
+        } else if (state.token) {
+          // не вышло (обрыв связи) — повторим через минуту
+          refreshTimer = setTimeout(() => dispatch('scheduleRefresh'), MIN_REFRESH_DELAY);
+        }
+      }, delay);
+    },
+
     // ── Смена собственного пароля ───────────────────────────────────
-    async changePassword({ commit, dispatch }, { oldPassword, newPassword }) {
+    async changePassword({ commit, dispatch, state }, { oldPassword, newPassword }) {
       const response = await dispatch('websocket/send', {
         type: 'auth',
         request: 'changePassword',
@@ -182,57 +235,78 @@ export default {
       }
 
       const newToken = response.payload.token;
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      const saved = readSession() || {};
       saved.token = newToken;
       saved.mustChangePassword = false;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+      writeSession(saved);
 
       commit('AUTH_SUCCESS', {
         token: newToken,
-        user: saved.user,
-        dID: saved.dID,
-        level: saved.level,
+        user: saved.user ?? state.user,
+        dID: saved.dID ?? state.dID,
+        level: saved.level ?? state.level,
         mustChangePassword: false,
       });
+      dispatch('scheduleRefresh');
       return true;
     },
 
     // ── Выход ───────────────────────────────────────────────────────
-    async logout({ commit, dispatch, state }) {
-      try {
-        if (state.token) {
-          await dispatch('websocket/send', {
-            type: 'auth', request: 'logout', name: '', payload: {},
-          }, { root: true });
+    async logout({ dispatch, state }) {
+      if (state.token) {
+        // Не блокируем интерфейс, если сервер недоступен: максимум 2 c
+        try {
+          await Promise.race([
+            dispatch('websocket/send', {
+              type: 'auth', request: 'logout', name: '', payload: {},
+            }, { root: true }),
+            new Promise((resolve) => setTimeout(resolve, 2000)),
+          ]);
+        } catch (e) {
+          logger.warn('[auth] - logout на сервере не удался:', e.message);
         }
-      } catch (e) {
-        logger.warn('[auth] - logout на сервере не удался:', e.message);
       }
+      await dispatch('clearSession');
+    },
+
+    // Полная очистка клиентской сессии (общая для logout / accessError / resume-reject)
+    async clearSession({ commit, dispatch }) {
+      clearTimeout(refreshTimer);
+      refreshTimer = null;
+
       commit('LOGOUT');
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem('authData'); // старый ключ
+      clearStoredSession();
+
+      // Данные предыдущего пользователя не должны остаться в памяти
+      commit('RESET_SESSION_DATA', null, { root: true });
+      commit('config/RESET', null, { root: true });
       dispatch('dropdown/hide', null, { root: true });
     },
 
     // ── Обработка accessError, прилетевшего в WS ────────────────────
-    handleAccessError({ commit, dispatch }, payload) {
+    async handleAccessError({ state, dispatch }, payload) {
       const code = payload?.code;
       logger.warn('[auth] - accessError:', payload);
 
-      if (code === 'NO_SESSION' || code === 'TIMEOUT' || code === 'TOKEN_REVOKED') {
-        commit('LOGOUT');
-        localStorage.removeItem(STORAGE_KEY);
+      if (SESSION_ERROR_CODES.includes(code)) {
+        if (!state.token) return; // уже вышли — повторный попап не нужен
+
+        await dispatch('clearSession');
         dispatch('popup/show', {
           message: 'Сессия истекла. Войдите снова.',
           type: 'warning',
           duration: 2500,
         }, { root: true });
-        if (window.location.pathname !== '/login') {
-          setTimeout(() => { window.location.href = '/login'; }, 800);
+
+        // SPA-навигация вместо window.location: учитывает base '/app/'
+        // и не перезагружает страницу.
+        const { default: router } = await import('@/router/routes.js');
+        if (router.currentRoute.value.name !== 'Login') {
+          router.push('/login');
         }
       } else if (code === 'FORBIDDEN') {
         dispatch('popup/show', {
-          message: payload.message || 'Недостаточно прав для этой операции',
+          message: payload?.message || 'Недостаточно прав для этой операции',
           type: 'error',
           duration: 3000,
         }, { root: true });

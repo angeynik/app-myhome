@@ -127,7 +127,6 @@ export default {
       this.show({
         items: [
           { label: 'Профиль',   action: 'profile'  },
-          { label: 'Настройки', action: 'settings' },
           { label: 'Выйти',     action: 'logout'   },
           { divider: true },
           {
@@ -358,4 +357,3 @@ export default {
 };
 </script>
 
-<style lang="css" src="@/assets/mainStyle.css"></style>

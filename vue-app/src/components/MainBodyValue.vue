@@ -66,18 +66,13 @@ export default {
     },
 
     formattedValue(value) {
+      if (value === null || value === undefined) return '—'; // нет данных
       if (typeof value === 'number') return value.toFixed(1);
       return value;
     },
   },
 };
 </script>
-
-<style lang="css" src="../assets/mainStyle.css">
-.selected {
-  border: 10px solid var(--orange);
-}
-</style>
 
 <style scoped>
 /* Контекст комнаты — приглушённый, чтобы не конкурировать с параметром */

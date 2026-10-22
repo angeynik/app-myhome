@@ -235,13 +235,6 @@ export default {
     },
   },
 
-  mounted() {
-    document.addEventListener('click', this.handleClickOutside);
-  },
-
-  beforeUnmount() {
-    document.removeEventListener('click', this.handleClickOutside);
-  },
 
   methods: {
     formatDate, 
@@ -255,23 +248,13 @@ export default {
       );
     },
 
-    handleClickOutside(event) {
-      if (this.$el && !this.$el.contains(event.target)) {
-        // сброс выделения – управляется родителем
-      }
-    },
 
-// Обработка событий изменения компонента
     toggleCondition(event) {
       this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
-      // Изменения Условия срабатывания - condition 
       if (!this.notificationData) return;
-      console.log('[MainBodyNotifications] - toggleCondition - Изменяем Условие срабатывания');
       event.stopPropagation();
       const currentIndex = CONDITIONS.indexOf(this.notificationData.condition);
-      const currentCondition = CONDITIONS[(currentIndex)];
       const nextCondition = CONDITIONS[(currentIndex + 1) % CONDITIONS.length];
-      console.log('[MainBodyNotifications] - toggleCondition - текущее Условие - ', currentCondition,' новое Условие -', nextCondition);
 
       this.updatePayloadData({ 
         id: this.notificationData.id,
@@ -279,21 +262,17 @@ export default {
         value_name: 'condition',
       });
 
-      // Отправляем событие родителю для немедленного обновления
       this.$emit('getDataNotificationItem', {
         title: 'condition',
         value_type: '',
         value: nextCondition,
       });
 
-      // Визуально выделяем поле
       this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'condition' });
     },
 
     editThreshold(event) {
-      console.log('[MainBodyNotifications] - editThreshold - Изменяем Значение срабатывания');
       event.stopPropagation();
-      console.log('[MainBodyNotifications] - editThreshold - Отправлем в index.js request : updatenotifications');
       this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
       this.setLimits({
         param: 'threshold',
@@ -321,7 +300,6 @@ export default {
     },
 
     editStartTime(event) {
-      //console.log('[MainBodyNotifications] - Редактирование startTime:', timeString);
       event.stopPropagation();
       this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'startTime' });
       const timeString = this.notificationData.startTime || '00:00';
@@ -335,43 +313,7 @@ export default {
       this.editTimeFieldWithToggle('endTime', timeString);
     },
 
-    // editTimeFieldWithToggle(selectedField, currentHours, currentMinutes) {
-    //   this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
-    //     //console.log('[MainBodyNotifications] - Редактирование:', currentHours, currentMinutes, this.scheduleData[this.selectedField]);
-    //     this.updatePayloadData({ 
-    //           id: this.notificationData.id,
-    //           value: this.notificationData[selectedField],
-    //           value_name: selectedField,
-    //           value_type: '',
-    //           value_details: this.timeEditMode
-    //         });
-    //     const editMode = this.timeEditMode;
-    //     // Устанавливаем лимиты
-    //       const params = {
-    //         param: editMode, 
-    //         valueType: '', 
-    //       }
-    //       //console.log('[MainBodyNotifications] - editValue - params:', params);
-    //       this.setLimits(params);
-
-    //     if (editMode === 'minutes') {
-    //         this.$emit('getDataNotificationItem', {
-    //             value: currentMinutes,
-    //             title: selectedField,
-    //             value_details: 'minutes'
-    //         });
-    //     } else {
-    //         this.$emit('getDataNotificationItem', {
-    //             value: currentHours,
-    //             title: selectedField,
-    //             value_details: 'hours'
-    //         });
-    //     }
         
-    //     // Переключаем режим
-    //     this.timeEditMode = this.timeEditMode === 'minutes' ? 'hours' : 'minutes';
-    //     //console.groupEnd();
-    // },
 
     editTimeFieldWithToggle(selectedField, timeString) {
   this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
@@ -380,7 +322,6 @@ export default {
   const currentPartValue = extractTimePart(timeString, editMode);
   const limits = getTimeLimits(editMode);
 
-  // Сохраняем в payload строку "HH:MM" — не число
   this.updatePayloadData({
     id: this.notificationData.id,
     value: timeString,         // всегда строка "HH:MM"
@@ -389,17 +330,14 @@ export default {
     value_details: editMode,   // 'hours' | 'minutes'
   });
 
-  // Лимиты через утилиту
   this.$store.dispatch('updateLimitsData', limits);
 
-  // Передаём числовое значение части для MainSetpoint
   this.$emit('getDataNotificationItem', {
     value: currentPartValue,   // число: часы ИЛИ минуты
     title: selectedField,      // 'startTime' | 'endTime'
     value_details: editMode,   // 'hours' | 'minutes'
   });
 
-  // Переключаем режим для следующего нажатия
   this.timeEditMode = editMode === 'minutes' ? 'hours' : 'minutes';
 },
 
@@ -420,14 +358,12 @@ export default {
         value_name: 'frequency',
       });
 
-      // Отправляем событие родителю для немедленного обновления
       this.$emit('getDataNotificationItem', {
         title: 'frequency',
         value_type: 'value',
         value: currentValue,
       });
 
-      // Визуально выделяем поле
       this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'frequency' });
 
     },
@@ -436,11 +372,9 @@ export default {
       event.stopPropagation();
       this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
       if (!this.notificationData) return;
-      console.log('[MainBodyNotifications] - toggleNotificationСhannel - Изменяем Канал уведомления');
       
       const typesCount = Object.keys(TYPE_LABELS).length; // 3
       const currentValue = this.notificationData.notificationСhannel;
-      // Убедимся, что currentValue число
       const currentIndex = Number(currentValue);
       const nextIndex = (currentIndex + 1) % typesCount;
       const nextValue = nextIndex; // 0,1,2
@@ -462,7 +396,6 @@ export default {
       this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'notifСhannel' });
     },
 
-
     togglePermission(event) {
       event.stopPropagation();
       this.updateSettingsData({ field: 'request', value: 'updatenotifications' });
@@ -474,14 +407,12 @@ export default {
         value_name: 'permission',
         value_type: '',
       });
-      // Отправляем событие родителю для немедленного обновления
       this.$emit('getDataNotificationItem', {
         title: 'permission',
         value_type: '',
         value: newEnabled,
       });
 
-      // Визуально выделяем поле
       this.$emit('field-selected', { notificationId: this.notificationData.id, field: 'permission' });
     },
 
@@ -490,22 +421,11 @@ export default {
         logger.error('[MainBodyNotifications] - deleteNotificationItem - нет ID');
         return;
       }
-      console.log('[MainBodySchedule] - deleteNotificationItem - Список Уведомлений ', this.notificationData);
       const notificationTitle = this.notificationData.paramTitle || ` ID Уведомления : ${this.notificationData.id}`;
       
-      // Запрос подтверждения
-      if (!confirm(`Удалить расписание "${notificationTitle}"?\n\nУдаление будет применено после сохранения изменений.`)) {
+      if (!confirm(`Удалить уведомление "${notificationTitle}"?\n\nУдаление будет применено после сохранения изменений.`)) {
         return;
       }
-
-
-
-
-
-
-
-      // const label = `уведомление ID: ${this.notificationData.id}`;
-      // if (!confirm(`Удалить ${label}?\n\nУдаление будет применено после сохранения изменений.`)) return;
 
       this.$emit('delete-notification', {
         id: this.notificationData.id,
@@ -522,4 +442,3 @@ export default {
 };
 </script>
 
-<style lang="css" src="../assets/mainStyle.css"></style>

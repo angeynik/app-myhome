@@ -200,16 +200,8 @@ export default {
       return typeof v === 'number' ? v.toFixed(1) : v;
     },
 
-
   },
 
-  mounted() {
-    document.addEventListener('click', this.handleClickOutside);
-  },
-
-  beforeUnmount() {
-    document.removeEventListener('click', this.handleClickOutside);
-  },
 
   methods: {
     formatDate, 
@@ -222,21 +214,14 @@ export default {
         this.activeSelection?.field === fieldName
       );
     },
-    handleClickOutside(event) {
-      if (this.$el && !this.$el.contains(event.target)) {
-        // сброс выделения – управляется родителем
-      }
-    },
 
-  selectValue (event, fieldName) {
-    event.stopPropagation();
-    console.log('[MainBodyStatistic] - selectValue - Определяем выбранный параметр', fieldName);
+  // selectValue (event, fieldName) {
+  //   event.stopPropagation();
 
-  }, 
+  // }, 
 
   toggleValue (event, fieldName) {
     event.stopPropagation();
-    console.log('[MainBodyStatistic] - selectValue - Определяем выбранный параметр', fieldName);
     this.$emit('field-selected', { statisticId: this.statisticData.id, field: fieldName });
     this.updateSettingsData({ field: 'request', value: 'updatestatistics' });
 
@@ -248,14 +233,11 @@ export default {
         value_name: fieldName,
         value_type: '',
       });
-      // Отправляем событие родителю для немедленного обновления
       this.$emit('getDataStatisticItem', {
         title: fieldName,
         value_type: '',
         value: newValue,
       });
-
-
 
   },
   formatPeriodLabel(period) {
@@ -280,7 +262,6 @@ export default {
     const currentIndex = PERIODS.indexOf(current);
     const nextIndex = (currentIndex + 1) % PERIODS.length;
     const nextPeriod = PERIODS[nextIndex];
-    console.log('[MainBodyStatistic] - cycleSavePeriod - Изменяем Период срабатывания, текущий - ', current, ' слдующий - ', nextPeriod);
     
     this.updatePayloadData({
       id: this.statisticData.id,
@@ -299,7 +280,6 @@ export default {
 
   editSensityRate(event) {
       event.stopPropagation();
-      console.log('[MainBodyStatistic] - editSensityRate - Изменяем Значение срабатывания');
       this.$emit('field-selected', { statisticId: this.statisticData.id, field: 'sensityRate' });
       this.updateSettingsData({ field: 'request', value: 'updatestatistics' });
 
@@ -330,11 +310,9 @@ export default {
         logger.error('[MainBodyStatistic] - deleteStatisticItem - нет ID');
         return;
       }
-      console.log('[MainBodyStatistic] - deleteStatisticItem - Список Уведомлений ', this.statisticData);
       const statisticTitle = this.statisticData.paramTitle || ` ID Уведомления : ${this.statisticData.id}`;
       
-      // Запрос подтверждения
-      if (!confirm(`Удалить Уведомление "${statisticTitle}"?\n\nУдаление будет применено после сохранения изменений.`)) {
+      if (!confirm(`Удалить аналитику "${statisticTitle}"?\n\nУдаление будет применено после сохранения изменений.`)) {
         return;
       }
 
@@ -353,14 +331,3 @@ export default {
 };
 </script>
 
-<style lang="css" src="../assets/mainStyle.css"></style>
-<!-- <style scoped>
-/* Убираем рамку только у .settings-block внутри .settings-column */
-  .settings-block.statistic-checkbox-field {
-    border: none;
-    border-radius: 0;
-    margin: 0;
-    background: transparent;
-    /* padding: 4px 12px; */
-  }
-</style> -->

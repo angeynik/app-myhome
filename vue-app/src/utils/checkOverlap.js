@@ -67,7 +67,8 @@ export function checkOverlap({
       const newStartMinutes = latestEndTime + 1;
       const newEndMinutes = newStartMinutes + 10;
 
-      if (newEndMinutes > 1440) {
+      // minutesToTime принимает 0..1439; 1440 вернул бы '00:00' (конец «раньше» начала)
+      if (newEndMinutes > 1439) {
         return {
           hasOverlap: true,
           newStartTime: null,
@@ -155,20 +156,7 @@ export function checkOverlap({
     }
   }
 
-  // Проверка границ суток
-  if (!adjustedValue) {
-    adjustedValue = valueToCheck;
-  }
-  const checkedMinutes = timeToMinutes(adjustedValue);
-  if (checkedMinutes < 0) {
-    adjustedValue = '00:00';
-    message = 'Время не может быть меньше 00:00';
-    hasOverlap = true;
-  } else if (checkedMinutes > 1440) {
-    adjustedValue = '24:00';
-    message = 'Время не может быть больше 24:00';
-    hasOverlap = true;
-  }
+  if (!adjustedValue) adjustedValue = valueToCheck;
 
   return {
     hasOverlap,
@@ -200,16 +188,4 @@ export function checkTimeOverlap({
     currentStartTime,
     currentEndTime,
   });
-}
-
-/** Проверка и корректировка startTime (в минутах) */
-export function checkStartTimeOverlap(startTime, endTime) {
-  if (startTime >= endTime) return endTime - 1;
-  return startTime;
-}
-
-/** Проверка и корректировка endTime (в минутах) */
-export function checkEndTimeOverlap(startTime, endTime) {
-  if (startTime >= endTime) return startTime + 1;
-  return endTime;
 }

@@ -8,6 +8,7 @@
 
     <div style="padding: 0 10px 0 10px;">
       <h1>Авторизация</h1>
+      <p v-if="!isConnected" class="warning">Нет соединения с сервером — идёт подключение…</p>
       <form @submit.prevent="login">
         <input
           ref="usernameInput"
@@ -38,6 +39,11 @@
 import TopNav from '@/components/TopNav.vue';
 import logger from '../store/modules/logger.js';
 
+// Допускаем только внутренние пути ('/foo'), но не '//evil.com' и не 'https://…'
+function safeRedirect(path) {
+  return typeof path === 'string' && path.startsWith('/') && !path.startsWith('//') ? path : '/';
+}
+
 export default {
   name: 'AppLogin',
   components: { TopNav },
@@ -46,16 +52,12 @@ export default {
     return {
       error: '',
       loading: false,
+      redirectTimer: null,
     };
   },
 
   computed: {
-    userLevel() {
-      return this.$store.getters.level;
-    },
-    dID() {
-      return this.$store.getters.dID;
-    },
+    // Реактивный флаг (раньше проверялся readyState, который Vue не отслеживает)
     isConnected() {
       return this.$store.getters['websocket/isConnected'];
     },
@@ -65,48 +67,41 @@ export default {
     this.$refs.usernameInput?.focus();
   },
 
+  beforeUnmount() {
+    clearTimeout(this.redirectTimer);
+  },
+
   methods: {
     async login() {
+      if (this.loading) return;
       this.error = '';
       this.loading = true;
 
       try {
         const username = this.$refs.usernameInput.value.trim().toLowerCase();
         const password = this.$refs.passwordInput.value;
+        if (!username || !password) throw new Error('Введите логин и пароль');
 
-        if (!username || !password) {
-          throw new Error('Введите логин и пароль');
-        }
-
-        // WS обычно уже поднят в main.js, но после logout/resume может быть закрыт
-        if (!this.isConnected) {
-          try {
-            await this.$store.dispatch('websocket/connect');
-          } catch {
-            throw new Error('Нет соединения с сервером');
-          }
-        }
-
+        // auth/login сам поднимет соединение при необходимости.
+        // Конфигурацию и менеджер уставок загружает App.vue (watch на isAuthenticated).
         const userData = await this.$store.dispatch('auth/login', { username, password });
-        logger.info('[AppLogin] вход:', userData.username, 'level', this.userLevel, 'dID', this.dID);
+        logger.info('[AppLogin] вход:', userData.username, 'level', userData.userlevel);
 
-        this.showPopup(`Вход выполнен: ${username}`, 'success');
-
-        // App.vue уже смонтирован — его mounted не сработает повторно.
-        // Грузим конфиг здесь; best-effort, не блокируем редирект.
-        this.$store.dispatch('config/ensureConfig', this.dID).catch((err) => {
-          logger.error('[AppLogin] конфиг не загружен:', err);
-          this.showPopup('Конфигурация не загружена — часть функций недоступна', 'warning');
+        this.$store.dispatch('popup/show', {
+          message: `Вход выполнен: ${userData.username}`,
+          type: 'success',
+          duration: 2000,
         });
 
         // Приоритет: принудительная смена пароля > redirectPath (из guard) > '/'
-        const target = localStorage.getItem('redirectPath') || '/';
+        const target = this.$store.getters['auth/mustChangePassword']
+          ? '/change-password'
+          : safeRedirect(localStorage.getItem('redirectPath'));
         localStorage.removeItem('redirectPath');
 
-        setTimeout(() => this.$router.push(target), 500);
+        this.redirectTimer = setTimeout(() => this.$router.push(target), 400);
       } catch (err) {
         this.error = this.mapErrorToText(err);
-        this.showPopup(`❌ ${this.error}`, 'error');
         logger.error('[AppLogin] ошибка входа:', err);
       } finally {
         this.loading = false;
@@ -114,29 +109,15 @@ export default {
     },
 
     mapErrorToText(err) {
-      const code = err?.code;
       const msg = err?.message || 'Ошибка авторизации';
-      switch (code) {
+      switch (err?.code) {
         case 'BAD_CREDENTIALS': return 'Неверный логин или пароль';
         case 'LOCKED':          return msg; // содержит «Повторите через N сек»
         case 'MISSING_FIELDS':  return 'Введите логин и пароль';
         case 'TIMEOUT':         return 'Сервер не отвечает. Проверьте соединение.';
+        case 'NO_CONNECTION':   return 'Нет соединения с сервером';
         default:                return msg;
       }
-    },
-
-    /**
-     * Показ popup через глобальный store (рендерит App.vue).
-     * Если на форме быстро следуют два popup — таймер auto-close
-     * второго считается от первого. Для формы логина это некритично:
-     * пользователь жмёт OK или ждёт auto-close.
-     */
-    showPopup(message, type = 'info') {
-      this.$store.dispatch('popup/show', {
-        message,
-        type,
-        duration: 6000,
-      });
     },
   },
 };
@@ -146,5 +127,8 @@ export default {
 .error {
   color: red;
   margin-top: 10px;
+}
+.warning {
+  color: var(--orange, #d97706);
 }
 </style>

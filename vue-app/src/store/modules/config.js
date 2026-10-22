@@ -1,666 +1,414 @@
 // store/modules/config.js
 import logger from './logger';
 import { nowMoscow } from '@/utils/timeUtils';
+
 const LIMITS = {
-  schedules: parseInt(process.env.VUE_APP_LIM_SCHEDULE_ITEM) || 8,
-  notifications: parseInt(process.env.VUE_APP_LIM_NOTIFICATION_ITEM) || 6,
-  statistics: parseInt(process.env.VUE_APP_LIM_STATISTIC_ITEM) || 1,
+  schedules: parseInt(process.env.VUE_APP_LIM_SCHEDULE_ITEM, 10) || 8,
+  notifications: parseInt(process.env.VUE_APP_LIM_NOTIFICATION_ITEM, 10) || 6,
+  statistics: parseInt(process.env.VUE_APP_LIM_STATISTIC_ITEM, 10) || 1,
 };
+
+// Допустимые значения typeSettingsKey. Раньше по умолчанию использовалось
+// 'schedule' (без «s») — оно не совпадало ни с одним ключом экрана настроек,
+// и экран открывался пустым.
+const SETTINGS_TYPES = ['schedules', 'notifications', 'statistics'];
+const normalizeSettingsType = (t) => (SETTINGS_TYPES.includes(t) ? t : 'schedules');
+
+const CONFIG_TIMEOUT = 10000;
+const SERVICE_ROOM_KEYS = new Set(['init', 'newConfigID', 'password']);
+const ROOM_EXCLUDED_SECTIONS = ['init', 'id', 'group', 'title', 'setpoints'];
+const DEVICE_EXCLUDED_SECTIONS = ['id', 'group', 'title', 'setpoints', 'sensors'];
+
+// Ожидающие загрузки конфигурации: dID → { promise, resolve, reject, timer }
+const configWaiters = new Map();
+
+function readStorage(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function writeStorage(key, value) {
+  try { localStorage.setItem(key, value); } catch (e) { logger.warn('[config] localStorage:', e.message); }
+}
+
+// Только «настоящие» комнаты: объекты, не служебные ключи
+function roomEntries(config) {
+  return Object.entries(config || {}).filter(
+    ([key, room]) => !SERVICE_ROOM_KEYS.has(key) && room && typeof room === 'object',
+  );
+}
+
+// Точечное обновление элемента списка (расписание / уведомление / аналитика)
+function patchListItem(bucket, { dID, room, param, id, title, value }) {
+  const list = bucket?.[dID]?.[room]?.[param];
+  if (!Array.isArray(list)) return false;
+  const index = list.findIndex((item) => (item.id ?? item._id) === id);
+  if (index === -1) return false;
+  list[index] = { ...list[index], [title]: value, updatedAt: nowMoscow() };
+  return true;
+}
 
 export default {
   namespaced: true,
+
   state: () => ({
-    configs: {}, // Для хранения кофигурации по dID
-    schedules: {}, // Для хранения расписаний по dID
-    notifications: {}, // Для хранения уведомлений по dID
-    statistics: {}, // Для хранения аналитики по dID
+    configs: {},        // конфигурация по dID
+    schedules: {},      // расписания по dID
+    notifications: {},  // уведомления по dID
+    statistics: {},     // аналитика по dID
     allRooms: [],
     allParams: [],
     allDevices: [],
-    allSetpoints:[],
+    allSetpoints: [],
     loading: false,
     error: null,
     mobile: false,
-    deviceType: 'desktop', // 'desktop', 'tablet', 'phone'
-    typeSettingsKey: localStorage.getItem('typeSettingsKey') || 'schedule',
+    deviceType: 'desktop', // 'desktop' | 'tablet' | 'phone'
+    typeSettingsKey: normalizeSettingsType(readStorage('typeSettingsKey')),
   }),
- 
+
   mutations: {
-    SET_CONFIG(state, { name, config }) {
-      state.configs[name] = config;
-      logger.dev('[sortParams] - SET_CONFIG Обновлен конфиг[' + name + ']: ', config);
-      //console.log('[sortParams] - SET_CONFIG Обновлен конфиг[' + name + ']: ', config);
+    SET_CONFIG(state, { name, config }) { state.configs[name] = config; },
+    SET_SCHEDULE(state, { name, config }) { state.schedules[name] = config; },
+    SET_NOTIFICATION(state, { name, config }) { state.notifications[name] = config; },
+    SET_STATISTIC(state, { name, config }) { state.statistics[name] = config; },
+
+    SET_ALL_ROOMS(state, rooms) { state.allRooms = rooms; },
+    SET_ALL_PARAMS(state, params) { state.allParams = params; },
+    SET_ALL_DEVICES(state, devices) { state.allDevices = devices; },
+    SET_ALL_SETPOINTS(state, setpoints) { state.allSetpoints = setpoints; },
+
+    // Сброс при выходе: данные предыдущего пользователя не должны оставаться в памяти
+    RESET(state) {
+      state.configs = {};
+      state.schedules = {};
+      state.notifications = {};
+      state.statistics = {};
+      state.allRooms = [];
+      state.allParams = [];
+      state.allDevices = [];
+      state.allSetpoints = [];
+      state.loading = false;
+      state.error = null;
+      configWaiters.forEach((w) => clearTimeout(w.timer));
+      configWaiters.clear();
     },
-    SET_SCHEDULE(state, { name, config }) {
-      //console.log('[config] - SET_SCHEDULE - name:', name, 'config keys:', Object.keys(config));
-      state.schedules[name] = config;
-      logger.dev('[sortParams] - SET_SCHEDULE Обновлен конфиг[' + name + ']: ', config);
-      // Вернуть console.log
-      //console.log('[sortParams] - SET_SCHEDULE Обновлен конфиг[' + name + ']: ', config);
-    },
-    REMOVE_SCHEDULES(state, { dID, roomKey, paramKey, scheduleIds }) {
-      console.log('[config] - REMOVE_SCHEDULES - Удаляем расписания:', { dID, roomKey, paramKey, scheduleIds });
-      
-      if (!state.schedules[dID] || !state.schedules[dID][roomKey] || !state.schedules[dID][roomKey][paramKey]) {
-        console.warn('[config] - REMOVE_SCHEDULES - Структура данных не найдена');
-        return;
-      }
-      
-      // Фильтруем расписания
-      state.schedules[dID][roomKey][paramKey] = state.schedules[dID][roomKey][paramKey].filter(schedule => {
-        const scheduleId = schedule.id || schedule._id || (schedule._tempId ? `temp_${schedule._tempId}` : null);
-        return !scheduleIds.includes(scheduleId);
-      });
-      
-      console.log('[config] - REMOVE_SCHEDULES - Расписания удалены');
-      
-      // Сохраняем в localStorage
-      localStorage.setItem(`${dID}_schedules`, JSON.stringify(state.schedules[dID]));
-    },
-    SET_NOTIFICATION(state, { name, config }) {
-      state.notifications[name] = config;
-      logger.dev('[sortParams] - SET_NOTIFICATION Обновлен конфиг[' + name + ']: ', config);
-      // Вернуть console.log
-      //console.log('[sortParams] - SET_NOTIFICATION Обновлен конфиг[' + name + ']: ', config);
-    },
-    SET_STATISTIC(state, { name, config }) {
-      state.statistics[name] = config;
-      logger.dev('[sortParams] - SET_STATISTIC Обновлен конфиг[' + name + ']: ', config);
-      // Вернуть console.log
-      //console.log('[sortParams] - SET_STATISTIC Обновлен конфиг[' + name + ']: ', config);
-    },
-    SET_ALL_ROOMS(state, rooms) {
-      state.allRooms = rooms;
-      logger.dev('[sortParams] - SET_ALL_ROOMS Обновлен список доступных комнат: ', rooms);
-      //console.log('[sortParams] - SET_ALL_ROOMS Обновлен список доступных комнат: ', rooms);
-    },
-    SET_ALL_PARAMS(state, params) {
-      state.allParams = params;
-      logger.dev('[sortParams] - SET_ALL_PARAMS Обновлен список доступных параметров: ', params);
-      //console.log('[sortParams] - SET_ALL_PARAMS Обновлен список доступных параметров: ', params);
-    },
-    SET_ALL_DEVICES(state, devices) {
-      state.allDevices = devices;
-      logger.dev('[sortParams] - SET_ALL_DEVICES Обновлен список доступных устройств: ', devices);
-      //console.log('[sortParams] - SET_ALL_DEVICES Обновлен список доступных устройств: ', devices);
-    },
-    SET_ALL_SETPOINTS(state, setpoints) {
-      state.allSetpoints = setpoints;
-      logger.dev('[sortParams] - SET_ALL_SETPOINTS Обновлен список уставок: ', setpoints);
-      //console.log('[sortParams] - SET_ALL_SETPOINTS Обновлен список уставок: ', setpoints);
-    },
+
     UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value }) {
       const config = state.configs[dID];
-      logger.dev('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
-      console.log('[config] - UPDATE_CONFIG_VALUE - Обновляем значение конфига:', { dID, room, type, name, value });
-      // console.log('[config] - UPDATE_CONFIG_VALUE - Конфиг:', config);
+      console.log('[config] - UPDATE_CONFIG_VALUE - Обновление конфигурации', config);
       if (!config) {
-        logger.error(`[Config] - dID ${dID} не найден в конфигурации`);
-        console.warn(`[Config] - dID ${dID} не найден в конфигурации`);
+        logger.error(`[config] - UPDATE_CONFIG_VALUE - dID ${dID} не найден`);
         return;
       }
-
       const roomObj = config[room];
-      //console.log('[config] - UPDATE_CONFIG_VALUE - Комната:', roomObj);
       if (!roomObj) {
-        logger.error(`[Config] - Комната ${room} не найдена в конфигурации`);
-        console.warn(`[Config] - Комната ${room} не найдена в конфигурации`);
+        logger.error(`[config] - UPDATE_CONFIG_VALUE - комната ${room} не найдена`);
         return;
       }
-
-      // Автоматически создаём контейнер типа, если он отсутствует
+      if (!name) {
+        logger.warn('[config] - UPDATE_CONFIG_VALUE - не указано имя элемента', { room, type });
+        return;
+      }
       if (!roomObj[type]) {
-        logger.error(`[Config] - Тип ${type} не найден в комнате ${room}, создаём...`);
-        console.warn(`[Config] - Тип ${type} не найден в комнате ${room}, создаём...`);
+        logger.warn(`[config] - тип ${type} не найден в комнате ${room}, создаём`);
         roomObj[type] = {};
       }
-
-      // Автоматически создаём сенсор/уставку/элемент, если он отсутствует
       if (!roomObj[type][name]) {
-        console.warn(`[Config] - "Элемент" ${name} не найден в комнате ${room}, создаём...`);
+        logger.warn(`[config] - элемент ${name} не найден в комнате ${room}, создаём`);
         roomObj[type][name] = {};
       }
-
       roomObj[type][name].value = value;
       roomObj[type][name].lastUpdate = nowMoscow();
-      logger.dev(`[Config] - Обновлено значение ${type}.${name} в комнате ${room}:`, roomObj[type][name]);
-      logger.dev(`[Config] - UPDATE_CONFIG_VALUE - state.configs[${dID}] ${JSON.stringify(config, null, 2)}`);
-      console.log(`[Config] - Локальное обновление значения ${type}.${name} в комнате ${room}:`, roomObj[type][name]);
-      //console.log(`[Config] - UPDATE_CONFIG_VALUE - state.configs[${dID}] ${JSON.stringify(config, null, 2)}`);
-      //const updatedRoom = config[room];
-      //console.table(`[Config] - UPDATE_CONFIG_VALUE - state.configs[${dID}] Обновляем комнату ${room} - ${JSON.stringify(updatedRoom, null, 2)}`);
     },
 
-    UPDATE_SCHEDULE_VALUE(state, { dID, room, param, config, id, title, value }) {
-      logger.dev('[config] - UPDATE_SCHEDULE_VALUE - Обновляем расписание:', { dID, room, param, config, id, title, value });
-      //console.log('[config] - UPDATE_SCHEDULE_VALUE - Обновляем расписание:', { dID, room, param, config, id, title, value });
-      
-      if (!state.schedules[dID]) {
-        logger.error(`[Config] - schedules для dID ${dID} не найден`);
+    UPDATE_SCHEDULE_VALUE(state, args) {
+      if (!patchListItem(state.schedules, args)) {
+        logger.dev('[config] - UPDATE_SCHEDULE_VALUE - элемент не найден', args);
+      }
+    },
+    UPDATE_NOTIFICATION_VALUE(state, args) {
+      if (!patchListItem(state.notifications, args)) {
+        logger.dev('[config] - UPDATE_NOTIFICATION_VALUE - элемент не найден', args);
+      }
+    },
+    UPDATE_STATISTIC_VALUE(state, args) {
+      if (!patchListItem(state.statistics, args)) {
+        logger.dev('[config] - UPDATE_STATISTIC_VALUE - элемент не найден', args);
+      }
+    },
+
+    UPDATE_CONFIGDATA_LOCALLY(state, { dID, configName, configData }) {
+      if (!SETTINGS_TYPES.includes(configName)) {
+        logger.error('[config] - UPDATE_CONFIGDATA_LOCALLY - неизвестный configName:', configName);
         return;
       }
-      //console.log('[config] - UPDATE_SCHEDULE_VALUE - Найдена конфигурация ',config,':', state.schedules[dID]);
-
-      // Ищем расписание по id в массиве
-      if (state.schedules[dID][room] && state.schedules[dID][room][param]) {
-        const schedules = state.schedules[dID][room][param];
-        const index = schedules.findIndex(s => (s.id || s._id) === id);
-        //console.log('[config] - UPDATE_SCHEDULE_VALUE - Найдено расписание :', index);
-        
-        if (index !== -1) {
-          // Обновляем существующее расписание
-          state.schedules[dID][room][param][index] = {
-            ...schedules[index],
-            [title]: value,
-            updatedAt: nowMoscow()
-          };
-          logger.dev('[config] - UPDATE_SCHEDULE_VALUE - Расписание обновлено');
-          console.log('[config] - UPDATE_SCHEDULE_VALUE - Расписание обновлено', state.schedules[dID][room][param][index] );
-        } 
-      } 
-
-    },
-    UPDATE_NOTIFICATION_VALUE(state, { dID, room, param, id, title, value }) {
-      console.log('[config] - UPDATE_NOTIFICATION_VALUE - Обновляем уведомление:', { dID, room, param, id, title, value });
-      if (!state.notifications[dID]) return;
-      if (state.notifications[dID][room] && state.notifications[dID][room][param]) {
-        const notifications = state.notifications[dID][room][param];
-        const index = notifications.findIndex(n => n.id === id);
-        if (index !== -1) {
-          state.notifications[dID][room][param][index] = {
-            ...notifications[index],
-            [title]: value,
-            updatedAt: nowMoscow()
-          };
-        }
-      }
-    },
-    UPDATE_STATISTIC_VALUE(state, { dID, room, param, id, title, value }) {
-      console.log('[config] - UPDATE_STATISTIC_VALUE - Обновляем уведомление:', { dID, room, param, id, title, value });
-      if (!state.statistics[dID]) return;
-      if (state.statistics[dID][room] && state.statistics[dID][room][param]) {
-        const statistics = state.statistics[dID][room][param];
-        const index = statistics.findIndex(n => n.id === id);
-        if (index !== -1) {
-          state.statistics[dID][room][param][index] = {
-            ...statistics[index],
-            [title]: value,
-            updatedAt: nowMoscow()
-          };
-        }
-      }
-    },
-    SET_LOADING(state, value) {
-      state.loading = value;
-    },
-    SET_ERROR(state, error) {
-      state.error = error;
-    },
-    SET_MOBILE(state, value) {
-      state.mobile = value;
-      localStorage.setItem('mobile_navigation', value);
-    },
-     SET_DEVICE_TYPE(state, deviceType) {
-      state.deviceType = deviceType;
-    },
-    SET_TYPE_SETTINGS_ITEM(state, type) {
-      //console.log(`[Config] - SET_TYPE_SETTINGS_ITEM - type: ${type}`);
-      localStorage.setItem('typeSettingsKey', type);
-      state.typeSettingsKey = type;
-    },
-    UPDATE_CONFIGDATA_LOCALLY(state, { dID, configName, configData }) {
-      console.log('[config] - UPDATE_CONFIGDATA_LOCALLY - dID:', dID, configName,' keys:', Object.keys(configData));
       state[configName][dID] = configData;
     },
+
+    // Локальное удаление элементов (после удаления на сервере или откат неудачного добавления)
+    REMOVE_CONFIG_ITEMS(state, { dID, configName, room, param, ids }) {
+      if (!SETTINGS_TYPES.includes(configName)) return;
+      const list = state[configName]?.[dID]?.[room]?.[param];
+      if (!Array.isArray(list)) return;
+      state[configName][dID][room][param] = list.filter(
+        (item) => !ids.includes(item.id ?? item._id),
+      );
+    },
+
+    SET_LOADING(state, value) { state.loading = value; },
+    SET_ERROR(state, error) { state.error = error; },
+    SET_MOBILE(state, value) {
+      state.mobile = value;
+      writeStorage('mobile_navigation', String(value));
+    },
+    SET_DEVICE_TYPE(state, deviceType) { state.deviceType = deviceType; },
+    SET_TYPE_SETTINGS_ITEM(state, type) {
+      const normalized = normalizeSettingsType(type);
+      writeStorage('typeSettingsKey', normalized);
+      state.typeSettingsKey = normalized;
+    },
   },
-  
+
   actions: {
-    async initialize({ dispatch, rootGetters, state }) {
-      dispatch('detectDevice'); 
-      logger.dev('[config] - initialize - Начинаем Инициализацию конфига - state.configs: ', state.configs);
-      //console.log('[config] - initialize - Начинаем Инициализацию конфига');
+    async initialize({ dispatch, commit, rootGetters, state }) {
+      dispatch('detectDevice');
+      //logger.dev('[config] - initialize - старт, dID:', rootGetters['dID']);
 
       const dID = rootGetters['dID'];
-      //const token = rootState.auth.token;
-      logger.dev('[config] - initialize - dID: ', dID);
-      console.log('[config] - initialize - dID: ', dID);
-      //console.log('[config] - initialize - state.configs[dID] до ensureConfig: ', state.configs[dID]);
+      if (!dID) return;
 
-      // if (token === 'local-token' && dID) {
-      //   const savedConfig = localStorage.getItem(`${dID}_config`);
-      //   if (savedConfig) {
-      //     console.log('[config] - initialize - savedConfig: ', savedConfig);
-      //     try {
-      //       const config = JSON.parse(savedConfig);
-      //       commit('SET_CONFIG', { name: dID, config });
-      //       await dispatch('handleRoomsSet', config);
-      //       await dispatch('handleParamsSet', config);
-      //       await dispatch('handleDevicesSet', config);
-      //       await dispatch('handleSetpointsSet', config);
-      //       logger.info('[config] - initialize - Конфиг загружен из localStorage для dID:', dID);
-      //       return; // не запрашиваем с сервера
-      //     } catch (e) {
-      //       logger.warn('[config] - initialize - Ошибка парсинга конфига из localStorage:', e);
-      //       localStorage.removeItem(`${dID}_config`);
-      //     }
-      //   }
-      // }
-      
-      if (dID && !state.configs[dID]) {
-        logger.dev('[config] - initialize - Конфиг для dID -', dID, ' не был загружен -',state.configs[dID], ' инициализируем');
-        //console.log('[config] - initialize - Конфиг для dID -', dID, ' не был загружен -',state.configs[dID], ' инициализируем' );
-
-        await dispatch('ensureConfig', dID);
-
-        //После ensureConfig проверяем, что конфиг действительно загружен
-        if (state.configs[dID]) {
-          logger.dev('[config] - initialize - ensureConfig завершен', state.configs[dID]);
-          //console.log('[config] - initialize - ensureConfig завершен', state.configs[dID]);
-        } else {
-          logger.error('[config] - initialize - Конфиг не был загружен');
-          //console.error('[config] - initialize - Конфиг не был загружен');
+      commit('SET_ERROR', null);
+      if (!state.configs[dID]) {
+        commit('SET_LOADING', true);
+        try {
+          await dispatch('ensureConfig', dID);
+        } catch (error) {
+          commit('SET_ERROR', 'Не удалось загрузить конфигурацию. Проверьте соединение.');
+          throw error;
+        } finally {
+          commit('SET_LOADING', false);
         }
       }
       await dispatch('ensureSortingKeys');
-      logger.dev('[config] - initialize - Завершена инициализация');
-      //console.log('[config] - initialize - Завершена инициализация');
     },
-    detectDevice({commit}) {
-      const savedMobile = localStorage.getItem('mobile_navigation');
-      if (savedMobile !== null) {
-        commit('SET_MOBILE', savedMobile === 'true');
-        return;
-      }
-      const mobile = /Mobi|Android/i.test(navigator.userAgent);
-      commit('SET_MOBILE', mobile);
-      logger.info('[config] - detectDevice - Работаем с мобильным устройством - ', mobile);
-      //console.log('[config] - detectDevice - Работаем с мобильным устройством - ', mobile);
-      commit('SET_MOBILE', mobile);
+
+    detectDevice({ commit }) {
+      const saved = readStorage('mobile_navigation');
+      const ua = navigator.userAgent;
+      const isMobileUA = /Mobi|Android/i.test(ua);
+
+      // Пользовательский выбор (переключатель в меню) важнее user-agent
+      commit('SET_MOBILE', saved !== null ? saved === 'true' : isMobileUA);
 
       let deviceType = 'desktop';
-      if (mobile) {
-        // Проверяем на планшет
-        if (navigator.userAgent.match(/Tablet|iPad/i) || 
-            (window.innerWidth >= 1024 && window.innerHeight >= 900)) {
-          deviceType = 'tablet';
-        } else {
-          deviceType = 'phone';
-        }
+      if (isMobileUA) {
+        const isTablet = /Tablet|iPad/i.test(ua)
+          || (window.innerWidth >= 1024 && window.innerHeight >= 900);
+        deviceType = isTablet ? 'tablet' : 'phone';
       }
       commit('SET_DEVICE_TYPE', deviceType);
-      logger.info('[config] - initialize - Тип устройства - ', deviceType);
-      console.log('[config] - initialize - Тип устройства - ', deviceType);
     },
-    async checkConfigInState({ commit, dispatch, rootGetters, state }) {
-      commit('SET_LOADING', true);
+
+    /**
+     * Запрашивает конфигурацию и ждёт её появления. Параллельные вызовы
+     * разделяют один запрос; ожидание — через промис, а не через polling.
+     */
+    async requestConfig({ state, dispatch }, dID) {
+      if (state.configs[dID]) return state.configs[dID];
+      if (configWaiters.has(dID)) return configWaiters.get(dID).promise;
+
+      const waiter = {};
+      waiter.promise = new Promise((resolve, reject) => {
+        waiter.resolve = resolve;
+        waiter.reject = reject;
+        waiter.timer = setTimeout(() => {
+          configWaiters.delete(dID);
+          reject(new Error(`Timeout: конфиг для ${dID} не получен за ${CONFIG_TIMEOUT} мс`));
+        }, CONFIG_TIMEOUT);
+      });
+      waiter.promise.catch(() => {}); // чтобы не было unhandled rejection, если никто не ждёт
+      configWaiters.set(dID, waiter);
+
       try {
-        const dID = rootGetters['dID'];
-        if (!dID) return;
-        
-        if (!state.configs[dID]) {
-          await dispatch('requestConfig', dID);
-        }
+        await dispatch('websocket/send', { type: 'get', request: 'config', name: dID }, { root: true });
       } catch (error) {
-        commit('SET_ERROR', error);
-      } finally {
-        commit('SET_LOADING', false);
-      }
-    }, 
-    async requestConfig({ dispatch, state }, dID) {
-      //console.log('[config] - requestConfig - Формируем Запрос на Сервер для получение конфигурации по dID - ', dID);
-      
-      try {
-        // 1. Отправляем запрос (не ждем ответа через возврат)
-         dispatch('websocket/send', {
-          type: 'get',
-          request: 'config',
-          name: dID
-        }, { root: true }).then(() => {
-          logger.dev('[config] - requestConfig - Запрос отправлен (then)');
-          //console.log('[config] - requestConfig - Запрос отправлен (then)');
-        }).catch(error => {
-          logger.error('[config] - requestConfig - Ошибка отправки запроса:', error);
-          //console.error('[config] - requestConfig - Ошибка отправки запроса:', error);
-        });
-        
-        //console.log('[config] - requestConfig - Запрос отправлен, ждем появления конфига в state...');
-        
-        // 2. Ждем пока конфиг появится в state (максимум 10 секунд)
-        const timeout = 10000;
-        const startTime = Date.now();
-        
-        while (!state.configs[dID]) {
-          // Проверяем не превышен ли таймаут
-          if (Date.now() - startTime > timeout) {
-            throw new Error(`Timeout: Конфиг для ${dID} не был получен за ${timeout}мс`);
-          }
-          // Ждем 100мс перед следующей проверкой
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        logger.info('[config] - requestConfig - Конфиг появился в state:');
-        //console.log('[config] - requestConfig - Конфиг появился в state:');
-        return state.configs[dID];
-        
-      } catch (error) {
-        logger.error(`[Config] Ошибка запроса конфигурации ${dID}:`, error);
-        //console.error(`[Config] Ошибка запроса конфигурации ${dID}:`, error);
+        clearTimeout(waiter.timer);
+        configWaiters.delete(dID);
+        waiter.reject(error);
+        logger.error('[config] - requestConfig - ошибка отправки запроса:', error.message);
         throw error;
       }
+      return waiter.promise;
     },
+
+    // Перезапрос данных после переподключения (без ожидания ответа)
+    async refreshConfig({ dispatch, rootGetters }) {
+      const dID = rootGetters['dID'];
+      if (!dID) return;
+      try {
+        await dispatch('websocket/send', { type: 'get', request: 'config', name: dID }, { root: true });
+        for (const configType of SETTINGS_TYPES) {
+          await dispatch('settingsConfig/requestToServer', { configType }, { root: true });
+        }
+      } catch (error) {
+        logger.error('[config] - refreshConfig:', error.message);
+      }
+    },
+
     async handleConfigResponse({ commit, dispatch }, response) {
-      logger.dev('[Config] - handleConfigResponse - Обработка ответа от Server - Конфигурация', response.payload);
-      //console.log('[Config] - handleConfigResponse - Обработка ответа от Server - Конфигурация', response.payload);
       try {
         const dID = response.name;
         const config = response.payload;
         const type = response.request;
-        
-        if (!dID || !config) {
-          throw new Error('Невалидный ответ конфигурации');
-        }
+
+        if (!dID || !config) throw new Error('Невалидный ответ конфигурации');
+        logger.dev(`[config] - handleConfigResponse - <<< ${type} для ${dID}`);
+        logger.dev('[config] - handleConfigResponse - payload:', config);
 
         if (type === 'config') {
-          logger.info('[Config] - handleConfigResponse - Обновляем Конфигурацию - ', dID);
-          //console.log('[Config] - handleConfigResponse - Обновляем Конфигурацию - ', dID);
           commit('SET_CONFIG', { name: dID, config });
-          // Обновляем список комнат
-          logger.info('[Config] - handleConfigResponse - Обновляем список комнат');
-          //console.log('[Config] - handleConfigResponse - Обновляем список комнат');
           await dispatch('handleRoomsSet', config);
-          // Обновляем список параметров
-          logger.info('[Config] - handleConfigResponse - Обновляем список параметров');
-          //console.log('[Config] - handleConfigResponse - Обновляем список параметров');
-            await dispatch('handleParamsSet', config);
-          // Обновляем список устройств
-          logger.info('[Config] - handleConfigResponse - Обновляем список устройств');
-          //console.log('[Config] - handleConfigResponse - Обновляем список устройств');
+          await dispatch('handleParamsSet', config);
           await dispatch('handleDevicesSet', config);
-          // Обновляем уставки
-          logger.info('[Config] - handleConfigResponse - Обновляем уставки');
-          //console.log('[Config] - handleConfigResponse - Обновляем уставки');
           await dispatch('handleSetpointsSet', config);
-          logger.info('[Config] - handleConfigResponse - Конфиг обновлен, данные для сортировки готовы');
-          //console.log('[Config] - handleConfigResponse - Конфиг обновлен, данные для сортировки готовы');
+          logger.info('[config] - конфигурация обновлена:', dID);
+
+          const waiter = configWaiters.get(dID);
+          if (waiter) {
+            clearTimeout(waiter.timer);
+            configWaiters.delete(dID);
+            waiter.resolve(config);
+          }
           return 'success';
-        } else if (type === 'schedules') {
-          //console.log('[WebSocket] Получаем Конфигурацию Расписания от сервера');
-          commit('SET_SCHEDULE', { name: dID, config });
-        } else if (type === 'statistics') {
-          //console.log('[WebSocket] Получаем Конфигурацию Аналитики от сервера');
-          commit('SET_STATISTIC', { name: dID, config });
-        } else if (type === 'notifications') {
-          //console.log('[WebSocket] Получаем Конфигурацию Уведомлений от сервера');
-          commit('SET_NOTIFICATION', { name: dID, config });
         }
-
-
-
+        if (type === 'schedules') commit('SET_SCHEDULE', { name: dID, config });
+        else if (type === 'statistics') commit('SET_STATISTIC', { name: dID, config });
+        else if (type === 'notifications') commit('SET_NOTIFICATION', { name: dID, config });
       } catch (error) {
-        logger.error('[Config] - handleConfigResponse - Ошибка обработки ответа:', error);
-        //console.error('[Config] - handleConfigResponse - Ошибка обработки ответа:', error);
+        logger.error('[config] - handleConfigResponse:', error);
         throw error;
       }
     },
+
     updateScheduleLocally({ commit }, { dID, configName, configData }) {
-      console.log('[config] - updateScheduleLocally - dID:', dID, 'configName-', configName, 'configData: ', configData);
       commit('UPDATE_CONFIGDATA_LOCALLY', { dID, configName, configData });
     },
-    handleRoomsSet({ commit }, config) {
-      //console.log('[Config] - handleRoomsSet - Обновляем список комнат');
-      try {
-        const rooms = Object.keys(config).filter(key => {
 
-          if (key === 'init') return false;
-          const room = config[key];
-          // Проверяем, есть ли в комнате любые устройства (не только сенсоры)
-          const hasDevices = Object.keys(room).some(sectionKey => {
-            const excludedSections = ['init', 'id', 'group', 'title', 'setpoints'];
-            if (excludedSections.includes(sectionKey)) return false;
-            
-            // Если раздел существует и содержит устройства
-            return room[sectionKey] && 
-                  typeof room[sectionKey] === 'object' && 
-                  Object.keys(room[sectionKey]).length > 0;
-          });
-          return hasDevices;
-        });
-        commit('SET_ALL_ROOMS', rooms);
-        logger.dev('[Config] - handleRoomsSet Обновлен список доступных комнат: ', rooms);
-        //console.log('[Config] - handleRoomsSet Обновлен список доступных комнат: ', rooms);
-      } catch (error) {
-        logger.error('[Config] - handleRoomsSet - Ошибка обновления списка комнат:', error);
-        //console.error('[Config] - handleRoomsSet - Ошибка обновления списка комнат:', error);
-        throw error;
-      }
+    removeConfigItemsLocally({ commit, rootGetters }, { configName, room, param, ids }) {
+      const dID = rootGetters['dID'];
+      if (!dID) return;
+      commit('REMOVE_CONFIG_ITEMS', { dID, configName, room, param, ids });
     },
-    handleParamsSet ({ commit }, config) {
-      //console.log('[Config] - handleParamsSet - Обновляем список параметров');
-      try {
-      const paramsSet = new Set();
-      Object.values(config).forEach(room => {
-        if (room.sensors) {
-          Object.keys(room.sensors).forEach(k => {
-            // Извлекаем префикс (часть до цифр)
+
+    handleRoomsSet({ commit }, config) {
+      const rooms = roomEntries(config)
+        .filter(([, room]) => Object.keys(room).some((section) => {
+          if (ROOM_EXCLUDED_SECTIONS.includes(section)) return false;
+          const data = room[section];
+          return data && typeof data === 'object' && Object.keys(data).length > 0;
+        }))
+        .map(([key]) => key);
+      commit('SET_ALL_ROOMS', rooms);
+    },
+
+    handleParamsSet({ commit }, config) {
+      const params = new Set();
+      roomEntries(config).forEach(([, room]) => {
+        if (room.sensors && typeof room.sensors === 'object') {
+          Object.keys(room.sensors).forEach((k) => params.add(k.replace(/\d+$/, '')));
+        }
+      });
+      commit('SET_ALL_PARAMS', Array.from(params));
+    },
+
+    handleDevicesSet({ commit }, config) {
+      const devices = new Set();
+      roomEntries(config).forEach(([, room]) => {
+        Object.keys(room).forEach((section) => {
+          if (DEVICE_EXCLUDED_SECTIONS.includes(section)) return;
+          const data = room[section];
+          if (data && typeof data === 'object') {
+            Object.keys(data).forEach((deviceKey) => {
+              const prefix = deviceKey.replace(/\d+$/, '');
+              if (prefix) devices.add(prefix);
+            });
+          }
+        });
+      });
+      commit('SET_ALL_DEVICES', Array.from(devices));
+    },
+
+    handleSetpointsSet({ commit }, config) {
+      const setpoints = new Set();
+      roomEntries(config).forEach(([, room]) => {
+        if (room.setpoints && typeof room.setpoints === 'object') {
+          Object.keys(room.setpoints).forEach((k) => {
             const prefix = k.replace(/\d+$/, '');
-            paramsSet.add(prefix);
+            if (prefix.startsWith('s')) setpoints.add(prefix);
           });
         }
       });
-      const params = Array.from(paramsSet);
-      commit('SET_ALL_PARAMS', params);
-      logger.dev('[Config] - handleParamsSet Обновлен список доступных комнат rooms: ', params);
-      //console.log('[Config] - handleParamsSet Обновлен список доступных комнат rooms: ', params);
-      } catch (error) {
-        logger.error('[Config] - handleParamsSet - Ошибка обновления списка параметров:', error);
-        //console.error('[Config] - handleParamsSet - Ошибка обновления списка параметров:', error);
-        throw error;
-      }
+      commit('SET_ALL_SETPOINTS', Array.from(setpoints));
     },
-    // handleSetpointsSet ({ commit }, config) {
-    //   //console.groupCollapsed('[Config] - handleSetpointsSet');
-    //   //console.log('[Config] - handleSetpointsSet - Обновляем список параметров');
-    //   try {
-    //   const paramsSet = new Set();
-    //   Object.values(config).forEach(room => {
-    //     if (room.setpoints) {
-    //       Object.keys(room.setpoints).forEach(k => {
-    //         // Извлекаем префикс (часть до цифр)
-    //         const prefix = k.replace(/\d+$/, '');
-    //         paramsSet.add(prefix);
-    //       });
-    //     }
-    //   });
-    //   const params = Array.from(paramsSet);
-    //   commit('SET_ALL_SETPOINTS', params);
-    //   logger.dev('[Config] - handleSetpointsSet Обновлен список доступных параметров params: ', params);
-    //   //console.log('[Config] - handleSetpointsSet Обновлен список доступных параметров params: ', params);
-    //   } catch (error) {
-    //     logger.error('[Config] - handleSetpointsSet - Ошибка обновления списка параметров:', error);
-    //     //console.error('[Config] - handleSetpointsSet - Ошибка обновления списка параметров:', error);
-    //     throw error;
-    //   }
-    // },
-    handleSetpointsSet({ commit }, config) {
-  try {
-    const setpointsSet = new Set();
-    Object.values(config).forEach(room => {
-      if (room.setpoints) {
-        Object.keys(room.setpoints).forEach(k => {
-          // Извлекаем префикс (часть до цифр)
-          const prefix = k.replace(/\d+$/, '');
-          // Добавляем только если начинается с 's' (уставки)
-          if (prefix.startsWith('s')) {
-            setpointsSet.add(prefix);
-          }
-        });
-      }
-    });
-    const setpoints = Array.from(setpointsSet);
-    commit('SET_ALL_SETPOINTS', setpoints);
-    logger.dev('[Config] - handleSetpointsSet Обновлен список уставок: ', setpoints);
-  } catch (error) {
-    logger.error('[Config] - handleSetpointsSet - Ошибка обновления списка уставок:', error);
-    throw error;
-  }
-},
-    handleDevicesSet({ commit }, config) {
-      //console.log('[Config] - handleDevicesSet - Обновляем список устройств');
-      try {
-        const devicesSet = new Set();
-        
-        // Исключаемые разделы (включая sensors и служебные)
-        const excludedSections = ['id', 'group', 'title', 'setpoints', 'sensors'];
-        
-        // Проходим по всем комнатам, исключая init
-        Object.entries(config).forEach(([roomKey, room]) => {
-          // Исключаем комнату init
-          if (roomKey === 'init') return;
-          
-          // Проходим по всем свойствам комнаты
-          Object.keys(room).forEach(sectionKey => {
-            // Пропускаем исключаемые разделы
-            if (excludedSections.includes(sectionKey)) return;
-            
-            // Если это объект с устройствами (actuators, switchs, etc.)
-            if (typeof room[sectionKey] === 'object' && room[sectionKey] !== null) {
-              // Получаем все ключи устройств в этом разделе
-              Object.keys(room[sectionKey]).forEach(deviceKey => {
-                // Извлекаем префикс (часть до цифр) - аналогично handleParamsSet
-                const prefix = deviceKey.replace(/\d+$/, '');
-                if (prefix) {
-                  devicesSet.add(prefix);
-                }
-              });
-            }
-          });
-        });
-       
-        const devices = Array.from(devicesSet);
-        commit('SET_ALL_DEVICES', devices);
-        logger.dev('[Config] - handleDevicesSet Обновлен список доступных устройств: ', devices);
-        //console.log('[Config] - handleDevicesSet Обновлен список доступных устройств: ', devices);
-      } catch (error) {
-        logger.error('[Config] - handleDevicesSet - Ошибка обновления списка устройств:', error);
-        //console.error('[Config] - handleDevicesSet - Ошибка обновления списка устройств:', error);
-        throw error;
-      }
-    },
-    handleValueUpdate({ commit, rootGetters}, { dID, payload, type }) {
-      logger.info('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
-      //console.log('[Config] - handleValueUpdate - Параметры запроса:', { dID, payload, type });
 
+    handleValueUpdate({ commit, rootGetters }, { dID, payload, type }) {
       const settingsData = rootGetters.getSetpointsManager?.settingsData;
-      //console.log('[Config] - handleValueUpdate - Текущие settingsData:', settingsData);
-      if (!dID || !payload || !type || !settingsData) {
-        logger.error('[Config] - handleValueUpdate - Невалидные параметры запроса:', { dID, payload, type, settingsData });
-        console.error('[Config] - handleValueUpdate - Невалидные параметры запроса:', { dID, payload, type, settingsData });
+      if (!dID || !payload || !type) {
+        logger.error('[config] - handleValueUpdate - невалидные параметры:', { dID, payload, type });
         return;
       }
+
       if (type === 'sensors') {
-        try {
-          logger.dev('[Config] - handleValueUpdate - type = sensors');
-          //console.log('[Config] - handleValueUpdate - type = sensors, payload:', payload);
-          commit('UPDATE_CONFIG_VALUE', {
-            dID: dID || settingsData.name,
-            room: payload?.room || settingsData.payload.room,
-            type: type,
-            name: payload?.item_name,
-            value: payload?.item_value,
-          });
-
-        } catch (error) {
-          logger.error('[Config] Ошибка обработки данных сенсора:', error);
-          //console.error('[Config] Ошибка обработки данных сенсора:', error);
-        }
-
+        commit('UPDATE_CONFIG_VALUE', {
+          dID,
+          room: payload.room ?? settingsData?.payload?.room,
+          type,
+          name: payload.item_name,
+          value: payload.item_value,
+        });
+        return;
       }
+
+      // Всё ниже работает от выбранного пользователем элемента (settingsData)
+      if (!settingsData) {
+        logger.warn('[config] - handleValueUpdate - settingsData не инициализирован, тип:', type);
+        return;
+      }
+      const sp = settingsData.payload;
+
       if (type === 'setpoints') {
-        console.log('[Config] - handleValueUpdate - type = setpoints, payload:', payload);
-        try {
-          const setKey = 's'+settingsData.payload.key;
-          commit('UPDATE_CONFIG_VALUE', {
-            dID: dID || settingsData.name,
-            room: payload?.room || settingsData.payload.room,
-            type: type,
-            name: setKey,
-            value: payload?.value || settingsData.payload.value,
-          });
-
-        } catch (error) {
-          logger.error('[Config] Ошибка обработки данных сенсора:', error);
-          //console.error('[Config] Ошибка обработки данных сенсора:', error);
-        }
-
-      }
-      if (type === 'schedules') {
-        console.log('[Config] - handleSensorUpdate - выполняем ОБНОВЛЕНИЕ локальной конфигурации Расписания', payload);
-        try {
-          commit('UPDATE_SCHEDULE_VALUE', {
-            dID: settingsData.name,
-            room: settingsData.payload.room,
-            param: settingsData.payload.param,
-            config: settingsData.payload.config,
-            id: settingsData.payload.id,
-            title: settingsData.payload.value_name,
-            value: settingsData.payload.value,
-          });
-        } catch (error) {
-          logger.error('[Config] Ошибка обработки данных расписания:', error);
-          console.error('[Config] Ошибка обработки данных расписания:', error);
-        }
-      }
-      if (type === 'notifications') {
-       console.log('[Config] - handleValueUpdate type - notifications - обновление уведомления', payload);
-        commit('UPDATE_NOTIFICATION_VALUE', {
-          dID: settingsData.name,
-          room: settingsData.payload.room,
-          param: settingsData.payload.param,
-          id: settingsData.payload.id,
-          title: settingsData.payload.value_name,
-          value: settingsData.payload.value,
+        commit('UPDATE_CONFIG_VALUE', {
+          dID,
+          room: payload.room ?? sp.room,
+          type,
+          name: payload.item_name ?? `s${sp.key}`,
+          // ?? вместо ||: значения 0 и false — валидные уставки
+          value: payload.item_value ?? payload.value ?? sp.value,
         });
-      }
-      if (type === 'statistics') {
-        console.log('[Config] - handleValueUpdate type - statistics - обновление уведомления', payload);
-        commit('UPDATE_STATISTIC_VALUE', {
-          dID: settingsData.name,
-          room: settingsData.payload.room,
-          param: settingsData.payload.param,
-          id: settingsData.payload.id,
-          title: settingsData.payload.value_name,
-          value: settingsData.payload.value,
-        });
+        return;
       }
 
-
+      const listArgs = {
+        dID: settingsData.name,
+        room: sp.room,
+        param: sp.param,
+        id: sp.id,
+        title: sp.value_name,
+        value: sp.value,
+      };
+      if (type === 'schedules') commit('UPDATE_SCHEDULE_VALUE', { ...listArgs, config: sp.config });
+      else if (type === 'notifications') commit('UPDATE_NOTIFICATION_VALUE', listArgs);
+      else if (type === 'statistics') commit('UPDATE_STATISTIC_VALUE', listArgs);
     },
+
     async ensureConfig({ dispatch }, dID) {
       if (!dID) throw new Error('dID не определен');
-      
-      try {
-        logger.info('[config] - ensureConfig - Конфига нет, запрашиваем');
-        //console.log('[config] - ensureConfig - Конфига нет, запрашиваем');
-        const result = await dispatch('requestConfig', dID);
-        logger.info('[config] - ensureConfig - Конфиг успешно загружен в state.configs');
-        //console.log('[config] - ensureConfig - Конфиг успешно загружен в state.configs');
-        return result;
-      } catch (error) {
-        logger.error('[config] - ensureConfig - Ошибка загрузки конфига:', error);
-        //console.error('[config] - ensureConfig - Ошибка загрузки конфига:', error);
-        throw error;
-      }
+      return dispatch('requestConfig', dID);
     },
+
     async ensureSortingKeys({ state, dispatch, rootGetters }) {
-      logger.dev('Проверяем наличие ключей сортировки');
-
       const processKey = async (type, stateArrayName, getterName, storageKey, shouldStripNumbers = false) => {
-        let key = rootGetters[getterName];
-        let storedKey = localStorage.getItem(storageKey);
-        let currentKey = key || storedKey;
-
-        if (currentKey && shouldStripNumbers) {
-          currentKey = currentKey.replace(/\d+$/, '');
-        }
+        let currentKey = rootGetters[getterName] || readStorage(storageKey);
+        if (currentKey && shouldStripNumbers) currentKey = currentKey.replace(/\d+$/, '');
 
         const arrayItems = state[stateArrayName] || [];
 
@@ -672,60 +420,55 @@ export default {
           currentKey = null;
         }
 
-        // Если ключа нет, берём первый из массива
+        // Ключа нет — берём первый из массива
         if (!currentKey && arrayItems.length > 0) {
           currentKey = arrayItems[0];
-          logger.dev(`[config] - Установлен первый ${type}:`, currentKey);
           await dispatch('sortParams/updateSortKey', { type, newKey: currentKey }, { root: true });
         }
-
         return currentKey;
       };
 
       const keyConfigs = [
-        { type: 'rooms', stateArray: 'allRooms', getter: 'roomKey', storage: 'roomKey', shouldStripNumbers: false, specialAction: 'updateRoomsTitle' },
-        { type: 'params', stateArray: 'allParams', getter: 'paramKey', storage: 'paramKey', shouldStripNumbers: true },
-        { type: 'devices', stateArray: 'allDevices', getter: 'deviceKey', storage: 'deviceKey', shouldStripNumbers: false },
-        { type: 'setpoints', stateArray: 'allSetpoints', getter: 'setpointKey', storage: 'setpointKey', shouldStripNumbers: true }
+        { type: 'rooms', stateArray: 'allRooms', getter: 'roomKey', storage: 'roomKey', strip: false, specialAction: 'updateRoomsTitle' },
+        { type: 'params', stateArray: 'allParams', getter: 'paramKey', storage: 'paramKey', strip: true },
+        { type: 'devices', stateArray: 'allDevices', getter: 'deviceKey', storage: 'deviceKey', strip: false },
+        { type: 'setpoints', stateArray: 'allSetpoints', getter: 'setpointKey', storage: 'setpointKey', strip: true },
       ];
 
       for (const cfg of keyConfigs) {
-        const key = await processKey(cfg.type, cfg.stateArray, cfg.getter, cfg.storage, cfg.shouldStripNumbers);
+        const key = await processKey(cfg.type, cfg.stateArray, cfg.getter, cfg.storage, cfg.strip);
         if (key && cfg.specialAction) {
           await dispatch(`sortParams/${cfg.specialAction}`, key, { root: true });
         }
       }
     },
 
-
-    async updateSetpointServer( {rootGetters}) {
+    async updateSetpointServer({ dispatch, rootGetters }) {
       const settingsData = rootGetters['getSetpointsManager']?.settingsData;
-        logger.info('[config] - updateSetpointServer - Готовим уставку для отправки на сервер');
-        console.log('[config] - updateSetpointServer - Готовим уставку для отправки на сервер', settingsData);
-        const dID = rootGetters.dID;
+      const dID = rootGetters.dID;
 
-        if (!dID) throw new Error('dID не определен');
+      if (!dID) throw new Error('dID не определен');
+      if (!settingsData) throw new Error('Нет данных для отправки уставки');
+      // Защита от устаревшего менеджера (например, после смены пользователя)
+      if (settingsData.name !== dID) throw new Error('settingsData принадлежит другому dID');
 
-        await this.dispatch('websocket/send', {
-          type: 'post',
-          request: settingsData.request,
-          name: settingsData.name,
-          payload: settingsData.payload
-        }, { root: true });
-        logger.info('[config] - updateSetpointServer - Уставка обновлена и отправлена на сервер');
-        //console.log('[config] - updateSetpointServer - Уставка обновлена и отправлена на сервер');
+      await dispatch('websocket/send', {
+        type: 'post',
+        request: settingsData.request,
+        name: settingsData.name,
+        payload: settingsData.payload,
+      }, { root: true });
+      logger.info('[config] - updateSetpointServer - отправлено на сервер');
     },
-    // ── Отправка пользовательской конфигурации на сервер ─────────────────
+
+    // Отправка пользовательской конфигурации на сервер
     async userConfigRequest({ dispatch, rootGetters }, { configData, isEdit }) {
       const dID = rootGetters['dID'];
-      if (!dID) {
-        logger.error('[config] - userConfigRequest - dID не определён');
-        throw new Error('dID не определён');
-      }
+      if (!dID) throw new Error('dID не определён');
 
       const request = isEdit ? 'userConfigEdit' : 'userConfigRequest';
-      logger.info('[config] - userConfigRequest - Отправка конфигурации:', request, 'dID:', dID);
-      console.table(configData);
+      // Не логируем configData: внутри лежит пароль
+      logger.info('[config] - userConfigRequest - отправка:', request, 'dID:', dID);
 
       await dispatch('websocket/send', {
         type: 'post',
@@ -733,91 +476,50 @@ export default {
         name: dID,
         payload: configData,
       }, { root: true });
-
-      logger.info('[config] - userConfigRequest - Конфигурация отправлена:', request);
-    },
-
-    clearKey(context, { key }) { // гетер clearKeySync используем для внешней очистки
-      //console.log('[config] - clearKey - key: ', key);
-      const withoutPrefix = key.slice(1);
-      const clearKey = withoutPrefix.replace(/\d+$/, '');
-      logger.dev(`[config] - clearKey - key: ${clearKey}`);
-      //console.log(`[config] - clearKey - key: ${clearKey}`);
-      return clearKey;
     },
 
     checkLimitBeforeAdd({ rootState, rootGetters }, configType) {
-      console.log('[config] - checkLimitBeforeAdd - Для ', configType);
-      // configType ожидается 'schedules', 'notifications', 'statistics'
-      const storeKey = configType; // напрямую
-      if (!storeKey) return { allowed: false, limit: 0, current: 0 };
+      const denied = { allowed: false, limit: 0, current: 0 };
+      if (!SETTINGS_TYPES.includes(configType)) return denied;
 
       const settingsData = rootGetters['getSetpointsManager']?.settingsData;
-      console.log('[config] - checkLimitBeforeAdd - settingsData', settingsData);
-      if (!settingsData) return { allowed: false, limit: 0, current: 0 };
+      if (!settingsData) return denied;
+
       const dID = settingsData.name;
       const room = settingsData.payload?.room;
       const param = settingsData.payload?.param;
-      if (!dID || !room || !param) return { allowed: false, limit: 0, current: 0 };
+      if (!dID || !room || !param) return denied;
 
-      const configData = rootState.config[storeKey]?.[dID] || {};
-      console.log('[config] - checkLimitBeforeAdd - configData', configData);
-      const items = configData[room]?.[param] || [];
-      console.log('[config] - checkLimitBeforeAdd - items', items);
-      const currentCount = items.length;
-
-      const limit = LIMITS[storeKey];
-      return {
-        allowed: currentCount < limit,
-        limit,
-        current: currentCount,
-      };
+      const items = rootState.config[configType]?.[dID]?.[room]?.[param] || [];
+      const limit = LIMITS[configType];
+      return { allowed: items.length < limit, limit, current: items.length };
     },
-    toggleMobileMode({ commit, state }) {
+
+    toggleMobileMode({ commit, dispatch, state }) {
       const newValue = !state.mobile;
       commit('SET_MOBILE', newValue);
-      // Можно вывести уведомление (опционально)
-      this.dispatch('popup/show', {
+      dispatch('popup/show', {
         message: newValue ? 'Включена мобильная навигация (свайпы)' : 'Включена десктопная навигация (стрелки)',
         type: 'info',
-        duration: 3000
+        duration: 3000,
       }, { root: true });
     },
   },
- 
+
   getters: {
+    // Очистка ключа: 'dTemp01' → 'Temp'
     clearKeySync: () => (key) => {
-      //console.log(`[config] - clearKeySync - key: ${key}`);
-
-      const withoutPrefix = key.slice(1);
-      //console.log(`[config] - clearKeySync - withoutPrefix: ${withoutPrefix}`);
-
-      const clearKey = withoutPrefix.replace(/\d+$/, '');
-      logger.dev(`[config] - clearKeySync - key: ${clearKey}`);
-      //console.log(`[config] - clearKeySync - key: ${clearKey}`);
-      return clearKey;
-    },
-    clearKey_a: () => (key) => {
       if (!key) return '';
-      if (key[0] === 'a') {
-        // aSwitch01 → sSwitch01
-        return 's' + key.slice(1);
-      }
-      return '';
+      return key.slice(1).replace(/\d+$/, '');
     },
-    getConfig: state => name => state.configs[name] || {},
-    isLoading: state => state.loading,
-    error: state => state.error,
-    getCommonConfig: (state) => (dID) => state.configs[dID] || null,
-    allRooms: state => state.allRooms,
-    allParams: state => state.allParams,
-    allDevices: state => state.allDevices,
-    allSetpoints: state => state.allSetpoints,
-    getMobile: state => state.mobile,
-    getDeviceType: state => state.deviceType,
-    getTypeSettingsItem: (state) => state.typeSettingsKey,
-    getConfigByType: (state) => (type, dID) => {
-      return state[type]?.[dID] || {};
-    },
-  }
+    getConfig: (state) => (name) => state.configs[name] || {},
+    isLoading: (state) => state.loading,
+    error: (state) => state.error,
+    allRooms: (state) => state.allRooms,
+    allParams: (state) => state.allParams,
+    allDevices: (state) => state.allDevices,
+    allSetpoints: (state) => state.allSetpoints,
+    getMobile: (state) => state.mobile,
+    getDeviceType: (state) => state.deviceType,
+  },
 };
