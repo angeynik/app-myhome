@@ -2,32 +2,39 @@
 <template>
   <div
     class="sensor-card"
-    :class="{ selected: isSelected, [type]: true }"
+    :class="{ selected: isSelected }"
+    :title="timeUpdated"
   >
-    <!-- Заголовок: параметр (главное) + комната (контекст) -->
-    <div class="sensor-header">
-      <span class="room">{{ paramTitle }}</span>
-      <span class="room-context">{{ roomTitle }}</span>
+    <!-- Левая часть: Иконка (30%) -->
+    <div class="sensor-icon-wrapper">
+      <div class="sensor-icon">
+        <!-- Заглушка для иконки. Позже можно заменить на <img src="..."> -->
+        <span v-html="iconSvg"></span>
+      </div>
     </div>
 
-    <!-- Основное значение -->
-    <div :class="getValueClass()">
-      {{ formattedValue(value) }}
-      <span v-if="unit" class="unit">{{ unit }}</span>
-    </div>
+    <!-- Правая часть (70%) -->
+    <div class="sensor-content">
+      
+      <!-- Верхняя половина: Название параметра -->
+      <div class="sensor-title">
+        {{ paramTitle }}
+      </div>
 
-    <!-- Уставка (если определена) -->
-    <div
-      v-if="setValue != null"
-      :class="isSelected ? 'sensor-SetValue selected-setvalue' : 'sensor-SetValue'"
-    >
-      {{ formattedValue(setValue) }}
-      <span v-if="unit" class="unit">{{ unit }}</span>
-    </div>
+      <!-- Нижняя половина: Уставка и Значение -->
+      <div class="sensor-values" :class="{ 'no-setpoint': setValue === null }">
+        
+        <!-- Уставка (если есть) -->
+        <div v-if="setValue !== null" class="sensor-set-value">
+          {{ formattedValue(setValue) }}<span v-if="unit" class="unit">{{ unit }}</span>
+        </div>
+        
+        <!-- Фактическое значение -->
+        <div class="sensor-actual-value">
+          {{ formattedValue(value) }}<span v-if="unit" class="unit">{{ unit }}</span>
+        </div>
 
-    <!-- Время последнего обновления -->
-    <div class="sensor-footer">
-      <time>{{ timeUpdated || 'Нет данных' }}</time>
+      </div>
     </div>
   </div>
 </template>
@@ -38,48 +45,41 @@ export default {
 
   props: {
     paramTitle: { type: String, required: true },
+    paramKey: { type: String, default: '' },
     roomTitle:  { type: String, required: true },
-    // value может быть числом или строкой ('ON'/'OFF'); null допустим
     value:      { type: [Number, String], default: null },
-    // setValue null → уставка не показывается
     setValue:   { type: [Number, String], default: null },
     unit:       { type: String, default: '' },
-    // timeUpdated — уже готовая строка («сейчас», «5 мин назад», «2 ч назад»)
     timeUpdated: { type: String, default: '' },
     isSelected: { type: Boolean, default: false },
   },
 
   computed: {
-    type() {
-      if (typeof this.value === 'number') {
-        if (this.unit === '°C') return 'temperature';
-        if (this.unit === '%')  return 'humidity';
-      }
-      return 'default';
+    // Простая логика подбора иконки (SVG или emoji заглушка).
+    // В будущем можно заменить на загрузку картинок из assets.
+    iconSvg() {
+      const key = (this.paramKey || this.paramTitle || '').toLowerCase();
+      
+      // Используем SVG-код (для стиля) или emoji (для скорости).
+      // Сейчас emoji, чтобы не раздувать код.
+      if (key.includes('temp') || key.includes('темп')) return '🌡️';
+      if (key.includes('hum') || key.includes('влаж')) return '💧';
+      if (key.includes('press') || key.includes('давл')) return '⏱️';
+      if (key.includes('power') || key.includes('потреб')) return '⚡';
+      if (key.includes('move') || key.includes('движ')) return '🏃';
+      if (key.includes('leak') || key.includes('протеч')) return '💦';
+      if (key.includes('door') || key.includes('дверь')) return '🚪';
+      if (key.includes('stat') || key.includes('состояние')) return '⚙️';
+      return '📊'; // Default
     },
   },
 
   methods: {
-    getValueClass() {
-      if (this.setValue == null) return 'sensor-value';
-      return this.isSelected ? 'sensor-value selected-value' : 'sensor-value';
-    },
-
-    formattedValue(value) {
-      if (value === null || value === undefined) return '—'; // нет данных
-      if (typeof value === 'number') return value.toFixed(1);
-      return value;
+    formattedValue(val) {
+      if (val === null || val === undefined) return '—';
+      if (typeof val === 'number') return val.toFixed(1);
+      return val;
     },
   },
 };
 </script>
-
-<style scoped>
-/* Контекст комнаты — приглушённый, чтобы не конкурировать с параметром */
-.room-context {
-  font-size: 0.75em;
-  opacity: 0.65;
-  margin-left: 0.35em;
-  font-weight: normal;
-}
-</style>

@@ -1,4 +1,3 @@
-<!-- components/MainBody.vue -->
 <template>
   <div v-if="isLoading" class="loading">Загрузка...</div>
   <div v-else-if="error" class="error">{{ error }}</div>
@@ -9,7 +8,10 @@
         :key="group.roomKey"
         class="room-group"
       >
-        <h2 class="room-group-header">{{ group.header }}</h2>
+        <div class="room-group-header">
+          <span class="room-group-title">{{ group.header }}</span>
+          <span class="room-group-arrow">›</span>
+        </div>
         <div class="room-group-items">
           <MainBodyValue
             v-for="(item, index) in group.items"
@@ -17,6 +19,7 @@
             :value="item.value"
             :unit="item.unit"
             :paramTitle="item.paramTitle"
+            :paramKey="item.paramKey"
             :setValue="item.setValue"
             :timeUpdated="item.timeDiff"
             :roomTitle="''"
@@ -37,12 +40,9 @@ import logger from '../store/modules/logger.js';
 import { parseMoscowDate } from '@/utils/timeUtils';
 
 const STRIP_DIGITS = /\d+$/;
-// Только реальные комнаты. `common` — не комната, обрабатывается отдельно
 const ROOM_KEY_RE = /^room\d+$/;
 const COMMON_KEY = 'common';
 
-// Какие секции комнаты создают карточки для вкладки.
-// Для control setpoints НЕ создают карточек — они паруются к sensors.
 const TAB_SECTIONS = {
   control: ['sensors'],
   devices: ['system'],
@@ -52,7 +52,6 @@ export default {
   name: 'MainBody',
   components: { MainBodyValue },
 
-  // activeTab приходит из MainView.vue через <router-view :active-tab="activeTab">
   props: {
     activeTab: { type: String, default: 'control' },
   },
@@ -89,8 +88,6 @@ export default {
     '$store.state.showSetpoint'(newVal) {
       if (newVal === false && this.selectedItem) this.clearSelection();
     },
-
-    // При смене вкладки — снимаем выделение. Сохранение делает MainView.
     activeTab() {
       this.clearSelection();
     },
@@ -104,7 +101,6 @@ export default {
     ...mapActions('sortParams', ['setLimits']),
     ...mapActions(['updateSettingsData', 'updatePayloadData']),
 
-    // ── Карточка ────────────────────────────────────────────────
     _buildItem(overrides) {
       return {
         key: null,
@@ -127,7 +123,6 @@ export default {
 
     _resolveSetpoint(room, sensorKey) {
       if (!room?.setpoints || !sensorKey) return { setValue: null, setpointKey: null };
-
       const num  = (sensorKey.match(/(\d+)$/) || [])[1] || '';
       const base = 's' + sensorKey.slice(1).replace(/\d+$/, '');
       const candidate = `${base}${num}`;
@@ -150,7 +145,6 @@ export default {
       switch (key) {
         case 'num':
           return raw != null ? parseFloat(raw) : 0;
-
         case 'bool':
         case 'dBool': {
           if (raw == null) return null;
@@ -158,7 +152,6 @@ export default {
           if (raw === 'OFF' || raw === false) return 'OFF';
           return Number(raw) ? 'ON' : 'OFF';
         }
-
         default:
           return raw ?? null;
       }
@@ -188,7 +181,6 @@ export default {
       }
     },
 
-    // ── Сборка вкладок ──────────────────────────────────────────
     getAllData(config, tab = 'control') {
       if (tab === 'general') return this._getGeneralData(config);
       return this._getRoomData(config, tab);
@@ -197,10 +189,8 @@ export default {
     _getGeneralData(config) {
       const common = config[COMMON_KEY];
       if (!common?.system) return [];
-
-      const items = this._collectItems(COMMON_KEY, common, 'system', /* withSetpoint */ false);
+      const items = this._collectItems(COMMON_KEY, common, 'system', false);
       if (!items.length) return [];
-
       return [{
         roomKey: COMMON_KEY,
         header: common.group || common.title || 'Общие настройки',
@@ -270,7 +260,6 @@ export default {
       return items;
     },
 
-    // ── Выбор карточки ──────────────────────────────────────────
     isSelected(item) {
       return this.selectedItem
         && this.selectedItem.roomId === item.roomId
