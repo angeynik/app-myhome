@@ -12,31 +12,39 @@
         <button class="setpoint-close" @click="$emit('close')">✕</button>
       </div>
 
-      <!-- Основной круг -->
-      <div 
-        class="setpoint-circle-wrapper"
-        @touchstart="handleTouchStart"
-        @touchmove="handleTouchMove"
-        @touchend="handleTouchEnd"
-      >
-        <!-- Кнопка минус -->
-        <div class="setpoint-btn minus" @click="changeValue(-1)">
-          <span>−</span>
-        </div>
-
-        <!-- Центральный круг с цифрами -->
-        <div class="setpoint-inner-circle">
-          <div class="setpoint-value-large">{{ displayValue }}</div>
-          <div class="setpoint-actual-small" v-if="actualValue !== null">
-            {{ actualValue }}<span v-if="unit" class="unit">{{ unit }}</span>
+      <!-- Центральный блок -->
+      <div class="setpoint-center-area">
+        
+        <!-- ВНЕШНЯЯ ОКРУЖНОСТЬ (для свайпа и кнопок) -->
+        <div 
+          class="setpoint-outer-ring"
+          @touchstart="handleTouchStart"
+          @touchmove="handleTouchMove"
+          @touchend="handleTouchEnd"
+        >
+          <!-- Кнопка минус -->
+          <div class="setpoint-btn minus" @touchstart.stop @click="changeValue(-1)">
+            <span>−</span>
           </div>
-          <div class="setpoint-unit-large" v-else-if="unit">{{ unit }}</div>
+
+          <!-- ВНУТРЕННЯЯ ОКРУЖНОСТЬ (для цифр) -->
+          <div class="setpoint-inner-circle">
+            <div class="setpoint-value-row">
+              <span class="setpoint-value-large">{{ displayValue }}</span>
+              <span class="setpoint-unit-large" v-if="unit && !isBoolean">{{ unit }}</span>
+            </div>
+            
+            <div class="setpoint-actual-small" v-if="actualValue !== null">
+              {{ actualValue }}<span v-if="unit" class="unit">{{ unit }}</span>
+            </div>
+          </div>
+
+          <!-- Кнопка плюс -->
+          <div class="setpoint-btn plus" @touchstart.stop @click="changeValue(1)">
+            <span>+</span>
+          </div>
         </div>
 
-        <!-- Кнопка плюс -->
-        <div class="setpoint-btn plus" @click="changeValue(1)">
-          <span>+</span>
-        </div>
       </div>
 
     </div>
@@ -79,7 +87,6 @@ export default {
     },
     displayValue() {
       if (this.isBoolean) return this.currentValue ? 'ON' : 'OFF';
-      // Округляем до точности шага
       const decimals = String(this.limStep).includes('.') ? String(this.limStep).split('.')[1].length : 0;
       return Number(this.currentValue).toFixed(decimals);
     },
@@ -91,9 +98,8 @@ export default {
     },
     visible(newVal) {
       if (newVal) {
-        // При открытии даем компоненту отрисоваться, чтобы получить координаты центра
         this.$nextTick(() => {
-          const el = this.$el.querySelector('.setpoint-circle-wrapper');
+          const el = this.$el.querySelector('.setpoint-outer-ring');
           if (el) {
             const rect = el.getBoundingClientRect();
             this.centerX = rect.left + rect.width / 2;
@@ -114,11 +120,9 @@ export default {
 
       let val = Number(this.currentValue) + (this.limStep * multiplier);
       
-      // Защита от выхода за границы
       if (val > this.limHigh) val = this.limHigh;
       if (val < this.limLow) val = this.limLow;
 
-      // Округление от ошибок плавающей запятой
       const decimals = String(this.limStep).includes('.') ? String(this.limStep).split('.')[1].length : 0;
       val = Number(val.toFixed(decimals));
 
@@ -147,7 +151,7 @@ export default {
       this.accumulatedAngle += delta;
       this.lastAngle = currentAngle;
 
-      // Если накопленный угол превысил порог — делаем шаг
+      // Шаг при пересечении порога
       if (this.accumulatedAngle >= ANGLE_THRESHOLD) {
         this.changeValue(1);
         this.accumulatedAngle -= ANGLE_THRESHOLD;
@@ -164,7 +168,6 @@ export default {
     getAngle(touch) {
       const dx = touch.clientX - this.centerX;
       const dy = touch.clientY - this.centerY;
-      // atan2 возвращает от -PI до PI, переводим в градусы
       const angle = Math.atan2(dy, dx) * (180 / Math.PI);
       return angle;
     },

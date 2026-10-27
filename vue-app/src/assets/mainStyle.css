@@ -84,20 +84,24 @@ body,
   text-align: center;
   color: var(--dark_font);
   margin: 0;
-  border: 0;
   padding: 0;
-  display: grid;
-  gap: 30px;
-  grid-template-columns: 1fr;
+  min-height: 100vh;
+  min-height: 100dvh;
+  /* Убрали display: grid, он ломал слои */
 }
 
 .app {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
   width: 100%;
-  background-color: var(--background_color);
+  
+  /* ЗАДАЕМ ФОН ЗДЕСЬ: градиент для затемнения + картинка */
+  /* Если картинка не появится, попробуйте путь url('../assets/bg-main.webp') */
+  background: linear-gradient(rgba(30, 30, 49, 0.7), rgba(30, 30, 49, 0.4)), url('~@/assets/bg-main.webp') center/cover no-repeat fixed;
+  
   color: var(--light_font);
   font-family: Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -111,7 +115,8 @@ body,
   margin: 0;
   border: 0;
   display: flex;
-  background-color: var(--header_color);
+  /* background-color: var(--header_color); */
+  background-color: transparent;
   color: var(--light_font);
   justify-content: center;
 }
@@ -143,7 +148,8 @@ body,
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--header_color);
+  /* background-color: var(--header_color); */
+  background-color: transparent;
 }
 
 menu { flex-direction: row; }
@@ -177,7 +183,8 @@ nav a.router-link-exact-active {
   display: grid;
   grid-template-columns: 1fr;
   grid-gap: var(--card-gap);
-  background-color: var(--header_color);
+  /* background-color: var(--header_color); */
+  background-color: transparent;
   height: 100%;
   width: 100%;
   justify-items: center;
@@ -439,7 +446,7 @@ nav a.router-link-exact-active {
   z-index: 10000;
   display: flex;
   flex-direction: column;
-  background: rgba(30, 30, 49, 0.85); /* Полупрозрачный фон */
+  background: rgba(30, 30, 49, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   color: #ffffff;
@@ -477,14 +484,29 @@ nav a.router-link-exact-active {
   padding: 0.5rem;
 }
 .setpoint-close:active { opacity: 1; }
-/* Контейнер с кругом */
-.setpoint-circle-wrapper {
+
+/* Центральная область */
+.setpoint-center-area {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding-bottom: 10vh; /* Чуть поднимаем круг, чтобы не перекрывался пальцем */
+}
+/* --- ВНЕШНЯЯ ОКРУЖНОСТЬ --- */
+.setpoint-outer-ring {
+  width: 85vw;
+  height: 85vw;
+  max-width: 420px;
+  max-height: 420px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   position: relative;
-  touch-action: none; /* Отключаем скролл при свайпе */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
 }
 
 /* Кнопки + и - */
@@ -524,25 +546,47 @@ nav a.router-link-exact-active {
   justify-content: center;
 }
 
+/* --- ВНУТРЕННЯЯ ОКРУЖНОСТЬ --- */
+.setpoint-inner-circle {
+  width: 65%;
+  height: 65%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.1), 0 10px 30px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none; /* Клики по цифрам не мешают свайпу */
+}
+
 /* Значения внутри круга */
+.setpoint-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.1em;
+}
 .setpoint-value-large {
-  font-size: clamp(4rem, 20vw, 7rem);
+  font-size: clamp(3.5rem, 18vw, 6rem);
   font-weight: 600;
   line-height: 1;
   letter-spacing: -2px;
 }
-.setpoint-actual-small {
-  font-size: clamp(1.2rem, 5vw, 1.8rem);
-  color: rgba(255, 255, 255, 0.6);
-  margin-top: 0.5rem;
-  display: flex;
-  align-items: baseline;
+.setpoint-unit-large {
+  font-size: clamp(1.2rem, 6vw, 1.8rem);
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
 }
 
-.setpoint-unit-large {
-  font-size: 1.5rem;
-  color: rgba(255, 255, 255, 0.6);
-  margin-top: 0.5rem;
+/* Фактическое значение (в 3 раза меньше) */
+.setpoint-actual-small {
+  font-size: clamp(1rem, 5vw, 1.6rem);
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 0.2em;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
 }
 
 /* ===== 7. POPUP И ВЫПАДАЮЩЕЕ МЕНЮ ===== */
