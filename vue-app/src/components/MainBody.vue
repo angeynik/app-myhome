@@ -285,7 +285,56 @@ export default {
       }, 300);
     },
 
-    singleClickAction(item) {
+    // singleClickAction(item) {
+    //   const clearParam = this.clearKeySync(item.paramKey);
+
+    //   if (this.isSelected(item)) {
+    //     this.selectedItem = null;
+    //     this.$emit('getComponentData', {
+    //       action: 'hide',
+    //       updateState: {
+    //         value: item.setValue,
+    //         title: 'value',
+    //         key: clearParam,
+    //         roomKey: item.roomKey,
+    //         paramKey: item.paramKey,
+    //       },
+    //     });
+    //     return;
+    //   }
+
+    //   this.selectedItem = item;
+    //   this.updatePayloadData({
+    //     value: item.setValue,
+    //     param: item.paramKey,
+    //     key: clearParam,
+    //     setKey: item.setpointKey,
+    //     id: item.roomId,
+    //     room: item.roomKey,
+    //   });
+    //   this.setLimits({ param: clearParam, valueType: 'absolute' });
+
+    //   if (item.setpointKey && item.setValue !== undefined && item.setValue !== null && clearParam) {
+    //     this.$emit('getComponentData', {
+    //       action: 'show',
+    //       request: 'setpoints',
+    //       updateState: {
+    //         value: item.setValue,
+    //         title: 'value',
+    //         key: clearParam,
+    //         roomKey: item.roomKey,
+    //         paramKey: item.paramKey,
+    //         setpointKey: item.setpointKey,
+    //       },
+    //     });
+    //   } else {
+    //     logger.dev('[MainBody] - singleClickAction - карточка без уставки:', item.paramKey);
+    //   }
+
+    //   this.updateSettingsData({ field: 'request', value: 'setpoints' });
+    // },
+
+        singleClickAction(item) {
       const clearParam = this.clearKeySync(item.paramKey);
 
       if (this.isSelected(item)) {
@@ -325,6 +374,11 @@ export default {
             roomKey: item.roomKey,
             paramKey: item.paramKey,
             setpointKey: item.setpointKey,
+            // ДОБАВЛЕНО:
+            roomTitle: item.roomTitle || item.roomGroup,
+            paramTitle: item.paramTitle,
+            actualValue: item.value,
+            unit: item.unit,
           },
         });
       } else {
@@ -333,7 +387,7 @@ export default {
 
       this.updateSettingsData({ field: 'request', value: 'setpoints' });
     },
-
+    
     DclickSelectItem(item) {
       const clearParam = this.clearKeySync(item.paramKey);
       if (this.doubleClickTimer) {

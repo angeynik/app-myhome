@@ -71,28 +71,29 @@
     </div>
   </div>
 
-  <!-- ── Плавающая панель уставки ─────────────────────────────────── -->
+  <!-- ── Новый экран уставки ─────────────────────────────────────── -->
   <Teleport to="body">
-    <div class="setpoint-overlay" v-if="showFooterSetpoint">
-      <MainSetpoint
-        ref="mainSetpoint"
-        :setPoint="setpoint"
-        :request="request"
-        :roomKey="selectedItemData.roomKey"
-        :setpointKey="selectedItemData.setpointKey"
-        :valueTitle="selectedItemData.valueTitle"
-        @eventsMainSetpoint="editValueMainSetpoint"
-        @eventsSchedule="editValueMainSetpoint"
-        @inactivity-timeout="handleSetpointInactivity"
-      />
-    </div>
+    <SetpointScreen
+      v-if="showFooterSetpoint"
+      :visible="showFooterSetpoint"
+      :roomTitle="screenData.roomTitle"
+      :paramTitle="screenData.paramTitle"
+      :setPoint="setpoint"
+      :actualValue="screenData.actualValue"
+      :unit="screenData.unit"
+      :limHigh="screenLimits.limHigh"
+      :limLow="screenLimits.limLow"
+      :limStep="screenLimits.limStep"
+      @update-value="onScreenUpdateValue"
+      @close="onScreenClose"
+    />
   </Teleport>
 </template>
 
 <script>
 import logger from '@/store/modules/logger.js';
 import { mapGetters, mapActions } from 'vuex';
-import MainSetpoint from '@/components/MainSetpoint.vue';
+import SetpointScreen from '@/components/SetpointScreen.vue';
 import { nowMoscow } from '@/utils/timeUtils';
 
 // Вкладки главного экрана. Должны совпадать с TAB_SECTIONS в MainBody.vue
@@ -106,11 +107,11 @@ const TAB_STORAGE_KEY = 'mainViewTab';
 
 export default {
   name: 'MainView',
-  components: { MainSetpoint },
+  components: { SetpointScreen }, // ИСПРАВЛЕНО: зарегистрирован только SetpointScreen
 
   provide() {
     return {
-      getMainSetpointEl: () => this.$refs.mainSetpoint?.$el ?? null,
+      getMainSetpointEl: () => null,
     };
   },
 
@@ -125,6 +126,7 @@ export default {
       request: null,
       setpoint: null,
       selectedItemData: {},
+      screenData: {}, // ДОБАВЛЕНО
       activeTab: initialTab,
       tabs: TABS,
     };
@@ -133,17 +135,19 @@ export default {
   computed: {
     ...mapGetters(['dID', 'showSetpoint']),
     ...mapGetters('config', ['getMobile']),
+    
+    screenLimits() {
+      return this.$store.state.settingsData?.limits || { limHigh: 36, limLow: 8, limStep: 0.5 };
+    },
 
     headerTitle() {
       return this.$route.params.settingsType ? 'Настройки' : 'Панель управления';
     },
 
-    // Вкладки — только на главной. На /settings/:settingsType — заголовок.
     showTabs() {
       return this.$route.name === 'Home';
     },
 
-    // Лейбл текущей вкладки для заголовка шапки
     currentTabLabel() {
       const t = this.tabs.find((x) => x.key === this.activeTab);
       return t ? t.label : 'Панель управления';
@@ -168,15 +172,58 @@ export default {
     ...mapActions(['updatePayloadData']),
     ...mapActions('dropdown', ['show']),
 
+    // ИСПРАВЛЕНО: оставлен только один метод getComponentData (новый)
+    getComponentData(event) {
+      logger.dev('[MainView] - getComponentData:', event);
+      this.request = event.request;
+      this.setpoint = event.updateState.value;
+
+      if (event.action === 'show') {
+        this.$store.commit('SHOW_SETPOINT', true);
+        this.screenData = {
+          roomTitle: event.updateState.roomTitle || 'Комната',
+          paramTitle: event.updateState.paramTitle || 'Параметр',
+          actualValue: event.updateState.actualValue,
+          unit: event.updateState.unit,
+        };
+      } else if (event.action === 'hide') {
+        this.$store.commit('SHOW_SETPOINT', false);
+        this.sendChangedData({
+          updateState: {
+            request: event.request,
+            title: event.updateState.title,
+            value: event.updateState.value,
+          },
+        });
+      }
+    },
+
+    onScreenUpdateValue(newValue) {
+      // Перенаправляем изменение с нового экрана в старую логику отправки
+      this.editValueMainSetpoint({
+        updateState: {
+          request: 'setpoints',
+          title: 'value',
+          value: newValue,
+        },
+      });
+    },
+
+    onScreenClose() {
+      this.$store.commit('SHOW_SETPOINT', false);
+      this.setpoint = null;
+      this.screenData = {};
+      this.request = null;
+      this.flushPendingUpdate();
+    },
+
     // ── Вкладки ─────────────────────────────────────────────────────
-    // Клик по активной вкладке → следующая (control → devices → general → …)
     cycleTab() {
       const idx = TAB_KEYS.indexOf(this.activeTab);
       const next = TAB_KEYS[(idx + 1) % TAB_KEYS.length];
       this.setActiveTab(next);
     },
 
-    // Прямая установка (используется из cycleTab; сохраняет в localStorage)
     setActiveTab(tabKey) {
       if (!TAB_KEYS.includes(tabKey) || this.activeTab === tabKey) return;
       this.activeTab = tabKey;
@@ -208,33 +255,6 @@ export default {
         ],
         anchorElement: event.currentTarget,
       });
-    },
-
-    // ── Показ/скрытие MainSetpoint ──────────────────────────────────
-    getComponentData(event) {
-      logger.dev('[MainView] - getComponentData:', event);
-      this.request = event.request;
-      this.setpoint = event.updateState.value;
-
-      if (event.action === 'show') {
-        this.$store.commit('SHOW_SETPOINT', true);
-        this.selectedItemData = {
-          roomKey: this.$store.state.setpointsManager?.settingsData?.payload?.room,
-          setpointKey:
-            event.updateState.paramKey
-            || this.$store.state.setpointsManager?.settingsData?.payload?.param,
-          valueTitle: event.updateState.title,
-        };
-      } else if (event.action === 'hide') {
-        this.$store.commit('SHOW_SETPOINT', false);
-        this.sendChangedData({
-          updateState: {
-            request: event.request,
-            title: event.updateState.title,
-            value: event.updateState.value,
-          },
-        });
-      }
     },
 
     // ── Изменение уставки ───────────────────────────────────────────
