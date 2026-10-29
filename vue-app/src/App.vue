@@ -1,6 +1,9 @@
 <!-- App.vue -->
 <template>
   <div id="app">
+    <!-- Спрайт иконок датчиков: монтируется один раз, на него ссылаются <SensorIcon> -->
+    <SensorIconSprite />
+
     <router-view />
 
     <!-- Popup: состояние и таймер автозакрытия — в store/modules/popup.js -->
@@ -27,10 +30,11 @@ import logger from './store/modules/logger.js';
 import { mapGetters, mapActions } from 'vuex';
 import PopupMenu from '@/components/PopupMenu.vue';
 import MenuDropdown from '@/components/MenuDropdown.vue';
+import SensorIconSprite from '@/components/SensorIconSprite.vue';
 
 export default {
   name: 'App',
-  components: { PopupMenu, MenuDropdown },
+  components: { PopupMenu, MenuDropdown, SensorIconSprite },
 
   computed: {
     ...mapGetters({
