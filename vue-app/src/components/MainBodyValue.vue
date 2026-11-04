@@ -2,75 +2,75 @@
 <template>
   <div
     class="sensor-card"
-    :class="{ selected: isSelected }"
+    :class="[tone, { selected: isSelected }]"
     :title="timeUpdated"
   >
-    <!-- Левая часть: Иконка (30%) -->
+    <!-- Слева: иконка параметра (цвет — по тону плашки или тревоге) -->
     <div class="sensor-icon-wrapper">
       <div class="sensor-icon">
-        <!-- Заглушка для иконки. Позже можно заменить на <img src="..."> -->
-        <span v-html="iconSvg"></span>
+        <SensorIcon :name="paramKey" :state="iconState" size="100%" />
       </div>
     </div>
 
-    <!-- Правая часть (70%) -->
+    <!-- Справа: название и значения -->
     <div class="sensor-content">
-      
-      <!-- Верхняя половина: Название параметра -->
       <div class="sensor-title">
         {{ paramTitle }}
       </div>
 
-      <!-- Нижняя половина: Уставка и Значение -->
       <div class="sensor-values" :class="{ 'no-setpoint': setValue === null }">
-        
         <!-- Уставка (если есть) -->
         <div v-if="setValue !== null" class="sensor-set-value">
           {{ formattedValue(setValue) }}<span v-if="unit" class="unit">{{ unit }}</span>
         </div>
-        
+
         <!-- Фактическое значение -->
         <div class="sensor-actual-value">
-          {{ formattedValue(value) }}<span v-if="unit" class="unit">{{ unit }}</span>
+          {{ formattedValue(value) }}<span v-if="unit && value !== null" class="unit">{{ unit }}</span>
         </div>
-
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import SensorIcon from '@/components/SensorIcon.vue';
+import { normalizeSensorKey } from '@/utils/sensorIcons';
+
+// Параметры, срабатывание которых (ON) — тревога: иконка красная
+const ALARM_KEYS = ['dFire', 'dLeak'];
+
 export default {
   name: 'MainBodyValue',
+  components: { SensorIcon },
 
   props: {
     paramTitle: { type: String, required: true },
     paramKey: { type: String, default: '' },
-    roomTitle:  { type: String, required: true },
-    value:      { type: [Number, String], default: null },
-    setValue:   { type: [Number, String], default: null },
-    unit:       { type: String, default: '' },
+    roomTitle: { type: String, default: '' },   // не отображается (заголовок группы показывает комнату)
+    value: { type: [Number, String], default: null },
+    setValue: { type: [Number, String], default: null },
+    unit: { type: String, default: '' },
     timeUpdated: { type: String, default: '' },
     isSelected: { type: Boolean, default: false },
   },
 
   computed: {
-    // Простая логика подбора иконки (SVG или emoji заглушка).
-    // В будущем можно заменить на загрузку картинок из assets.
-    iconSvg() {
-      const key = (this.paramKey || this.paramTitle || '').toLowerCase();
-      
-      // Используем SVG-код (для стиля) или emoji (для скорости).
-      // Сейчас emoji, чтобы не раздувать код.
-      if (key.includes('temp') || key.includes('темп')) return '🌡️';
-      if (key.includes('hum') || key.includes('влаж')) return '💧';
-      if (key.includes('press') || key.includes('давл')) return '⏱️';
-      if (key.includes('power') || key.includes('потреб')) return '⚡';
-      if (key.includes('move') || key.includes('движ')) return '🏃';
-      if (key.includes('leak') || key.includes('протеч')) return '💦';
-      if (key.includes('door') || key.includes('дверь')) return '🚪';
-      if (key.includes('stat') || key.includes('состояние')) return '⚙️';
-      return '📊'; // Default
+    // Тон плашки: is-warm — уставка выше факта (нагрев), is-cool — ниже (охлаждение).
+    // Без уставки или при равенстве — нейтральный.
+    tone() {
+      if (this.setValue === null || this.value === null) return '';
+      const set = Number(this.setValue);
+      const cur = Number(this.value);
+      if (!Number.isFinite(set) || !Number.isFinite(cur) || set === cur) return '';
+      return set > cur ? 'is-warm' : 'is-cool';
+    },
+
+    // Тревога имеет приоритет над тоном: красная иконка при ON у пожара/протечки
+    iconState() {
+      return ALARM_KEYS.includes(normalizeSensorKey(this.paramKey)) && this.value === 'ON'
+        ? 'alarm'
+        : '';
     },
   },
 

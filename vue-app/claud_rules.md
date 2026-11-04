@@ -70,6 +70,7 @@ src/
     checkOverlap.js         ← Проверка пересечения временных интервалов
     jwt.js                  ← Декодирование JWT (только exp; подпись проверяет сервер)
     sensorIcons.js          ← Ключ конфигурации → имя иконки спрайта (resolveSensorIcon)
+    mainTabs.js             ← Вкладки главного экрана: ключ, подпись, секции конфига (единый источник для MainView и MainBody)
   tests/
     unit/                   ← Jest (см. п. 14)
 ```
@@ -82,13 +83,12 @@ src/components/
   MainBody.vue              ← Карточки значений, сгруппированные по выбранному типу группировки
   SensorIcon.vue            ← Иконка датчика/актуатора/уставки (<use> на спрайт; цвет через color/state/accent)
   SensorIconSprite.vue      ← SVG-спрайт иконок (монтируется один раз в App.vue)
-  GroupTabs.vue             ← Вкладки типа группировки (живут в шапке MainView, состояние — sortParams)
-  MainBodyValue.vue         ← Карточка одного значения
+  MainBodyValue.vue         ← Плашка датчика: <SensorIcon>, значения, тон is-warm/is-cool
   MainBodySettings.vue      ← Экран настроек (расписания / уведомления / аналитика)
   MainBodySchedule.vue      ← Элемент расписания
   MainBodyNotifications.vue ← Элемент уведомления
   MainBodyStatistic.vue     ← Элемент аналитики
-  MainSetpoint.vue          ← Плавающая панель изменения уставки (touch/клик)
+  SetpointScreen.vue        ← Полноэкранное изменение значения (уставка / время / порог): кнопки −/+ и круговой свайп; Teleport в <body>
   TopNav.vue                ← Ссылки навигации по уровню доступа
   MenuDropdown.vue          ← Выпадающее меню (Teleport)
   PopupMenu.vue             ← Всплывающее сообщение (состояние — в store/popup)
@@ -404,7 +404,7 @@ Voltage → V,  Frequency → Hz,  Energy → kWh,  Bat → %
 ```
 authSession         ← { token, user, dID, level, mustChangePassword }     (чистится при выходе)
 roomKey, paramKey, deviceKey, setpointKey, clearKey                        (чистятся при выходе)
-groupingType        ← 'rooms' | 'params' | 'devices' — тип группировки главного экрана (UI-настройка, при выходе НЕ чистится)
+mainViewTab         ← 'control' | 'devices' | 'general' — активная вкладка главного экрана (UI-настройка, при выходе НЕ чистится)
 typeSettingsKey     ← 'schedules' | 'notifications' | 'statistics'  (невалидное → 'schedules')
 mobile_navigation   ← 'true' | 'false' (ручной выбор важнее user-agent)
 redirectPath        ← путь для редиректа после логина
@@ -420,14 +420,20 @@ redirectPath        ← путь для редиректа после логин
 
 ### 8.1 MainView.vue — оболочка и оркестратор
 
-- Родитель для всех экранов; управляет: `request`, `setpoint`, `selectedItemData`, показом панели уставки (`showSetpoint` из store)
-- События `router-view`: `@getComponentData` → `getComponentData` (show/hide MainSetpoint), `@updateTypeValue` → `editValueMainSetpoint`
-- События `MainSetpoint`: `@eventsMainSetpoint` и `@eventsSchedule` → `editValueMainSetpoint`; `@inactivity-timeout` → `handleSetpointInactivity`
+- Родитель для всех экранов; управляет: `request`, `valueTitle`, `setpoint`, `screenData`, показом экрана изменения значения (`showSetpoint` из store)
+- События `router-view`: `@getComponentData` → `getComponentData` (show/hide), `@updateTypeValue` → `editValueMainSetpoint`
+- События `SetpointScreen`: `@update-value` → `onScreenUpdateValue`, `@close` → `onScreenClose`
+- `getComponentData` запоминает **`request`** и **`valueTitle`** (`updateState.title`: `value` | `startTime` | `endTime` | `frequency` | …).
+  `onScreenUpdateValue` обязан передавать их в `editValueMainSetpoint`. Нельзя жёстко подставлять `'setpoints'`/`'value'`:
+  экраны настроек (расписание/уведомление/аналитика) тоже открывают этот экран, и значение ушло бы на сервер как уставка
+- Лимиты экрана — `settingsDataLimits` с подстановкой **поэлементно** (`??`); `null` → значение по умолчанию (не 0)
+- Округление отправляемого значения — по точности шага (`roundByStep`, минимум 1 знак)
 - `editValueMainSetpoint` ветвится по `request`: `setpoints` | `schedules` / `notifications` | `statistics`
-- `provide/inject`: `getMainSetpointEl` (клики по панели уставки не снимают выделение на экране настроек)
-- `router-view :key="$route.fullPath"` — принудительный ре-рендер при смене маршрута
-- **Отправка уставки на сервер — debounce 300 мс** (`sendChangedData`); `flushPendingUpdate` отправляет накопленное при размонтировании и автоскрытии (см. п. 16)
-- Шапка: по центру `.header-center` — на маршруте `Home` вкладки `<GroupTabs>`, на остальных экранах заголовок `<h2>{{ headerTitle }}</h2>`
+- `provide/inject`: `getMainSetpointEl` → `.setpoint-screen` (клики по экрану не снимают выделение поля на экране настроек)
+- `router-view :key="$route.fullPath"`; `active-tab` передаётся только главному экрану
+- **Отправка на сервер — debounce 300 мс** (`sendChangedData`); `flushPendingUpdate` — при закрытии экрана и размонтировании (см. п. 16)
+- Шапка главного экрана: **одна активная вкладка** (`.top-nav--center`), клик/Enter/Space — следующая (`cycleTab`); выбор — `localStorage.mainViewTab`.
+  Вкладки и подписи — только из `utils/mainTabs.js`. На остальных экранах — `<h2>{{ headerTitle }}</h2>` в `.header-center`
 - Меню шапки: `Профиль`, `Выйти`, разделитель, переключатель `Десктоп/Мобильный` (actions `profile`, `logout`, `toggleMobile`)
 
 ### 8.2 Поток данных
@@ -469,11 +475,20 @@ store actions → websocket/send
 
 ### 8.4 MainBody.vue
 
-- `groupedView` — **computed** (раньше снимок по `forceUpdate`): данные по WS обновляются сразу
-- Тип группировки — **только** из store: геттер `sortParams/currentSortType` (`rooms` \| `params` \| `devices`). Локального состояния вкладок в `MainBody` нет; переключение вкладок пересчитывает `groupedView` автоматически
-- Группа (режим `rooms`) = комната `roomNN`; заголовок: `room.group` → `room.title` → `roomKey`; группы по `roomKey`, секции `sensors` → `system`
-- Идентификатор карточки: `roomKey|sectionKey|paramKey` (`itemId`); выбор сравнивается **по ключу**, не по ссылке
-- Нет данных → в карточке «—» (раньше `0.0` / `OFF`)
+- `groupedView` — **computed**: данные по WS обновляются сразу; зависит от `activeTab` (prop из MainView) и «часов» `now` (подписи «N мин назад»)
+- Вкладки (`utils/mainTabs.js`):
+
+  | key | Источник | Уставки |
+  |-----|----------|---------|
+  | `control` | комнаты `roomNN`, секция `sensors` | да |
+  | `devices` | комнаты `roomNN`, секция `system` | нет |
+  | `general` | корневой объект `common`, секция `system` | нет |
+
+- `common` — служебный ключ: **не комната** (`config.js` исключает его из `allRooms`, иначе он мог стать выбранной комнатой)
+- Заголовок группы: `room.group` → `room.title` → `roomKey`; карточка: `room._meta['секция|ключ'].title` → `getSensorTitle`
+- Идентификатор карточки: `roomKey|paramKey|setpointKey` (`itemId`); выбор и двойной клик сравниваются **по ключу**, не по ссылке
+- Карточки **без уставки** — только для чтения: одинарный клик ничего не выбирает и не пишет в payload (иначе в `payload.room` попадал бы `common`)
+- Нет данных → «—» (раньше `0.0` / `OFF`); пока конфиг не пришёл — «Загрузка…»; ошибка загрузки — кнопка «Повторить»
 - Двойной клик без уставки → popup «Уставка … не настроена»; тип настроек по умолчанию `'schedules'`
 - Ничего не писать в `localStorage` из рендера
 
@@ -488,13 +503,16 @@ store actions → websocket/send
 - Выделение поля: дочерние компоненты шлют `field-selected` с **разными ключами** (`scheduleId` / `notificationId` / `statisticId`) — родитель хранит объект целиком
 - Закрытие: `router.back()` только если `history.state.back` есть, иначе `router.push('/')`
 
-### 8.6 MainSetpoint.vue
+### 8.6 SetpointScreen.vue
 
-- Значение — локальное (`newSetPointValue`), синхронизируется с пропом `setPoint` (родитель — источник истины, в т.ч. при откате)
-- Шаг округляется до точности шага (`decimalsOf(step)`, максимум 4 знака) — нет накопления float-ошибки
-- Выход за границу → переход на противоположный край
-- Таймер бездействия 8 с → `inactivity-timeout` (запуск **идемпотентен**: старый таймер всегда сбрасывается)
-- Лимиты — из геттера `settingsDataLimits` (дефолты 5 / 36 / 1)
+- Рендерится в `<body>` через собственный `Teleport`; в `MainView` оборачивать в `Teleport` **не нужно**
+- Вход `setPoint` — `Number | Boolean | String`: `'ON'`/`'OFF'` и числовые строки нормализуются (`normalizeValue`); родитель — источник истины (в т.ч. при откате)
+- Лимиты `limHigh/limLow/limStep` приходят из `MainView`; `null` внутри экрана → безопасные значения (диапазон не схлопывается)
+- Шаг округляется до точности шага (`decimalsOf`, максимум 4 знака); выход за границу — **зажим**; на границе событие не шлётся
+- Круговой свайп: центр кольца считается **при каждом касании** (`updateCenter`). Нельзя считать его в watcher на `visible` — компонент создаётся уже видимым, watcher не сработает
+- Закрытие: кнопка ✕ и Escape; авто-скрытия по бездействию нет (таймер 8 с удалён вместе с `MainSetpoint.vue`)
+- `.setpoint-screen` — `touch-action: none; overscroll-behavior: contain` (страница под экраном не прокручивается)
+- Кнопки −/+ и ✕ — настоящие `<button>` с `aria-label`; экран — `role="dialog"`
 
 ### 8.6.1 Иконки
 
@@ -509,6 +527,7 @@ store actions → websocket/send
 - Акцентные детали (мишень уставок, пламя, «!», шкала вентилятора) — класс `.si-accent`, цвет `--icon-accent` (по умолчанию `--orange`; prop `accent`)
 - Новая иконка: `<g id="si-<имя>">` в `SensorIconSprite.vue` + запись в `utils/sensorIcons.js`. Ключ с кириллической «С» (`dСurrent`) нормализуется автоматически
 - Неизвестный ключ → иконка `unknown` («?»)
+- Плашка датчика использует `<SensorIcon :name="paramKey" :state="…">`; тревога: ON у `dFire`/`dLeak` → `state="alarm"` (красная иконка)
 - Не использовать `v-html` для иконок; не монтировать спрайт повторно (дубли `id`)
 
 ### 8.7 Popup и Dropdown
@@ -539,11 +558,6 @@ dispatch('sortParams/updateSortKey', { type: 'rooms', newKey: 'room01' })   // n
 
 `updateSortKey` пишет в `settingsData.payload` (через `updatePayloadData`) и в `localStorage`.
 Невалидный сохранённый ключ при старте сбрасывается в `config/ensureSortingKeys`.
-
-### 9.2.1 Группировка главного экрана
-
-- Вкладки описаны в `sortParams` (`GROUPING_TABS`, геттер `groupingTabs`); новый режим = запись в `GROUPING_TABS` (id ∈ `KEY_TYPES`) + ветка группировки в `MainBody.groupedView`
-- Переключение: `dispatch('sortParams/setSortType', id)`; выбор пишется в `localStorage.groupingType`
 
 ### 9.3 forceUpdate
 
@@ -654,6 +668,9 @@ dispatch('sortParams/updateSortKey', { type: 'rooms', newKey: 'room01' })   // n
 - ❌ `<style>` (scoped или нет) в компонентах; повторный импорт `mainStyle.css` из компонентов
 - ❌ Переименовывать ключи с кириллической «С» без синхронной правки сервера
 - ❌ Опираться на отсутствие данных как на `0` / `OFF` (использовать `null` → «—»)
+- ❌ Жёстко задавать `request: 'setpoints'` при передаче значения с `SetpointScreen` (использовать `request`/`valueTitle` из `getComponentData`)
+- ❌ Дублировать список вкладок главного экрана (только `utils/mainTabs.js`)
+- ❌ Считать геометрию (центр кольца и т.п.) в watcher на `visible` у компонентов, создаваемых через `v-if`
 
 ---
 
@@ -758,14 +775,16 @@ test('parseMoscowDate: 21:22:38 МСК = 18:22:38 UTC', () => {
 - Секции: 1 Переменные · 2 База · 3 Каркас · 4 Главный экран · 5 Иконки · 6 Панель уставки · 7 Popup/Dropdown ·
   8 Формы/авторизация · 9 Настройки · 10 Мастер конфигурации (`cfg-*`) · 11 Медиа-запросы · 12 LEGACY
 - Цвета, тени — только через переменные `:root` (`--orange`, `--header_color`, `--shadow-card`, …)
-- Сетка карточек управляется переменными на `.mainBody`: `--card-min` (мин. ширина плашки), `--card-max` (макс. ширина — плашки не растягиваются), `--card-gap`; значения меняются в `@media`. Сетка группы комнат — `.room-group-items` (`auto-fill`, `minmax(var(--card-min), 1fr)`, карточки прижаты влево)
+- Сетка карточек управляется переменными на `.mainBody`: `--card-min` (мин. ширина плашки: 160px — на телефоне две в ряд; 220px на планшетах), `--card-max` (`none` на телефоне, 340px на планшетах), `--card-gap`; значения меняются в `@media`. Сетка группы комнат — `.room-group-items` (`auto-fill`, `minmax(var(--card-min), 1fr)`, карточки прижаты влево)
 - Фон: задаётся на `.app` (градиент-затемнение + `assets/bg-main.webp`, подключается через `url('~@/assets/…')`); слои `.body`, `.footer`, `.mainBody` — `transparent`, поверх них фон не рисовать. `background-attachment: fixed` плохо работает на iOS Safari — при проблемах заменить на `position: fixed` псевдоэлемент
+- «Стекло» (плашки, вкладки группировки): переменные `--glass`, `--glass-strong`, `--glass-blur` (`backdrop-filter`); тона уставки `--tone-cool` (синий) / `--tone-warm` (жёлтый)
+- Тон плашки — необязательные классы на `.sensor-card`: `is-cool` (уставка ниже факта) и `is-warm` (уставка выше факта) красят иконку и значение уставки; без класса (датчик без уставки) — нейтральный серый
 - Плашка датчика: `.sensor-card` → `.sensor-icon-wrapper` → `.sensor-icon` (круглая подложка) + `.sensor-content` (`.sensor-title`, `.sensor-values`, `.sensor-set-value`, `.sensor-actual-value`, `.unit`). Сама иконка — компонент `<SensorIcon>` с классом **`.sensor-svg`** (не `.sensor-icon`!), размер задавать `size="60%"` или в px
-- Экран уставки: `.setpoint-screen` (+ `.setpoint-header`, `.setpoint-outer-ring`, `.setpoint-inner-circle`, `.setpoint-btn`, …). Старые `.setpointBlock` / `.setpoint-overlay` оставлены до подтверждения, что они не используются
+- Экран изменения значения: `.setpoint-screen` (+ `.setpoint-header`, `.setpoint-outer-ring`, `.setpoint-inner-circle`, `.setpoint-btn`, …). Стили старой панели (`.setpointBlock`, `.setpoint-overlay`, `.setpointValue*`) удалены вместе с `MainSetpoint.vue`
 - Брейкпоинты: `376px` → `630px` → `980px` → `1200px`, затем `landscape ≤979px`, затем `≤400px`.
   **Порядок блоков важен** — более поздние переопределяют ранние. Не выносить `@media` внутрь секций
 - Не вкладывать обычные правила внутрь `@media` «для удобства» (так `cfg-*` когда-то перестали работать на узких экранах)
-- Шапка: `.header-center` (обязателен `min-width: 0`), вкладки группировки — `.group-tabs` / `.group-tab` / `.group-tab.active`
+- Шапка: `.header-center` (обязателен `min-width: 0`), активная вкладка — `.top-nav.top-nav--center` с `.settings-block-title.clickable.selected` и `.tab-chevron`; разделитель — `.header-divider`. Inline-стили в шаблонах не использовать
 - Общие статусные классы: `.error`, `.success`, `.warning`, `.hint`
 - `touch-action: manipulation` задаётся одним списком селекторов в секции «База» — новые кликабельные элементы добавлять туда
 - Секция LEGACY — классы, не найденные в загруженных компонентах; после проверки `grep -rn` удалить
@@ -785,10 +804,10 @@ test('parseMoscowDate: 21:22:38 МСК = 18:22:38 UTC', () => {
 | 5 | Мастер `ConFiguration` кладёт `password` в JSON конфигурации; при пустом `userConfigID` пароль по умолчанию `'newConfig'` | Убедиться, что сервер хеширует и принуждает `mustChangePassword` |
 | 6 | Подпись «1 месяц» у значения 302400 мин в `MainBodyStatistic` (это 210 дней; месяц = 43200) | Уточнить ожидание сервера |
 | 7 | Классы шаблонов без CSS-правил: `hover-bg`, `settings-info-value`, `frequency-wrapper`, `frequency-unit`, `mainBodySettings-title-container`, `loading`, `statistic-checkbox-field` (его `<style scoped>` был закомментирован) | Добавить стили или убрать классы |
+| 9 | Вкладка «Общие настройки» (`general`) читает объект `common.system`; структура `common` восстановлена по клиентскому коду | Подтвердить формат `common` на сервере |
 | 8 | `.sensor-card` не реагирует на hover: прежнее правило `.mainBodyValue:hover` указывало на несуществующий класс | Нужен ли hover-эффект? |
 | 9 | Старые тесты могут ссылаться на удалённые экспорты `timeUtils`/`checkOverlap` и на прежнее поведение `parseMoscowDate` | Прогнать `jest`, обновить (п. 14.7) |
-| 10 | В CSS есть `.setpoint-screen…` (новый экран уставки) и новая плашка датчика (`.sensor-icon-wrapper`, `.sensor-content`…): версии `MainSetpoint.vue` и `MainBodyValue.vue` под эту вёрстку мной не проверялись, п. 8.6 описывает прежнюю панель | Прислать актуальные файлы для сверки документа |
-| 11 | Серверная часть (Express/WS-обработчики) в ревизию не входила; протокол п. 5.1 восстановлен по клиентскому коду | Описать серверные обработчики отдельным разделом |
+| 10 | Серверная часть (Express/WS-обработчики) в ревизию не входила; протокол п. 5.1 восстановлен по клиентскому коду | Описать серверные обработчики отдельным разделом |
 
 ---
 
@@ -813,3 +832,6 @@ test('parseMoscowDate: 21:22:38 МСК = 18:22:38 UTC', () => {
 | 12–13 | Запрет менять `App.mounted` | Запреты на `window.location`, секреты в логах, `<style>` в компонентах, кириллические ключи |
 | 14 | Пример теста `redirectPath = '/dashboard'`; `tests/` | Актуальные маршруты и ветки гарда; особенности мокирования `websocket.js`; тест `parseMoscowDate` |
 | 15, 16, 17 | — | Новые разделы: стили, расхождения, журнал |
+| 2.2, 8.1, 8.4, 8.6 (вторая ревизия) | `GroupTabs` + группировка в `sortParams`; панель `MainSetpoint` с таймером бездействия | Вкладки-разделы главного экрана (`utils/mainTabs.js`, `mainViewTab`); `SetpointScreen`; `GroupTabs.vue`, `MainSetpoint.vue` и их стили удалены |
+| 8.1 | `onScreenUpdateValue` всегда `setpoints/value` | Передаёт `request`/`valueTitle` исходного события (иначе правка расписания уходила как уставка) |
+| 8.4 | Карточки без уставки выбирались и писали `room: 'common'` в payload | Только чтение; `common` исключён из списка комнат |

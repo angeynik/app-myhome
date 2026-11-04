@@ -15,9 +15,10 @@ const SETTINGS_TYPES = ['schedules', 'notifications', 'statistics'];
 const normalizeSettingsType = (t) => (SETTINGS_TYPES.includes(t) ? t : 'schedules');
 
 const CONFIG_TIMEOUT = 10000;
-const SERVICE_ROOM_KEYS = new Set(['init', 'newConfigID', 'password']);
-const ROOM_EXCLUDED_SECTIONS = ['init', 'id', 'group', 'title', 'setpoints'];
-const DEVICE_EXCLUDED_SECTIONS = ['id', 'group', 'title', 'setpoints', 'sensors'];
+// 'common' — общие настройки (вкладка «Общие настройки»), не комната
+const SERVICE_ROOM_KEYS = new Set(['init', 'newConfigID', 'password', 'common']);
+const ROOM_EXCLUDED_SECTIONS = ['init', 'id', 'group', 'title', 'setpoints', '_meta'];
+const DEVICE_EXCLUDED_SECTIONS = ['id', 'group', 'title', 'setpoints', 'sensors', '_meta'];
 
 // Ожидающие загрузки конфигурации: dID → { promise, resolve, reject, timer }
 const configWaiters = new Map();
@@ -94,7 +95,6 @@ export default {
 
     UPDATE_CONFIG_VALUE(state, { dID, room, type, name, value }) {
       const config = state.configs[dID];
-      console.log('[config] - UPDATE_CONFIG_VALUE - Обновление конфигурации', config);
       if (!config) {
         logger.error(`[config] - UPDATE_CONFIG_VALUE - dID ${dID} не найден`);
         return;
@@ -171,7 +171,6 @@ export default {
   actions: {
     async initialize({ dispatch, commit, rootGetters, state }) {
       dispatch('detectDevice');
-      //logger.dev('[config] - initialize - старт, dID:', rootGetters['dID']);
 
       const dID = rootGetters['dID'];
       if (!dID) return;
@@ -261,8 +260,6 @@ export default {
         const type = response.request;
 
         if (!dID || !config) throw new Error('Невалидный ответ конфигурации');
-        logger.dev(`[config] - handleConfigResponse - <<< ${type} для ${dID}`);
-        logger.dev('[config] - handleConfigResponse - payload:', config);
 
         if (type === 'config') {
           commit('SET_CONFIG', { name: dID, config });
@@ -513,6 +510,8 @@ export default {
       return key.slice(1).replace(/\d+$/, '');
     },
     getConfig: (state) => (name) => state.configs[name] || {},
+    // Список элементов настроек: configName = 'schedules' | 'notifications' | 'statistics'
+    getConfigList: (state) => (configName, dID) => state[configName]?.[dID],
     isLoading: (state) => state.loading,
     error: (state) => state.error,
     allRooms: (state) => state.allRooms,

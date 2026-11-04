@@ -8,7 +8,7 @@
      3. Каркас страницы (app / body / header / footer / nav)
      4. Главный экран: карточки датчиков, группы комнат
      5. Иконки
-     6. Панель уставки (MainSetpoint)
+     6. Экран изменения значения (SetpointScreen)
      7. Popup и выпадающее меню
      8. Формы и страницы авторизации
      9. Экран настроек (расписания / уведомления / аналитика)
@@ -37,6 +37,13 @@
   --sensor-gray: #808080;
 
   --shadow-card: 0 8px 6px rgba(0, 0, 0, 0.15);
+
+  /* «Стекло» (плашки, вкладки) и тона уставки */
+  --glass: rgba(120, 120, 128, 0.34);
+  --glass-strong: rgba(120, 120, 128, 0.5);
+  --glass-blur: blur(18px) saturate(1.4);
+  --tone-cool: #5bb2f7;           /* уставка ниже факта (охлаждение) */
+  --tone-warm: var(--yellow);     /* уставка выше факта (нагрев) */
 }
 
 
@@ -52,7 +59,6 @@ button,
 .checkbox-custom,
 .popup-close,
 .popup-ok-button,
-.group-tab,
 .settings-block.clickable,
 .settings-block-title.clickable,
 .mainBodySettings-header-button,
@@ -151,51 +157,14 @@ body,
   padding: 0;
 }
 
-/* Центральная область шапки: заголовок экрана или вкладки группировки.
-   min-width: 0 обязателен — иначе flex-элемент не сжимается и вкладки раздвигают шапку. */
+/* Центральная область шапки (экраны без вкладок): заголовок экрана.
+   min-width: 0 обязателен — иначе flex-элемент не сжимается и раздвигает шапку. */
 .header-center {
   display: flex;
   justify-content: center;
   align-items: center;
   flex: 1 1 0%;
   min-width: 0;
-}
-
-/* Вкладки группировки (GroupTabs.vue) */
-.group-tabs {
-  display: flex;
-  gap: 0.25rem;
-  margin: 0;
-  max-width: 100%;
-  overflow-x: auto;                 /* на узких экранах прокручиваются, а не ломают шапку */
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-.group-tabs::-webkit-scrollbar { display: none; }
-.group-tab {
-  flex: 0 0 auto;
-  padding: 0.35rem 0.8rem;
-  font-size: clamp(0.75rem, 3.2vw, 0.9rem);
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-  color: var(--light_font);
-  background: transparent;
-  border: 1px solid rgba(224, 223, 231, 0.3);
-  border-radius: 16px;
-  cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
-  -webkit-tap-highlight-color: transparent;
-}
-.group-tab:hover { border-color: var(--orange); }
-.group-tab:focus-visible {
-  outline: 2px solid var(--orange);
-  outline-offset: 2px;
-}
-.group-tab.active {
-  color: var(--dark_font);
-  background: var(--orange);
-  border-color: var(--orange);
 }
 
 /* Footer */
@@ -226,6 +195,22 @@ nav a.router-link-exact-active {
   flex-wrap: wrap;
   gap: 0.25em;
 }
+/* Шапка главного экрана: активная вкладка по центру (клик — следующая) */
+.top-nav--center {
+  flex: 1;
+  justify-content: center;
+  margin: 0;
+}
+.tab-chevron {
+  margin-left: 0.35em;
+  font-weight: 400;
+  opacity: 0.6;
+}
+.header-divider {
+  width: 100%;
+  height: 1px;
+  background-color: var(--orange);
+}
 .top-nav-separator {
   opacity: 0.5;
   margin: 0 0.25em;
@@ -237,9 +222,9 @@ nav a.router-link-exact-active {
 /* Сетка карточек. Ширину колонки и зазор меняют медиа-запросы через переменные
    (--card-min / --card-gap): одна и та же сетка у .mainBody и у групп комнат. */
 .mainBody {
-  --card-min: 300px; /* Минимальная ширина плашки */
-  --card-max: 400px; /* МАКСИМАЛЬНАЯ ширина плашки (чтобы не растягивались) */
-  --card-gap: 1rem;
+  --card-min: 160px;  /* Минимальная ширина плашки: на телефоне помещаются две в ряд */
+  --card-max: none;   /* Максимальная ширина плашки (на планшетах/десктопе ограничивается в @media) */
+  --card-gap: 0.75rem;
   
   display: grid;
   grid-template-columns: 1fr;
@@ -265,27 +250,28 @@ nav a.router-link-exact-active {
 .room-group {
   grid-column: 1 / -1;
   width: 100%;
-  margin-bottom: 1rem;
+  margin-bottom: 1.4rem;
 }
 
 .room-group-header {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  margin: 0 0 0.8em 0;
+  margin: 0 0 0.6rem 0.25rem;
   padding: 0;
   border: none;
   color: #ffffff;
-  font-size: 1.2em;
+  font-size: 1.25rem;
   font-weight: 600;
+  letter-spacing: 0.2px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
 }
 
 .room-group-arrow {
-  margin-left: 0.4em;
-  color: #888;
-  font-size: 1.2em;
-  font-weight: normal;
-  transform: translateY(-1px);
+  margin-left: 0.3em;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 1.1em;
+  font-weight: 700;
 }
 
 /* Сетка карточек в комнате */
@@ -298,109 +284,122 @@ nav a.router-link-exact-active {
   width: 100%;
 }
 
-/* --- Плашка (Карточка) --- */
+/* --- Плашка («стекло») ---
+   Необязательные модификаторы тона на .sensor-card:
+     .is-cool — уставка ниже факта (синий), .is-warm — уставка выше факта (жёлтый).
+   Без модификатора (датчик без уставки) иконка и значение — нейтральные серые. */
 .sensor-card {
+  --tone-color: var(--tone-cool);
+
   width: 100%;
-  max-width: var(--card-max); /* Ограничиваем максимальный размер */
-  aspect-ratio: 3 / 1;
-  
-  background-color: rgba(0, 0, 0, 0.4);
-  border-radius: 12px;
-  padding: 0.8em;
-  
+  max-width: var(--card-max);
+  min-height: 4.2rem;
+  padding: 0.65rem 0.7rem;
+
   display: flex;
   flex-direction: row;
   align-items: center;
-  box-sizing: border-box;
-  
+  gap: 0.55rem;
+
+  background-color: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   border: 2px solid transparent;
-  transition: border-color 0.2s, transform 0.1s;
+  border-radius: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+
+  transition: border-color 0.2s, background-color 0.2s, transform 0.1s;
   cursor: pointer;
   overflow: hidden;
 }
+.sensor-card.is-warm { --tone-color: var(--tone-warm); }
 
 .sensor-card.selected {
   border-color: var(--orange);
+  background-color: var(--glass-strong);
 }
-
 .sensor-card:active {
   transform: scale(0.98);
 }
 
+/* Круглая подложка иконки */
 .sensor-icon-wrapper {
-  width: 30%;
-  height: 100%;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
-
 .sensor-icon {
-  height: 80%;
-  aspect-ratio: 1 / 1;
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
+  width: 2.4rem;
+  height: 2.4rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2em; 
+  background-color: rgba(30, 30, 49, 0.45);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.62);   /* цвет иконки (stroke="currentColor") */
+  font-size: 1.2em;
+  transition: color 0.2s;
+}
+.sensor-icon > svg {
+  width: 58%;
+  height: 58%;
+}
+.sensor-card.is-cool .sensor-icon,
+.sensor-card.is-warm .sensor-icon {
+  color: var(--tone-color);
 }
 
+/* Текст */
 .sensor-content {
-  width: 70%;
-  height: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding-left: 0.8em;
-  min-width: 0; 
+  justify-content: center;
+  gap: 0.15rem;
 }
-
 .sensor-title {
-  height: 50%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-start;
   color: #ffffff;
-  font-size: clamp(0.8rem, 2.5vw, 1rem);
+  font-size: clamp(0.85rem, 3.6vw, 1rem);
   font-weight: 600;
-  line-height: 1.1;
+  line-height: 1.15;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .sensor-values {
-  height: 50%;
   display: flex;
-  align-items: flex-start; 
+  align-items: baseline;
   justify-content: space-between;
+  gap: 0.25rem;
+  font-variant-numeric: tabular-nums;
 }
-
 .sensor-set-value,
 .sensor-actual-value {
-  width: 50%;
-  text-align: left;
-  font-size: clamp(0.9rem, 3vw, 1.3rem);
-  line-height: 1.2;
   display: flex;
   align-items: baseline;
   gap: 2px;
+  min-width: 0;
+  font-size: clamp(0.78rem, 3.3vw, 1rem);
+  line-height: 1.2;
+  white-space: nowrap;
 }
+.sensor-set-value    { color: var(--tone-color); font-weight: 700; }
+.sensor-actual-value { color: rgba(255, 255, 255, 0.5); font-weight: 500; }
 
+/* Датчик без уставки: единственное значение слева, серым */
+.sensor-values.no-setpoint { justify-content: flex-start; }
 .sensor-values.no-setpoint .sensor-actual-value {
   width: 100%;
+  color: rgba(255, 255, 255, 0.6);
 }
 
-.sensor-set-value { color: #5bb2f7; }
-.sensor-actual-value { color: #aaaaaa; }
-
 .unit {
-  font-size: 0.6em;
-  opacity: 0.7;
+  margin-left: 0.15em;
+  font-size: 0.85em;
   font-weight: 400;
-  margin-left: 2px;
+  opacity: 0.85;
 }
 
 
@@ -462,77 +461,7 @@ nav a.router-link-exact-active {
 }
 
 
-/* ===== 6. ПАНЕЛЬ УСТАВКИ (MainSetpoint) ===== */
-.setpointBlock {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-content: space-around;
-  align-items: stretch;
-  width: 100%;
-  background-color: var(--background_color);
-  margin: 0;
-  padding-bottom: 1.4dvh;
-  box-shadow:
-    0 -2vw 4vw rgba(225, 225, 225, 0.1),
-    0 2vw 3vw rgba(225, 225, 225, 0.1),
-    inset 8vw 0 6vw -6vw rgba(0, 0, 0, 0.8),
-    inset -8vw 0 6vw -6vw rgba(0, 0, 0, 0.8);
-}
-.setpointValue {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  width: 100%;
-  padding: 2vw 4vw 0 4vw;
-}
-.setpointValue_number {
-  min-width: 50px;
-  font-size: clamp(1.8rem, 6vw, 2.2rem);
-  letter-spacing: 10px;
-  font-weight: bold;
-  display: flex;
-  justify-content: center;
-  align-self: center;
-  color: var(--light_font);
-}
-.setpointValue_icon {
-  height: 5dvh;
-  width: 40vw;
-  display: flex;
-  align-items: center;
-}
-.setpointValue h1 {
-  font-size: 1.8rem;
-  font-weight: 500;
-  letter-spacing: 0.2rem;
-  margin: 0;
-}
-.setpointLimits {
-  display: flex;
-  justify-content: space-between;
-  padding: 0 6vw;
-}
-.setpointLimits h4 {
-  margin: 0;
-  font-size: 0.7rem;
-  font-weight: 500;
-}
-.setpoint-overlay {
-  position: fixed !important;
-  bottom: env(safe-area-inset-bottom, 0) !important;
-  left: 0 !important;
-  right: 0 !important;
-  z-index: 10000 !important;
-  pointer-events: none;
-}
-/* Интерактив включается только внутри .setpointValue */
-.setpoint-overlay .setpointValue {
-  pointer-events: auto;
-}
-
-
+/* ===== 6. ЭКРАН ИЗМЕНЕНИЯ ЗНАЧЕНИЯ (SetpointScreen.vue) ===== */
 .setpoint-screen {
   position: fixed;
   inset: 0;
@@ -544,6 +473,8 @@ nav a.router-link-exact-active {
   -webkit-backdrop-filter: blur(12px);
   color: #ffffff;
   user-select: none;
+  touch-action: none;
+  overscroll-behavior: contain;
 }
 
 /* Шапка */
@@ -615,6 +546,9 @@ nav a.router-link-exact-active {
   font-size: 3rem;
   font-weight: 300;
   color: #fff;
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
   z-index: 2;
 }
@@ -1264,9 +1198,9 @@ form button:active {
 /* ≥630px: планшеты */
 @media (min-width: 630px) {
   .mainBody {
-    --card-min: 320px;
-    --card-max: 400px; /* Чуть увеличили для планшетов */
-    --card-gap: 1.5rem;
+    --card-min: 220px;
+    --card-max: 340px; /* на планшетах плашки не растягиваются */
+    --card-gap: 1.25rem;
   }
   .schedules-list,
   .notifications-list {
@@ -1336,8 +1270,8 @@ form button:active {
 /* Ландшафт на телефонах и планшетах */
 @media (orientation: landscape) and (max-width: 979px) {
   .mainBody {
-    --card-min: 280px;
-    --card-max: 360px;
+    --card-min: 200px;
+    --card-max: 320px;
   }
 }
 
@@ -1349,9 +1283,7 @@ form button:active {
     max-width: 98%;
   }
   .mainBody {
-    --card-gap: 0.8rem;
-    --card-min: 100%; /* На очень узких экранах карточка занимает всю ширину */
-    --card-max: 100%;
+    --card-gap: 0.7rem;   /* две плашки в ряд вплоть до ~340px; уже — автоматически одна колонка */
     padding: 0.8rem;
   }
 }

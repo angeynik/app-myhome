@@ -47,7 +47,7 @@ export const SENSOR_ICON_BY_KEY = {
 export const ICON_NAMES = [...new Set([...Object.values(SENSOR_ICON_BY_KEY), FALLBACK_ICON])];
 
 // Серверные ключи содержат кириллическую «С» (dСurrent): приводим к латинице
-function normalize(key) {
+export function normalizeSensorKey(key) {
   return String(key ?? '')
     .replace(/\u0421/g, 'C')
     .replace(/\u0441/g, 'c')
@@ -63,5 +63,5 @@ function normalize(key) {
  */
 export function resolveSensorIcon(key) {
   if (ICON_NAMES.includes(key)) return key;
-  return SENSOR_ICON_BY_KEY[normalize(key)] || FALLBACK_ICON;
+  return SENSOR_ICON_BY_KEY[normalizeSensorKey(key)] || FALLBACK_ICON;
 }

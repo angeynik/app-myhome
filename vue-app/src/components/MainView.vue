@@ -23,12 +23,7 @@
         </div>
 
         <!-- На главной — одна активная вкладка (клик = следующая) -->
-        <nav
-          v-if="showTabs"
-          class="top-nav"
-          role="tablist"
-          style="flex: 1; justify-content: center; margin: 0;"
-        >
+        <nav v-if="showTabs" class="top-nav top-nav--center" role="tablist">
           <div
             class="settings-block-title clickable selected"
             role="tab"
@@ -40,14 +35,11 @@
             @keydown.space.prevent="cycleTab"
           >
             <p>{{ currentTabLabel }}</p>
-            <span
-              aria-hidden="true"
-              style="opacity: 0.6; margin-left: 0.35em; font-weight: 400;"
-            >›</span>
+            <span class="tab-chevron" aria-hidden="true">›</span>
           </div>
         </nav>
 
-        <div v-else style="display: flex; justify-content: center; flex: 1;">
+        <div v-else class="header-center">
           <h2>{{ headerTitle }}</h2>
         </div>
 
@@ -57,37 +49,34 @@
           </svg>
         </div>
       </div>
-      <p style="width: 100%; height: 1px; background-color: var(--orange);"></p>
+      <p class="header-divider"></p>
     </header>
 
     <!-- ── ТЕЛО ─────────────────────────────────────────────────────── -->
     <div class="body">
       <router-view
         :key="routeKey"
-        :active-tab="activeTab"
+        :active-tab="showTabs ? activeTab : undefined"
         @getComponentData="getComponentData"
         @updateTypeValue="editValueMainSetpoint"
       />
     </div>
   </div>
 
-  <!-- ── Новый экран уставки ─────────────────────────────────────── -->
-  <Teleport to="body">
-    <SetpointScreen
-      v-if="showFooterSetpoint"
-      :visible="showFooterSetpoint"
-      :roomTitle="screenData.roomTitle"
-      :paramTitle="screenData.paramTitle"
-      :setPoint="setpoint"
-      :actualValue="screenData.actualValue"
-      :unit="screenData.unit"
-      :limHigh="screenLimits.limHigh"
-      :limLow="screenLimits.limLow"
-      :limStep="screenLimits.limStep"
-      @update-value="onScreenUpdateValue"
-      @close="onScreenClose"
-    />
-  </Teleport>
+  <!-- ── Экран изменения значения (сам рендерится в <body> через Teleport) ── -->
+  <SetpointScreen
+    v-if="showFooterSetpoint"
+    :roomTitle="screenData.roomTitle"
+    :paramTitle="screenData.paramTitle"
+    :setPoint="setpoint"
+    :actualValue="screenData.actualValue"
+    :unit="screenData.unit"
+    :limHigh="screenLimits.limHigh"
+    :limLow="screenLimits.limLow"
+    :limStep="screenLimits.limStep"
+    @update-value="onScreenUpdateValue"
+    @close="onScreenClose"
+  />
 </template>
 
 <script>
@@ -95,40 +84,36 @@ import logger from '@/store/modules/logger.js';
 import { mapGetters, mapActions } from 'vuex';
 import SetpointScreen from '@/components/SetpointScreen.vue';
 import { nowMoscow } from '@/utils/timeUtils';
+// Вкладки — единый источник с MainBody.vue
+import { TAB_KEYS, TAB_STORAGE_KEY, getTab, readSavedTab } from '@/utils/mainTabs';
 
-// Вкладки главного экрана. Должны совпадать с TAB_SECTIONS в MainBody.vue
-const TABS = [
-  { key: 'control', label: 'Панель управления' },
-  { key: 'devices', label: 'Состояние устройств' },
-  { key: 'general', label: 'Общие настройки' },
-];
-const TAB_KEYS = TABS.map((t) => t.key);
-const TAB_STORAGE_KEY = 'mainViewTab';
+// Подписи редактируемого поля на экране изменения значения (когда правится не уставка)
+const FIELD_LABELS = {
+  startTime: 'Начало',
+  endTime: 'Окончание',
+  frequency: 'Частота',
+  sensityRate: 'Чувствительность',
+  value: 'Значение',
+};
 
 export default {
   name: 'MainView',
-  components: { SetpointScreen }, // ИСПРАВЛЕНО: зарегистрирован только SetpointScreen
+  components: { SetpointScreen },
 
   provide() {
     return {
-      getMainSetpointEl: () => null,
+      // Экран уставки рендерится в <body>; MainBodySettings не должен снимать выделение поля при кликах по нему
+      getMainSetpointEl: () => document.querySelector('.setpoint-screen'),
     };
   },
 
   data() {
-    let initialTab = 'control';
-    try {
-      const saved = localStorage.getItem(TAB_STORAGE_KEY);
-      if (TAB_KEYS.includes(saved)) initialTab = saved;
-    } catch { /* приватный режим */ }
-
     return {
-      request: null,
+      request: null,          // 'setpoints' | 'schedules' | 'notifications' | 'statistics'
+      valueTitle: 'value',    // какое поле правится: 'value' | 'startTime' | 'endTime' | 'frequency' | …
       setpoint: null,
-      selectedItemData: {},
-      screenData: {}, // ДОБАВЛЕНО
-      activeTab: initialTab,
-      tabs: TABS,
+      screenData: {},
+      activeTab: readSavedTab(),
     };
   },
 
@@ -136,8 +121,15 @@ export default {
     ...mapGetters(['dID', 'showSetpoint']),
     ...mapGetters('config', ['getMobile']),
     
+    // Лимиты поля по умолчанию подставляются ПОЭЛЕМЕНТНО: null в limHigh/limLow раньше
+    // превращался в 0 при сравнении и «схлопывал» диапазон
     screenLimits() {
-      return this.$store.state.settingsData?.limits || { limHigh: 36, limLow: 8, limStep: 0.5 };
+      const l = this.$store.getters.settingsDataLimits || {};
+      return {
+        limHigh: l.limHigh ?? 36,
+        limLow: l.limLow ?? 8,
+        limStep: l.limStep ?? 0.5,
+      };
     },
 
     headerTitle() {
@@ -149,8 +141,7 @@ export default {
     },
 
     currentTabLabel() {
-      const t = this.tabs.find((x) => x.key === this.activeTab);
-      return t ? t.label : 'Панель управления';
+      return getTab(this.activeTab).label;
     },
 
     showFooterSetpoint() {
@@ -172,19 +163,26 @@ export default {
     ...mapActions(['updatePayloadData']),
     ...mapActions('dropdown', ['show']),
 
-    // ИСПРАВЛЕНО: оставлен только один метод getComponentData (новый)
+    // ── Показ/скрытие экрана изменения значения ─────────────────────
     getComponentData(event) {
       logger.dev('[MainView] - getComponentData:', event);
+      const u = event.updateState;
       this.request = event.request;
-      this.setpoint = event.updateState.value;
+      this.valueTitle = u.title || 'value';
+      this.setpoint = u.value;
 
       if (event.action === 'show') {
         this.$store.commit('SHOW_SETPOINT', true);
+        const isSetpoint = event.request === 'setpoints';
         this.screenData = {
-          roomTitle: event.updateState.roomTitle || 'Комната',
-          paramTitle: event.updateState.paramTitle || 'Параметр',
-          actualValue: event.updateState.actualValue,
-          unit: event.updateState.unit,
+          roomTitle: u.roomTitle || this.$store.getters['sortParams/getRoomTitle'] || 'Комната',
+          // для настроек (расписание/уведомление/аналитика) — подпись редактируемого поля
+          paramTitle: u.paramTitle
+            || (isSetpoint ? null : FIELD_LABELS[this.valueTitle])
+            || this.$store.getters['sortParams/getParamTitle']
+            || 'Параметр',
+          actualValue: u.actualValue,
+          unit: u.unit,
         };
       } else if (event.action === 'hide') {
         this.$store.commit('SHOW_SETPOINT', false);
@@ -199,11 +197,13 @@ export default {
     },
 
     onScreenUpdateValue(newValue) {
-      // Перенаправляем изменение с нового экрана в старую логику отправки
+      // request и title берём из того, что открыло экран. Раньше здесь было жёстко
+      // 'setpoints'/'value': правка расписания, уведомления или аналитики уходила бы на
+      // сервер как изменение УСТАВКИ.
       this.editValueMainSetpoint({
         updateState: {
-          request: 'setpoints',
-          title: 'value',
+          request: this.request || 'setpoints',
+          title: this.valueTitle || 'value',
           value: newValue,
         },
       });
@@ -214,14 +214,14 @@ export default {
       this.setpoint = null;
       this.screenData = {};
       this.request = null;
+      this.valueTitle = 'value';
       this.flushPendingUpdate();
     },
 
     // ── Вкладки ─────────────────────────────────────────────────────
     cycleTab() {
       const idx = TAB_KEYS.indexOf(this.activeTab);
-      const next = TAB_KEYS[(idx + 1) % TAB_KEYS.length];
-      this.setActiveTab(next);
+      this.setActiveTab(TAB_KEYS[(idx + 1) % TAB_KEYS.length]);
     },
 
     setActiveTab(tabKey) {
@@ -260,7 +260,7 @@ export default {
     // ── Изменение уставки ───────────────────────────────────────────
     async editValueMainSetpoint(eventData) {
       logger.dev('[MainView] - editValueMainSetpoint:', eventData);
-      const settingsData = this.$store.state.setpointsManager?.settingsData;
+      const settingsData = this.$store.getters.getSetpointsManager?.settingsData;
       if (!settingsData) {
         logger.error('[MainView] - editValueMainSetpoint - settingsData не инициализировано');
         return;
@@ -299,7 +299,7 @@ export default {
         } else if (typeof value === 'boolean') {
           // boolean оставляем как есть
         } else {
-          value = Math.round(parseFloat(value) * 10) / 10;
+          value = this.roundByStep(parseFloat(value));
         }
         this.setpoint = value;
 
@@ -419,6 +419,13 @@ export default {
       }, 300);
     },
 
+    // Округление по точности шага (минимум 1 знак): при шаге 0.25 значение не «прыгает»
+    roundByStep(value) {
+      const part = String(this.screenLimits.limStep).split('.')[1] || '';
+      const decimals = Math.max(1, Math.min(4, part.length));
+      return Number(value.toFixed(decimals));
+    },
+
     async flushPendingUpdate() {
       if (!this.setpointUpdateTimer) return;
       clearTimeout(this.setpointUpdateTimer);
@@ -429,15 +436,6 @@ export default {
       } catch (error) {
         logger.error('[MainView] - flushPendingUpdate - ошибка:', error);
       }
-    },
-
-    async handleSetpointInactivity() {
-      logger.dev('[MainView] - handleSetpointInactivity - скрываем панель');
-      await this.flushPendingUpdate();
-      this.$store.commit('SHOW_SETPOINT', false);
-      this.setpoint = null;
-      this.selectedItemData = {};
-      this.request = null;
     },
   },
 };

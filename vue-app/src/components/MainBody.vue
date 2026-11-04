@@ -1,6 +1,10 @@
+<!-- components/MainBody.vue -->
 <template>
-  <div v-if="isLoading" class="loading">Загрузка...</div>
-  <div v-else-if="error" class="error">{{ error }}</div>
+  <div v-if="showLoading" class="loading">Загрузка...</div>
+  <div v-else-if="error" class="error">
+    {{ error }}
+    <button type="button" @click="retryLoad">Повторить</button>
+  </div>
   <div v-else id="app_mainBody" class="mainBody">
     <template v-if="groupedView.length">
       <section
@@ -14,8 +18,8 @@
         </div>
         <div class="room-group-items">
           <MainBodyValue
-            v-for="(item, index) in group.items"
-            :key="`${group.roomKey}-${index}-${item.paramKey}-${item.setpointKey}`"
+            v-for="item in group.items"
+            :key="itemId(item)"
             :value="item.value"
             :unit="item.unit"
             :paramTitle="item.paramTitle"
@@ -29,7 +33,7 @@
         </div>
       </section>
     </template>
-    <p v-else class="mainBody-empty">{{ emptyText }}</p>
+    <p v-else class="mainBody-empty">{{ currentTab.emptyText }}</p>
   </div>
 </template>
 
@@ -38,68 +42,100 @@ import { mapGetters, mapActions } from 'vuex';
 import MainBodyValue from './MainBodyValue.vue';
 import logger from '../store/modules/logger.js';
 import { parseMoscowDate } from '@/utils/timeUtils';
+import { COMMON_KEY, DEFAULT_TAB, TAB_KEYS, getTab } from '@/utils/mainTabs';
 
 const STRIP_DIGITS = /\d+$/;
 const ROOM_KEY_RE = /^room\d+$/;
-const COMMON_KEY = 'common';
-
-const TAB_SECTIONS = {
-  control: ['sensors'],
-  devices: ['system'],
-};
+const DOUBLE_CLICK_DELAY = 300;
+const CLOCK_TICK = 30 * 1000; // обновление подписей «N мин назад»
 
 export default {
   name: 'MainBody',
   components: { MainBodyValue },
+  emits: ['getComponentData'],
 
   props: {
-    activeTab: { type: String, default: 'control' },
+    // Активная вкладка главного экрана (см. utils/mainTabs.js)
+    activeTab: {
+      type: String,
+      default: DEFAULT_TAB,
+      validator: (value) => TAB_KEYS.includes(value),
+    },
   },
 
   data() {
     return {
       selectedItem: null,
       doubleClickTimer: null,
-      pendingItem: null,
+      pendingItem: null,   // id элемента, ожидающего второго клика
+      now: Date.now(),
+      clockTimer: null,
     };
   },
 
   computed: {
     ...mapGetters('config', ['isLoading', 'error', 'getConfig', 'clearKeySync']),
     ...mapGetters('sortParams', ['getSensorTitle', 'getUnit']),
-    ...mapGetters(['dID', 'typeSettingsKey']),
+    ...mapGetters(['dID', 'typeSettingsKey', 'showSetpoint']),
 
-    groupedView() {
-      const config = this.getConfig(this.dID);
-      if (!config || Object.keys(config).length === 0) return [];
-      return this.getAllData(config, this.activeTab);
+    currentTab() {
+      return getTab(this.activeTab);
     },
 
-    emptyText() {
-      switch (this.activeTab) {
-        case 'devices': return 'Нет данных о состоянии устройств';
-        case 'general': return 'Нет данных общих настроек';
-        default:        return 'Нет данных для отображения';
-      }
+    config() {
+      return this.getConfig(this.dID);
+    },
+
+    hasConfig() {
+      return !!this.config && Object.keys(this.config).length > 0;
+    },
+
+    // Пока конфиг не пришёл — «Загрузка…», а не пустое состояние
+    showLoading() {
+      return !this.error && (this.isLoading || !this.hasConfig);
+    },
+
+    // Зависит от конфига (WS-обновления отражаются сразу) и от «часов» this.now
+    groupedView() {
+      if (!this.hasConfig) return [];
+      return this.getAllData(this.config, this.currentTab, this.now);
     },
   },
 
   watch: {
-    '$store.state.showSetpoint'(newVal) {
-      if (newVal === false && this.selectedItem) this.clearSelection();
+    showSetpoint(visible) {
+      if (!visible && this.selectedItem) this.clearSelection();
     },
     activeTab() {
       this.clearSelection();
     },
   },
 
+  mounted() {
+    this.clockTimer = setInterval(() => { this.now = Date.now(); }, CLOCK_TICK);
+  },
+
   beforeUnmount() {
-    if (this.doubleClickTimer) clearTimeout(this.doubleClickTimer);
+    clearInterval(this.clockTimer);
+    clearTimeout(this.doubleClickTimer);
   },
 
   methods: {
     ...mapActions('sortParams', ['setLimits']),
     ...mapActions(['updateSettingsData', 'updatePayloadData']),
+
+    async retryLoad() {
+      try {
+        await this.$store.dispatch('config/initialize');
+      } catch (e) {
+        logger.error('[MainBody] - retryLoad - Ошибка:', e.message);
+      }
+    },
+
+    // Уникальный идентификатор карточки (для key и сравнения выбора)
+    itemId(item) {
+      return `${item.roomKey}|${item.paramKey}|${item.setpointKey}`;
+    },
 
     _buildItem(overrides) {
       return {
@@ -121,10 +157,14 @@ export default {
       };
     },
 
+    /**
+     * Парная уставка по совпадению номера: dTemp02 → sTemp02.
+     * Нет такой — карточка read-only.
+     */
     _resolveSetpoint(room, sensorKey) {
       if (!room?.setpoints || !sensorKey) return { setValue: null, setpointKey: null };
-      const num  = (sensorKey.match(/(\d+)$/) || [])[1] || '';
-      const base = 's' + sensorKey.slice(1).replace(/\d+$/, '');
+      const num = (sensorKey.match(/(\d+)$/) || [])[1] || '';
+      const base = 's' + sensorKey.slice(1).replace(STRIP_DIGITS, '');
       const candidate = `${base}${num}`;
 
       const spData = room.setpoints[candidate];
@@ -138,13 +178,18 @@ export default {
       return { setValue, setpointKey: candidate };
     },
 
+    // null — «нет данных» (в карточке «—»). Раньше отсутствующее число становилось 0.0:
+    // для датчика это ложное показание.
     getSensorValue(key, data) {
       if (!data) return null;
       const raw = data.value;
 
       switch (key) {
-        case 'num':
-          return raw != null ? parseFloat(raw) : 0;
+        case 'num': {
+          if (raw === null || raw === undefined) return null;
+          const num = parseFloat(raw);
+          return Number.isNaN(num) ? null : num;
+        }
         case 'bool':
         case 'dBool': {
           if (raw == null) return null;
@@ -157,40 +202,43 @@ export default {
       }
     },
 
-    getTimeDiff(timestamp) {
+    getTimeDiff(timestamp, now) {
       if (!timestamp) return 'Неизвестно';
       let time;
-      try {
-        if (typeof timestamp === 'number') {
-          time = timestamp;
-        } else if (typeof timestamp === 'string') {
-          time = parseMoscowDate(timestamp);
-          if (isNaN(time)) time = new Date(timestamp).getTime();
-        } else {
-          return 'Неизвестно';
-        }
-        if (isNaN(time)) return 'Неизвестно';
-
-        const diff = Math.floor((Date.now() - time) / 60000);
-        if (diff < 1) return 'сейчас';
-        if (diff < 60) return `${diff} мин назад`;
-        if (diff < 1440) return `${Math.floor(diff / 60)} ч назад`;
-        return `${Math.floor(diff / 1440)} дн назад`;
-      } catch {
+      if (typeof timestamp === 'number') {
+        time = timestamp;
+      } else if (typeof timestamp === 'string') {
+        time = parseMoscowDate(timestamp);
+        if (Number.isNaN(time)) time = new Date(timestamp).getTime();
+      } else {
         return 'Неизвестно';
       }
+      if (Number.isNaN(time)) return 'Неизвестно';
+
+      const diff = Math.floor((now - time) / 60000);
+      if (diff < 1) return 'сейчас';
+      if (diff < 60) return `${diff} мин назад`;
+      if (diff < 1440) return `${Math.floor(diff / 60)} ч назад`;
+      return `${Math.floor(diff / 1440)} дн назад`;
     },
 
-    getAllData(config, tab = 'control') {
-      if (tab === 'general') return this._getGeneralData(config);
-      return this._getRoomData(config, tab);
+    getAllData(config, tab, now) {
+      return tab.common
+        ? this._getCommonData(config, tab, now)
+        : this._getRoomData(config, tab, now);
     },
 
-    _getGeneralData(config) {
+    // Вкладка «Общие настройки»: корневой объект common, одна группа
+    _getCommonData(config, tab, now) {
       const common = config[COMMON_KEY];
-      if (!common?.system) return [];
-      const items = this._collectItems(COMMON_KEY, common, 'system', false);
+      if (!common || typeof common !== 'object') return [];
+
+      const items = [];
+      for (const sectionKey of tab.sections) {
+        items.push(...this._collectItems(COMMON_KEY, common, sectionKey, false, now));
+      }
       if (!items.length) return [];
+
       return [{
         roomKey: COMMON_KEY,
         header: common.group || common.title || 'Общие настройки',
@@ -199,9 +247,8 @@ export default {
       }];
     },
 
-    _getRoomData(config, tab) {
-      const sections = TAB_SECTIONS[tab] || [];
-      const withSetpoint = tab === 'control';
+    // Вкладки по комнатам (roomNN)
+    _getRoomData(config, tab, now) {
       const groups = [];
 
       for (const [roomKey, room] of Object.entries(config)) {
@@ -209,8 +256,8 @@ export default {
         if (!room || typeof room !== 'object') continue;
 
         const items = [];
-        for (const sectionKey of sections) {
-          items.push(...this._collectItems(roomKey, room, sectionKey, withSetpoint));
+        for (const sectionKey of tab.sections) {
+          items.push(...this._collectItems(roomKey, room, sectionKey, tab.withSetpoint, now));
         }
         if (!items.length) continue;
 
@@ -226,7 +273,7 @@ export default {
       return groups;
     },
 
-    _collectItems(roomKey, room, sectionKey, withSetpoint) {
+    _collectItems(roomKey, room, sectionKey, withSetpoint, now) {
       const sectionData = room[sectionKey];
       if (!sectionData || typeof sectionData !== 'object') return [];
 
@@ -250,7 +297,7 @@ export default {
           setValue,
           setpointKey,
           unit: this.getUnit(itemKey),
-          timeDiff: this.getTimeDiff(itemData?.lastUpdate),
+          timeDiff: this.getTimeDiff(itemData?.lastUpdate, now),
           roomTitle: room.title,
           roomGroup: room.group,
           roomId: room.id,
@@ -260,15 +307,15 @@ export default {
       return items;
     },
 
+    // Сравнение по ключу, а не по ссылке: groupedView пересобирается при каждом обновлении
     isSelected(item) {
-      return this.selectedItem
-        && this.selectedItem.roomId === item.roomId
-        && this.selectedItem.paramKey === item.paramKey
-        && this.selectedItem.setpointKey === item.setpointKey;
+      return !!this.selectedItem && this.itemId(this.selectedItem) === this.itemId(item);
     },
 
     selectItem(item) {
-      if (this.doubleClickTimer && this.pendingItem === item) {
+      const id = this.itemId(item);
+
+      if (this.doubleClickTimer && this.pendingItem === id) {
         clearTimeout(this.doubleClickTimer);
         this.doubleClickTimer = null;
         this.pendingItem = null;
@@ -276,66 +323,24 @@ export default {
         return;
       }
 
-      this.pendingItem = item;
-      if (this.doubleClickTimer) clearTimeout(this.doubleClickTimer);
+      this.pendingItem = id;
+      clearTimeout(this.doubleClickTimer);
       this.doubleClickTimer = setTimeout(() => {
-        this.singleClickAction(item);
         this.doubleClickTimer = null;
         this.pendingItem = null;
-      }, 300);
+        this.singleClickAction(item);
+      }, DOUBLE_CLICK_DELAY);
     },
 
-    // singleClickAction(item) {
-    //   const clearParam = this.clearKeySync(item.paramKey);
-
-    //   if (this.isSelected(item)) {
-    //     this.selectedItem = null;
-    //     this.$emit('getComponentData', {
-    //       action: 'hide',
-    //       updateState: {
-    //         value: item.setValue,
-    //         title: 'value',
-    //         key: clearParam,
-    //         roomKey: item.roomKey,
-    //         paramKey: item.paramKey,
-    //       },
-    //     });
-    //     return;
-    //   }
-
-    //   this.selectedItem = item;
-    //   this.updatePayloadData({
-    //     value: item.setValue,
-    //     param: item.paramKey,
-    //     key: clearParam,
-    //     setKey: item.setpointKey,
-    //     id: item.roomId,
-    //     room: item.roomKey,
-    //   });
-    //   this.setLimits({ param: clearParam, valueType: 'absolute' });
-
-    //   if (item.setpointKey && item.setValue !== undefined && item.setValue !== null && clearParam) {
-    //     this.$emit('getComponentData', {
-    //       action: 'show',
-    //       request: 'setpoints',
-    //       updateState: {
-    //         value: item.setValue,
-    //         title: 'value',
-    //         key: clearParam,
-    //         roomKey: item.roomKey,
-    //         paramKey: item.paramKey,
-    //         setpointKey: item.setpointKey,
-    //       },
-    //     });
-    //   } else {
-    //     logger.dev('[MainBody] - singleClickAction - карточка без уставки:', item.paramKey);
-    //   }
-
-    //   this.updateSettingsData({ field: 'request', value: 'setpoints' });
-    // },
-
-        singleClickAction(item) {
+    singleClickAction(item) {
       const clearParam = this.clearKeySync(item.paramKey);
+
+      // Карточка без уставки (датчик, «Состояние устройств», «Общие настройки») — только для чтения:
+      // не выбираем её и не трогаем payload (иначе в payload.room попадал бы ключ 'common').
+      if (!item.setpointKey || item.setValue === undefined || item.setValue === null || !clearParam) {
+        logger.dev('[MainBody] - singleClickAction - карточка без уставки:', item.paramKey);
+        return;
+      }
 
       if (this.isSelected(item)) {
         this.selectedItem = null;
@@ -363,42 +368,31 @@ export default {
       });
       this.setLimits({ param: clearParam, valueType: 'absolute' });
 
-      if (item.setpointKey && item.setValue !== undefined && item.setValue !== null && clearParam) {
-        this.$emit('getComponentData', {
-          action: 'show',
-          request: 'setpoints',
-          updateState: {
-            value: item.setValue,
-            title: 'value',
-            key: clearParam,
-            roomKey: item.roomKey,
-            paramKey: item.paramKey,
-            setpointKey: item.setpointKey,
-            // ДОБАВЛЕНО:
-            roomTitle: item.roomTitle || item.roomGroup,
-            paramTitle: item.paramTitle,
-            actualValue: item.value,
-            unit: item.unit,
-          },
-        });
-      } else {
-        logger.dev('[MainBody] - singleClickAction - карточка без уставки:', item.paramKey);
-      }
+      this.$emit('getComponentData', {
+        action: 'show',
+        request: 'setpoints',
+        updateState: {
+          value: item.setValue,
+          title: 'value',
+          key: clearParam,
+          roomKey: item.roomKey,
+          paramKey: item.paramKey,
+          setpointKey: item.setpointKey,
+          // Данные для SetpointScreen
+          roomTitle: item.roomGroup || item.roomTitle,
+          paramTitle: item.paramTitle,
+          actualValue: item.value,
+          unit: item.unit,
+        },
+      });
 
       this.updateSettingsData({ field: 'request', value: 'setpoints' });
     },
-    
+
     DclickSelectItem(item) {
       const clearParam = this.clearKeySync(item.paramKey);
-      if (this.doubleClickTimer) {
-        clearTimeout(this.doubleClickTimer);
-        this.doubleClickTimer = null;
-      }
 
-      const config = this.getConfig(this.dID);
-      if (!config) return;
-
-      const roomConfig = config[item.roomKey];
+      const roomConfig = this.config[item.roomKey];
       const spData = roomConfig?.setpoints?.[item.setpointKey];
       if (!roomConfig?.setpoints || !item.setpointKey || spData?.value == null) {
         this.$store.dispatch('popup/show', {
@@ -410,15 +404,16 @@ export default {
       }
       if (!clearParam) return;
 
+      const settingsType = this.typeSettingsKey || 'schedules';
+
       this.updatePayloadData({
         param: item.paramKey,
         key: clearParam,
         room: item.roomKey,
-        config: this.typeSettingsKey,
+        config: settingsType,
         value: item.setValue,
       });
 
-      const settingsType = this.typeSettingsKey || 'schedules';
       this.$emit('getComponentData', {
         action: 'hide',
         request: settingsType,
@@ -430,10 +425,8 @@ export default {
     clearSelection() {
       if (!this.selectedItem) return;
       this.selectedItem = null;
-      if (this.doubleClickTimer) {
-        clearTimeout(this.doubleClickTimer);
-        this.doubleClickTimer = null;
-      }
+      clearTimeout(this.doubleClickTimer);
+      this.doubleClickTimer = null;
       this.pendingItem = null;
     },
   },
