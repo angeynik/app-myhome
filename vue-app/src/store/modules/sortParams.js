@@ -27,11 +27,13 @@ const SENSOR_TITLES = {
   sHum: 'Уставка влажности',
   sActuator: 'Уставка актуатор',
   dCurSetpoint: 'Уставка Термостата',
+  dStat: 'Статус',
 };
 
 // [подстрока ключа, единица измерения]; порядок важен
 const UNIT_RULES = [
   ['Temp', '°C'],
+  ['CurSetpoint', '°C'],
   ['Hum', '%'],
   ['Press', 'hPa'],
   ['Power', 'W'],
@@ -40,6 +42,7 @@ const UNIT_RULES = [
   ['Voltage', 'V'],
   ['Frequency', 'Hz'],
   ['Energy', 'kWh'],
+
 ];
 
 function getSensorTitle(key) {

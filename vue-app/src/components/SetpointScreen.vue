@@ -102,9 +102,9 @@ export default {
     actualValue: { type: [Number, String], default: null },
     unit: { type: String, default: '' },
     // null/undefined (лимиты ещё не рассчитаны) → значения по умолчанию, см. computed
-    limHigh: { type: Number, default: null },
-    limLow: { type: Number, default: null },
-    limStep: { type: Number, default: null },
+    limHigh: { type: Number, default: 36 },
+    limLow: { type: Number, default: 8 },
+    limStep: { type: Number, default: 0.5 },
   },
 
   data() {

@@ -459,21 +459,21 @@ export default {
     },
 
     // Отправка пользовательской конфигурации на сервер
-    async userConfigRequest({ dispatch, rootGetters }, { configData, isEdit }) {
-      const dID = rootGetters['dID'];
-      if (!dID) throw new Error('dID не определён');
+    // async userConfigRequest({ dispatch, rootGetters }, { configData, isEdit }) {
+    //   const dID = rootGetters['dID'];
+    //   if (!dID) throw new Error('dID не определён');
 
-      const request = isEdit ? 'userConfigEdit' : 'userConfigRequest';
-      // Не логируем configData: внутри лежит пароль
-      logger.info('[config] - userConfigRequest - отправка:', request, 'dID:', dID);
+    //   const request = isEdit ? 'userConfigEdit' : 'userConfigRequest';
+    //   // Не логируем configData: внутри лежит пароль
+    //   logger.info('[config] - userConfigRequest - отправка:', request, 'dID:', dID);
 
-      await dispatch('websocket/send', {
-        type: 'post',
-        request,
-        name: dID,
-        payload: configData,
-      }, { root: true });
-    },
+    //   await dispatch('websocket/send', {
+    //     type: 'post',
+    //     request,
+    //     name: dID,
+    //     payload: configData,
+    //   }, { root: true });
+    // },
 
     checkLimitBeforeAdd({ rootState, rootGetters }, configType) {
       const denied = { allowed: false, limit: 0, current: 0 };

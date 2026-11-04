@@ -8,18 +8,18 @@ import store from '@/store';
 import logger from '../store/modules/logger';
 
 // ─── Feature-флаги сборки ─────────────────────────────────────────────────
-function isFeatureEnabled(envKey) {
-  return process.env[envKey] !== 'false';
-}
+// function isFeatureEnabled(envKey) {
+//   return process.env[envKey] !== 'false';
+// }
 
-const featureRoutes = [
-  ...(isFeatureEnabled('VUE_APP_FEATURE_CONFIGURATION') ? [{
-    path: '/configuration',
-    name: 'Configuration',
-    component: () => import('../ConFiguration.vue'),
-    meta: { public: true },
-  }] : []),
-];
+// const featureRoutes = [
+//   ...(isFeatureEnabled('VUE_APP_FEATURE_CONFIGURATION') ? [{
+//     path: '/configuration',
+//     name: 'Configuration',
+//     component: () => import('../ConFiguration.vue'),
+//     meta: { public: true },
+//   }] : []),
+// ];
 
 const routes = [
   // ── Главный экран: MainView (shell) + вложенные дочерние ───────────────
@@ -44,7 +44,7 @@ const routes = [
   },
 
   // ── Feature-управляемые разделы ────────────────────────────────────────
-  ...featureRoutes,
+  // ...featureRoutes,
 
   // ── Аутентификация ─────────────────────────────────────────────────────
   {

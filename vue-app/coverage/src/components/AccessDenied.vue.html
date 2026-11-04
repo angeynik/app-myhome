@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">55.55% </span>
+                <span class="strong">86.66% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>10/18</span>
+                <span class='fraction'>13/15</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">47.05% </span>
+                <span class="strong">58.33% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>16/34</span>
+                <span class='fraction'>7/12</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">11.11% </span>
+                <span class="strong">33.33% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/9</span>
+                <span class='fraction'>1/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">55.55% </span>
+                <span class="strong">86.66% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>10/18</span>
+                <span class='fraction'>13/15</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -92,18 +92,10 @@
 <a name='L27'></a><a href='#L27'>27</a>
 <a name='L28'></a><a href='#L28'>28</a>
 <a name='L29'></a><a href='#L29'>29</a>
-<a name='L30'></a><a href='#L30'>30</a>
-<a name='L31'></a><a href='#L31'>31</a>
-<a name='L32'></a><a href='#L32'>32</a>
-<a name='L33'></a><a href='#L33'>33</a>
-<a name='L34'></a><a href='#L34'>34</a>
-<a name='L35'></a><a href='#L35'>35</a>
-<a name='L36'></a><a href='#L36'>36</a>
-<a name='L37'></a><a href='#L37'>37</a>
-<a name='L38'></a><a href='#L38'>38</a>
-<a name='L39'></a><a href='#L39'>39</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L30'></a><a href='#L30'>30</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -129,62 +121,43 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">&lt;template&gt;
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">&lt;!-- components/AccessDenied.vue --&gt;
+&lt;template&gt;
+  &lt;div&gt;
     &lt;div class="header-bottom"&gt;
-      &lt;nav&gt;
-              &lt;router-link to="/login"&gt;Login&lt;/router-link&gt; |
-              &lt;router-link to="/dashboard"&gt;Dashboard&lt;/router-link&gt; |
-              &lt;router-link to="/smart-home"&gt;Smart Home&lt;/router-link&gt; |
-              &lt;router-link to="/manufact-automatation"&gt;Automation&lt;/router-link&gt; |
-                  &lt;!-- Profile (доступна для level 2 и 3) --&gt;
-              &lt;router-link v-if="userLevel &gt;= 2" to="/profile"&gt;Profile&lt;/router-link&gt;
-                  &lt;!-- Users (доступна для level 3) --&gt;
-              &lt;router-link v-if="userLevel &gt;= 3" to="/users"&gt;Users&lt;/router-link&gt;
-          &lt;/nav&gt;
-        &lt;/div&gt;
-        &lt;p style="width: 100%; height: 1px; background-color: var(--orange);"&gt; &lt;/p&gt;
-          &lt;div&gt;
-      &lt;h1&gt;403 - Доступ запрещен&lt;/h1&gt;
+      &lt;TopNav /&gt;
+    &lt;/div&gt;
+    &lt;p style="width: 100%; height: 1px; background-color: var(--orange);"&gt;&lt;/p&gt;
+&nbsp;
+    &lt;div style="padding: 0 10px;"&gt;
+      &lt;h1&gt;403 — Доступ запрещён&lt;/h1&gt;
       &lt;p&gt;У вас недостаточно прав для просмотра этой страницы.&lt;/p&gt;
-      &lt;router-link to="/login"&gt;Авторизация&lt;/router-link&gt;
+      &lt;router-link v-if="!isAuthenticated" to="/login"&gt;Авторизация&lt;/router-link&gt;
       &lt;router-link to="/"&gt;Вернуться на главную&lt;/router-link&gt;
     &lt;/div&gt;
-  &lt;/template&gt;
-  
-  &lt;script&gt;
-  import { mapGetters } from 'vuex'; 
-  export default {
-    name: 'AccessDenied',
-    computed: {
-    ...mapGetters(['level']), // Получаем уровень доступа из Vuex
-    userLevel() {
-      console.log('Уровень доступа пользователя:', this.level);
-      return this.level || 0; // Если уровень не задан, считаем его равным 0
-    },
+  &lt;/div&gt;
+&lt;/template&gt;
+&nbsp;
+&lt;script&gt;
+import { mapGetters } from 'vuex';
+import TopNav from '@/components/TopNav.vue';
+&nbsp;
+export default {
+  name: 'AccessDenied',
+  components: { TopNav },
+  computed: {
+    ...mapGetters(['isAuthenticated']),
   },
-  };
-  &lt;/script&gt;
-  
-  &lt;style scoped&gt;
-  /* Стили для страницы ошибки */
-  &lt;/style&gt;</pre></td></tr></table></pre>
+};
+&lt;/script&gt;
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-23T10:44:38.499Z
+                at 2026-11-04T07:14:49.989Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

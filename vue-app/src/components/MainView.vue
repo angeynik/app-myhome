@@ -128,7 +128,7 @@ export default {
       return {
         limHigh: l.limHigh ?? 36,
         limLow: l.limLow ?? 8,
-        limStep: l.limStep ?? 0.5,
+        limStep: l.limStep ?? 1,
       };
     },
 

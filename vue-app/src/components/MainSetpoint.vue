@@ -155,7 +155,7 @@
         return this.$store.state.settingsData?.limits?.limHigh ?? 36;
       },
       limLow() {
-        return this.$store.state.settingsData?.limits?.limLow ?? 5;
+        return this.$store.state.settingsData?.limits?.limLow ?? 8;
       },
       limStep() {
         return this.$store.state.settingsData?.limits?.limStep ?? 1;
