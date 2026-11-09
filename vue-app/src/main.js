@@ -1,0 +1,78 @@
+// main.js
+import { createApp } from 'vue';
+import App from './App.vue';
+import store from './store/index.js';
+import router from './router/routes.js';
+
+const app = createApp(App);
+app.use(store);
+(async () => {
+  try {
+    await store.dispatch('initializeStore');
+
+    // Пробуем поднять WS-соединение и восстановить сессию по JWT.
+    // Если токена нет или он недействителен — resume вернёт null,
+    // и роутер отправит на /login через navigation guard.
+    await store.dispatch('websocket/connect');
+    if (store.state.auth.token) {
+      await store.dispatch('auth/resume');
+    }
+  } catch (e) {
+    console.warn('[MAIN] bootstrap:', e.message);
+    // Сервер недоступен — монтируем приложение всё равно;
+    // WS переподключится сам, роутер отправит на /login.
+  } finally {
+    app.use(router);
+    app.mount('#app');
+  }
+})();
+
+
+// store.dispatch('initializeStore').then(async () => {
+//   // Авто-логин ДО подключения роутера
+//   const user = store.state.auth.user;
+//   const token = store.state.auth.token;
+//   if (user && user.username && user.password && token !== 'local-token') {
+//     await store.dispatch('auth/login', {
+//       username: user.username,
+//       password: user.password,
+//     });
+//     console.log('[MAIN] после auth/login, isAuthenticated:', store.getters.isAuthenticated);
+//   } else if (user && token === 'local-token') {
+//     // уже восстановлено через RESTORE_AUTH, просто логируем
+//     console.log('[MAIN] Локальная сессия восстановлена, dID:', user.dID);
+//   } else {
+//     console.log('[MAIN] нет данных для авто-логина, user:', user);
+//   }
+
+//   // Роутер подключаем ПОСЛЕ — guard увидит уже заполненный store
+//   app.use(router);
+//   app.mount('#app');
+// });
+// store.dispatch('initializeStore').then(async () => {
+//   const user = store.state.auth.user;
+//   const token = store.state.auth.token;
+
+//   try {
+//     if (user && user.username && user.password && token !== 'local-token') {
+//       await store.dispatch('auth/login', {
+//         username: user.username,
+//         password: user.password,
+//       });
+//       console.log('[MAIN] после auth/login, isAuthenticated:', store.getters.isAuthenticated);
+//     } else if (user && token === 'local-token') {
+//       console.log('[MAIN] Локальная сессия восстановлена, dID:', user.dID);
+//     } else {
+//       console.log('[MAIN] нет данных для авто-логина, user:', user);
+//     }
+//   } catch (error) {
+//     console.error('[MAIN] Ошибка при авто-логине:', error);
+//     // Можно показать попап, но приложение всё равно монтируется
+//   } finally {
+//     app.use(router);
+//     app.mount('#app');
+//   }
+// });
+// store.dispatch('initializeStore').then(() => {
+//   app.mount('#app');
+// });

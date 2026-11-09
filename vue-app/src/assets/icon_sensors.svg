@@ -1,0 +1,39 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" width="512" height="512">
+<title>Датчики</title>
+<style>
+  .bg { fill: #1a2332; }
+  .card { fill: #232e3e; stroke: #2e3d52; stroke-width: 6; }
+  .orange { fill: #f07820; }
+  .orange-dark { fill: #c05e10; }
+  .gray { fill: #4a5568; }
+  .gray-light { fill: #6b7a8e; }
+  .gray-lighter { fill: #8b9ab0; }
+  .accent-dot { fill: #f07820; }
+  .dark-dot { fill: #141c28; }
+</style>
+<rect x="40" y="40" width="432" height="432" rx="64" class="bg"/>
+<rect x="40" y="40" width="432" height="432" rx="64" class="card"/>
+<circle cx="256" cy="258" r="68" class="gray"/>
+<circle cx="256" cy="258" r="52" fill="#3a4a5e"/>
+<circle cx="256" cy="258" r="34" class="orange"/>
+<circle cx="256" cy="258" r="22" class="orange-dark"/>
+<circle cx="256" cy="258" r="10" fill="#141c28"/>
+<path d="M190 195 Q170 230 170 258 Q170 286 190 321" fill="none" stroke="#6b7a8e" stroke-width="10" stroke-linecap="round"/>
+<path d="M322 195 Q342 230 342 258 Q342 286 322 321" fill="none" stroke="#6b7a8e" stroke-width="10" stroke-linecap="round"/>
+<path d="M158 162 Q126 210 126 258 Q126 306 158 354" fill="none" stroke="#4a5568" stroke-width="9" stroke-linecap="round"/>
+<path d="M354 162 Q386 210 386 258 Q386 306 354 354" fill="none" stroke="#4a5568" stroke-width="9" stroke-linecap="round"/>
+<rect x="244" y="170" width="24" height="24" rx="4" class="orange"/>
+<polygon points="256,152 248,166 264,166" class="orange"/>
+<rect x="108" y="362" width="52" height="18" rx="12" class="orange"/>
+<circle cx="114" cy="371" r="4" fill="#141c28"/>
+<circle cx="124" cy="371" r="4" fill="#141c28"/>
+<circle cx="134" cy="371" r="4" fill="#141c28"/>
+<circle cx="144" cy="371" r="4" fill="#141c28"/>
+<circle cx="154" cy="371" r="4" fill="#141c28"/>
+<rect x="352" y="362" width="52" height="18" rx="12" class="gray"/>
+<circle cx="82" cy="82" r="12" class="dark-dot"/>
+<circle cx="430" cy="82" r="14" class="dark-dot"/>
+<circle cx="410" cy="70" r="7" class="accent-dot"/>
+<circle cx="82" cy="430" r="10" class="accent-dot"/>
+<circle cx="430" cy="438" r="8" class="dark-dot"/>
+</svg>

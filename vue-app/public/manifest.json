@@ -1,0 +1,21 @@
+{
+    "name": "My Smart Home",
+    "short_name": "MySmartHome",
+    "start_url": "/",
+    "display": "standalone",
+    "theme_color": "#1E1E31",
+    "background_color": "#1E1E31",
+    "icons": [
+    {
+      "src": "/webicons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "/webicons/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+  }
+  
