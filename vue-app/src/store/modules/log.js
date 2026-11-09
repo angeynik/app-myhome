@@ -1,48 +1,38 @@
 // store/modules/log.js
-// const logModule = {
-//     actions: {
-//       async sendLogToServer({ state }, { type, message }) {
-        
-//         console.log('Нужна реализация отправки логов на сервер', state, type, message);
-//         // if (!state.socket || state.socket.readyState !== WebSocket.OPEN) {
-//         //   console.error('Соединение с сервером не установлено.');
-//         //   return;
-//         // }
-//         // try {
-//         //   await state.socket.send('log', 'sendLog', { type, message });
-//         // } catch (error) {
-//         //   console.error('Failed to send log to server', error);
-//         // }
-//       },
-//     },
-//     mutations: {
-//       ADD_ERROR(state, error) {
-//         // Логика сохранения ошибки
-//       }
-//     },
-//   };
-  
-//   export default logModule;
-
-// store/modules/log.js
-
+const MAX_ERRORS = 100; // защита от бесконечного роста массива в памяти
 
 export default {
   namespaced: true,
+
   state: () => ({
-    errors: []
+    errors: [],
   }),
+
+  mutations: {
+    ADD_ERROR(state, error) {
+      state.errors.push({
+        message: error?.message || String(error),
+        timestamp: new Date().toISOString(),
+      });
+      if (state.errors.length > MAX_ERRORS) {
+        state.errors.splice(0, state.errors.length - MAX_ERRORS);
+      }
+    },
+  },
+
   actions: {
-    async sendLogToServer({ rootState }, { type, message }) {
+    // Отправка лога напрямую в уже открытый сокет. Намеренно НЕ через
+    // websocket/send: логирование не должно инициировать переподключение
+    // и не должно само порождать ошибки.
+    sendLogToServer({ rootState }, { type, message }) {
       try {
-        if (rootState.websocket.socket?.readyState === WebSocket.OPEN) {
-          await rootState.websocket.socket.send(
-            JSON.stringify({
-              type: type,
-              request: 'error',
-              payload: { type, message }
-            })
-          );
+        const socket = rootState.websocket.socket;
+        if (socket?.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({
+            type,
+            request: 'error',
+            payload: { type, message },
+          }));
         }
       } catch (error) {
         console.error('Ошибка отправки лога:', error);
@@ -51,21 +41,14 @@ export default {
 
     addError({ commit, dispatch }, error) {
       commit('ADD_ERROR', error);
-      dispatch('sendLogToServer', { 
+      dispatch('sendLogToServer', {
         type: 'error',
-        message: error.message || error.toString()
+        message: error?.message || String(error),
       });
-    }
+    },
   },
-  mutations: {
-    ADD_ERROR(state, error) {
-      state.errors.push({
-        message: error.message || error.toString(),
-        timestamp: new Date().toString()
-      });
-    }
-  },
+
   getters: {
-    getErrors: state => state.errors
-  }
+    getErrors: (state) => state.errors,
+  },
 };

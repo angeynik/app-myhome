@@ -1,663 +1,434 @@
 <!-- components/MainBody.vue -->
 <template>
-
-    <div v-if="isLoading" class="loading">Загрузка...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
-    <div v-else id="app_mainBody" class="mainBody"
-     @touchstart.passive="handleTouchStart" 
-    @touchend.passive="handleTouchEnd">
-    <MainBodyValue 
-        v-for="(item, index) in viewArray"
-        :key="`${index}-${item.paramKey}-${item.roomKey}-${item.deviceKey}-${item.setpointKey}`"
-        :value="item.value"
-        :unit="item.unit"
-        :sortType="item.sortType"
-        :roomTitle="item.roomTitle"
-        :paramTitle="item.paramTitle"
-        :setValue="item.setValue"
-        :timeUpdated="item.timeDiff"
-        :isSelected="isSelected(item)"
-        @click="selectItem(item)"
-      /> 
-    </div>
-
+  <div v-if="showLoading" class="loading">Загрузка...</div>
+  <div v-else-if="error" class="error">
+    {{ error }}
+    <button type="button" @click="retryLoad">Повторить</button>
+  </div>
+  <div v-else id="app_mainBody" class="mainBody">
+    <template v-if="groupedView.length">
+      <section
+        v-for="group in groupedView"
+        :key="group.roomKey"
+        class="room-group"
+      >
+        <div class="room-group-header">
+          <span class="room-group-title">{{ group.header }}</span>
+          <span class="room-group-arrow">›</span>
+        </div>
+        <div class="room-group-items">
+          <MainBodyValue
+            v-for="item in group.items"
+            :key="itemId(item)"
+            :value="item.value"
+            :unit="item.unit"
+            :paramTitle="item.paramTitle"
+            :paramKey="item.paramKey"
+            :setValue="item.setValue"
+            :timeUpdated="item.timeDiff"
+            :roomTitle="''"
+            :isSelected="isSelected(item)"
+            @click="selectItem(item)"
+          />
+        </div>
+      </section>
+    </template>
+    <p v-else class="mainBody-empty">{{ currentTab.emptyText }}</p>
+  </div>
 </template>
 
 <script>
-import { mapGetters, mapMutations, mapActions} from 'vuex'
-import MainBodyValue from './MainBodyValue.vue'
+import { mapGetters, mapActions } from 'vuex';
+import MainBodyValue from './MainBodyValue.vue';
 import logger from '../store/modules/logger.js';
 import { parseMoscowDate } from '@/utils/timeUtils';
-const EXCLUDED_SECTIONS = new Set(['init', 'id', 'group', 'title', 'setpoints']);
+import { COMMON_KEY, DEFAULT_TAB, TAB_KEYS, getTab } from '@/utils/mainTabs';
+
 const STRIP_DIGITS = /\d+$/;
+const ROOM_KEY_RE = /^room\d+$/;
+const DOUBLE_CLICK_DELAY = 300;
+const CLOCK_TICK = 30 * 1000; // обновление подписей «N мин назад»
 
 export default {
   name: 'MainBody',
   components: { MainBodyValue },
+  emits: ['getComponentData'],
+
+  props: {
+    // Активная вкладка главного экрана (см. utils/mainTabs.js)
+    activeTab: {
+      type: String,
+      default: DEFAULT_TAB,
+      validator: (value) => TAB_KEYS.includes(value),
+    },
+  },
+
   data() {
     return {
       selectedItem: null,
-      viewArray: [],
-      initializationError: null,
-      touchStartX: 0,
-      isSwiping: false,
-      doubleClickTimer: null, // Таймер для определения двойного клика
-      pendingItem: null,
-    }
+      doubleClickTimer: null,
+      pendingItem: null,   // id элемента, ожидающего второго клика
+      now: Date.now(),
+      clockTimer: null,
+    };
   },
 
-  props: {
-    sortType: {
-      type: String,
-      required: true
-    }
-  },
-  // async created() {
-  //   // При создании компонента форсируем обновление view
-  //   logger.dev('[MainBody] - created - Компонент создан');
-  //   this.SET_ROOM_KEY(localStorage.getItem('roomKey'));
-  //   this.SET_PARAM_KEY(localStorage.getItem('paramKey'));
-  //   console.log('[MainBody] - created - roomKey:', this.getRoomKey, ' paramKey:', this.getParamKey);
-  // },
   computed: {
-    ...mapGetters('config', ['isLoading', 'error', 'getConfig', 'clearKeySync', 'clearKey_a']),
-    ...mapGetters('sortParams', [
-      'currentSortType', 
-      'getRoomId', 
-      'getRoomKey', 
-      'getParamKey', 
-      'getRoomTitle', 
-      'getParamTitle',
-      'getSensorTitle',
-      'getDeviceKey',
-      'getDeviceTitle',
-      'getSetpointKey',
-      'getSetpointTitle',
-      'getUnit']),
-    ...mapGetters(['dID', 'typeSettingsKey']),
-    
+    ...mapGetters('config', ['isLoading', 'error', 'getConfig', 'clearKeySync']),
+    ...mapGetters('sortParams', ['getSensorTitle', 'getUnit']),
+    ...mapGetters(['dID', 'typeSettingsKey', 'showSetpoint']),
+
+    currentTab() {
+      return getTab(this.activeTab);
+    },
+
+    config() {
+      return this.getConfig(this.dID);
+    },
+
+    hasConfig() {
+      return !!this.config && Object.keys(this.config).length > 0;
+    },
+
+    // Пока конфиг не пришёл — «Загрузка…», а не пустое состояние
+    showLoading() {
+      return !this.error && (this.isLoading || !this.hasConfig);
+    },
+
+    // Зависит от конфига (WS-обновления отражаются сразу) и от «часов» this.now
+    groupedView() {
+      if (!this.hasConfig) return [];
+      return this.getAllData(this.config, this.currentTab, this.now);
+    },
   },
+
   watch: {
-    '$store.state.sortParams.forceUpdate': {
-        handler(newTimestamp) {
-          //console.log('[MainBody] - Watch - handler - Изменилась временная метка');
-          if (newTimestamp) {
-          
-            // Очищаем предыдущий таймаут, если он есть
-            if (this.updateViewTimeout) {
-              clearTimeout(this.updateViewTimeout);
-              //console.log('[MainBody] - Очищен предыдущий таймаут');
-            }
-            
-            // Устанавливаем новый таймаут с задержкой 100 мс
-            this.updateViewTimeout = setTimeout(() => {
-              logger.dev('[MainBody] - Watch - handler - Принудительное обновление view');
-              //console.log('[MainBody] - Watch - handler - Принудительное обновление view');
-              this.updateView();
-            }, 250);
-          }
-        },
-        immediate: true
-      },
-    sortType(newSortType) {
-      // Реагируем на изменение sortType извне
-      this.$store.commit('sortParams/SET_SORT_TYPE', newSortType);
-      // this.initializeComponent();
+    showSetpoint(visible) {
+      if (!visible && this.selectedItem) this.clearSelection();
     },
-    '$store.state.showSetpoint'(newVal) {
-      if (newVal === false && this.selectedItem) {
-        this.clearSelection();
-      }
+    activeTab() {
+      this.clearSelection();
     },
   },
+
+  mounted() {
+    this.clockTimer = setInterval(() => { this.now = Date.now(); }, CLOCK_TICK);
+  },
+
+  beforeUnmount() {
+    clearInterval(this.clockTimer);
+    clearTimeout(this.doubleClickTimer);
+  },
+
   methods: {
-    // ...mapMutations({
-    //   SET_ROOM_KEY: 'SET_ROOM_KEY',
-    //   SET_PARAM_KEY: 'SET_PARAM_KEY', 
-    //   SET_DEVICE_KEY: 'SET_DEVICE_KEY', 
-    //   SET_SETPOINT_KEY: 'SET_SETPOINT_KEY' 
-    // }),
-    ...mapMutations('sortParams', ['SET_SORT_TYPE']),
-    ...mapActions('sortParams', [
-      'setLimits',
-    ]),
+    ...mapActions('sortParams', ['setLimits']),
     ...mapActions(['updateSettingsData', 'updatePayloadData']),
 
-_resolveSetpoint(room, cleanKey) {
-  if (!room?.setpoints || !cleanKey) return { setValue: null, setpointKey: null };
+    async retryLoad() {
+      try {
+        await this.$store.dispatch('config/initialize');
+      } catch (e) {
+        logger.error('[MainBody] - retryLoad - Ошибка:', e.message);
+      }
+    },
 
-  // Строим ожидаемый ключ уставки: Temp → sTemp, Hum → sHum
-  const sKey = 's' + cleanKey;
+    // Уникальный идентификатор карточки (для key и сравнения выбора)
+    itemId(item) {
+      return `${item.roomKey}|${item.paramKey}|${item.setpointKey}`;
+    },
 
-  // Точное совпадение — sTemp, sHum и т.д.
-  let setpointKey = room.setpoints[sKey] ? sKey : null;
+    _buildItem(overrides) {
+      return {
+        key: null,
+        paramTitle: null,
+        paramType: null,
+        paramKey: null,
+        value: null,
+        setValue: null,
+        setpointKey: null,
+        unit: null,
+        timeDiff: null,
+        roomTitle: null,
+        roomGroup: null,
+        roomId: null,
+        roomKey: null,
+        deviceKey: null,
+        ...overrides,
+      };
+    },
 
-  if (!setpointKey) {
-    // Partial match: ищем ключ который начинается с sKey (sTemp01, sHum02...)
-    setpointKey = Object.keys(room.setpoints).find(k => k.startsWith(sKey)) ?? null;
-  }
+    /**
+     * Парная уставка по совпадению номера: dTemp02 → sTemp02.
+     * Нет такой — карточка read-only.
+     */
+    _resolveSetpoint(room, sensorKey) {
+      if (!room?.setpoints || !sensorKey) return { setValue: null, setpointKey: null };
+      const num = (sensorKey.match(/(\d+)$/) || [])[1] || '';
+      const base = 's' + sensorKey.slice(1).replace(STRIP_DIGITS, '');
+      const candidate = `${base}${num}`;
 
-  if (!setpointKey) return { setValue: null, setpointKey: null };
+      const spData = room.setpoints[candidate];
+      if (!spData) return { setValue: null, setpointKey: null };
+      if (spData.type === 'bool' && spData.value === null) {
+        return { setValue: null, setpointKey: null };
+      }
 
-  const spData = room.setpoints[setpointKey];
-  
-  // Для bool: null не показываем
-  if (spData?.type === 'bool' && spData?.value === null) return { setValue: null, setpointKey: null };
-  
-  const spType = spData?.type ?? 'num';
-  const setValue = this.getSensorValue(spType, { value: spData?.value });
+      const spType = spData.type ?? 'num';
+      const setValue = this.getSensorValue(spType, { value: spData.value });
+      return { setValue, setpointKey: candidate };
+    },
 
-  return { setValue, setpointKey };
-},
-
-// Строитель объекта элемента — единая схема для всех 4 функций
-_buildItem(overrides) {
-  return {
-    key: null,
-    sortType: null,
-    paramTitle: null,
-    paramType: null,
-    paramKey: null,
-    value: null,
-    setValue: null,
-    setpointKey: null,
-    unit: null,
-    timeDiff: null,
-    roomTitle: null,
-    roomId: null,
-    roomKey: null,
-    deviceKey: null,
-    ...overrides,
-  };
-},
-    
-
+    // null — «нет данных» (в карточке «—»). Раньше отсутствующее число становилось 0.0:
+    // для датчика это ложное показание.
     getSensorValue(key, data) {
+      if (!data) return null;
+      const raw = data.value;
+
       switch (key) {
-        case 'num':{
-          const numValue = data?.value != null ? parseFloat(data.value) : 0;
-          return numValue;
-          }
-        case 'bool':{
-          const boolValue = data?.value != null ? data.value : null;
-          //console.log('[MainBody] - getSensorValue - boolValue:', boolValue);
-          if (boolValue === true) {
-            return 'ON'
-          }
-          return 'OFF';
-          }
+        case 'num': {
+          if (raw === null || raw === undefined) return null;
+          const num = parseFloat(raw);
+          return Number.isNaN(num) ? null : num;
+        }
+        case 'bool':
+        case 'dBool': {
+          if (raw == null) return null;
+          if (raw === 'ON' || raw === true) return 'ON';
+          if (raw === 'OFF' || raw === false) return 'OFF';
+          return Number(raw) ? 'ON' : 'OFF';
+        }
         default:
-          return null;
-
+          return raw ?? null;
       }
     },
-    isSelected(item) {
-      return this.selectedItem && 
-             this.selectedItem.roomId === item.roomId && 
-             this.selectedItem.paramKey === item.paramKey &&
-             this.selectedItem.deviceKey === item.deviceKey &&
-             this.selectedItem.setpointKey === item.setpointKey;
-    },
-    
-  selectItem(item) {
-    // Если уже есть ожидающий элемент и это тот же – двойной тач
-    if (this.doubleClickTimer && this.pendingItem === item) {
-      clearTimeout(this.doubleClickTimer);
-      this.doubleClickTimer = null;
-      this.pendingItem = null;
-      this.DclickSelectItem(item);  // вызываем двойное действие
-      return;
-    }
-    
-    // Первое нажатие – запоминаем элемент и запускаем таймер
-    this.pendingItem = item;
-    
-    if (this.doubleClickTimer) {
-      clearTimeout(this.doubleClickTimer);
-    }
-    
-    this.doubleClickTimer = setTimeout(() => {
-      this.singleClickAction(item);
-      this.doubleClickTimer = null;
-      this.pendingItem = null;
-    }, 300); // 300 мс – типичный интервал для двойного тача
-  },
 
-singleClickAction(item) {
-  const clearParam = this.clearKeySync(item.paramKey); // 'Temp', 'Switch' — без префикса, без цифр
-  console.log('[MainBody] - singleClickAction - Исходный ключ:', item.paramKey, 'Очищенный:', clearParam);
-
-    if (this.selectedItem === item) {
-      // Скрыть панель уставки
-      this.selectedItem = null;
-      this.$emit('getComponentData', { 
-        action: 'hide',
-        updateState: {
-          value: item.setValue,
-          title: 'value',
-          key:clearParam,
-          roomKey: item.roomKey,
-          paramKey: item.paramKey,
-        }
-      });
-    } else {
-      // Показать панель уставки
-      this.selectedItem = item;
-      this.updatePayloadData({ 
-        value: item.setValue,
-        param: item.paramKey,   // ← полный ключ из конфига
-        key: clearParam,        // ← чистый базовый ключ
-        setKey: item.setpointKey,
-        id: item.roomId,
-        room: item.roomKey
-      });
-      
-      this.setLimits({ param: ('d'+clearParam), valueType: 'absolute' });
-      
-      if ((item.setValue !== undefined && item.setValue !== null) && clearParam && item.setpointKey) {
-        this.$emit('getComponentData', {
-          action: 'show',
-          request: 'setpoints',
-          updateState: {
-            value: item.setValue,
-            title: 'value',
-            key:clearParam,
-            roomKey: item.roomKey,
-            paramKey: item.paramKey,
-          }
-        });
+    getTimeDiff(timestamp, now) {
+      if (!timestamp) return 'Неизвестно';
+      let time;
+      if (typeof timestamp === 'number') {
+        time = timestamp;
+      } else if (typeof timestamp === 'string') {
+        time = parseMoscowDate(timestamp);
+        if (Number.isNaN(time)) time = new Date(timestamp).getTime();
       } else {
-        console.error(`Не определены значения уставки: ${item.setValue}, ключ параметра ${clearParam}, ключ уставки ${item.setpointKey}`);
+        return 'Неизвестно';
       }
-    }
-    this.$store.dispatch('updatePayloadData', { param: item.paramKey });
-    this.updateSettingsData({ field: 'request', value: 'setpoints' });
-    console.groupEnd();
-  },
+      if (Number.isNaN(time)) return 'Неизвестно';
 
-  DclickSelectItem(item) {
-      
-      const clearParam = this.clearKeySync(item.paramKey);
-      console.log('[MainBody] - DclickSelectItem - Определяем key для settingsData.payload ', clearParam);
+      const diff = Math.floor((now - time) / 60000);
+      if (diff < 1) return 'сейчас';
+      if (diff < 60) return `${diff} мин назад`;
+      if (diff < 1440) return `${Math.floor(diff / 60)} ч назад`;
+      return `${Math.floor(diff / 1440)} дн назад`;
+    },
 
-      if (this.doubleClickTimer) {
-        clearTimeout(this.doubleClickTimer);
-        this.doubleClickTimer = null;
+    getAllData(config, tab, now) {
+      return tab.common
+        ? this._getCommonData(config, tab, now)
+        : this._getRoomData(config, tab, now);
+    },
+
+    // Вкладка «Общие настройки»: корневой объект common, одна группа
+    _getCommonData(config, tab, now) {
+      const common = config[COMMON_KEY];
+      if (!common || typeof common !== 'object') return [];
+
+      const items = [];
+      for (const sectionKey of tab.sections) {
+        items.push(...this._collectItems(COMMON_KEY, common, sectionKey, false, now));
       }
+      if (!items.length) return [];
 
-      const config = this.getConfig(this.dID);
-      if (!config) {
-        console.error('Конфигурация не загружена');
-        return;
-      }
-      const roomConfig = config[item.roomKey];
-      console.log(roomConfig.setpoints , null, 2);
+      return [{
+        roomKey: COMMON_KEY,
+        header: common.group || common.title || 'Общие настройки',
+        roomId: common.id,
+        items,
+      }];
+    },
 
-      if (!roomConfig || !roomConfig.setpoints || !item.setpointKey || !roomConfig.setpoints[item.setpointKey].value) {
-        // Отображаем Уведомление для пользователя - PopupMenu.vue 
-        this.$store.dispatch('popup/show', {
-          message: `Уставка для параметра "${item.paramTitle}" в комнате "${item.roomTitle}" не настроена.`,
-          type: 'warning',
-          duration: 3000
-        });
-        return;
-      }
+    // Вкладки по комнатам (roomNN)
+    _getRoomData(config, tab, now) {
+      const groups = [];
 
-      logger.dev('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', clearParam, ' и значение:', item.setValue);
-      console.groupCollapsed('[MainBody] - DclickSelectItem ');
-      console.log('[MainBody] - DclickSelectItem - Ключ выбранного элемента:', clearParam, ' и значение:', item);
-      if (!clearParam) {
-        console.error (`[MainBody] - DclickSelectItem - Отсутствует ключ выбранного элемента:', ${clearParam}`);
-        return; 
-      }
-      this.updatePayloadData({ 
-        param: item.paramKey,
-        key: clearParam,
-        room: item.roomKey,
-        config: this.typeSettingsKey,
-        value: item.setValue
-      });
+      for (const [roomKey, room] of Object.entries(config)) {
+        if (!ROOM_KEY_RE.test(roomKey)) continue;
+        if (!room || typeof room !== 'object') continue;
 
-      let settingsType = this.typeSettingsKey || 'schedule';
-
-      // Отправляем событие с данными в DashBoard
-      console.log('[MainBody] - DclickSelectItem - Отправляем событие с данными в DashBoard, value: ', item.setValue, ', title: value');
-          this.$emit('getComponentData', {
-            action: 'hide',
-            request: settingsType,
-            updateState: {
-              key: clearParam,
-              value: item.setValue,
-              title: 'value',
-            }
-          });
-
-      this.$router.push({
-        name: 'DashboardSettings',
-        params: { settingsType }
-      });
-      console.groupEnd();
-  },
-  async updateView() { // Формируем массив для отображения пользователю в соответствии с типом сортировки и текущим ключем
-      //console.log('[MainBody] - updateView - started');
-        try {
-          logger.info('[MainBody] - updateView - started');
-          console.groupCollapsed('[MainBody] - updateView - Сортировка по - ', this.currentSortType);
-          //console.log('[MainBody] - updateView - started');
-          const config = this.getConfig(this.dID);
-          if (!config) {
-            logger.error('[MainBody] - updateView - Конфигурация не доступна');
-            //console.warn('[MainBody] - updateView - Конфигурация не доступна');
-            this.viewArray = [];
-            return;
-          }
-
-
-          if (this.currentSortType === 'rooms') {
-            logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: комнаты -(', this.getRoomKey, ')');
-            //console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: комнаты -(${this.getRoomKey})`);
-            let checkKey = this.getRoomKey;
-
-            if (!checkKey) {
-              checkKey = 'room01';
-            }
-            // this.viewArray = this.getSortedRooms(config, this.getRoomKey);
-            this.viewArray = this.getSortedRooms(config, checkKey);
-          } else if (this.currentSortType === 'params') {
-            logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: параметров -(', this.getParamKey, ')');
-            console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: параметров -(${this.getParamKey})`);
-            let actualParam = this.getParamKey;
-            if (actualParam.includes("Switch")) {
-              actualParam = 'dTemp';
-              this.$store.dispatch('updatePayloadData', { param: actualParam });
-              // this.SET_PARAM_KEY(actualParam);  // мутация из mapMutations
-            }
-            this.viewArray = this.getSortedParams(config, actualParam);
-          } else if (this.currentSortType === 'devices') {
-            logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: Устройств -(', this.getDeviceKey, ')');
-            //console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: Устройств -(${this.getDeviceKey})`);
-            this.viewArray = this.getSortedDevices(config, this.getDeviceKey);
-          } else if (this.currentSortType === 'setpoints') {
-            logger.dev('[MainBody] - updateView - Сортировка по - ', this.currentSortType, ' - Режим: Уставки -(', this.getSetpointKey, ')');
-            //console.log(`[MainBody] - updateView - Сортировка по - ${this.currentSortType} - Режим: Уставки -(${this.getSetpointKey})`);
-            this.viewArray = this.getSortedSetpoints(config, this.getSetpointKey);
-          }
-        
-          logger.dev('[MainBody] updateView  Отображаемые элементы:', this.viewArray);
-          console.log(' [MainBody] updateView  Отображаемые элементы:', this.viewArray);
-          localStorage.setItem('viewArray', JSON.stringify(this.viewArray));
-          logger.dev('[MainBody] View array length:', this.viewArray.length);
-          //console.log('[MainBody] View array length:', this.viewArray.length);
-          //console.groupEnd();
-        } catch (error) {
-          logger.error('[MainBody] - updateView - Ошибка обновления:', error);
-          //console.error('[MainBody] Ошибка обновления:', error);
-          this.viewArray = [];
-          console.groupEnd();
+        const items = [];
+        for (const sectionKey of tab.sections) {
+          items.push(...this._collectItems(roomKey, room, sectionKey, tab.withSetpoint, now));
         }
-        console.groupEnd();
-  },
+        if (!items.length) continue;
 
+        groups.push({
+          roomKey,
+          header: room.group || room.title || roomKey,
+          roomId: room.id,
+          items,
+        });
+      }
 
-getSortedRooms(config, roomKey) {
-  const room = config[roomKey];
-  if (!room || typeof room !== 'object') return [];
+      groups.sort((a, b) => a.roomKey.localeCompare(b.roomKey));
+      return groups;
+    },
 
-  const result = [];
+    _collectItems(roomKey, room, sectionKey, withSetpoint, now) {
+      const sectionData = room[sectionKey];
+      if (!sectionData || typeof sectionData !== 'object') return [];
 
-  for (const [sectionKey, sectionData] of Object.entries(room)) {
-    if (EXCLUDED_SECTIONS.has(sectionKey)) continue;
-    if (!sectionData || typeof sectionData !== 'object') continue;
-
-    for (const [itemKey, itemData] of Object.entries(sectionData)) {
-      const clearKey = this.clearKeySync(itemKey);
-      // Вычисляем cleanKey один раз по чёткому правилу
-      // const base = itemKey.slice(1).replace(STRIP_DIGITS, '');
-      // const cleanKey = itemKey.startsWith('a')
-      //   ? 's' + itemKey.slice(1)  // aSwitch01 → sSwitch01
-      //   : 's' + base;             // dTemp01   → sTemp
-
-      const { setValue, setpointKey } = this._resolveSetpoint(room, clearKey);
-
-      result.push(this._buildItem({
-        key: itemKey.slice(1).replace(STRIP_DIGITS, ''),
-        sortType: 'rooms',
-        paramTitle: this.getSensorTitle(itemKey),
-        paramType: itemData?.type,
-        paramKey: itemKey,
-        value: this.getSensorValue(itemData?.type, itemData),
-        setValue,
-        setpointKey,
-        unit: this.getUnit(itemKey),
-        timeDiff: this.getTimeDiff(itemData?.lastUpdate),
-        roomTitle: room.title,
-        roomId: room.id,
-        roomKey,
-      }));
-    }
-  }
-
-  return result;
-},
-
-//Формируем массив для отображения сортировки по параметрам
-getSortedParams(config, paramPrefix) {
-  const result = [];
-
-  for (const [roomKey, room] of Object.entries(config)) {
-    if (!room?.sensors || typeof room.sensors !== 'object') continue;
-
-    for (const [sensorKey, sensorData] of Object.entries(room.sensors)) {
-      if (!sensorKey.startsWith(paramPrefix)) continue;
-      const clearKey = this.clearKeySync(sensorKey);
-      // --- начало изменений ---
-      // const base = sensorKey.slice(1).replace(STRIP_DIGITS, '');
-      // const cleanKey = sensorKey.startsWith('a')
-      //   ? 's' + sensorKey.slice(1)
-      //   : 's' + base;
-      // --- конец изменений ---
-
-      const { setValue, setpointKey } = this._resolveSetpoint(room, clearKey);
-      console.log('[MainBody] - getSortedParams - setpointKey:', setpointKey, 'setValue:', setValue);
-
-      result.push(this._buildItem({
-        key: sensorKey.slice(1).replace(STRIP_DIGITS, ''),
-        sortType: 'params',
-        paramTitle: this.getSensorTitle(paramPrefix),
-        paramType: sensorData?.type,
-        paramKey: sensorKey,
-        value: this.getSensorValue(sensorData?.type, sensorData),
-        setValue,
-        setpointKey,
-        unit: this.getUnit(paramPrefix),
-        timeDiff: this.getTimeDiff(sensorData?.lastUpdate),
-        roomTitle: room.title,
-        roomId: room.id,
-        roomKey,
-      }));
-    }
-  }
-
-  logger.dev('[MainBody] - getSortedParams - Получен список сенсоров:', result);
-  console.log('[MainBody] - getSortedParams - Получен список сенсоров:', result);
-  return result;
-},
-
-
-// Формируем массив для отображения сортировки по устройствам
-getSortedDevices(config, deviceKey) {
-  const result = [];
-
-  for (const [roomKey, room] of Object.entries(config)) {
-    if (!room || typeof room !== 'object') continue;
-
-    for (const [sectionKey, sectionData] of Object.entries(room)) {
-      if (EXCLUDED_SECTIONS.has(sectionKey)) continue;
-      if (!sectionData || typeof sectionData !== 'object') continue;
+      const roomMeta = room._meta || {};
+      const items = [];
 
       for (const [itemKey, itemData] of Object.entries(sectionData)) {
-        const baseItemKey = itemKey.replace(STRIP_DIGITS, '');
-        if (baseItemKey !== deviceKey) continue;
-        const clearKey = this.clearKeySync(baseItemKey);
+        const { setValue, setpointKey } = withSetpoint
+          ? this._resolveSetpoint(room, itemKey)
+          : { setValue: null, setpointKey: null };
 
-        // Вычисляем cleanKey по правилам из getSortedRooms
-        // const base = itemKey.slice(1).replace(STRIP_DIGITS, '');
-        // const cleanKey = itemKey.startsWith('a')
-        //   ? 's' + itemKey.slice(1)
-        //   : 's' + base;
+        const meta = roomMeta[`${sectionKey}|${itemKey}`] || {};
+        const title = meta.title || this.getSensorTitle(itemKey);
 
-        const { setValue, setpointKey } = this._resolveSetpoint(room, clearKey);
-
-        result.push(this._buildItem({
+        items.push(this._buildItem({
           key: itemKey.slice(1).replace(STRIP_DIGITS, ''),
-          sortType: 'devices',
-          paramTitle: this.getSensorTitle(deviceKey),
+          paramTitle: title,
           paramType: itemData?.type,
           paramKey: itemKey,
           value: this.getSensorValue(itemData?.type, itemData),
           setValue,
           setpointKey,
           unit: this.getUnit(itemKey),
-          timeDiff: this.getTimeDiff(itemData?.lastUpdate),
+          timeDiff: this.getTimeDiff(itemData?.lastUpdate, now),
           roomTitle: room.title,
+          roomGroup: room.group,
           roomId: room.id,
           roomKey,
         }));
       }
-    }
-  }
-
-  return result;
-},
-
-getSortedSetpoints(config, setpointKey) {
-  const normalizedKey = setpointKey.replace(/\d+$/, '');
-  console.log('[MainBody] - getSortedSetpoints - normalizedKey:', normalizedKey);
-  const result = [];
-
-  for (const [roomKey, room] of Object.entries(config)) {
-    if (!room?.setpoints || typeof room.setpoints !== 'object') continue;
-
-    for (const [setKey, spData] of Object.entries(room.setpoints)) {
-      
-      // ← ФИЛЬТР: оставляем только ключи совпадающие с normalizedKey
-      const baseSetKey = setKey.replace(/\d+$/, '');
-      if (baseSetKey !== normalizedKey) continue;
-
-      if (!spData || spData.value === undefined) continue; // null разрешаем
-
-      const spType = spData?.type ?? 'num';
-
-      // Для bool: null/undefined → показываем как OFF (неинициализированный переключатель)
-      let value;
-      if (spType === 'bool') {
-        value = this.getSensorValue('bool', { value: spData.value ?? false });
-      } else {
-        if (spData.value === null) continue; // для num null всё ещё пропускаем
-        value = this.getSensorValue(spType, { value: spData.value });
-        if (value === null || value === undefined) continue;
-      }
-
-      result.push(this._buildItem({
-        key: setKey.slice(1).replace(STRIP_DIGITS, ''), // ← setKey вместо itemKey
-        sortType: 'setpoints',
-        paramTitle: this.getSensorTitle(normalizedKey),
-        paramType: spType,
-        paramKey: setKey,
-        value: value,
-        setValue: value,
-        setpointKey: normalizedKey,
-        unit: this.getUnit(normalizedKey),
-        timeDiff: this.getTimeDiff(spData?.lastUpdate),
-        roomTitle: room.title,
-        roomId: room.id,
-        roomKey,
-      }));
-    }
-  }
-  console.log('[MainBody] - getSortedSetpoints - Результат:', result);
-  return result;
-},
-
-
-    getTimeDiff(timestamp) {
-      if (!timestamp) return 'Неизвестно';
-      //console.log('timestamp:', timestamp, '→ UTC:', new Date(timestamp).toISOString());
-      let time;
-
-      try {
-        const now = Date.now();
-        // const time = new Date(timestamp).getTime();
-        // //console.log('[MainBody] getSortedSetpoints - getTimeDiff - Текущая дата', now, ' дата обновления - ', time);
-        // if (isNaN(time)) return 'Неизвестно';
-
-        if (typeof timestamp === 'number') {
-          time = timestamp;
-        } else if (typeof timestamp === 'string') {
-          // Сначала пробуем распознать ваш московский формат
-          time = parseMoscowDate(timestamp);
-          // Если не удалось, пробуем стандартный парсинг
-          if (isNaN(time)) {
-            time = new Date(timestamp).getTime();
-          }
-        } else {
-          return 'Неизвестно';
-        }
-        if (isNaN(time)) return 'Неизвестно';
-        
-        const diff = Math.floor((now - time) / 60000);
-        //console.log('[MainBody] getSortedSetpoints - getTimeDiff - Результат -', diff);
-        if (diff < 1) return 'сейчас';
-        if (diff < 60) return `${diff} мин назад`;
-        if (diff < 1440) return `${Math.floor(diff / 60)} ч назад`;
-        return `${Math.floor(diff / 1440)} дн назад`;
-      } catch (e) {
-        return 'Неизвестно';
-      }
+      return items;
     },
-    handleTouchStart(event) {
-      logger.dev('[MainBody] - handleTouchStart ', event.touches[0].clientX, event.touches[0].clientY);
-      console.log('[MainBody] - handleTouchStart ', event.touches[0].clientX, event.touches[0].clientY);
-      this.touchStartX = event.touches[0].clientX;
-      this.isSwiping = true;
+
+    // Сравнение по ключу, а не по ссылке: groupedView пересобирается при каждом обновлении
+    isSelected(item) {
+      return !!this.selectedItem && this.itemId(this.selectedItem) === this.itemId(item);
     },
-    handleTouchMove(event) {
-      if (!this.isSwiping) return;
-      
-      const touchX = event.touches[0].clientX;
-      const diffX = touchX - this.touchStartX;
-      logger.dev('[MainBody] - handleTouchMove Смещение по Х', diffX);
-      console.log('[MainBody] - handleTouchMove Смещение по Х', diffX);
-    },
-    handleTouchEnd(event) {
-      if (!this.isSwiping ) return;
-      this.isSwiping = false;
-      
-      const touchEndX = event.changedTouches[0].clientX;
-      const diffX = touchEndX - this.touchStartX;
-      logger.dev('[MainBody] - handleTouchEnd Смещение по Х', diffX);
-      console.log('[MainBody] - handleTouchEnd Смещение по Х', diffX);
-      // Определяем минимальную длину свайпа для активации
-      this.$emit('swipe', diffX);
-    },
-    clearSelection() {
-      console.log('[MainBody] - clearSelection ВЫЗВАН, selectedItem =', this.selectedItem);
-      if (this.selectedItem) {
-        logger.dev('[MainBody] - clearSelection - сбрасываем выделение');
-        console.log('[MainBody] - clearSelection - сбрасываем выделение');
-        this.selectedItem = null;
-        // Также сбрасываем ожидание двойного клика, чтобы не было артефактов
-        if (this.doubleClickTimer) {
-          clearTimeout(this.doubleClickTimer);
-          this.doubleClickTimer = null;
-        }
+
+    selectItem(item) {
+      const id = this.itemId(item);
+
+      if (this.doubleClickTimer && this.pendingItem === id) {
+        clearTimeout(this.doubleClickTimer);
+        this.doubleClickTimer = null;
         this.pendingItem = null;
+        this.DclickSelectItem(item);
+        return;
       }
+
+      this.pendingItem = id;
+      clearTimeout(this.doubleClickTimer);
+      this.doubleClickTimer = setTimeout(() => {
+        this.doubleClickTimer = null;
+        this.pendingItem = null;
+        this.singleClickAction(item);
+      }, DOUBLE_CLICK_DELAY);
     },
 
+    singleClickAction(item) {
+      const clearParam = this.clearKeySync(item.paramKey);
 
-  }
-}
+      // Карточка без уставки (датчик, «Состояние устройств», «Общие настройки») — только для чтения:
+      // не выбираем её и не трогаем payload (иначе в payload.room попадал бы ключ 'common').
+      if (!item.setpointKey || item.setValue === undefined || item.setValue === null || !clearParam) {
+        logger.dev('[MainBody] - singleClickAction - карточка без уставки:', item.paramKey);
+        return;
+      }
+
+      if (this.isSelected(item)) {
+        this.selectedItem = null;
+        this.$emit('getComponentData', {
+          action: 'hide',
+          updateState: {
+            value: item.setValue,
+            title: 'value',
+            key: clearParam,
+            roomKey: item.roomKey,
+            paramKey: item.paramKey,
+          },
+        });
+        return;
+      }
+
+      this.selectedItem = item;
+      this.updatePayloadData({
+        value: item.setValue,
+        param: item.paramKey,
+        key: clearParam,
+        setKey: item.setpointKey,
+        id: item.roomId,
+        room: item.roomKey,
+      });
+      this.setLimits({ param: clearParam, valueType: 'absolute' });
+
+      this.$emit('getComponentData', {
+        action: 'show',
+        request: 'setpoints',
+        updateState: {
+          value: item.setValue,
+          title: 'value',
+          key: clearParam,
+          roomKey: item.roomKey,
+          paramKey: item.paramKey,
+          setpointKey: item.setpointKey,
+          // Данные для SetpointScreen
+          roomTitle: item.roomGroup || item.roomTitle,
+          paramTitle: item.paramTitle,
+          actualValue: item.value,
+          unit: item.unit,
+        },
+      });
+
+      this.updateSettingsData({ field: 'request', value: 'setpoints' });
+    },
+
+    DclickSelectItem(item) {
+      const clearParam = this.clearKeySync(item.paramKey);
+
+      const roomConfig = this.config[item.roomKey];
+      const spData = roomConfig?.setpoints?.[item.setpointKey];
+      if (!roomConfig?.setpoints || !item.setpointKey || spData?.value == null) {
+        this.$store.dispatch('popup/show', {
+          message: `Уставка для параметра "${item.paramTitle}" в комнате "${item.roomGroup || item.roomTitle}" не настроена.`,
+          type: 'warning',
+          duration: 3000,
+        });
+        return;
+      }
+      if (!clearParam) return;
+
+      const settingsType = this.typeSettingsKey || 'schedules';
+
+      this.updatePayloadData({
+        param: item.paramKey,
+        key: clearParam,
+        room: item.roomKey,
+        config: settingsType,
+        value: item.setValue,
+      });
+
+      this.$emit('getComponentData', {
+        action: 'hide',
+        request: settingsType,
+        updateState: { key: clearParam, value: item.setValue, title: 'value' },
+      });
+      this.$router.push({ name: 'DashboardSettings', params: { settingsType } });
+    },
+
+    clearSelection() {
+      if (!this.selectedItem) return;
+      this.selectedItem = null;
+      clearTimeout(this.doubleClickTimer);
+      this.doubleClickTimer = null;
+      this.pendingItem = null;
+    },
+  },
+};
 </script>
-
-<style lang="css" src="@/assets/mainStyle.css"></style>

@@ -1,0 +1,5 @@
+# Какие зависимости могут запускать скрипты при установке (pnpm блокирует их по умолчанию).
+# Значения заменены вместо заглушек «set this to true or false».
+allowBuilds:
+  core-js: false   # postinstall только печатает рекламное сообщение — сборке не нужен
+  yorkie: false    # ставит git-хуки из поля "gitHooks"; в package.json его нет

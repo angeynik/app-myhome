@@ -1,149 +1,82 @@
 <!-- components/MainBodyValue.vue -->
 <template>
-  <!-- <div 
+  <div
     class="sensor-card"
-    :class="{ selected: isSelected, [type]: true }"
-    @click="customerClick"
-    @dblclick="customerDoubleClick"
-    @touchstart="customerTouchStart" 
-    @touchend="customerTouchEnd"
-  > -->
-    <div 
-    class="sensor-card"
-    :class="{ selected: isSelected, [type]: true }"
+    :class="[tone, { selected: isSelected }]"
+    :title="timeUpdated"
   >
-    <div v-if="sortType === 'rooms'" class="sensor-header">
-      <span class="room">{{ paramTitle }}</span>
-    </div>
-    <div v-else class="sensor-header">
-      <span class="room">{{ roomTitle }}</span>
-    </div>
-
-    <!-- Основное значение - меняем стиль только если есть setValue и плашка выбрана -->
-    <div :class="getValueClass()">
-      {{ formattedValue(value) }}
-      <span v-if="unit" class="unit">{{ unit }}</span>
+    <!-- Слева: иконка параметра (цвет — по тону плашки или тревоге) -->
+    <div class="sensor-icon-wrapper">
+      <div class="sensor-icon">
+        <SensorIcon :name="paramKey" :state="iconState" size="100%" />
+      </div>
     </div>
 
-    <!-- Уставка - показывается всегда если есть значение, меняет стиль при выборе -->
-    <div v-if="setValue != null" :class="isSelected ? 'sensor-SetValue selected-setvalue' : 'sensor-SetValue'">
-      {{ formattedValue(setValue) }}
-      <span v-if="unit" class="unit">{{ unit }}</span>
-    </div>
+    <!-- Справа: название и значения -->
+    <div class="sensor-content">
+      <div class="sensor-title">
+        {{ paramTitle }}
+      </div>
 
-    <div class="sensor-footer">
-      <time>{{ formattedTime }}</time>
+      <div class="sensor-values" :class="{ 'no-setpoint': setValue === null }">
+        <!-- Уставка (если есть) -->
+        <div v-if="setValue !== null" class="sensor-set-value">
+          {{ formattedValue(setValue) }}<span v-if="unit" class="unit">{{ unit }}</span>
+        </div>
+
+        <!-- Фактическое значение -->
+        <div class="sensor-actual-value">
+          {{ formattedValue(value) }}<span v-if="unit && value !== null" class="unit">{{ unit }}</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import logger from '../store/modules/logger.js';
+import SensorIcon from '@/components/SensorIcon.vue';
+import { normalizeSensorKey } from '@/utils/sensorIcons';
+import { getTone } from '@/utils/tone';
+
+// Параметры, срабатывание которых (ON) — тревога: иконка красная
+const ALARM_KEYS = ['dFire', 'dLeak'];
 
 export default {
-  name: 'ParamPlace', 
-  props: {
-    paramTitle: { type: String, required: true }, 
-    roomTitle: { type: String, required: true },
-    value: { type: Number, required: true },
-    setValue: { type: Number, required: true },
-    sortType: { type: Number, required: true },
-    unit: String,
-    timeUpdated: { type: Number, required: true },
-    isSelected: { type: Boolean, required: true, default: false },
-    setpointKey: { type: String, default: '' },
-  }, 
-  computed: {
-    type() {
-      if (typeof this.value === 'number') {
-        if (this.unit === '°C') return 'temperature'
-        if (this.unit === '%') return 'humidity'
-      }
-      return 'default'
-    },
-    formattedTime() {
-      if (!this.timeUpdated) return 'Нет данных'
-      
-      const date = new Date(this.timeUpdated)
-      return isNaN(date) 
-        ? this.timeUpdated 
-        : date.toLocaleTimeString()
-    }
-  },
-  methods: {
-      getValueClass() {
-        // Если setValue не определен, всегда используем обычный стиль
-        if (this.setValue == null) {
-          return 'sensor-value';
-        }
-        // Если setValue определен, меняем стиль при выборе
-        return this.isSelected ? 'sensor-value selected-value' : 'sensor-value';
-      },
-        formattedValue(value) {
-      if (typeof value === 'number') {
-        return value.toFixed(1)
-      }
-      return value
-    },
-    // customerClick() {
-    //     logger.dev(' [MainBodyValue] - customerClick - Пользователь выбрал параметр', this.paramKey, 'для комнаты', this.roomKey);
-    //     //console.log(' --- 82 --- Функция customerClick(MainBodyValue) - Пользователь выбрал параметр', this.paramKey, 'для комнаты', this.roomKey);
-    //     this.$emit('select', {
-    //         type: 'select', 
-    //         message: {
-    //         state: this.isSelecte,
-    //         id: this.id,
-    //         paramKey: this.paramKey,
-    //         roomKey: this.roomKey,
-    //         setpointKey: this.setpointKey,
-    //         }
-    //     }); 
-    // }, 
-    customerDoubleClick() {
-      logger.dev(' [MainBodyValue] - customerDoubleClick - Пользователь начал двойной клик');
-        //console.log('customerDoubleClick(MainBodyValue) - Пользователь начал двойной клик');
-        this.$emit('doubleclick', { 
-                    roomKey: this.roomKey, 
-                    paramKey: this.paramKey, 
-                    roomId: this.id,
-                    setpointKey: this.setpointKey,
-                });
-    },
-    customerTouchStart(event) {
-      logger.dev(' [MainBodyValue] - customerTouchStart - Пользователь сделал клик', event.touches[0].clientX, event.touches[0].clientY);
-        //console.log('[MainBodyValue] - customerTouchStart -  Пользователь сделал клик', event.touches[0].clientX, event.touches[0].clientY);
-        if (event.touches.length === 1) { 
-            if (this.touchTimeout) {
-                clearTimeout(this.touchTimeout);
-                this.touchTimeout = null;
-                this.$emit('doubletouch', { 
-                    roomKey: this.roomKey, 
-                    paramKey: this.paramKey, 
-                    roomId: this.id,
-                });
-                console.dev('[MainBodyValue] - customerTouchStart - отправила в MainBody  - room_id', this.room_id, 'room_key', this.room_key, 'param_key', this.param_key);
-                //console.log('Функция customerDoubleClick(MainBodyValue) отправила в MainBody  - room_id', this.room_id, 'room_key', this.room_key, 'param_key', this.param_key);
-            } else {
-                this.touchTimeout = setTimeout(() => { 
-                    this.touchTimeout = null; 
-                }, 400); 
-            }
-        }
-    }, 
-    customerTouchEnd() {
-      logger.dev(' [MainBodyValue] - customerTouchEnd - Пользователь завершил двойной клик', event.touches[0].clientX, event.touches[0].clientY);
-        // console.log('Функция handleTouchStart(MainBodyValue) - Пользователь завершил двойной клик', event.touches[0].clientX, event.touches[0].clientY);
-        if (this.touchTimeout) { 
-            clearTimeout(this.touchTimeout); 
-            this.touchTimeout = null; 
-        }
-    },
-  }
-}
-</script>
+  name: 'MainBodyValue',
+  components: { SensorIcon },
 
-<style lang="css" src="../assets/mainStyle.css">
-.selected { 
-    border: 10px solid var(--orange);
-    }
-</style>
+  props: {
+    paramTitle: { type: String, required: true },
+    paramKey: { type: String, default: '' },
+    roomTitle: { type: String, default: '' },   // не отображается (заголовок группы показывает комнату)
+    value: { type: [Number, String], default: null },
+    setValue: { type: [Number, String], default: null },
+    unit: { type: String, default: '' },
+    timeUpdated: { type: String, default: '' },
+    isSelected: { type: Boolean, default: false },
+  },
+
+  computed: {
+    // Тон плашки: is-warm — уставка выше факта (нагрев), is-cool — ниже (охлаждение).
+    // Без уставки или при равенстве — нейтральный.
+    tone() {
+      return getTone(this.setValue, this.value);
+    },
+
+    // Тревога имеет приоритет над тоном: красная иконка при ON у пожара/протечки
+    iconState() {
+      return ALARM_KEYS.includes(normalizeSensorKey(this.paramKey)) && this.value === 'ON'
+        ? 'alarm'
+        : '';
+    },
+  },
+
+  methods: {
+    formattedValue(val) {
+      if (val === null || val === undefined) return '—';
+      if (typeof val === 'number') return val.toFixed(1);
+      return val;
+    },
+  },
+};
+</script>

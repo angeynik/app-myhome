@@ -3,7 +3,6 @@ const state = {
   visibleDropdown: false,
   itemsDropdown: [
     { label: 'Профиль',   action: 'profile'  },
-    { label: 'Настройки', action: 'settings' },
     { label: 'Выйти',     action: 'logout'   },
   ],
   anchorDropdown: null,

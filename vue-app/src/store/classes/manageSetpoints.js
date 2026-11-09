@@ -24,9 +24,9 @@ export default class ManageSetpoints {
                 updated: nowMoscow()
             },
             limits: {
-              limHigh: null,
-              limLow: null,
-              limStep: null,
+              limHigh: 36,
+              limLow: 8,
+              limStep: 1,
               updated: nowMoscow()
             }
         };

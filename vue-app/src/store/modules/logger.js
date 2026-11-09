@@ -1,79 +1,28 @@
 // store/modules/logger.js
+// Уровни по возрастанию «тишины»: dev < info < warn < error < silent.
+// Ошибки (error) печатаются на ВСЕХ уровнях, кроме silent.
+// 'prod' оставлен как псевдоним 'warn' для обратной совместимости с .env.
 
-const LOG_LEVEL = process.env.VUE_APP_LOG_LEVEL || 'info';
+const LEVELS = { dev: 0, info: 1, warn: 2, error: 3, silent: 4 };
+const ALIASES = { prod: 'warn' };
 
-let logInfo = false;
-let logDev = false;
-let logError = false;
-let logWarn = false;
+const raw = String(process.env.VUE_APP_LOG_LEVEL || 'info').toLowerCase();
+const current = LEVELS[ALIASES[raw] ?? raw] ?? LEVELS.info;
 
-// Инициализация уровней логирования
-function initLogging() {
-  const level = LOG_LEVEL.toLowerCase();
-  
-  if (level === 'dev') {
-    logDev = true;
-    logInfo = true;
-    logError = true;
-    logWarn = true;
-  } else if (level === 'error') {
-    logInfo = true;
-    logError = true;
-    logWarn = true;
-  } else if (level === 'info') {
-    logInfo = true;
-    logWarn = true;
-  } else if (level === 'prod'){
-    logError = true;
-    logWarn = true;
-  }
- 
-  console.log(`[Logger] Инициализирован уровень логирования: ${LOG_LEVEL}`);
-  if (logInfo || logDev) console.log(`[Logger] Info: ${logInfo}, Dev: ${logDev}, Error: ${logError}, Warn: ${logWarn}`);
-}
+const enabled = (name) => current <= LEVELS[name];
 
-// Функции для безопасного логирования
-function logInfoMessage(...args) {
-  if (logInfo) console.log(`[INFO]`, ...args);
-}
+const logger = {
+  dev:   (...args) => { if (enabled('dev'))   console.log('[DEV]', ...args); },
+  info:  (...args) => { if (enabled('info'))  console.log('[INFO]', ...args); },
+  warn:  (...args) => { if (enabled('warn'))  console.warn('[WARN]', ...args); },
+  error: (...args) => { if (enabled('error')) console.error('[ERROR]', ...args); },
 
-function logDevMessage(...args) {
-  if (logDev) console.log(`[DEV]`, ...args);
-}
-
-function logErrorMessage(...args) {
-  if (logError) console.error(`[ERROR]`, ...args);
-}
-function logWarnMessage(...args) {
-  if (logWarn) console.warn(`[WARN]`, ...args);
-}
-
-// Функции для проверки уровней (можно использовать в условиях)
-function isInfoEnabled() {
-  return logInfo;
-}
-
-function isDevEnabled() {
-  return logDev;
-}
-
-function isErrorEnabled() {
-  return logError;
-}
-function isWarnEnabled() {
-  return logWarn;
-}
-
-// Инициализируем при импорте
-initLogging();
-
-export default {
-  info: logInfoMessage,
-  dev: logDevMessage,
-  error: logErrorMessage,
-  warn: logWarnMessage,
-  isInfoEnabled,
-  isDevEnabled,
-  isErrorEnabled,
-  isWarnEnabled
+  isDevEnabled:   () => enabled('dev'),
+  isInfoEnabled:  () => enabled('info'),
+  isWarnEnabled:  () => enabled('warn'),
+  isErrorEnabled: () => enabled('error'),
 };
+
+if (enabled('info')) console.log(`[Logger] Уровень логирования: ${raw}`);
+
+export default logger;

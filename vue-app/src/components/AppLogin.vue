@@ -1,107 +1,107 @@
+<!-- components/AppLogin.vue -->
 <template>
   <div>
     <div class="header-bottom">
-      <nav>
-        <router-link to="/login">Login</router-link> |
-        <router-link to="/dashboard">Dashboard</router-link> |
-        <router-link to="/smart-home">Smart Home</router-link> |
-        <router-link to="/manufact-automatation">Automation</router-link> |
-        <router-link v-if="userLevel >= 2" to="/profile">Profile</router-link>
-        <router-link v-if="userLevel >= 3" to="/users">Users</router-link>
-      </nav>
+      <TopNav />
     </div>
     <p style="width: 100%; height: 1px; background-color: var(--orange);"></p>
+
     <div style="padding: 0 10px 0 10px;">
       <h1>Авторизация</h1>
+      <p v-if="!isConnected" class="warning">Нет соединения с сервером — идёт подключение…</p>
       <form @submit.prevent="login">
-        <input ref="usernameInput" type="text" placeholder="Имя пользователя"
-               required autocomplete="username" :disabled="loading" />
-        <input ref="passwordInput" type="password" placeholder="Пароль"
-               required autocomplete="current-password" :disabled="loading" />
+        <input
+          ref="usernameInput"
+          type="text"
+          placeholder="Имя пользователя"
+          required
+          autocomplete="username"
+          :disabled="loading"
+        />
+        <input
+          ref="passwordInput"
+          type="password"
+          placeholder="Пароль"
+          required
+          autocomplete="current-password"
+          :disabled="loading"
+        />
         <button type="submit" :disabled="loading">
           {{ loading ? 'Вход…' : 'Вход' }}
         </button>
       </form>
       <p v-if="error" class="error">{{ error }}</p>
     </div>
-
-    <PopupMenu
-      :visible="showPopup"
-      :message="popupMessage"
-      :type="popupType"
-      @close="closePopup"
-    />
   </div>
 </template>
 
 <script>
-import PopupMenu from './PopupMenu.vue';
+import TopNav from '@/components/TopNav.vue';
 import logger from '../store/modules/logger.js';
+
+// Допускаем только внутренние пути ('/foo'), но не '//evil.com' и не 'https://…'
+function safeRedirect(path) {
+  return typeof path === 'string' && path.startsWith('/') && !path.startsWith('//') ? path : '/';
+}
 
 export default {
   name: 'AppLogin',
-  components: { PopupMenu },
+  components: { TopNav },
+
   data() {
     return {
       error: '',
       loading: false,
-      showPopup: false,
-      popupMessage: '',
-      popupType: 'info',
-      popupTimeout: null,
-      autoCloseDelay: 6000,
+      redirectTimer: null,
     };
   },
+
   computed: {
-    userLevel() { return this.$store.getters.level; },
-    dID() { return this.$store.getters.dID; },
-    isConnected() { return this.$store.getters['websocket/isConnected']; },
+    // Реактивный флаг (раньше проверялся readyState, который Vue не отслеживает)
+    isConnected() {
+      return this.$store.getters['websocket/isConnected'];
+    },
   },
+
   mounted() {
     this.$refs.usernameInput?.focus();
   },
+
   beforeUnmount() {
-    if (this.popupTimeout) clearTimeout(this.popupTimeout);
+    clearTimeout(this.redirectTimer);
   },
+
   methods: {
     async login() {
+      if (this.loading) return;
       this.error = '';
       this.loading = true;
 
       try {
         const username = this.$refs.usernameInput.value.trim().toLowerCase();
         const password = this.$refs.passwordInput.value;
-
         if (!username || !password) throw new Error('Введите логин и пароль');
 
-        // Убедимся, что WS поднят (или поднимем)
-        if (!this.isConnected) {
-          try { await this.$store.dispatch('websocket/connect'); }
-          catch { throw new Error('Нет соединения с сервером'); }
-        }
-
+        // auth/login сам поднимет соединение при необходимости.
+        // Конфигурацию и менеджер уставок загружает App.vue (watch на isAuthenticated).
         const userData = await this.$store.dispatch('auth/login', { username, password });
-        logger.info('[AppLogin] вход:', userData.username, 'level', this.userLevel, 'dID', this.dID);
+        logger.info('[AppLogin] вход:', userData.username, 'level', userData.userlevel);
 
-        this.showPopupMessage(`Вход выполнен: ${username}`, 'success');
-
-        // Загружаем конфиг (best-effort, не блокируем)
-        this.$store.dispatch('config/ensureConfig', this.dID).catch((err) => {
-          logger.error('[AppLogin] конфиг не загружен:', err);
-          this.showPopupMessage('Конфигурация не загружена — часть функций недоступна', 'warning');
+        this.$store.dispatch('popup/show', {
+          message: `Вход выполнен: ${userData.username}`,
+          type: 'success',
+          duration: 2000,
         });
 
-        // Если требуется смена пароля — роутер сам перекинет на /change-password
-        // (guard смотрит на auth/mustChangePassword).
+        // Приоритет: принудительная смена пароля > redirectPath (из guard) > '/'
         const target = this.$store.getters['auth/mustChangePassword']
           ? '/change-password'
-          : (localStorage.getItem('redirectPath') || '/');
+          : safeRedirect(localStorage.getItem('redirectPath'));
         localStorage.removeItem('redirectPath');
 
-        setTimeout(() => this.$router.push(target), 500);
+        this.redirectTimer = setTimeout(() => this.$router.push(target), 400);
       } catch (err) {
         this.error = this.mapErrorToText(err);
-        this.showPopupMessage(`❌ ${this.error}`, 'error');
         logger.error('[AppLogin] ошибка входа:', err);
       } finally {
         this.loading = false;
@@ -109,32 +109,26 @@ export default {
     },
 
     mapErrorToText(err) {
-      const code = err?.code;
       const msg = err?.message || 'Ошибка авторизации';
-      switch (code) {
+      switch (err?.code) {
         case 'BAD_CREDENTIALS': return 'Неверный логин или пароль';
         case 'LOCKED':          return msg; // содержит «Повторите через N сек»
         case 'MISSING_FIELDS':  return 'Введите логин и пароль';
         case 'TIMEOUT':         return 'Сервер не отвечает. Проверьте соединение.';
+        case 'NO_CONNECTION':   return 'Нет соединения с сервером';
         default:                return msg;
       }
-    },
-
-    showPopupMessage(message, type = 'info') {
-      this.popupMessage = message;
-      this.popupType = type;
-      this.showPopup = true;
-      if (this.popupTimeout) clearTimeout(this.popupTimeout);
-      this.popupTimeout = setTimeout(() => this.closePopup(), this.autoCloseDelay);
-    },
-    closePopup() {
-      this.showPopup = false;
-      if (this.popupTimeout) { clearTimeout(this.popupTimeout); this.popupTimeout = null; }
     },
   },
 };
 </script>
 
 <style scoped>
-.error { color: red; margin-top: 10px; }
+.error {
+  color: red;
+  margin-top: 10px;
+}
+.warning {
+  color: var(--orange, #d97706);
+}
 </style>
