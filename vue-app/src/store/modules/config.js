@@ -20,6 +20,51 @@ const SERVICE_ROOM_KEYS = new Set(['init', 'newConfigID', 'password', 'common'])
 const ROOM_EXCLUDED_SECTIONS = ['init', 'id', 'group', 'title', 'setpoints', '_meta'];
 const DEVICE_EXCLUDED_SECTIONS = ['id', 'group', 'title', 'setpoints', 'sensors', '_meta'];
 
+// ── Режим устройства ───────────────────────────────────────────────────────────
+// 'auto'    — определяется по устройству (меняется на лету)
+// 'mobile'  — принудительно мобильный (свайпы, кнопки −/+)
+// 'desktop' — принудительно ПК (мышь/клавиатура)
+// В localStorage пишется ТОЛЬКО явный выбор пользователя. Раньше результат автоопределения
+// тоже писался в 'mobile_navigation' и считался ручным выбором: открыв приложение один раз
+// на телефоне, на ПК оно оставалось «мобильным».
+const DEVICE_MODES = ['auto', 'mobile', 'desktop'];
+const DEVICE_MODE_KEY = 'deviceMode';
+const LEGACY_MOBILE_KEY = 'mobile_navigation';
+
+function readDeviceMode() {
+  const saved = readStorage(DEVICE_MODE_KEY);
+  return saved === 'mobile' || saved === 'desktop' ? saved : 'auto';
+}
+
+function mq(query) {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia(query)
+    : null;
+}
+
+// Мобильное = основной указатель «грубый» (палец). Ширина окна НЕ учитывается:
+// узкое окно на ПК остаётся десктопным. iPadOS маскируется под Mac в user-agent,
+// но сообщает pointer: coarse.
+function detectAutoMobile() {
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const uaMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+  const coarse = mq('(pointer: coarse)');
+  const fine = mq('(pointer: fine)');
+  if (!coarse) return uaMobile;
+  return coarse.matches || (uaMobile && !(fine && fine.matches));
+}
+
+function detectDeviceType() {
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  if (!detectAutoMobile()) return 'desktop';
+  const isTablet = /Tablet|iPad/i.test(ua)
+    || (window.innerWidth >= 1024 && window.innerHeight >= 900)
+    || Math.min(window.innerWidth, window.innerHeight) >= 600;
+  return isTablet ? 'tablet' : 'phone';
+}
+
+let deviceWatchStarted = false;
+
 // Ожидающие загрузки конфигурации: dID → { promise, resolve, reject, timer }
 const configWaiters = new Map();
 
@@ -61,8 +106,9 @@ export default {
     allSetpoints: [],
     loading: false,
     error: null,
-    mobile: false,
-    deviceType: 'desktop', // 'desktop' | 'tablet' | 'phone'
+    deviceMode: readDeviceMode(),         // выбор пользователя: 'auto' | 'mobile' | 'desktop'
+    autoMobile: detectAutoMobile(),       // результат автоопределения
+    deviceType: detectDeviceType(),       // 'desktop' | 'tablet' | 'phone'
     typeSettingsKey: normalizeSettingsType(readStorage('typeSettingsKey')),
   }),
 
@@ -156,10 +202,14 @@ export default {
 
     SET_LOADING(state, value) { state.loading = value; },
     SET_ERROR(state, error) { state.error = error; },
-    SET_MOBILE(state, value) {
-      state.mobile = value;
-      writeStorage('mobile_navigation', String(value));
+    SET_DEVICE_MODE(state, mode) {
+      state.deviceMode = mode;
+      try {
+        if (mode === 'auto') localStorage.removeItem(DEVICE_MODE_KEY);
+        else localStorage.setItem(DEVICE_MODE_KEY, mode);
+      } catch (e) { logger.warn('[config] localStorage:', e.message); }
     },
+    SET_AUTO_MOBILE(state, value) { state.autoMobile = !!value; },
     SET_DEVICE_TYPE(state, deviceType) { state.deviceType = deviceType; },
     SET_TYPE_SETTINGS_ITEM(state, type) {
       const normalized = normalizeSettingsType(type);
@@ -190,21 +240,47 @@ export default {
       await dispatch('ensureSortingKeys');
     },
 
+    // Определяет тип устройства и (один раз) подписывается на его изменения:
+    // подключили мышь к планшету, включили эмуляцию в DevTools, повернули экран.
     detectDevice({ commit }) {
-      const saved = readStorage('mobile_navigation');
-      const ua = navigator.userAgent;
-      const isMobileUA = /Mobi|Android/i.test(ua);
+      try { localStorage.removeItem(LEGACY_MOBILE_KEY); } catch { /* приватный режим */ }
 
-      // Пользовательский выбор (переключатель в меню) важнее user-agent
-      commit('SET_MOBILE', saved !== null ? saved === 'true' : isMobileUA);
+      const refresh = () => {
+        commit('SET_AUTO_MOBILE', detectAutoMobile());
+        commit('SET_DEVICE_TYPE', detectDeviceType());
+      };
+      refresh();
 
-      let deviceType = 'desktop';
-      if (isMobileUA) {
-        const isTablet = /Tablet|iPad/i.test(ua)
-          || (window.innerWidth >= 1024 && window.innerHeight >= 900);
-        deviceType = isTablet ? 'tablet' : 'phone';
+      if (deviceWatchStarted || typeof window === 'undefined') return;
+      deviceWatchStarted = true;
+
+      ['(pointer: coarse)', '(pointer: fine)', '(hover: none)'].forEach((query) => {
+        const list = mq(query);
+        if (!list) return;
+        if (list.addEventListener) list.addEventListener('change', refresh);
+        else if (list.addListener) list.addListener(refresh); // старые Safari
+      });
+
+      let resizeTimer = null;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(refresh, 250);
+      });
+    },
+
+    // Явный выбор пользователя из меню: 'auto' | 'mobile' | 'desktop'
+    setDeviceMode({ commit, getters, dispatch }, mode) {
+      if (!DEVICE_MODES.includes(mode)) {
+        logger.warn('[config] - setDeviceMode - неизвестный режим:', mode);
+        return;
       }
-      commit('SET_DEVICE_TYPE', deviceType);
+      commit('SET_DEVICE_MODE', mode);
+
+      const now = getters.isMobile ? 'Мобильный' : 'Десктоп';
+      const message = mode === 'auto'
+        ? `Режим: авто (сейчас — ${now})`
+        : `Режим: ${now} (выбран вручную)`;
+      dispatch('popup/show', { message, type: 'info', duration: 2000 }, { root: true });
     },
 
     /**
@@ -459,21 +535,21 @@ export default {
     },
 
     // Отправка пользовательской конфигурации на сервер
-    // async userConfigRequest({ dispatch, rootGetters }, { configData, isEdit }) {
-    //   const dID = rootGetters['dID'];
-    //   if (!dID) throw new Error('dID не определён');
+    async userConfigRequest({ dispatch, rootGetters }, { configData, isEdit }) {
+      const dID = rootGetters['dID'];
+      if (!dID) throw new Error('dID не определён');
 
-    //   const request = isEdit ? 'userConfigEdit' : 'userConfigRequest';
-    //   // Не логируем configData: внутри лежит пароль
-    //   logger.info('[config] - userConfigRequest - отправка:', request, 'dID:', dID);
+      const request = isEdit ? 'userConfigEdit' : 'userConfigRequest';
+      // Не логируем configData: внутри лежит пароль
+      logger.info('[config] - userConfigRequest - отправка:', request, 'dID:', dID);
 
-    //   await dispatch('websocket/send', {
-    //     type: 'post',
-    //     request,
-    //     name: dID,
-    //     payload: configData,
-    //   }, { root: true });
-    // },
+      await dispatch('websocket/send', {
+        type: 'post',
+        request,
+        name: dID,
+        payload: configData,
+      }, { root: true });
+    },
 
     checkLimitBeforeAdd({ rootState, rootGetters }, configType) {
       const denied = { allowed: false, limit: 0, current: 0 };
@@ -492,14 +568,9 @@ export default {
       return { allowed: items.length < limit, limit, current: items.length };
     },
 
-    toggleMobileMode({ commit, dispatch, state }) {
-      const newValue = !state.mobile;
-      commit('SET_MOBILE', newValue);
-      dispatch('popup/show', {
-        message: newValue ? 'Включена мобильная навигация (свайпы)' : 'Включена десктопная навигация (стрелки)',
-        type: 'info',
-        duration: 3000,
-      }, { root: true });
+    // Совместимость со старым пунктом меню: переключает между явными режимами
+    toggleMobileMode({ dispatch, getters }) {
+      dispatch('setDeviceMode', getters.isMobile ? 'desktop' : 'mobile');
     },
   },
 
@@ -518,7 +589,10 @@ export default {
     allParams: (state) => state.allParams,
     allDevices: (state) => state.allDevices,
     allSetpoints: (state) => state.allSetpoints,
-    getMobile: (state) => state.mobile,
+    deviceMode: (state) => state.deviceMode,
+    // Итоговый режим: явный выбор пользователя важнее автоопределения
+    isMobile: (state) => (state.deviceMode === 'auto' ? state.autoMobile : state.deviceMode === 'mobile'),
+    getMobile: (state, getters) => getters.isMobile,
     getDeviceType: (state) => state.deviceType,
   },
 };

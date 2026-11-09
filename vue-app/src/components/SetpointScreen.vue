@@ -7,9 +7,11 @@
     <div
       v-if="visible"
       class="setpoint-screen"
+      :class="[tone, { 'is-desktop': !mobile }]"
       role="dialog"
       aria-modal="true"
       :aria-label="`${roomTitle} — ${paramTitle}`"
+      @wheel.prevent="onWheel"
     >
       <!-- Шапка -->
       <div class="setpoint-header">
@@ -31,16 +33,19 @@
         <div
           ref="ring"
           class="setpoint-outer-ring"
-          @touchstart="handleTouchStart"
-          @touchmove="handleTouchMove"
-          @touchend="handleTouchEnd"
-          @touchcancel="handleTouchEnd"
+          @pointerdown="onPointerDown"
+          @pointermove="onPointerMove"
+          @pointerup="onPointerUp"
+          @pointercancel="onPointerUp"
+          @click.self="onRingClick"
         >
+          <!-- Кнопки −/+ только в мобильном режиме; на ПК — колесо, стрелки ↑↓ и перетаскивание кольца -->
           <button
+            v-if="mobile"
             type="button"
             class="setpoint-btn minus"
             aria-label="Уменьшить"
-            @touchstart.stop
+            @pointerdown.stop
             @click="changeValue(-1)"
           >
             <span>−</span>
@@ -59,22 +64,30 @@
           </div>
 
           <button
+            v-if="mobile"
             type="button"
             class="setpoint-btn plus"
             aria-label="Увеличить"
-            @touchstart.stop
+            @pointerdown.stop
             @click="changeValue(1)"
           >
             <span>+</span>
           </button>
         </div>
       </div>
+
+      <p v-if="!mobile" class="setpoint-hint">
+        {{ isBoolean ? 'Нажмите на круг, чтобы переключить' : 'Колесо мыши, стрелки ↑ ↓ или перетаскивание по кругу' }}
+      </p>
     </div>
   </Teleport>
 </template>
 
 <script>
+import { getTone } from '@/utils/tone';
+
 const ANGLE_THRESHOLD = 20; // градусов поворота на один шаг
+const WHEEL_THRESHOLD = 50; // накопленный deltaY на один шаг (один «щелчок» колеса ≈ 100)
 
 // Значение приходит из store/сервера в разном виде: число, boolean, 'ON'/'OFF', числовая строка
 function normalizeValue(raw) {
@@ -96,15 +109,17 @@ export default {
 
   props: {
     visible: { type: Boolean, default: true },
+    // true — мобильный режим (кнопки −/+, свайп); false — ПК (колесо, стрелки, перетаскивание)
+    mobile: { type: Boolean, default: true },
     roomTitle: { type: String, default: '' },
     paramTitle: { type: String, default: '' },
     setPoint: { type: [Number, Boolean, String], default: null },
     actualValue: { type: [Number, String], default: null },
     unit: { type: String, default: '' },
     // null/undefined (лимиты ещё не рассчитаны) → значения по умолчанию, см. computed
-    limHigh: { type: Number, default: 36 },
-    limLow: { type: Number, default: 8 },
-    limStep: { type: Number, default: 0.5 },
+    limHigh: { type: Number, default: null },
+    limLow: { type: Number, default: null },
+    limStep: { type: Number, default: null },
   },
 
   data() {
@@ -113,6 +128,7 @@ export default {
       isDragging: false,
       lastAngle: 0,
       accumulatedAngle: 0,
+      wheelAccumulator: 0,
       centerX: 0,
       centerY: 0,
     };
@@ -123,6 +139,11 @@ export default {
     high() { return Number.isFinite(this.limHigh) ? this.limHigh : 100; },
     low()  { return Number.isFinite(this.limLow) ? this.limLow : 0; },
     step() { return this.limStep > 0 ? this.limStep : 1; },
+
+    // Тон как на плашке: уставка выше факта — жёлтый, ниже — синий
+    tone() {
+      return getTone(this.currentValue, this.actualValue);
+    },
 
     isBoolean() {
       return typeof this.currentValue === 'boolean';
@@ -154,7 +175,44 @@ export default {
 
   methods: {
     onKeydown(event) {
-      if (event.key === 'Escape') this.$emit('close');
+      switch (event.key) {
+        case 'Escape':
+          this.$emit('close');
+          break;
+        case 'ArrowUp':
+        case 'ArrowRight':
+          event.preventDefault();
+          this.changeValue(1);
+          break;
+        case 'ArrowDown':
+        case 'ArrowLeft':
+          event.preventDefault();
+          this.changeValue(-1);
+          break;
+        default:
+      }
+    },
+
+    // Колесо мыши / трекпад: накапливаем delta, чтобы трекпад не «улетал» за один жест
+    onWheel(event) {
+      let delta = event.deltaY;
+      if (event.deltaMode === 1) delta *= 33;       // строки → пиксели (Firefox)
+      else if (event.deltaMode === 2) delta *= 100; // страницы
+      this.wheelAccumulator += delta;
+
+      while (this.wheelAccumulator <= -WHEEL_THRESHOLD) { // прокрутка вверх → больше
+        this.changeValue(1);
+        this.wheelAccumulator += WHEEL_THRESHOLD;
+      }
+      while (this.wheelAccumulator >= WHEEL_THRESHOLD) {
+        this.changeValue(-1);
+        this.wheelAccumulator -= WHEEL_THRESHOLD;
+      }
+    },
+
+    // Клик по самому кольцу (не по кнопкам): переключает булево значение (актуально для ПК)
+    onRingClick() {
+      if (this.isBoolean) this.changeValue(1);
     },
 
     changeValue(direction) {
@@ -187,18 +245,21 @@ export default {
       this.centerY = rect.top + rect.height / 2;
     },
 
-    handleTouchStart(event) {
+    onPointerDown(event) {
       if (this.isBoolean) return;
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
       this.updateCenter();
       this.isDragging = true;
       this.accumulatedAngle = 0;
-      this.lastAngle = this.getAngle(event.touches[0]);
+      this.lastAngle = this.getAngle(event);
+      // Курсор может выйти за кольцо — продолжаем получать события
+      try { event.currentTarget.setPointerCapture(event.pointerId); } catch { /* не критично */ }
     },
 
-    handleTouchMove(event) {
+    onPointerMove(event) {
       if (!this.isDragging) return;
 
-      const currentAngle = this.getAngle(event.touches[0]);
+      const currentAngle = this.getAngle(event);
       let delta = currentAngle - this.lastAngle;
 
       // переход через границу 180 / −180
@@ -218,12 +279,12 @@ export default {
       }
     },
 
-    handleTouchEnd() {
+    onPointerUp() {
       this.isDragging = false;
     },
 
-    getAngle(touch) {
-      return Math.atan2(touch.clientY - this.centerY, touch.clientX - this.centerX) * (180 / Math.PI);
+    getAngle(point) {
+      return Math.atan2(point.clientY - this.centerY, point.clientX - this.centerX) * (180 / Math.PI);
     },
   },
 };

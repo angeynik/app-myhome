@@ -71,6 +71,7 @@ src/
     jwt.js                  ← Декодирование JWT (только exp; подпись проверяет сервер)
     sensorIcons.js          ← Ключ конфигурации → имя иконки спрайта (resolveSensorIcon)
     mainTabs.js             ← Вкладки главного экрана: ключ, подпись, секции конфига (единый источник для MainView и MainBody)
+    tone.js                 ← getTone(уставка, факт) → 'is-warm' | 'is-cool' | '' (общий для плашки и экрана уставки)
   tests/
     unit/                   ← Jest (см. п. 14)
 ```
@@ -189,7 +190,7 @@ settingsDataLimits    // limits из settingsData
 Геттер `idSettingsKey` **удалён** (ссылался на несуществующее поле).
 
 Геттеры модулей, которыми пользуются компоненты:
-`config/{getConfig, getConfigList, clearKeySync, isLoading, error, allRooms, allParams, allDevices, allSetpoints, getMobile, getDeviceType}`,
+`config/{getConfig, getConfigList, clearKeySync, isLoading, error, allRooms, allParams, allDevices, allSetpoints, isMobile, deviceMode, getMobile (= isMobile), getDeviceType}`,
 `sortParams/{getSensorTitle, getUnit, getRoomTitle, getParamTitle, ...}`,
 `auth/{isAuthenticated, mustChangePassword, tokenExpiresAt}`,
 `websocket/isConnected` (реактивный флаг, **не** `socket.readyState`),
@@ -406,7 +407,8 @@ authSession         ← { token, user, dID, level, mustChangePassword }     (ч�
 roomKey, paramKey, deviceKey, setpointKey, clearKey                        (чистятся при выходе)
 mainViewTab         ← 'control' | 'devices' | 'general' — активная вкладка главного экрана (UI-настройка, при выходе НЕ чистится)
 typeSettingsKey     ← 'schedules' | 'notifications' | 'statistics'  (невалидное → 'schedules')
-mobile_navigation   ← 'true' | 'false' (ручной выбор важнее user-agent)
+deviceMode          ← 'mobile' | 'desktop' — ТОЛЬКО явный выбор пользователя; ключа нет = «Авто». Автоопределение в localStorage не пишется
+(mobile_navigation — устаревший ключ: удаляется при старте, не читается)
 redirectPath        ← путь для редиректа после логина
 {dID}_{configName}  ← резервный кэш списка настроек, напр. {dID}_schedules
 {configName}_config ← локальная копия конфигурации из мастера (ConFiguration)
@@ -434,7 +436,8 @@ redirectPath        ← путь для редиректа после логин
 - **Отправка на сервер — debounce 300 мс** (`sendChangedData`); `flushPendingUpdate` — при закрытии экрана и размонтировании (см. п. 16)
 - Шапка главного экрана: **одна активная вкладка** (`.top-nav--center`), клик/Enter/Space — следующая (`cycleTab`); выбор — `localStorage.mainViewTab`.
   Вкладки и подписи — только из `utils/mainTabs.js`. На остальных экранах — `<h2>{{ headerTitle }}</h2>` в `.header-center`
-- Меню шапки: `Профиль`, `Выйти`, разделитель, переключатель `Десктоп/Мобильный` (actions `profile`, `logout`, `toggleMobile`)
+- Меню шапки: `Профиль`, `Выйти`, разделитель, режим устройства `🔄 Авто` / `🖥️ Десктоп` / `📱 Мобильный` (галочка у выбранного; actions `profile`, `logout`, `deviceMode:auto|desktop|mobile`)
+- На `SetpointScreen` передаётся `:mobile="isMobile"`
 
 ### 8.2 Поток данных
 
@@ -530,6 +533,17 @@ store actions → websocket/send
 - Плашка датчика использует `<SensorIcon :name="paramKey" :state="…">`; тревога: ON у `dFire`/`dLeak` → `state="alarm"` (красная иконка)
 - Не использовать `v-html` для иконок; не монтировать спрайт повторно (дубли `id`)
 
+### 8.6.2 Режим устройства (ПК / мобильный)
+
+- Единственный источник: геттер `config/isMobile`. Состояние: `deviceMode` (выбор пользователя) + `autoMobile` (автоопределение)
+- `isMobile` = `deviceMode === 'auto' ? autoMobile : deviceMode === 'mobile'` — явный выбор всегда важнее автоопределения
+- Автоопределение (`detectAutoMobile`): основной указатель **грубый** (`pointer: coarse`) либо мобильный user-agent без точного указателя. Ширина окна **не** учитывается (узкое окно на ПК остаётся ПК); iPadOS (UA «Mac») определяется по `pointer: coarse`
+- Слежение на лету: подписка (один раз, в `config/detectDevice`) на `matchMedia` `(pointer: coarse|fine)`, `(hover: none)` и `resize` (с debounce) — подключили мышь к планшету, включили эмуляцию в DevTools и т. п.
+- Выбор: `dispatch('config/setDeviceMode', 'auto' | 'mobile' | 'desktop')`; пишется в `localStorage.deviceMode` (`auto` — ключ удаляется)
+- **Мобильный режим** `SetpointScreen`: кнопки −/+, круговое перетаскивание, стрелки клавиатуры. **Режим ПК**: кнопок −/+ нет; колесо мыши/трекпад, стрелки ↑↓←→, перетаскивание кольца мышью, клик по кругу переключает булево значение; снизу подсказка (`.setpoint-hint`), курсор «рука»
+- Свайп/перетаскивание реализованы на **Pointer Events** (палец, мышь и стилус одним кодом); кольцу нужен `touch-action: none`
+- Не писать результат автоопределения в `localStorage` и не использовать `window.innerWidth` как признак «мобильности»
+
 ### 8.7 Popup и Dropdown
 
 ```js
@@ -538,7 +552,7 @@ this.$store.dispatch('dropdown/show', { items: [{ label, action } | { divider: t
 ```
 
 - Таймер закрытия popup — в `store/modules/popup.js` (новый popup перезапускает отсчёт); `duration: 0` — не закрывать
-- `App.vue` обрабатывает действия меню: `profile`, `logout`, `toggleMobile`. Неизвестный action → `logger.warn`
+- `App.vue` обрабатывает действия меню: `profile`, `logout`, `deviceMode:<режим>` (→ `config/setDeviceMode`), `toggleMobile` (устаревший, оставлен для совместимости). Неизвестный action → `logger.warn`
 - Пункт меню без обработчика **не добавлять**
 
 ---
@@ -667,6 +681,7 @@ dispatch('sortParams/updateSortKey', { type: 'rooms', newKey: 'room01' })   // n
 - ❌ Хранить пароль или писать токен/пароль/`configData` в лог
 - ❌ `<style>` (scoped или нет) в компонентах; повторный импорт `mainStyle.css` из компонентов
 - ❌ Переименовывать ключи с кириллической «С» без синхронной правки сервера
+- ❌ Сохранять результат автоопределения режима устройства в `localStorage` (только явный выбор пользователя)
 - ❌ Опираться на отсутствие данных как на `0` / `OFF` (использовать `null` → «—»)
 - ❌ Жёстко задавать `request: 'setpoints'` при передаче значения с `SetpointScreen` (использовать `request`/`valueTitle` из `getComponentData`)
 - ❌ Дублировать список вкладок главного экрана (только `utils/mainTabs.js`)
@@ -780,6 +795,7 @@ test('parseMoscowDate: 21:22:38 МСК = 18:22:38 UTC', () => {
 - «Стекло» (плашки, вкладки группировки): переменные `--glass`, `--glass-strong`, `--glass-blur` (`backdrop-filter`); тона уставки `--tone-cool` (синий) / `--tone-warm` (жёлтый)
 - Тон плашки — необязательные классы на `.sensor-card`: `is-cool` (уставка ниже факта) и `is-warm` (уставка выше факта) красят иконку и значение уставки; без класса (датчик без уставки) — нейтральный серый
 - Плашка датчика: `.sensor-card` → `.sensor-icon-wrapper` → `.sensor-icon` (круглая подложка) + `.sensor-content` (`.sensor-title`, `.sensor-values`, `.sensor-set-value`, `.sensor-actual-value`, `.unit`). Сама иконка — компонент `<SensorIcon>` с классом **`.sensor-svg`** (не `.sensor-icon`!), размер задавать `size="60%"` или в px
+- Типографика экрана уставки совпадает с плашкой: уставка — 700 и цвет тона, факт — 500 и `rgba(255,255,255,.5)`, единица — `.unit` (400, 0.85em); экран рендерится в `<body>`, поэтому `font-family` и сглаживание заданы на `.setpoint-screen` явно (иначе шрифт не совпадёт с `.app`)
 - Экран изменения значения: `.setpoint-screen` (+ `.setpoint-header`, `.setpoint-outer-ring`, `.setpoint-inner-circle`, `.setpoint-btn`, …). Стили старой панели (`.setpointBlock`, `.setpoint-overlay`, `.setpointValue*`) удалены вместе с `MainSetpoint.vue`
 - Брейкпоинты: `376px` → `630px` → `980px` → `1200px`, затем `landscape ≤979px`, затем `≤400px`.
   **Порядок блоков важен** — более поздние переопределяют ранние. Не выносить `@media` внутрь секций
@@ -835,3 +851,5 @@ test('parseMoscowDate: 21:22:38 МСК = 18:22:38 UTC', () => {
 | 2.2, 8.1, 8.4, 8.6 (вторая ревизия) | `GroupTabs` + группировка в `sortParams`; панель `MainSetpoint` с таймером бездействия | Вкладки-разделы главного экрана (`utils/mainTabs.js`, `mainViewTab`); `SetpointScreen`; `GroupTabs.vue`, `MainSetpoint.vue` и их стили удалены |
 | 8.1 | `onScreenUpdateValue` всегда `setpoints/value` | Передаёт `request`/`valueTitle` исходного события (иначе правка расписания уходила как уставка) |
 | 8.4 | Карточки без уставки выбирались и писали `room: 'common'` в payload | Только чтение; `common` исключён из списка комнат |
+| 8.6.2 | Переключатель Десктоп/Мобильный; автоопределение писалось в `mobile_navigation` как ручной выбор («залипало») | Меню `Авто / Десктоп / Мобильный`, `deviceMode` только для явного выбора, слежение за устройством на лету; на ПК у экрана уставки нет −/+ |
+| 15 | Шрифты экрана уставки отличались от плашки (нет `font-family` из-за Teleport) | Те же семейство, жирность, цвета и тон (`utils/tone.js`) |

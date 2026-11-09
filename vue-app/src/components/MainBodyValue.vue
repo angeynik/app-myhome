@@ -36,6 +36,7 @@
 <script>
 import SensorIcon from '@/components/SensorIcon.vue';
 import { normalizeSensorKey } from '@/utils/sensorIcons';
+import { getTone } from '@/utils/tone';
 
 // Параметры, срабатывание которых (ON) — тревога: иконка красная
 const ALARM_KEYS = ['dFire', 'dLeak'];
@@ -59,11 +60,7 @@ export default {
     // Тон плашки: is-warm — уставка выше факта (нагрев), is-cool — ниже (охлаждение).
     // Без уставки или при равенстве — нейтральный.
     tone() {
-      if (this.setValue === null || this.value === null) return '';
-      const set = Number(this.setValue);
-      const cur = Number(this.value);
-      if (!Number.isFinite(set) || !Number.isFinite(cur) || set === cur) return '';
-      return set > cur ? 'is-warm' : 'is-cool';
+      return getTone(this.setValue, this.value);
     },
 
     // Тревога имеет приоритет над тоном: красная иконка при ON у пожара/протечки

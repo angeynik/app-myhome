@@ -68,6 +68,7 @@
     v-if="showFooterSetpoint"
     :roomTitle="screenData.roomTitle"
     :paramTitle="screenData.paramTitle"
+    :mobile="!isMobile"
     :setPoint="setpoint"
     :actualValue="screenData.actualValue"
     :unit="screenData.unit"
@@ -119,7 +120,7 @@ export default {
 
   computed: {
     ...mapGetters(['dID', 'showSetpoint']),
-    ...mapGetters('config', ['getMobile']),
+    ...mapGetters('config', ['isMobile', 'deviceMode']),
     
     // Лимиты поля по умолчанию подставляются ПОЭЛЕМЕНТНО: null в limHigh/limLow раньше
     // превращался в 0 при сравнении и «схлопывал» диапазон
@@ -128,7 +129,7 @@ export default {
       return {
         limHigh: l.limHigh ?? 36,
         limLow: l.limLow ?? 8,
-        limStep: l.limStep ?? 1,
+        limStep: l.limStep ?? 0.5,
       };
     },
 
@@ -242,16 +243,20 @@ export default {
 
     openMenu(event) {
       event.stopPropagation();
-      const isMobile = this.getMobile;
+      // Режим устройства: «Авто» определяет по устройству, остальные — принудительно.
+      // Галочка показывает выбранный режим.
+      const modeItem = (mode, label) => ({
+        label: `${this.deviceMode === mode ? '✓ ' : ''}${label}`,
+        action: `deviceMode:${mode}`,
+      });
       this.show({
         items: [
           { label: 'Профиль',   action: 'profile'  },
           { label: 'Выйти',     action: 'logout'   },
           { divider: true },
-          {
-            label: isMobile ? '🖥️ Десктоп' : '📱 Мобильный',
-            action: 'toggleMobile',
-          },
+          modeItem('auto', '🔄 Авто'),
+          modeItem('desktop', '🖥️ Десктоп'),
+          modeItem('mobile', '📱 Мобильный'),
         ],
         anchorElement: event.currentTarget,
       });

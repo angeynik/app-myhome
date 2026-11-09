@@ -475,7 +475,18 @@ nav a.router-link-exact-active {
   user-select: none;
   touch-action: none;
   overscroll-behavior: contain;
+
+  /* Типографика — как у плашки датчика. Экран рендерится в <body> (Teleport) и не наследует
+     шрифт от .app, поэтому семейство и сглаживание задаём явно */
+  font-family: Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums;
+
+  /* Тон уставки (как .sensor-card): is-cool — синий, is-warm — жёлтый */
+  --tone-color: var(--tone-cool);
 }
+.setpoint-screen.is-warm { --tone-color: var(--tone-warm); }
 
 /* Шапка */
 .setpoint-header {
@@ -581,25 +592,44 @@ nav a.router-link-exact-active {
 }
 .setpoint-value-large {
   font-size: clamp(3.5rem, 18vw, 6rem);
-  font-weight: 600;
+  font-weight: 700;                 /* как .sensor-set-value */
+  color: var(--tone-color);         /* тон уставки */
   line-height: 1;
-  letter-spacing: -2px;
+  letter-spacing: -1px;
 }
 .setpoint-unit-large {
   font-size: clamp(1.2rem, 6vw, 1.8rem);
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 500;
+  color: var(--tone-color);
+  font-weight: 400;                 /* как .unit на плашке */
+  opacity: 0.85;
 }
 
 /* Фактическое значение (в 3 раза меньше) */
 .setpoint-actual-small {
   font-size: clamp(1rem, 5vw, 1.6rem);
+  font-weight: 500;                 /* как .sensor-actual-value */
   color: rgba(255, 255, 255, 0.5);
   margin-top: 0.2em;
   display: flex;
   align-items: baseline;
   gap: 2px;
 }
+
+
+/* Режим ПК (кнопок −/+ нет): подсказка и курсор «рука» */
+.setpoint-hint {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0 1rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+.setpoint-screen.is-desktop .setpoint-outer-ring { cursor: grab; }
+.setpoint-screen.is-desktop .setpoint-outer-ring:active { cursor: grabbing; }
 
 
 /* ===== 7. POPUP И ВЫПАДАЮЩЕЕ МЕНЮ ===== */
