@@ -11,6 +11,7 @@ import logger from './modules/logger';
 import popup from './modules/popup';
 import dropdown from './modules/dropdown';
 import { nowMoscow } from '@/utils/timeUtils';
+import appearance from './modules/appearance';
 
 // Поля payload → ключи localStorage (выбор пользователя переживает перезагрузку)
 const PERSISTED_PAYLOAD_KEYS = {
@@ -41,6 +42,7 @@ const store = createStore({
     settingsConfig,
     popup,
     dropdown,
+    appearance,
   },
 
   mutations: {
@@ -111,7 +113,34 @@ const store = createStore({
   },
 
   actions: {
-    initializeStore({ commit }) {
+    // initializeStore({ commit }) {
+    //   let raw = null;
+    //   try { raw = localStorage.getItem('authSession'); } catch { /* приватный режим */ }
+
+    //   if (raw) {
+    //     try {
+    //       const parsed = JSON.parse(raw);
+    //       if (parsed && typeof parsed.token === 'string') {
+    //         commit('auth/RESTORE_AUTH', {
+    //           token: parsed.token,
+    //           user: parsed.user,
+    //           dID: parsed.dID,
+    //           level: parsed.level,
+    //           mustChangePassword: parsed.mustChangePassword,
+    //         });
+    //       }
+    //     } catch (e) {
+    //       localStorage.removeItem('authSession');
+    //       logger.error('[store] не удалось восстановить сессию', e);
+    //     }
+    //   }
+    //   // старый ключ — чистим
+    //   if (localStorage.getItem('authData')) localStorage.removeItem('authData');
+    // },
+
+    // Создаёт менеджер уставок для текущего dID (вызывается из App.vue после входа).
+    // ВАЖНО: без этого вызова setpointsManager остаётся null, и выбор/изменение уставок не работает.
+        async initializeStore({ dispatch, commit }) {
       let raw = null;
       try { raw = localStorage.getItem('authSession'); } catch { /* приватный режим */ }
 
@@ -132,12 +161,11 @@ const store = createStore({
           logger.error('[store] не удалось восстановить сессию', e);
         }
       }
-      // старый ключ — чистим
       if (localStorage.getItem('authData')) localStorage.removeItem('authData');
-    },
 
-    // Создаёт менеджер уставок для текущего dID (вызывается из App.vue после входа).
-    // ВАЖНО: без этого вызова setpointsManager остаётся null, и выбор/изменение уставок не работает.
+      // Восстанавливаем тему фона при загрузке приложения
+      await dispatch('appearance/restore');
+    },
     initializeSetpointsManager({ commit, getters, state }) {
       const dID = getters.dID;
       if (!dID) return;

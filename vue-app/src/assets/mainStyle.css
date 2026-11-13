@@ -112,15 +112,48 @@ body,
   
   /* ЗАДАЕМ ФОН ЗДЕСЬ: градиент для затемнения + картинка */
   /* Если картинка не появится, попробуйте путь url('../assets/bg-main.webp') */
-  background: linear-gradient(rgba(30, 30, 49, 0.7), rgba(30, 30, 49, 0.4)), url('~@/assets/bg-main.webp') center/cover no-repeat fixed;
-  
+  /* background: linear-gradient(rgba(30, 30, 49, 0.7), rgba(30, 30, 49, 0.4)), url('~@/assets/bg-main.webp') center/cover no-repeat fixed;
+   */
   color: var(--light_font);
   font-family: Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   margin: 0;
   border: 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+/* --- ТЕМЫ ФОНА для .app --- */
+.app.bg-theme--default {
+  background-image:
+    linear-gradient(rgba(30, 30, 49, 0.4), rgba(30, 30, 49, 0.2)),
+    url('~@/assets/bg-main.webp');
 }
 
+.app.bg-theme--field {
+  background-image:
+    linear-gradient(rgba(30, 30, 49, 0.4), rgba(30, 30, 49, 0.2)),
+    url('~@/assets/bg-field.webp');
+}
+
+.app.bg-theme--night {
+  background-image:
+    linear-gradient(rgba(10, 14, 30, 0.5), rgba(10, 14, 30, 0.3)),
+    url('~@/assets/bg-night.webp');
+}
+
+.app.bg-theme--forest {
+  background-image:
+    linear-gradient(rgba(20, 40, 30, 0.5), rgba(20, 40, 30, 0.3)),
+    url('~@/assets/bg-forest.webp');
+}
+
+.app.bg-theme--ocean {
+  background-image:
+    linear-gradient(rgba(10, 30, 50, 0.4), rgba(10, 30, 50, 0.2)),
+    url('~@/assets/bg-ocean.webp');
+}
 /* Основное тело */
 .body {
   flex: 1 1 86%;

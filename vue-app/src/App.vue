@@ -83,10 +83,10 @@ export default {
       this.hideDropdown();
 
       // Режим устройства: deviceMode:auto | deviceMode:mobile | deviceMode:desktop
-      if (typeof item.action === 'string' && item.action.startsWith('deviceMode:')) {
-        await this.$store.dispatch('config/setDeviceMode', item.action.split(':')[1]);
-        return;
-      }
+      // if (typeof item.action === 'string' && item.action.startsWith('deviceMode:')) {
+      //   await this.$store.dispatch('config/setDeviceMode', item.action.split(':')[1]);
+      //   return;
+      // }
 
       switch (item.action) {
         case 'profile':
