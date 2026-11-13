@@ -1,6 +1,6 @@
 <!-- components/MainView.vue -->
 <template>
-  <div class="app" :class="bgThemeClass">
+  <div class="app" :class="bgThemeClass" :style="bgCustomStyle">
     <svg display="none">
       <symbol id="homeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -121,8 +121,15 @@ export default {
   computed: {
     ...mapGetters(['dID', 'showSetpoint']),
     ...mapGetters('config', ['isMobile']),
-    ...mapGetters('appearance', ['bgThemeClass']), 
+    ...mapGetters('appearance', ['bgThemeClass', 'customColor']), 
     
+    bgCustomStyle() {
+      // Если выбрана тема "Свой цвет", передаем цвет в CSS-переменную
+      if (this.bgThemeClass === 'bg-theme--color') {
+        return { '--custom-bg-color': this.customColor };
+      }
+      return {};
+    },
     // Лимиты поля по умолчанию подставляются ПОЭЛЕМЕНТНО: null в limHigh/limLow раньше
     // превращался в 0 при сравнении и «схлопывал» диапазон
     screenLimits() {

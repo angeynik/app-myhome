@@ -12,7 +12,7 @@
         <div class="header-center">
           <h2>Настройки</h2>
         </div>
-        <div class="icon" style="visibility: hidden;"></div> <!-- Заглушка для центрирования -->
+        <div class="icon" style="visibility: hidden;"></div>
       </div>
       <p class="header-divider"></p>
     </header>
@@ -38,41 +38,35 @@
               />
               {{ label }}
             </label>
+
+            <!-- Палитра цветов (появляется только если выбрана тема "Свой цвет") -->
+            <div v-if="bgTheme === 'color'" class="color-picker-wrapper">
+              <input 
+                type="color" 
+                :value="customColor" 
+                @input="updateColor($event.target.value)"
+                class="color-picker"
+              />
+            </div>
+
           </div>
         </div>
 
         <!-- Блок: Режим устройства -->
+        <!-- ... (оставляем без изменений) ... -->
         <div class="settings-group">
           <h3 class="settings-group-title">Режим устройства</h3>
           <div class="settings-options">
             <label class="settings-radio-label">
-              <input 
-                type="radio" 
-                name="deviceMode" 
-                value="auto" 
-                :checked="deviceMode === 'auto'"
-                @change="updateDeviceMode('auto')"
-              />
+              <input type="radio" name="deviceMode" value="auto" :checked="deviceMode === 'auto'" @change="updateDeviceMode('auto')" />
               Авто (сейчас: {{ isMobile ? 'Мобильный' : 'Десктоп' }})
             </label>
             <label class="settings-radio-label">
-              <input 
-                type="radio" 
-                name="deviceMode" 
-                value="desktop" 
-                :checked="deviceMode === 'desktop'"
-                @change="updateDeviceMode('desktop')"
-              />
+              <input type="radio" name="deviceMode" value="desktop" :checked="deviceMode === 'desktop'" @change="updateDeviceMode('desktop')" />
               Десктоп
             </label>
             <label class="settings-radio-label">
-              <input 
-                type="radio" 
-                name="deviceMode" 
-                value="mobile" 
-                :checked="deviceMode === 'mobile'"
-                @change="updateDeviceMode('mobile')"
-              />
+              <input type="radio" name="deviceMode" value="mobile" :checked="deviceMode === 'mobile'" @change="updateDeviceMode('mobile')" />
               Мобильный
             </label>
           </div>
@@ -91,21 +85,24 @@ export default {
   name: 'AppSettings',
 
   computed: {
-    ...mapGetters('appearance', ['bgTheme']),
+    ...mapGetters('appearance', ['bgTheme', 'customColor']), // <--- Добавили customColor
     ...mapGetters('config', ['deviceMode', 'isMobile']),
 
-    // Получаем список тем из модуля appearance
     themes() {
       return BG_THEMES;
     },
   },
 
   methods: {
-    ...mapActions('appearance', ['setTheme']),
+    ...mapActions('appearance', ['setTheme', 'setCustomColor']), // <--- Добавили setCustomColor
     ...mapActions('config', ['setDeviceMode']),
 
     updateTheme(themeKey) {
       this.setTheme(themeKey);
+    },
+
+    updateColor(newColor) {
+      this.setCustomColor(newColor); // <--- Вызываем action
     },
 
     updateDeviceMode(mode) {
