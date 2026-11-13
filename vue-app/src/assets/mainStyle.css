@@ -260,9 +260,9 @@ nav a.router-link-exact-active {
 /* Сетка карточек. Ширину колонки и зазор меняют медиа-запросы через переменные
    (--card-min / --card-gap): одна и та же сетка у .mainBody и у групп комнат. */
 .mainBody {
-  --card-min: 160px;  /* Минимальная ширина плашки: на телефоне помещаются две в ряд */
+  --card-min: 170px;  /* Минимальная ширина плашки: на телефоне помещаются две в ряд */
   --card-max: none;   /* Максимальная ширина плашки (на планшетах/десктопе ограничивается в @media) */
-  --card-gap: 0.75rem;
+  --card-gap: 0.85rem;
   
   display: grid;
   grid-template-columns: 1fr;
@@ -448,6 +448,122 @@ nav a.router-link-exact-active {
   font-weight: 400;
   opacity: 0.85;
 }
+
+/* ===== Плашка камеры ===== */
+.camera-card {
+  width: 100%;
+  max-width: var(--card-max);
+  min-height: 5.5rem;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.8rem;
+  background-color: rgba(45, 60, 80, 0.7); /* Как на макете */
+  backdrop-filter: blur(10px);
+  border: 2px solid transparent;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.2s;
+}
+.camera-card:active {
+  transform: scale(0.98);
+}
+.camera-card:hover {
+  border-color: var(--orange);
+}
+
+.camera-thumb-wrapper {
+  flex: 0 0 4.5rem;
+  height: 4.5rem;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #1E1E31;
+}
+
+.camera-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.camera-thumb.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.5);
+  text-align: center;
+}
+
+.camera-content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.camera-title {
+  color: #ffffff;
+  font-size: clamp(0.9rem, 3.8vw, 1.2rem);
+  font-weight: 600;
+}
+
+.camera-time {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: clamp(0.75rem, 3vw, 0.9rem);
+}
+
+/* ===== Полноэкранный просмотр камеры ===== */
+.camera-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  background: rgba(10, 14, 30, 0.95);
+  backdrop-filter: blur(10px);
+  color: #ffffff;
+  font-family: Helvetica, Arial, sans-serif;
+  user-select: none;
+}
+
+.camera-screen-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.camera-screen-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.camera-screen-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.camera-screen-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.camera-screen-placeholder {
+  font-size: 1.2rem;
+  color: rgba(255,255,255,0.5);
+}
+
 /* ===== 4.2 Страница глобальных настроек (AppSettings) ===== */
 .app-settings-page {
   display: flex;

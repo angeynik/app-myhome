@@ -280,6 +280,7 @@ export default {
       // Данные предыдущего пользователя не должны остаться в памяти
       commit('RESET_SESSION_DATA', null, { root: true });
       commit('config/RESET', null, { root: true });
+      commit('video/RESET', null, { root: true }); 
       dispatch('dropdown/hide', null, { root: true });
     },
 

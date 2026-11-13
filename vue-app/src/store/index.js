@@ -12,6 +12,7 @@ import popup from './modules/popup';
 import dropdown from './modules/dropdown';
 import { nowMoscow } from '@/utils/timeUtils';
 import appearance from './modules/appearance';
+import video from './modules/video';
 
 // Поля payload → ключи localStorage (выбор пользователя переживает перезагрузку)
 const PERSISTED_PAYLOAD_KEYS = {
@@ -43,6 +44,7 @@ const store = createStore({
     popup,
     dropdown,
     appearance,
+    video,
   },
 
   mutations: {

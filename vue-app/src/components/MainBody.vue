@@ -6,6 +6,20 @@
     <button type="button" @click="retryLoad">Повторить</button>
   </div>
   <div v-else id="app_mainBody" class="mainBody">
+    <!-- СЕКЦИЯ КАМЕРЫ (появляется, если сервер прислал videoSnapshot) -->
+    <section v-if="hasSnapshot" class="room-group">
+      <div class="room-group-header">
+        <span class="room-group-title">Видеонаблюдение</span>
+      </div>
+      <div class="room-group-items">
+        <CameraCard
+          title="Камера 1"
+          :imageSrc="videoImageSrc"
+          timeUpdated="Обновлено сейчас"
+          @click="openCamera"
+        />
+      </div>
+    </section>
     <template v-if="groupedView.length">
       <section
         v-for="group in groupedView"
@@ -40,6 +54,7 @@
 <script>
 import { mapGetters, mapActions } from 'vuex';
 import MainBodyValue from './MainBodyValue.vue';
+import CameraCard from './CameraCard.vue';
 import logger from '../store/modules/logger.js';
 import { parseMoscowDate } from '@/utils/timeUtils';
 import { COMMON_KEY, DEFAULT_TAB, TAB_KEYS, getTab } from '@/utils/mainTabs';
@@ -51,8 +66,8 @@ const CLOCK_TICK = 30 * 1000; // обновление подписей «N ми�
 
 export default {
   name: 'MainBody',
-  components: { MainBodyValue },
-  emits: ['getComponentData'],
+  components: { MainBodyValue, CameraCard },
+  emits: ['getComponentData', 'openCamera'],
 
   props: {
     // Активная вкладка главного экрана (см. utils/mainTabs.js)
@@ -77,6 +92,12 @@ export default {
     ...mapGetters('config', ['isLoading', 'error', 'getConfig', 'clearKeySync']),
     ...mapGetters('sortParams', ['getSensorTitle', 'getUnit']),
     ...mapGetters(['dID', 'typeSettingsKey', 'showSetpoint']),
+    ...mapGetters('video', ['hasSnapshot', 'getSnapshot']),
+
+    videoImageSrc() {
+      if (!this.getSnapshot) return null;
+      return `data:${this.getSnapshot.mimeType};base64,${this.getSnapshot.image}`;
+    },
 
     currentTab() {
       return getTab(this.activeTab);
@@ -306,6 +327,16 @@ export default {
       }
       return items;
     },
+
+    openCamera() {
+      // Отправляем событие наверх в MainView для открытия полноэкранного режима
+      this.$emit('openCamera', {
+        title: 'Камера 1', // Название камеры (можно вынести в настройки)
+        // Время последнего обновления (можно взять из getSnapshot.timestamp, но пока оставим статику или текущее время)
+        timeUpdated: 'Только что', 
+      });
+    },
+
 
     // Сравнение по ключу, а не по ссылке: groupedView пересобирается при каждом обновлении
     isSelected(item) {

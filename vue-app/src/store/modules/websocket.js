@@ -290,6 +290,11 @@ export default {
         }
         if (type === 'post') {
           if (!response.payload || typeof response.payload !== 'object') return;
+          if (request === 'videoSnapshot') {
+            // Кадр с камеры → сохраняем в store/video.js, чтобы компоненты могли его взять через геттер
+            await dispatch('video/handleSnapshot', response.payload, { root: true });
+            return; 
+          }
           if (response.name === rootGetters['dID']) {
             await dispatch(
               'config/handleValueUpdate',
