@@ -29,6 +29,10 @@
           {{ formattedValue(value) }}<span v-if="unit && value !== null" class="unit">{{ unit }}</span>
         </div>
       </div>
+      <!-- Время последнего обновления -->
+      <div class="sensor-time">
+        {{ timeUpdated }}
+      </div>
     </div>
   </div>
 </template>

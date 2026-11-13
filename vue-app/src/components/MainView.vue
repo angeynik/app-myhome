@@ -120,7 +120,7 @@ export default {
 
   computed: {
     ...mapGetters(['dID', 'showSetpoint']),
-    ...mapGetters('config', ['isMobile', 'deviceMode']),
+    ...mapGetters('config', ['isMobile']),
     
     // Лимиты поля по умолчанию подставляются ПОЭЛЕМЕНТНО: null в limHigh/limLow раньше
     // превращался в 0 при сравнении и «схлопывал» диапазон
@@ -241,28 +241,39 @@ export default {
       this.$router.push('/');
     },
 
+    // openMenu(event) {
+    //   event.stopPropagation();
+    //   // Режим устройства: «Авто» определяет по устройству, остальные — принудительно.
+    //   // Галочка показывает выбранный режим.
+    //   const modeItem = (mode, label) => ({
+    //     label: `${this.deviceMode === mode ? '✓ ' : ''}${label}`,
+    //     action: `deviceMode:${mode}`,
+    //   });
+    //   this.show({
+    //     items: [
+    //       { label: 'Профиль',   action: 'profile'  },
+    //       { label: 'Выйти',     action: 'logout'   },
+    //       { divider: true },
+    //       modeItem('auto', '🔄 Авто'),
+    //       modeItem('desktop', '🖥️ Десктоп'),
+    //       modeItem('mobile', '📱 Мобильный'),
+    //     ],
+    //     anchorElement: event.currentTarget,
+    //   });
+    // },
+
+    // ── Изменение уставки ───────────────────────────────────────────
     openMenu(event) {
       event.stopPropagation();
-      // Режим устройства: «Авто» определяет по устройству, остальные — принудительно.
-      // Галочка показывает выбранный режим.
-      const modeItem = (mode, label) => ({
-        label: `${this.deviceMode === mode ? '✓ ' : ''}${label}`,
-        action: `deviceMode:${mode}`,
-      });
       this.show({
         items: [
           { label: 'Профиль',   action: 'profile'  },
+          { label: 'Настройки', action: 'settings' }, // Новый пункт
           { label: 'Выйти',     action: 'logout'   },
-          { divider: true },
-          modeItem('auto', '🔄 Авто'),
-          modeItem('desktop', '🖥️ Десктоп'),
-          modeItem('mobile', '📱 Мобильный'),
         ],
         anchorElement: event.currentTarget,
       });
     },
-
-    // ── Изменение уставки ───────────────────────────────────────────
     async editValueMainSetpoint(eventData) {
       logger.dev('[MainView] - editValueMainSetpoint:', eventData);
       const settingsData = this.$store.getters.getSetpointsManager?.settingsData;

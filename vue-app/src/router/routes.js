@@ -40,6 +40,12 @@ const routes = [
         meta: { requiresAuth: true, requiredLevel: 2 },
         props: (route) => ({ setting_Type: route.params.settingsType }),
       },
+      {
+        path: 'preferences',
+        name: 'AppSettings',
+        component: () => import('@/components/AppSettings.vue'),
+        meta: { requiresAuth: true, requiredLevel: 2 },
+      },
     ],
   },
 

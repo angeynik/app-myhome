@@ -92,12 +92,13 @@ export default {
         case 'profile':
           this.$router.push('/profile');
           break;
+        case 'settings':
+          // Переход на новую страницу настроек (изменение темы и режима устройства)
+          this.$router.push('/preferences'); 
+          break;
         case 'logout':
           await this.$store.dispatch('auth/logout');
           this.$router.push('/login');
-          break;
-        case 'toggleMobile':
-          await this.$store.dispatch('config/toggleMobileMode');
           break;
         default:
           logger.warn('[App] неизвестный action меню:', item.action);
