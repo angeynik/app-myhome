@@ -516,6 +516,37 @@ nav a.router-link-exact-active {
   font-size: clamp(0.75rem, 3vw, 0.9rem);
 }
 
+/* --- Сетка камер (CameraGrid.vue, вкладка «Видеонаблюдение», до 16 камер) --- */
+.camera-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
+  gap: var(--card-gap);
+  width: 100%;
+}
+.camera-grid .camera-card {
+  max-width: none;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+.camera-grid .camera-thumb-wrapper {
+  flex: none;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+.camera-card--offline {
+  opacity: 0.6;
+}
+.camera-card--offline .camera-time {
+  color: var(--orange);
+}
+.room-group-count {
+  margin-left: 0.5rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9em;
+}
+
 /* ===== Полноэкранный просмотр камеры ===== */
 .camera-screen {
   position: fixed;

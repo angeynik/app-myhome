@@ -38,10 +38,10 @@
 - `App.vue` — корень: спрайт иконок, `router-view`, popup, dropdown, действия меню; при `isAuthenticated` — `initializeSetpointsManager` → `config/initialize`.
 - `router/routes.js` — маршруты и `navigationGuard`.
 - `store/index.js` — корневой стор: менеджер уставок (`settingsData`), выбор пользователя, `showSetpoint`.
-- `store/modules/` — `auth`, `websocket`, `config`, `sortParams`, `settingsConfig`, `popup`, `dropdown`, `log`, `appearance` (тема фона), `video` (кадр камеры); `logger.js` — утилита, не модуль Vuex.
+- `store/modules/` — `auth`, `websocket`, `config`, `sortParams`, `settingsConfig`, `popup`, `dropdown`, `log`, `appearance` (тема фона), `video` (камеры, кадры по камерам, подписка); `logger.js` — утилита, не модуль Vuex.
 - `store/classes/manageSetpoints.js` — класс `ManageSetpoints` (объект `settingsData`).
 - `utils/` — `timeUtils`, `timeFieldEditor`, `checkOverlap`, `jwt` (только `exp`), `sensorIcons`, `mainTabs` (вкладки главного экрана — единственный источник), `tone`.
-- `components/` — `MainView` (оболочка), `MainBody`, `MainBodyValue`, `MainBodySettings` (+ `MainBodySchedule`, `MainBodyNotifications`, `MainBodyStatistic`), `SetpointScreen`, `SensorIcon`, `SensorIconSprite`, `CameraCard`, `TopNav`, `MenuDropdown`, `PopupMenu`, `AppLogin`, `AppProfile`, `AppSettings`, `AccessDenied`.
+- `components/` — `MainView` (оболочка), `MainBody`, `MainBodyValue`, `MainBodySettings` (+ `MainBodySchedule`, `MainBodyNotifications`, `MainBodyStatistic`), `SetpointScreen`, `SensorIcon`, `SensorIconSprite`, `CameraGrid` (+ `CameraCard`, `CameraScreen`), `TopNav`, `MenuDropdown`, `PopupMenu`, `AppLogin`, `AppProfile`, `AppSettings`, `AccessDenied`.
 - `tests/unit/` — Jest `<модуль>.spec.js`, общий `setup.js`.
 
 ## Обмен данными по WebSocket
@@ -69,6 +69,8 @@
 | `auth` | `refresh`, `logout` | `{}` |
 | `auth` | `changePassword` | `{ oldPassword, newPassword }` |
 | `get` | `config`, `schedules`, `notifications`, `statistics` | `{}` |
+| `get` | `videoCameras` | `{}` — список камер |
+| `post` | `videoSubscribe` | `{ cameras: [id…], full: id \| null }` — через `video/subscribe` |
 | `post` | `setpoints` | `settingsData.payload` (`room`, `setKey`, `key`, `value`, …) — через `config/updateSetpointServer` |
 | `post` | `add<тип>` | `{ room, param, configData }` |
 | `post` | `del<тип>` | `{ room, param, Ids: [...] }` |
@@ -80,8 +82,8 @@
 1. Ответ на ожидающий auth-запрос (`loginSuccess`, `loginError`, `resumeError`, `refreshSuccess`/`refreshError`, `changePasswordSuccess`/`changePasswordError`, `authError`) — резолвит/реджектит промис `send`.
 2. `request === 'accessError'` → `auth/handleAccessError` (см. «Сессия»).
 3. `type === 'error'` → `config/handleServerError`: сообщение `payload.message` во всплывающем окне и перезапрос затронутых данных (после ошибки записи значение на экране уже изменено, а сервер или устройство его не приняли). Ошибка get-запроса (`configError`, `<тип>Error`) данные не перезапрашивает; `configError` сразу отклоняет ожидание конфигурации.
-4. `type === 'response'` → `config/handleConfigResponse` (`config`, `schedules`, `notifications`, `statistics`; остальные ответы игнорируются).
-5. `type === 'post'`, `request === 'videoSnapshot'` → `video/handleSnapshot`.
+4. `type === 'response'` → `video/handleResponse` (`videoCameras`, `videoSnapshot`, `videoSubscribeSuccess`), иначе `config/handleConfigResponse` (`config`, `schedules`, `notifications`, `statistics`; остальные ответы игнорируются).
+5. `type === 'post'`, `request === 'videoSnapshot'` → `video/handleSnapshot` (кадр `{ cameraId, title, image, mimeType, size, timestamp }`, хранится по `cameraId`).
 6. `type === 'post'` с `name === dID` → `config/handleValueUpdate`:
    - `{ room, item_name, item_value }` (NodeRED, мосты Modbus, данные датчиков) — обновляет элемент раздела `request` (`sensors`, `system`, `setpoints`, любой другой);
    - `{ room, setKey, value }` — уставка, пересланная сервером от другой вкладки того же `dID`: ключ берётся из сообщения, не из своего выбора.
@@ -135,6 +137,7 @@
 - `MainBodySettings`: удаление отложенное (`pendingDeletes`, отправка при закрытии); добавление — проверка лимита → подбор времени без пересечений (`checkOverlap`; `newStartTime === null` обязательно обработать) → оптимистично в store → отправка → откат при ошибке.
 - `SetpointScreen`: свой `Teleport` в `<body>`; шаг и округление — по точности шага; выход за границу — зажим; центр кольца считается при каждом касании, а не в watcher на `visible`.
 - Режим устройства — единственный источник `config/isMobile`; в `localStorage.deviceMode` пишется только явный выбор пользователя.
+- Видеонаблюдение — вкладка `cameras` в `utils/mainTabs.js` (`cameras: true`), её показывает `CameraGrid`. Подписка (`video/subscribe`) следует за экраном: миниатюры — только карточки, видимые в окне (`IntersectionObserver`; без него — все), `full` — камера в `CameraScreen`; уход с вкладки — пустая подписка. Одинаковая подписка повторно не отправляется; после переподключения `websocket/onConnected` вызывает `video/resubscribe` (сервер помнит подписку в пределах соединения). Кадр старше `max(3 × previewIntervalMs, 15 с)` — карточка «нет сигнала»; время кадра — по МСК.
 - Иконки — `<SensorIcon :name="ключ">`; новая иконка — `<g id="si-<имя>">` в `SensorIconSprite.vue` + запись в `utils/sensorIcons.js`; спрайт монтируется один раз.
 
 ## localStorage
@@ -156,9 +159,9 @@
 ## Известные расхождения
 - Набор тестов устарел: `Dashboard`, `IntroduceHome`, `SmartHome`, `ManufactAutomatation`, `UserConfig` ссылаются на удалённые компоненты; `router`, `timeUtils`, `checkOverlap`, `websocket` и др. — на прежнее поведение.
 - Нет экрана смены пароля: маршрута `/change-password` и `ChangePassword.vue` нет, гард `mustChangePassword` не проверяет, сервер тоже не принуждает.
-- Не реализованы возможности сервера: оповещения (`type: 'message'`, `get/messages`), профиль (`auth/profile`, `updateProfile`), Telegram (`telegramLinkCode`, `telegramUnlink`), `get/videoSnapshot`. Камера: клик (`openCamera`) никто не обрабатывает, `CameraScreen.vue` не подключён.
+- Не реализованы возможности сервера: оповещения (`type: 'message'`, `get/messages`), профиль (`auth/profile`, `updateProfile`), Telegram (`telegramLinkCode`, `telegramUnlink`).
 - `refreshError` с `TOKEN_REVOKED` не разлогинивает: `refresh` повторяется раз в минуту.
-- Не используются: `MainSetpoint.vue`, `CameraScreen.vue`, `utils/transformConfigs.js`, `myhome_config.js`.
+- Не используются: `MainSetpoint.vue`, `utils/transformConfigs.js`, `myhome_config.js`.
 - Отложенные мажорные обновления: Jest 30 и Babel 8 (последний `@vue/vue3-jest` 29.x требует Jest 29 и Babel 7), ESLint 9+ (нужен flat-конфиг вместо `eslintConfig`; Vue CLI 5 рассчитан на ESLint 7–8), `vue-router` 5 (новая мажорная версия: переносить отдельно с проверкой гарда `next()`).
 - `AppProfile.vue` — Composition API и `store.state` напрямую.
 - `public/index.html`: манифест и иконки подключены абсолютными путями (`/manifest.json`, `/webicons/…`) мимо `/app/` (404), манифестов два, `start_url: '/'`.

@@ -228,6 +228,9 @@ export default {
           : dispatch('initializeSetpointsManager', null, { root: true })
             .then(() => dispatch('config/initialize', null, { root: true }));
         loadData.catch((e) => logger.error('[WebSocket] - onConnected - загрузка данных:', e.message));
+        // Подписка на кадры камер живёт на сервере в пределах соединения
+        Promise.resolve(dispatch('video/resubscribe', null, { root: true }))
+          .catch((e) => logger.error('[WebSocket] - onConnected - подписка на камеры:', e.message));
 
         logger.dev(`[WebSocket] - onConnected - сессия восстановлена (${isReconnect ? 'переподключение' : 'подключение'})`);
         return user;
@@ -330,7 +333,9 @@ export default {
           return;
         }
         if (type === 'response') {
-          await dispatch('config/handleConfigResponse', response, { root: true });
+          // videoCameras / videoSnapshot / videoSubscribeSuccess — модуль video, остальное — config
+          const handled = await dispatch('video/handleResponse', response, { root: true });
+          if (!handled) await dispatch('config/handleConfigResponse', response, { root: true });
         }
         if (type === 'post') {
           if (!response.payload || typeof response.payload !== 'object') return;

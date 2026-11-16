@@ -5,6 +5,7 @@
 //   sections      — секции комнаты, из которых строятся карточки
 //   common        — true: данные берутся не из комнат roomNN, а из корневого объекта `common`
 //   withSetpoint  — подбирать ли парную уставку (карточки можно открывать и править)
+//   cameras       — true: вместо карточек конфигурации — сетка видеокамер (CameraGrid.vue)
 
 export const COMMON_KEY = 'common';
 export const TAB_STORAGE_KEY = 'mainViewTab';
@@ -33,6 +34,15 @@ export const MAIN_TABS = [
     common: true,
     withSetpoint: false,
     emptyText: 'Нет данных общих настроек',
+  },
+  {
+    key: 'cameras',
+    label: 'Видеонаблюдение',
+    sections: [],
+    common: false,
+    withSetpoint: false,
+    cameras: true,
+    emptyText: 'Камеры не настроены',
   },
 ];
 
