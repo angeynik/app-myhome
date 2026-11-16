@@ -23,13 +23,11 @@ jest.mock('@/store/modules/logger', () => ({
 }));
 
 describe('sortParams store module', () => {
-  let state;
   let commit;
   let dispatch;
   let rootGetters;
 
   beforeEach(() => {
-    state = sortParams.state();
     commit = jest.fn();
     dispatch = jest.fn();
     rootGetters = {

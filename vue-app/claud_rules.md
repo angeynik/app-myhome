@@ -149,7 +149,8 @@
 - Jest + `@vue/test-utils` + jsdom (`pnpm test`). На каждый новый или изменённый модуль создавать или обновлять тесты.
 - Сеть не использовать: `WebSocket` мокается в `tests/unit/setup.js`; `logger` в тестах мокается целиком (`dev`, `info`, `warn`, `error`).
 - `websocket.js` хранит состояние на уровне модуля (`pending`, `connectPromise`, таймеры): `jest.useFakeTimers()`, сброс состояния перед каждым тестом. Действия удобно проверять напрямую с подставным `context` (`{ state, rootState, rootGetters, dispatch, commit }`).
-- Перед завершением работы прогонять весь набор и сравнивать с исходным состоянием: новых падений быть не должно.
+- ESLint (`pnpm lint`) должен проходить без ошибок. Для `src/tests/**` в `eslintConfig.overrides` включена среда Jest (`test`, `expect`, `jest` — глобальные); в коде приложения её нет.
+- Перед завершением работы прогонять весь набор и `pnpm lint` и сравнивать с исходным состоянием: новых падений быть не должно.
 
 ## Известные расхождения
 - Набор тестов устарел: `Dashboard`, `IntroduceHome`, `SmartHome`, `ManufactAutomatation`, `UserConfig` ссылаются на удалённые компоненты; `router`, `timeUtils`, `checkOverlap`, `websocket` и др. — на прежнее поведение.
@@ -158,7 +159,6 @@
 - `refreshError` с `TOKEN_REVOKED` не разлогинивает: `refresh` повторяется раз в минуту.
 - Не используются: `MainSetpoint.vue`, `CameraScreen.vue`, `utils/transformConfigs.js`, `myhome_config.js`.
 - Отложенные мажорные обновления: Jest 30 и Babel 8 (последний `@vue/vue3-jest` 29.x требует Jest 29 и Babel 7), ESLint 9+ (нужен flat-конфиг вместо `eslintConfig`; Vue CLI 5 рассчитан на ESLint 7–8), `vue-router` 5 (новая мажорная версия: переносить отдельно с проверкой гарда `next()`).
-- `pnpm lint` падает на тестах: в `eslintConfig` не объявлена среда Jest (`env.jest`), поэтому `test`/`expect`/`jest` — `no-undef`. В коде приложения ошибок ESLint нет.
 - `AppProfile.vue` — Composition API и `store.state` напрямую.
 - `public/index.html`: манифест и иконки подключены абсолютными путями (`/manifest.json`, `/webicons/…`) мимо `/app/` (404), манифестов два, `start_url: '/'`.
 - `example.env` без обязательной `VUE_APP_EXP`, с неиспользуемыми `VUE_APP_DOMEN`, `VUE_APP_HOST`, `VUE_APP_SERVER_PORT`, `VUE_APP_LOG_DIRECTORY`.

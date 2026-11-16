@@ -1,7 +1,6 @@
 // src/tests/unit/auth.spec.js
 import { createStore } from 'vuex';
 import authModule from '@/store/modules/auth';
-import websocketModule from '@/store/modules/websocket';
 
 // Мокаем WebSocket-модуль с namespace
 jest.mock('@/store/modules/websocket', () => ({

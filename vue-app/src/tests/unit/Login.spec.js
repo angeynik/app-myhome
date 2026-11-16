@@ -2,7 +2,6 @@
 import { mount } from '@vue/test-utils';
 import Login from '@/components/AppLogin.vue';
 import { createRouter, createMemoryHistory } from 'vue-router';
-import PopupMenu from '@/components/PopupMenu.vue';
 
 jest.mock('@/components/PopupMenu.vue', () => ({
   name: 'PopupMenu',
