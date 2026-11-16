@@ -69,7 +69,7 @@
 | `auth` | `refresh`, `logout` | `{}` |
 | `auth` | `changePassword` | `{ oldPassword, newPassword }` |
 | `get` | `config`, `schedules`, `notifications`, `statistics` | `{}` |
-| `get` | `videoCameras` | `{}` — список камер |
+| `get` | `videoCameras` | `{}` — список камер; сервер присылает `response/videoCameras` и без запроса, когда меняется `cameras.json` — сетка перестраивается |
 | `post` | `videoSubscribe` | `{ cameras: [id…], full: id \| null }` — через `video/subscribe` |
 | `post` | `setpoints` | `settingsData.payload` (`room`, `setKey`, `key`, `value`, …) — через `config/updateSetpointServer` |
 | `post` | `add<тип>` | `{ room, param, configData }` |
