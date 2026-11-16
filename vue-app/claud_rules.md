@@ -149,6 +149,7 @@
 - Jest + `@vue/test-utils` + jsdom (`pnpm test`). На каждый новый или изменённый модуль создавать или обновлять тесты.
 - Сеть не использовать: `WebSocket` мокается в `tests/unit/setup.js`; `logger` в тестах мокается целиком (`dev`, `info`, `warn`, `error`).
 - `websocket.js` хранит состояние на уровне модуля (`pending`, `connectPromise`, таймеры): `jest.useFakeTimers()`, сброс состояния перед каждым тестом. Действия удобно проверять напрямую с подставным `context` (`{ state, rootState, rootGetters, dispatch, commit }`).
+- CI (`.github/workflows/main.yml`, push в `main`/`review-fixes`, PR в `main`): Node 20, pnpm из `packageManager`, `pnpm install --frozen-lockfile` → `pnpm lint --no-fix` → `pnpm test` → `pnpm build`. Lint и сборка блокируют; тесты пока нет (`continue-on-error` — убрать, когда набор будет починен). Новые зависимости — только с обновлённым `pnpm-lock.yaml`, иначе CI упадёт на установке.
 - ESLint (`pnpm lint`) должен проходить без ошибок. Для `src/tests/**` в `eslintConfig.overrides` включена среда Jest (`test`, `expect`, `jest` — глобальные); в коде приложения её нет.
 - Перед завершением работы прогонять весь набор и `pnpm lint` и сравнивать с исходным состоянием: новых падений быть не должно.
 
