@@ -3,7 +3,7 @@
 Протокол обмена, права доступа и форматы сообщений задаёт сервер: `/webApp/server/rules.md`, раздел «Обмен данными по WebSocket». Этот документ описывает клиент и обязан с ним совпадать. При расхождении источник истины — сервер; расхождение исправлять в обоих местах сразу.
 
 ## Стек и окружение
-- Vue 3 (Options API), Vuex 4 (все модули `namespaced`), Vue Router 4 (`createWebHistory('/app/')`), Vue CLI 5, pnpm.
+- Vue 3 (Options API), Vuex 4 (все модули `namespaced`), Vue Router 4 (`createWebHistory('/app/')`), Vue CLI 5 (Babel 7, ESLint 8), Jest 29, pnpm.
 - Сборка с `publicPath: '/app/'` (`vue.config.js`), dev-сервер на порту 3020. Пути к файлам из `public/` в `index.html` — только через `<%= BASE_URL %>`.
 - Обмен с сервером только по WebSocket (нативный `WebSocket`, модуль `store/modules/websocket.js`). HTTP-запросов к серверу нет.
 - Настройки сборки — переменные `VUE_APP_*` в `.env` (образец — `example.env`):
@@ -156,7 +156,9 @@
 - Нет экрана смены пароля: маршрута `/change-password` и `ChangePassword.vue` нет, гард `mustChangePassword` не проверяет, сервер тоже не принуждает.
 - Не реализованы возможности сервера: оповещения (`type: 'message'`, `get/messages`), профиль (`auth/profile`, `updateProfile`), Telegram (`telegramLinkCode`, `telegramUnlink`), `get/videoSnapshot`. Камера: клик (`openCamera`) никто не обрабатывает, `CameraScreen.vue` не подключён.
 - `refreshError` с `TOKEN_REVOKED` не разлогинивает: `refresh` повторяется раз в минуту.
-- Не используются: `MainSetpoint.vue`, `CameraScreen.vue`, `utils/transformConfigs.js`, `myhome_config.js`; зависимости `socket.io-client`, `vuejs3-logger`, `vue-touch`, `@vueuse/core`.
+- Не используются: `MainSetpoint.vue`, `CameraScreen.vue`, `utils/transformConfigs.js`, `myhome_config.js`.
+- Отложенные мажорные обновления: Jest 30 и Babel 8 (последний `@vue/vue3-jest` 29.x требует Jest 29 и Babel 7), ESLint 9+ (нужен flat-конфиг вместо `eslintConfig`; Vue CLI 5 рассчитан на ESLint 7–8), `vue-router` 5 (новая мажорная версия: переносить отдельно с проверкой гарда `next()`).
+- `pnpm lint` падает на тестах: в `eslintConfig` не объявлена среда Jest (`env.jest`), поэтому `test`/`expect`/`jest` — `no-undef`. В коде приложения ошибок ESLint нет.
 - `AppProfile.vue` — Composition API и `store.state` напрямую.
 - `public/index.html`: манифест и иконки подключены абсолютными путями (`/manifest.json`, `/webicons/…`) мимо `/app/` (404), манифестов два, `start_url: '/'`.
 - `example.env` без обязательной `VUE_APP_EXP`, с неиспользуемыми `VUE_APP_DOMEN`, `VUE_APP_HOST`, `VUE_APP_SERVER_PORT`, `VUE_APP_LOG_DIRECTORY`.
