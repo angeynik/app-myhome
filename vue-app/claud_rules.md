@@ -1,855 +1,162 @@
-# ПРАВИЛА РАБОТЫ С ПРОЕКТОМ SmartHome / ManufactAutomation
+# Инструкции для проекта vue-app (клиент MyHome)
 
-> Документ описывает **текущую** архитектуру проекта и обязательные правила изменений.
-> **Цель**: улучшение, оптимизация и новый функционал — без нарушения существующей архитектуры.
->
-> Ревизия: 22.10.2026. Сверено с кодом: `main.js`, `App.vue`, `ConFiguration.vue`, `router/routes.js`,
-> все модули `store/`, `utils/`, компоненты `components/*` (список в п. 2.2), `assets/mainStyle.css`.
-> Раздел **16** — расхождения и вопросы, требующие вашего решения.
+Протокол обмена, права доступа и форматы сообщений задаёт сервер: `/webApp/server/rules.md`, раздел «Обмен данными по WebSocket». Этот документ описывает клиент и обязан с ним совпадать. При расхождении источник истины — сервер; расхождение исправлять в обоих местах сразу.
 
----
-
-## 1. СТЕК И ВЕРСИИ
-
-| Слой | Технология |
-|------|-----------|
-| Frontend framework | Vue 3 (Options API) |
-| Сборка | Vue CLI (переменные окружения `VUE_APP_*`, алиас `@` = `src`) |
-| State management | Vuex 4 (namespaced modules) |
-| Router | Vue Router 4 (`createWebHistory('/app/')`) |
-| Backend | Node.js + Express.js |
-| Real-time | WebSocket (нативный API), JWT-авторизация поверх WS |
-| Стили | Один глобальный файл `src/assets/mainStyle.css` (п. 15) |
-| Стиль компонентов | Options API — **не переводить на Composition API** |
-
-### 1.1 Переменные окружения
+## Стек и окружение
+- Vue 3 (Options API), Vuex 4 (все модули `namespaced`), Vue Router 4 (`createWebHistory('/app/')`), Vue CLI 5, pnpm.
+- Сборка с `publicPath: '/app/'` (`vue.config.js`), dev-сервер на порту 3020. Пути к файлам из `public/` в `index.html` — только через `<%= BASE_URL %>`.
+- Обмен с сервером только по WebSocket (нативный `WebSocket`, модуль `store/modules/websocket.js`). HTTP-запросов к серверу нет.
+- Настройки сборки — переменные `VUE_APP_*` в `.env` (образец — `example.env`):
 
 | Переменная | Назначение | По умолчанию |
-|-----------|-----------|--------------|
-| `VUE_APP_EXP` | Хост WebSocket-сервера | — (обязательна) |
-| `VUE_APP_PORT` | Порт WebSocket-сервера | — (обязательна) |
+|---|---|---|
+| `VUE_APP_EXP` | Хост WS-сервера | обязательна |
+| `VUE_APP_PORT` | Порт WS-сервера (`WSD_PORT_IN` сервера) | обязательна |
 | `VUE_APP_WS_PROTOCOL` | `ws` / `wss` | `wss` на https-странице, иначе `ws` |
 | `VUE_APP_LOG_LEVEL` | `dev` \| `info` \| `warn` \| `error` \| `silent` (`prod` = `warn`) | `info` |
-| `VUE_APP_FEATURE_CONFIGURATION` | `'false'` отключает маршрут `/configuration` | включён |
-| `VUE_APP_LIM_SCHEDULE_ITEM` | Лимит расписаний на пару комната+параметр | `8` |
-| `VUE_APP_LIM_NOTIFICATION_ITEM` | Лимит уведомлений | `6` |
-| `VUE_APP_LIM_STATISTIC_ITEM` | Лимит аналитики | `1` |
+| `VUE_APP_LIM_SCHEDULE_ITEM` / `_NOTIFICATION_ITEM` / `_STATISTIC_ITEM` | Лимит элементов на пару комната+параметр | 8 / 6 / 1 |
 
----
+- Новая переменная: читать в модуле, который её использует, задавать значение по умолчанию, описывать в таблице и в `example.env`.
 
-## 2. СТРУКТУРА ПРОЕКТА
+## Стиль кода
+- Компоненты только на Options API: `name`, `components`, `props`, `emits` (объявлять всегда), `data`, `computed`, `methods`. Composition API и `<script setup>` не использовать (исключение — `AppProfile.vue`, см. «Известные расхождения»).
+- ES6+, `async/await`, отступ 2 пробела, одинарные кавычки, точки с запятой.
+- Комментарии на русском и по делу: шапка модуля и неочевидные решения. Закомментированный код не оставлять — он в истории git.
+- Компоненты читают состояние только через геттеры (`mapGetters`); `this.$store.state.*` в компонентах не использовать. Состояние меняется только мутациями.
+- Навигация из store и утилит — только через `router` (динамический `import('@/router/routes.js')`); `window.location` не использовать.
+- Обращения к `localStorage` — в `try/catch` (приватный режим, квота).
+- Стили — только в `src/assets/mainStyle.css`, подключён один раз в `main.js`. `<style>` в компонентах и inline-стили не использовать.
 
-### 2.1 Файловая структура
+## Логирование
+- Логирование клиента — через `store/modules/logger.js`: `logger.dev`, `logger.info`, `logger.warn`, `logger.error`. Формат: `[Модуль] - метод - сообщение`.
+- Уровень `VUE_APP_LOG_LEVEL`: каждый уровень включает более важные; `error` печатается всегда, кроме `silent`.
+- Вызовы `console.*` (отладочный вывод) добавляет и удаляет только пользователь. Claude их не добавляет, не удаляет и не переводит на `logger.js`; при ревью и правках проверяет только корректность их работы (не роняют приложение, не выводят секреты). Собственные сообщения Claude пишет через `logger.js`.
+- Не логировать секреты: пароли, JWT, `configData` мастера конфигурации.
 
+## Структура проекта
+- `main.js` — точка входа: `initializeStore` → `websocket/connect` → `websocket/whenSessionReady` → `app.use(router)` → `mount`.
+- `App.vue` — корень: спрайт иконок, `router-view`, popup, dropdown, действия меню; при `isAuthenticated` — `initializeSetpointsManager` → `config/initialize`.
+- `router/routes.js` — маршруты и `navigationGuard`.
+- `store/index.js` — корневой стор: менеджер уставок (`settingsData`), выбор пользователя, `showSetpoint`.
+- `store/modules/` — `auth`, `websocket`, `config`, `sortParams`, `settingsConfig`, `popup`, `dropdown`, `log`, `appearance` (тема фона), `video` (кадр камеры); `logger.js` — утилита, не модуль Vuex.
+- `store/classes/manageSetpoints.js` — класс `ManageSetpoints` (объект `settingsData`).
+- `utils/` — `timeUtils`, `timeFieldEditor`, `checkOverlap`, `jwt` (только `exp`), `sensorIcons`, `mainTabs` (вкладки главного экрана — единственный источник), `tone`.
+- `components/` — `MainView` (оболочка), `MainBody`, `MainBodyValue`, `MainBodySettings` (+ `MainBodySchedule`, `MainBodyNotifications`, `MainBodyStatistic`), `SetpointScreen`, `SensorIcon`, `SensorIconSprite`, `CameraCard`, `TopNav`, `MenuDropdown`, `PopupMenu`, `AppLogin`, `AppProfile`, `AppSettings`, `AccessDenied`.
+- `tests/unit/` — Jest `<модуль>.spec.js`, общий `setup.js`.
+
+## Обмен данными по WebSocket
+
+### Соединение
+- Одно соединение на вкладку, только через `websocket.js`; параллельные `connect()` разделяют один промис (таймаут открытия 8 с → `NO_CONNECTION`).
+- Переподключение без лимита попыток: `1 с · 2ⁿ`, потолок 30 с, джиттер до 0,5 с; немедленная попытка при `online` и возврате на вкладку. Явное отключение — `websocket/disconnect`.
+- Сервер держит сессию, пока открыто соединение. Поэтому **после каждого открытия сокета** (первого, повторного, первого удачного после недоступности сервера) `websocket/onConnected` при наличии токена делает `auth/resume`, затем в фоне: конфигурации нет — `initializeSetpointsManager` + `config/initialize`, есть — `config/refreshConfig`. Отдельный `resume` в другом месте не добавлять.
+- При обрыве все ожидающие auth-запросы отклоняются с `NO_CONNECTION`.
+- Сервер закрывает соединение, которое `AUTH_TIMEOUT_MS` (60 с) остаётся без входа, предварительно прислав `error/accessError` с `TIMEOUT` (код закрытия `4401`). На экране входа это штатно: клиент переподключится сам.
+
+### Формат сообщений
 ```
-src/
-  main.js                   ← Точка входа: store → восстановление сессии → router → mount
-  App.vue                   ← Корневой компонент: popup, dropdown, инициализация после входа
-  ConFiguration.vue         ← Мастер создания/редактирования конфигурации (feature-флаг)
-  assets/
-    mainStyle.css           ← ЕДИНСТВЕННЫЙ файл стилей (п. 15)
-  router/
-    routes.js               ← Маршруты + navigationGuard
-  store/
-    index.js                ← Корневой стор: root state/getters/mutations/actions
-    classes/
-      manageSetpoints.js    ← Класс ManageSetpoints (управление уставками)
-    modules/
-      auth.js               ← Аутентификация (namespaced: auth/)
-      websocket.js          ← WebSocket-соединение (namespaced: websocket/)
-      config.js             ← Конфиг устройства + списки настроек (namespaced: config/)
-      sortParams.js         ← Ключи выбора, заголовки, лимиты (namespaced: sortParams/)
-      settingsConfig.js     ← Операции с расписаниями/уведомлениями/аналитикой (namespaced: settingsConfig/)
-      popup.js              ← Всплывающие сообщения + таймер автозакрытия (namespaced: popup/)
-      dropdown.js           ← Выпадающее меню (namespaced: dropdown/)
-      log.js                ← Журнал ошибок (namespaced: log/)
-      logger.js             ← Утилита логирования (НЕ Vuex-модуль, просто экспорт)
-  utils/
-    timeUtils.js            ← Время: МСК-строки, минуты↔«HH:MM», форматирование
-    timeFieldEditor.js      ← Разбор/сборка «HH:MM» при редактировании часов/минут
-    checkOverlap.js         ← Проверка пересечения временных интервалов
-    jwt.js                  ← Декодирование JWT (только exp; подпись проверяет сервер)
-    sensorIcons.js          ← Ключ конфигурации → имя иконки спрайта (resolveSensorIcon)
-    mainTabs.js             ← Вкладки главного экрана: ключ, подпись, секции конфига (единый источник для MainView и MainBody)
-    tone.js                 ← getTone(уставка, факт) → 'is-warm' | 'is-cool' | '' (общий для плашки и экрана уставки)
-  tests/
-    unit/                   ← Jest (см. п. 14)
+{ "type": "...", "request": "...", "name": "<dID>", "payload": { ... } }
 ```
+- `name` — `dID` пользователя (в `auth` до входа — `''`). `payload` — всегда объект, в том числе в `get` (`{}`).
+- Отправка — только `dispatch('websocket/send', message)`. Для `auth` (`login`, `resume`, `refresh`, `changePassword`) возвращает промис с ответом (таймаут 15 с → `TIMEOUT`; новый запрос того же типа отменяет старый → `SUPERSEDED`), для остальных — `null`. Ответ сопоставляется по `request`: не отправлять параллельно два одинаковых запроса.
+- Клиентские коды ошибок `TIMEOUT`, `NO_CONNECTION`, `SUPERSEDED` — сетевые, повод повторить, а не разлогинивать.
 
-### 2.2 Компоненты
+### Исходящие
+| type | request | payload |
+|---|---|---|
+| `auth` | `login` | `{ username, password }` |
+| `auth` | `resume` | `{ token }` |
+| `auth` | `refresh`, `logout` | `{}` |
+| `auth` | `changePassword` | `{ oldPassword, newPassword }` |
+| `get` | `config`, `schedules`, `notifications`, `statistics` | `{}` |
+| `post` | `setpoints` | `settingsData.payload` (`room`, `setKey`, `key`, `value`, …) — через `config/updateSetpointServer` |
+| `post` | `add<тип>` | `{ room, param, configData }` |
+| `post` | `del<тип>` | `{ room, param, Ids: [...] }` |
+| `post` | `update<тип>` | `settingsData.payload` (`room`, `param`, `id`, `value_name`, `value`, `updated`, `value_type`) — через `config/updateSetpointServer`, `request` ставит компонент элемента (`updateSettingsData({ field: 'request', … })`) |
 
-```
-src/components/
-  MainView.vue              ← Оболочка (бывший DashBoard.vue): шапка, router-view, панель уставки
-  MainBody.vue              ← Карточки значений, сгруппированные по выбранному типу группировки
-  SensorIcon.vue            ← Иконка датчика/актуатора/уставки (<use> на спрайт; цвет через color/state/accent)
-  SensorIconSprite.vue      ← SVG-спрайт иконок (монтируется один раз в App.vue)
-  MainBodyValue.vue         ← Плашка датчика: <SensorIcon>, значения, тон is-warm/is-cool
-  MainBodySettings.vue      ← Экран настроек (расписания / уведомления / аналитика)
-  MainBodySchedule.vue      ← Элемент расписания
-  MainBodyNotifications.vue ← Элемент уведомления
-  MainBodyStatistic.vue     ← Элемент аналитики
-  SetpointScreen.vue        ← Полноэкранное изменение значения (уставка / время / порог): кнопки −/+ и круговой свайп; Teleport в <body>
-  TopNav.vue                ← Ссылки навигации по уровню доступа
-  MenuDropdown.vue          ← Выпадающее меню (Teleport)
-  PopupMenu.vue             ← Всплывающее сообщение (состояние — в store/popup)
-  AppLogin.vue              ← Вход
-  AppProfile.vue            ← Профиль, выход
-  ChangePassword.vue        ← Смена пароля (в т.ч. принудительная)
-  AccessDenied.vue          ← 403
-```
+`<тип>` — `schedules` | `notifications` | `statistics`. Новый запрос добавлять одновременно на сервере (обработчик, `REQUIRED_LEVEL`) и здесь.
 
-**Не подтверждено при ревизии** (файлов не было): `MainFooter.vue` (импортируется из `ConFiguration.vue`),
-`AppPlace.vue`, `MainHeader.vue`, `UserConfig.vue`, `InputDialog.vue`, `IntroduceHome`, `SmartHome`, `ManufactAutomatation`.
-В актуальных маршрутах (п. 6.1) ни один из них не используется. Если файлы существуют — удалить или вернуть маршруты.
+### Входящие (`websocket/handleMessage`, порядок проверок)
+1. Ответ на ожидающий auth-запрос (`loginSuccess`, `loginError`, `resumeError`, `refreshSuccess`/`refreshError`, `changePasswordSuccess`/`changePasswordError`, `authError`) — резолвит/реджектит промис `send`.
+2. `request === 'accessError'` → `auth/handleAccessError` (см. «Сессия»).
+3. `type === 'error'` → `config/handleServerError`: сообщение `payload.message` во всплывающем окне и перезапрос затронутых данных (после ошибки записи значение на экране уже изменено, а сервер или устройство его не приняли). Ошибка get-запроса (`configError`, `<тип>Error`) данные не перезапрашивает; `configError` сразу отклоняет ожидание конфигурации.
+4. `type === 'response'` → `config/handleConfigResponse` (`config`, `schedules`, `notifications`, `statistics`; остальные ответы игнорируются).
+5. `type === 'post'`, `request === 'videoSnapshot'` → `video/handleSnapshot`.
+6. `type === 'post'` с `name === dID` → `config/handleValueUpdate`:
+   - `{ room, item_name, item_value }` (NodeRED, мосты Modbus, данные датчиков) — обновляет элемент раздела `request` (`sensors`, `system`, `setpoints`, любой другой);
+   - `{ room, setKey, value }` — уставка, пересланная сервером от другой вкладки того же `dID`: ключ берётся из сообщения, не из своего выбора.
 
-**Кандидаты на удаление** (нигде не импортируются): `transformConfigs.js` (класс `CheckConfigs`), `myhome_config.js`.
+Тип `info` (`serverConnected`, один раз при подключении) и `message` (оповещения) пока не обрабатываются.
 
----
+## Сессия и авторизация
+- Сессия хранится в `localStorage.authSession` (`{ token, user, dID, level, mustChangePassword }`); пароль не хранится.
+- Продление токена — `auth/scheduleRefresh` (≈75 % срока, не чаще раза в минуту).
+- `accessError`:
+  - `NO_SESSION`, `TIMEOUT` — соединение не вошло; при наличии токена сначала `auth/resume` (успех → `config/refreshConfig`), выход только при отказе сервера; обрыв связи токен не трогает;
+  - `TOKEN_REVOKED` — выход сразу;
+  - `FORBIDDEN`, `DID_MISMATCH` — всплывающее сообщение.
+- Выход (`auth/redirectToLogin` → `auth/clearSession`): чистит `authSession`, `authData`, `roomKey`, `paramKey`, `deviceKey`, `setpointKey`, `clearKey`, `RESET_SESSION_DATA`, `config/RESET`, `video/RESET`, закрывает dropdown, переводит на `/login`. Новые данные пользователя сбрасывать там же.
+- Права на клиенте — только UX: проверяет сервер.
 
-## 3. СТИЛЬ КОДА
+## Store
+- Корневые геттеры: `isAuthenticated`, `authStatus`, `user`, `level`, `dID`, `key`, `roomKey`, `paramKey`, `deviceKey`, `setpointKey`, `showSetpoint`, `typeSettingsKey`, `getSetpointsManager`, `settingsDataLimits`.
+- `settingsData` (`ManageSetpoints`): `{ name: dID, type, request, payload: { config, room, param, key, setKey, device, clearKey, value, value_name, value_type, id, updated }, limits }`. Менеджер создаётся после входа (`initializeSetpointsManager`), пересоздаётся только при смене `dID`, уничтожается при выходе. Без него выбор и изменение уставок молча не работают.
+- Менять `settingsData` только действиями `updateSettingsData`, `updatePayloadData`, `updateLimitsData`, `resetSettingsData`. Поля `room`, `param`, `device`, `setKey`, `clearKey` переживают перезагрузку (`localStorage`).
+- Новые глобальные мутации/геттеры/действия — в `store/index.js`, модульные — в своём модуле. Новое поле `state` — с геттером. Сигнатуры существующих действий не менять, только расширять.
 
-### 3.1 Vue-компоненты — только Options API
-
-```js
-// ✅ ПРАВИЛЬНО
-export default {
-  name: 'ComponentName',
-  components: { ... },
-  props: { ... },
-  emits: [ ... ],          // события объявлять всегда
-  data() { return { ... } },
-  computed: { ...mapGetters(...) },
-  methods: { ... }
-}
-
-// ❌ ЗАПРЕЩЕНО — не использовать Composition API / <script setup>
-```
-
-Известное отступление: `AppProfile.vue` написан на Composition API (`setup`, `useStore`) — см. п. 16.
-
-### 3.2 Логирование — только через logger.js
-
-```js
-import logger from '../store/modules/logger.js';  // в компонентах
-import logger from './logger';                     // в store-модулях
-
-logger.dev('[Module] - method - Сообщение');    // детальная отладка (только level=dev)
-logger.info('[Module] - method - Сообщение');   // общая информация
-logger.warn('[Module] - method - Сообщение');   // подозрительные, но не фатальные ситуации
-logger.error('[Module] - method - Сообщение');  // ошибки
-```
-
-Уровни (по возрастанию «тишины»): `dev` < `info` < `warn` < `error` < `silent`.
-**`error` печатается на любом уровне, кроме `silent`.** (Раньше при `info` ошибки не печатались.)
-
-- ❌ Активные `console.log` в коде запрещены — только `logger.*`
-- ❌ Не логировать секреты: пароли, JWT, **весь `configData`** (в конфигурации лежит `password`)
-- Закомментированный код не оставлять: он в git-истории
-
-### 3.3 Формат префиксов в логах
-
-Строго: `[ИмяМодуля] - имяМетода - Описание`
-
-```js
-logger.info('[MainView] - editValueMainSetpoint - Обработка запроса setpoints');
-logger.error('[config] - requestConfig - Ошибка запроса:', error);
-```
-
-### 3.4 Ошибки и асинхронность
-
-- Все обращения к `localStorage` в store — через `try/catch` (приватный режим, квота)
-- Действия, обращающиеся к серверу, **`await`-ятся** — «fire-and-forget» допустим только для не-auth `websocket/send`
-- Глобальные обработчики (`app.config.errorHandler`, `unhandledrejection`) в `main.js` пишут в `log/addError`
-- Навигация из store/утилит — только через `router` (динамический `import('@/router/routes.js')` в `auth.js`);
-  **не использовать `window.location.href`** — ломает base `/app/` и перезагружает SPA
-
----
-
-## 4. VUEX — ПРАВИЛА РАБОТЫ СО СТОРОМ
-
-### 4.1 Структура модулей
-
-- **Все модули** объявлены с `namespaced: true`: `auth`, `websocket`, `config`, `sortParams`, `settingsConfig`, `popup`, `dropdown`, `log`
-- Обращение: `'auth/login'`, `'websocket/send'`, `'config/initialize'`, `'sortParams/updateSortKey'`, `'settingsConfig/...'`, `'popup/show'`, `'dropdown/show'`, `'log/addError'`
-- Root-мутации: `INIT_SETPOINTS_MANAGER`, `RESET_SESSION_DATA`, `UPDATE_SETTINGS_DATA`, `RESET_SETTINGS_DATA`, `SET_SETTINGS_DATA`, `UPDATE_PAYLOAD_DATA`, `UPDATE_LIMITS_DATA`, `SHOW_SETPOINT`
-- Root-actions: `initializeStore`, `initializeSetpointsManager`, `updateSettingsData`, `updatePayloadData`, `updateLimitsData`, `resetSettingsData`, `setShowSetpoint`, `hideSetpoint`
-- Мутаций `SET_ROOM_KEY` / `SET_PARAM_KEY` / `SET_DEVICE_KEY` / `SET_SETPOINT_KEY` **нет**: ключи выбора живут в `settingsData.payload` и пишутся через `updatePayloadData` (п. 4.4)
-
-### 4.2 Root getters (index.js)
-
-```js
-isAuthenticated, authStatus, user, level, dID,
-key, roomKey, paramKey, deviceKey, setpointKey,   // из settingsData.payload
-showSetpoint,                                      // показана ли панель уставки
-typeSettingsKey,      // из config/: 'schedules' | 'notifications' | 'statistics'
-getSetpointsManager,  // объект ManageSetpoints
-settingsDataLimits    // limits из settingsData
-```
-
-Геттер `idSettingsKey` **удалён** (ссылался на несуществующее поле).
-
-Геттеры модулей, которыми пользуются компоненты:
-`config/{getConfig, getConfigList, clearKeySync, isLoading, error, allRooms, allParams, allDevices, allSetpoints, isMobile, deviceMode, getMobile (= isMobile), getDeviceType}`,
-`sortParams/{getSensorTitle, getUnit, getRoomTitle, getParamTitle, ...}`,
-`auth/{isAuthenticated, mustChangePassword, tokenExpiresAt}`,
-`websocket/isConnected` (реактивный флаг, **не** `socket.readyState`),
-`popup/{popupIsVisible, popupMessage, popupType, popupDuration}`, `dropdown/{isVisible, menuItems, anchorEl}`.
-
-### 4.3 Новый функционал в store
-
-- Новые **глобальные** мутации/геттеры/actions → `store/index.js`
-- Новые **модульные** → отдельный файл в `store/modules/` + регистрация в `index.js`
-- **Не изменять** сигнатуры существующих mutations/actions/getters — только расширять
-- Новое поле `state` → соответствующий getter
-- **Компоненты читают состояние только через getters/mapGetters.** Прямой `this.$store.state.*` запрещён
-  (для списков настроек есть `config/getConfigList(configName, dID)`)
-- Данные пользователя должны сбрасываться при выходе: новые user-bound поля обнулять в
-  `RESET_SESSION_DATA` (root) или `config/RESET`; вызываются из `auth/clearSession`
-
-### 4.4 ManageSetpoints (store/classes/manageSetpoints.js)
-
-Класс управляет объектом `settingsData`:
-
-```js
-{
-  name: dID,
-  type: '',       // тип WebSocket-сообщения ('post')
-  request: '',    // 'setpoints' | 'schedules' | 'notifications' | 'statistics'
-  payload: {
-    config: '',     // 'setpoints' (при создании) или тип настроек
-    room: null,     // ключ комнаты: 'room01'
-    param: null,    // ключ датчика: 'dTemp02'
-    key: …,         // очищенный ключ: 'Temp' (добавляется через updatePayloadData)
-    setKey: null,   // ключ уставки: 'sTemp02'
-    device: null, clearKey: null,
-    value: null, value_name: null, value_type: null,
-    id: null,       // id комнаты / id элемента настроек
-    updated: ''     // МСК-строка
-  },
-  limits: { limHigh, limLow, limStep, updated }
-}
-```
-
-Взаимодействие — **только через store**: `updateSettingsData({field,value})`, `updatePayloadData(payload)`,
-`updateLimitsData(limits)`, `resetSettingsData()`, `initializeSetpointsManager()`.
-
-- **Создаётся в `App.vue`** (watch на `isAuthenticated`) → `initializeSetpointsManager`. Без этого вызова менеджер = `null`
-  и выбор/изменение уставок молча не работает.
-- Пересоздаётся только если `dID` изменился; при выходе уничтожается (`RESET_SESSION_DATA`)
-- Поля payload, переживающие перезагрузку (пишутся в `localStorage` мутацией `UPDATE_PAYLOAD_DATA`):
-  `room→roomKey`, `param→paramKey`, `device→deviceKey`, `setKey→setpointKey`, `clearKey→clearKey`
-
----
-
-## 5. WEBSOCKET — ПРОТОКОЛ СООБЩЕНИЙ
-
-### 5.1 Структура сообщений
-
-```js
-// Исходящее
-{ type: 'get' | 'post' | 'auth', request: '<см. таблицу>', name: dID, payload: { ... } }
-
-// Входящее
-{ type: 'response' | 'post' | 'auth…', request: '…', name: dID, payload: { ... } }
-```
-
-| type | request (исходящие) | Назначение |
-|------|--------------------|-----------|
-| `get` | `config`, `schedules`, `notifications`, `statistics` | Запрос данных |
-| `post` | `setpoints` | Изменение уставки (`settingsData.request`) |
-| `post` | `addschedules` / `addnotifications` / `addstatistics` | Добавление элемента (`add${configName}`) |
-| `post` | `delschedules` / `delnotifications` / `delstatistics` | Удаление; payload `{ room, param, Ids: [...] }` |
-| `post` | `userConfigRequest` / `userConfigEdit` | Создание/правка конфигурации (мастер) |
-| `auth` | `login`, `resume`, `refresh`, `changePassword`, `logout` | Авторизация |
-
-Входящие auth-ответы: `loginSuccess` (и для `resume`), `loginError`, `resumeError`, `refreshSuccess`/`refreshError`,
-`changePasswordSuccess`/`changePasswordError`, `authError`.
-`accessError` с `payload.code`: `NO_SESSION` | `TIMEOUT` | `TOKEN_REVOKED` (→ разлогин) | `FORBIDDEN` (→ popup).
-Push датчиков: `type:'post', request:'sensors', payload:{ room, item_name, item_value }`.
-
-Коды клиентских ошибок (`error.code`): `TIMEOUT`, `NO_CONNECTION`, `SUPERSEDED` — это **сетевые** ошибки;
-остальные коды приходят от сервера.
-
-### 5.2 Маршрутизация входящих (websocket.js → handleMessage)
-
-Порядок проверок:
-1. **`settlePending`** — ответ на auth-запрос (`AWAIT_MAP`) резолвит/реджектит ожидающий промис
-2. `request === 'accessError'` → `auth/handleAccessError`
-3. `type === 'response'` → `config/handleConfigResponse`
-4. `type === 'post'` → `config/handleValueUpdate` (только если `response.name === dID`)
-
-### 5.3 Отправка данных
-
-```js
-// Единственный способ — action websocket/send
-await this.$store.dispatch('websocket/send', { type, request, name, payload });
-
-// Уставка — через config/updateSetpointServer (берёт settingsData менеджера; проверяет name === dID)
-await this.$store.dispatch('config/updateSetpointServer');
-```
-
-- Для auth-запросов `send` возвращает **промис** с ответом (таймаут 15 с → `TIMEOUT`). Для остальных — `null`.
-- Если сокет не открыт, `send` сам вызывает `connect` (таймаут 8 с → `NO_CONNECTION`).
-- Конфигурация запрашивается через `config/requestConfig` — **промис**, который разрешается при приходе `response/config` (таймаут 10 с). Не использовать polling.
-
-### 5.4 Подключение и переподключение
-
-- Одно соединение: параллельные `connect()` разделяют один промис
-- Авто-реконнект: **без лимита попыток**, задержка `1 с · 2ⁿ`, потолок 30 с, плюс джиттер до 0.5 с
-- Немедленная попытка при событиях `online` и `visibilitychange → visible`
-- После **повторного** подключения: `auth/resume` → `config/refreshConfig` (перезапрос config + schedules + notifications + statistics)
-- При обрыве все ожидающие auth-запросы отклоняются с `NO_CONNECTION` (не ждут 15 с)
-- Явное отключение: `websocket/disconnect` (`explicitDisconnect = true`, реконнект не планируется)
-- `auth/resume` при сетевой ошибке **не** разлогинивает пользователя — только при ответе сервера
-
----
-
-## 6. РОУТИНГ И АВТОРИЗАЦИЯ
-
-### 6.1 Структура маршрутов (`createWebHistory('/app/')`)
-
+## Роутинг
 | path | name | Компонент | meta |
-|------|------|-----------|------|
+|---|---|---|---|
 | `/` | — | `MainView` (оболочка) | `requiresAuth`, `requiredLevel: 1` |
-| `/` (child `''`) | `Home` | `MainBody` | наследует |
-| `/settings/:settingsType` | `DashboardSettings` | `MainBodySettings` (`props: setting_Type`) | `requiresAuth`, `requiredLevel: 2` |
-| `/configuration` | `Configuration` | `ConFiguration` | `public: true`; только если `VUE_APP_FEATURE_CONFIGURATION !== 'false'` |
-| `/login` | `Login` | `AppLogin` | `public: true` |
-| `/change-password` | `ChangePassword` | `ChangePassword` | `requiresAuth` |
+| `/` (`''`) | `Home` | `MainBody` | наследует |
+| `/settings/:settingsType` | `DashboardSettings` | `MainBodySettings` (`setting_Type`) | `requiredLevel: 2` |
+| `/preferences` | `AppSettings` | `AppSettings` (тема фона, режим устройства) | `requiredLevel: 2` |
+| `/login` | `Login` | `AppLogin` | `public` |
 | `/profile` | `AppProfile` | `AppProfile` | `requiresAuth`, `requiredLevel: 2` |
 | `/access-denied` | `AccessDenied` | `AccessDenied` | — |
-| `/:pathMatch(.*)*` | — | redirect → `/` | — |
-
-`settingsType` ∈ `schedules` \| `notifications` \| `statistics`. Маршрутов `/dashboard`, `/smart-home`,
-`/manufact-automatation`, `/users` **нет**.
-
-### 6.2 Уровни доступа
-
-| level | Доступ |
-|-------|--------|
-| 0 | Не авторизован |
-| 1 | Просмотр главного экрана |
-| 2 | Настройки, профиль |
-| 3 | Зарезервирован (управление пользователями; маршрута сейчас нет) |
-
-Проверка `requiredLevel` на клиенте — только UX. **Права обязан проверять сервер** (`accessError/FORBIDDEN`).
-
-### 6.3 Навигационный гард (navigationGuard)
-
-Порядок:
-1. `meta.public` → `next()`; исключение: `Login` при авторизованном и без `mustChangePassword` → `next('/')`
-2. Нет `requiresAuth` у matched → `next()`
-3. Не авторизован → `localStorage.redirectPath = to.fullPath` → `next('/login')`
-4. `mustChangePassword` и путь ≠ `/change-password` → `next('/change-password')`
-5. `requiredLevel` = максимум по всем matched; `level < required` → `next('/access-denied')`
-6. иначе `next()`
-
-- **Не изменять** логику гарда — только расширять `meta`
-- `redirectPath` перед использованием валидируется (`AppLogin.safeRedirect`: начинается с `/`, не с `//`)
-
-### 6.4 Жизненный цикл сессии
-
-- Токен и пользователь — `localStorage.authSession` (`{ token, user, dID, level, mustChangePassword }`). **Пароль не хранится.**
-- Авто-продление JWT: `auth/scheduleRefresh` (≈75 % срока жизни, не чаще раза в минуту)
-- Выход / `accessError` / отклонённый `resume` → `auth/clearSession`: чистит `authSession`, `authData` (старый), `roomKey`, `paramKey`, `deviceKey`, `setpointKey`, `clearKey`,
-  `RESET_SESSION_DATA`, `config/RESET`, закрывает dropdown
-
----
-
-## 7. КЛЮЧИ И ИДЕНТИФИКАТОРЫ
-
-### 7.1 Структура конфигурации устройства
-
-```
-config = {
-  init: { limits: { Default, Temp, Hum, Bool, hours, minutes, … } },   // служебный
-  newConfigID, password,                                               // служебные
-  room01: {
-    id, title, group,                  // group — заголовок группы на главном экране
-    _meta: { 'sensors|dTemp02': { title } },   // необязательные заголовки карточек
-    sensors:   { dTemp02: { type:'num', value, lastUpdate }, … },
-    system:    { … },                  // выводятся картой наравне с sensors
-    setpoints: { sTemp02: { type, value }, … }   // карточек НЕ создают
-  },
-  room02: { … }
-}
-```
-
-- Комнаты: ключ `room01`, `room02`, … (`/^room\d+$/`); всё остальное в корне — служебное
-- Датчики: префикс `d` (`dTemp`, `dHum`, `dPress`, `dPower`, `dMove`, `dFire`, `dLeak`, `dBat`, `dVoltage`, `dFrequency`, `dEnergy`)
-- Актуаторы: префикс `a` (`aLamp`, `aFan`, `aPump`, `aValve`, `aRelay`, `aActuator`, `aSwitch`, `aController`)
-- Уставки: префикс `s` (`sTemp`, `sHum`, `sActuator`, `sSwitch`), `dCurSetpoint`
-- **Числовой суффикс** (`02`) связывает датчик и уставку: `dTemp02 ↔ sTemp02`. Совпадение по номеру строгое (без `startsWith`).
-  Нет парной уставки → карточка read-only
-- Ключи с **кириллической «С»** (`dСurrent`, `notificationСhannel`) совпадают с серверными. **Не «исправлять» на латиницу**
-
-### 7.2 Очистка ключей
-
-```js
-// sync getter-фабрика: убирает префикс (1 символ) и числовой суффикс
-this.$store.getters['config/clearKeySync']('dTemp02');   // → 'Temp'
-```
-
-Action `config/clearKey` **удалён**.
-
-### 7.3 Единицы измерения (sortParams → getUnit)
-
-```
-Temp → °C,  Hum → %,  Press → hPa,  Power → W,  Сurrent → A (кир. «С»),
-Voltage → V,  Frequency → Hz,  Energy → kWh,  Bat → %
-```
-
-### 7.4 localStorage-ключи
-
-```
-authSession         ← { token, user, dID, level, mustChangePassword }     (чистится при выходе)
-roomKey, paramKey, deviceKey, setpointKey, clearKey                        (чистятся при выходе)
-mainViewTab         ← 'control' | 'devices' | 'general' — активная вкладка главного экрана (UI-настройка, при выходе НЕ чистится)
-typeSettingsKey     ← 'schedules' | 'notifications' | 'statistics'  (невалидное → 'schedules')
-deviceMode          ← 'mobile' | 'desktop' — ТОЛЬКО явный выбор пользователя; ключа нет = «Авто». Автоопределение в localStorage не пишется
-(mobile_navigation — устаревший ключ: удаляется при старте, не читается)
-redirectPath        ← путь для редиректа после логина
-{dID}_{configName}  ← резервный кэш списка настроек, напр. {dID}_schedules
-{configName}_config ← локальная копия конфигурации из мастера (ConFiguration)
-```
-
-`authData` (старый ключ) — только удаляется. Значения `'schedule'` (без «s») и `'setpoints'` в `typeSettingsKey` **недопустимы**.
-
----
-
-## 8. КОМПОНЕНТНАЯ АРХИТЕКТУРА
-
-### 8.1 MainView.vue — оболочка и оркестратор
-
-- Родитель для всех экранов; управляет: `request`, `valueTitle`, `setpoint`, `screenData`, показом экрана изменения значения (`showSetpoint` из store)
-- События `router-view`: `@getComponentData` → `getComponentData` (show/hide), `@updateTypeValue` → `editValueMainSetpoint`
-- События `SetpointScreen`: `@update-value` → `onScreenUpdateValue`, `@close` → `onScreenClose`
-- `getComponentData` запоминает **`request`** и **`valueTitle`** (`updateState.title`: `value` | `startTime` | `endTime` | `frequency` | …).
-  `onScreenUpdateValue` обязан передавать их в `editValueMainSetpoint`. Нельзя жёстко подставлять `'setpoints'`/`'value'`:
-  экраны настроек (расписание/уведомление/аналитика) тоже открывают этот экран, и значение ушло бы на сервер как уставка
-- Лимиты экрана — `settingsDataLimits` с подстановкой **поэлементно** (`??`); `null` → значение по умолчанию (не 0)
-- Округление отправляемого значения — по точности шага (`roundByStep`, минимум 1 знак)
-- `editValueMainSetpoint` ветвится по `request`: `setpoints` | `schedules` / `notifications` | `statistics`
-- `provide/inject`: `getMainSetpointEl` → `.setpoint-screen` (клики по экрану не снимают выделение поля на экране настроек)
-- `router-view :key="$route.fullPath"`; `active-tab` передаётся только главному экрану
-- **Отправка на сервер — debounce 300 мс** (`sendChangedData`); `flushPendingUpdate` — при закрытии экрана и размонтировании (см. п. 16)
-- Шапка главного экрана: **одна активная вкладка** (`.top-nav--center`), клик/Enter/Space — следующая (`cycleTab`); выбор — `localStorage.mainViewTab`.
-  Вкладки и подписи — только из `utils/mainTabs.js`. На остальных экранах — `<h2>{{ headerTitle }}</h2>` в `.header-center`
-- Меню шапки: `Профиль`, `Выйти`, разделитель, режим устройства `🔄 Авто` / `🖥️ Десктоп` / `📱 Мобильный` (галочка у выбранного; actions `profile`, `logout`, `deviceMode:auto|desktop|mobile`)
-- На `SetpointScreen` передаётся `:mobile="isMobile"`
-
-### 8.2 Поток данных
-
-```
-Сервер
-  ↓ WebSocket message
-websocket.js → handleMessage → settlePending | accessError | …
-  ↓ dispatch
-config.js → handleConfigResponse / handleValueUpdate
-  ↓ commit
-Vuex state (configs, schedules, notifications, statistics)
-  ↓ реактивность
-MainBody.vue → computed groupedView  (+ «часы» now каждые 30 с для «N мин назад»)
-  ↓ render
-MainBodyValue.vue (карточка)
-  ↓ @click (одинарный — выбор, двойной — настройки; окно 300 мс)
-MainBody.vue → emit('getComponentData')
-  ↓
-MainView.vue → getComponentData / editValueMainSetpoint
-  ↓ dispatch
-store actions → websocket/send
-  ↓
-Сервер
-```
-
-### 8.3 Инициализация приложения
-
-Порядок **не менять**:
-
-1. `main.js`: `initializeStore` — восстановить сессию из `localStorage.authSession`
-2. `main.js` (только если есть токен, не дольше 6 с): `websocket/connect` → `auth/resume`
-   (ошибка/таймаут не блокируют старт; сеть недоступна → сессия сохраняется, WS переподключается в фоне)
-3. `main.js`: `app.use(router)` → `app.mount('#app')`
-4. `App.vue` (watch `isAuthenticated`, `immediate`): `initializeSetpointsManager` → `config/initialize`
-   (срабатывает и при старте с восстановленной сессией, и при входе без перезагрузки)
-
-Авто-логина по сохранённому паролю **нет** (пароль не хранится). Раньше его выполнял `App.mounted`.
-
-### 8.4 MainBody.vue
-
-- `groupedView` — **computed**: данные по WS обновляются сразу; зависит от `activeTab` (prop из MainView) и «часов» `now` (подписи «N мин назад»)
-- Вкладки (`utils/mainTabs.js`):
-
-  | key | Источник | Уставки |
-  |-----|----------|---------|
-  | `control` | комнаты `roomNN`, секция `sensors` | да |
-  | `devices` | комнаты `roomNN`, секция `system` | нет |
-  | `general` | корневой объект `common`, секция `system` | нет |
-
-- `common` — служебный ключ: **не комната** (`config.js` исключает его из `allRooms`, иначе он мог стать выбранной комнатой)
-- Заголовок группы: `room.group` → `room.title` → `roomKey`; карточка: `room._meta['секция|ключ'].title` → `getSensorTitle`
-- Идентификатор карточки: `roomKey|paramKey|setpointKey` (`itemId`); выбор и двойной клик сравниваются **по ключу**, не по ссылке
-- Карточки **без уставки** — только для чтения: одинарный клик ничего не выбирает и не пишет в payload (иначе в `payload.room` попадал бы `common`)
-- Нет данных → «—» (раньше `0.0` / `OFF`); пока конфиг не пришёл — «Загрузка…»; ошибка загрузки — кнопка «Повторить»
-- Двойной клик без уставки → popup «Уставка … не настроена»; тип настроек по умолчанию `'schedules'`
-- Ничего не писать в `localStorage` из рендера
-
-### 8.5 MainBodySettings.vue (+ Schedule / Notifications / Statistic)
-
-- Источник типа — параметр маршрута (`setting_Type`); переключение заголовка (`cycleTitle`) локальное
-- Списки грузятся действием `settingsConfig/getConfigDataFromStore`; обновление — по `config/getConfigList(title, dID)` (deep-watch только по своему срезу)
-- **Удаление отложенное**: элементы копятся в `pendingDeletes` и отправляются при закрытии экрана или размонтировании (`flushDeletions`, группировка по тип+комната+параметр)
-- **Добавление**: проверка лимита (`config/checkLimitBeforeAdd`) → подбор времени (`generationTime`, без пересечений) →
-  оптимистично в store (`addConfigLocally`) → `saveConfigItems` → при ошибке откат (`config/removeConfigItemsLocally`)
-- Новый `id` = max(существующие ∪ ожидающие удаления) + 1
-- Выделение поля: дочерние компоненты шлют `field-selected` с **разными ключами** (`scheduleId` / `notificationId` / `statisticId`) — родитель хранит объект целиком
-- Закрытие: `router.back()` только если `history.state.back` есть, иначе `router.push('/')`
-
-### 8.6 SetpointScreen.vue
-
-- Рендерится в `<body>` через собственный `Teleport`; в `MainView` оборачивать в `Teleport` **не нужно**
-- Вход `setPoint` — `Number | Boolean | String`: `'ON'`/`'OFF'` и числовые строки нормализуются (`normalizeValue`); родитель — источник истины (в т.ч. при откате)
-- Лимиты `limHigh/limLow/limStep` приходят из `MainView`; `null` внутри экрана → безопасные значения (диапазон не схлопывается)
-- Шаг округляется до точности шага (`decimalsOf`, максимум 4 знака); выход за границу — **зажим**; на границе событие не шлётся
-- Круговой свайп: центр кольца считается **при каждом касании** (`updateCenter`). Нельзя считать его в watcher на `visible` — компонент создаётся уже видимым, watcher не сработает
-- Закрытие: кнопка ✕ и Escape; авто-скрытия по бездействию нет (таймер 8 с удалён вместе с `MainSetpoint.vue`)
-- `.setpoint-screen` — `touch-action: none; overscroll-behavior: contain` (страница под экраном не прокручивается)
-- Кнопки −/+ и ✕ — настоящие `<button>` с `aria-label`; экран — `role="dialog"`
-
-### 8.6.1 Иконки
-
-```vue
-<SensorIcon name="dTemp02" />                                  <!-- по ключу конфигурации -->
-<SensorIcon name="dFire" :state="isAlarm ? 'alarm' : 'ok'" />  <!-- цвет по состоянию -->
-<SensorIcon name="aFan" color="var(--green)" :size="32" title="Вентиляция" />
-```
-
-- Иконки — контуры на сетке 24×24, `stroke="currentColor"`: цвет = CSS `color` (prop `color`, класс состояния `ok|warn|alarm|off` или наследование)
-- Корневой `<svg>` имеет класс `.sensor-svg` и модификаторы `.sensor-svg--ok|warn|alarm|off` (класс `.sensor-icon` занят подложкой плашки датчика)
-- Акцентные детали (мишень уставок, пламя, «!», шкала вентилятора) — класс `.si-accent`, цвет `--icon-accent` (по умолчанию `--orange`; prop `accent`)
-- Новая иконка: `<g id="si-<имя>">` в `SensorIconSprite.vue` + запись в `utils/sensorIcons.js`. Ключ с кириллической «С» (`dСurrent`) нормализуется автоматически
-- Неизвестный ключ → иконка `unknown` («?»)
-- Плашка датчика использует `<SensorIcon :name="paramKey" :state="…">`; тревога: ON у `dFire`/`dLeak` → `state="alarm"` (красная иконка)
-- Не использовать `v-html` для иконок; не монтировать спрайт повторно (дубли `id`)
-
-### 8.6.2 Режим устройства (ПК / мобильный)
-
-- Единственный источник: геттер `config/isMobile`. Состояние: `deviceMode` (выбор пользователя) + `autoMobile` (автоопределение)
-- `isMobile` = `deviceMode === 'auto' ? autoMobile : deviceMode === 'mobile'` — явный выбор всегда важнее автоопределения
-- Автоопределение (`detectAutoMobile`): основной указатель **грубый** (`pointer: coarse`) либо мобильный user-agent без точного указателя. Ширина окна **не** учитывается (узкое окно на ПК остаётся ПК); iPadOS (UA «Mac») определяется по `pointer: coarse`
-- Слежение на лету: подписка (один раз, в `config/detectDevice`) на `matchMedia` `(pointer: coarse|fine)`, `(hover: none)` и `resize` (с debounce) — подключили мышь к планшету, включили эмуляцию в DevTools и т. п.
-- Выбор: `dispatch('config/setDeviceMode', 'auto' | 'mobile' | 'desktop')`; пишется в `localStorage.deviceMode` (`auto` — ключ удаляется)
-- **Мобильный режим** `SetpointScreen`: кнопки −/+, круговое перетаскивание, стрелки клавиатуры. **Режим ПК**: кнопок −/+ нет; колесо мыши/трекпад, стрелки ↑↓←→, перетаскивание кольца мышью, клик по кругу переключает булево значение; снизу подсказка (`.setpoint-hint`), курсор «рука»
-- Свайп/перетаскивание реализованы на **Pointer Events** (палец, мышь и стилус одним кодом); кольцу нужен `touch-action: none`
-- Не писать результат автоопределения в `localStorage` и не использовать `window.innerWidth` как признак «мобильности»
-
-### 8.7 Popup и Dropdown
-
-```js
-this.$store.dispatch('popup/show', { message, type: 'info'|'success'|'warning'|'error', duration: 3000 });
-this.$store.dispatch('dropdown/show', { items: [{ label, action } | { divider: true }], anchorElement });
-```
-
-- Таймер закрытия popup — в `store/modules/popup.js` (новый popup перезапускает отсчёт); `duration: 0` — не закрывать
-- `App.vue` обрабатывает действия меню: `profile`, `logout`, `deviceMode:<режим>` (→ `config/setDeviceMode`), `toggleMobile` (устаревший, оставлен для совместимости). Неизвестный action → `logger.warn`
-- Пункт меню без обработчика **не добавлять**
-
----
-
-## 9. СОРТИРОВКА И ВЫБОР — sortParams.js
-
-### 9.1 Типы ключей
-
-`'rooms'` | `'params'` | `'devices'` | `'setpoints'` (+ `'key'` для сброса `clearKey`)
-
-### 9.2 Переключение и обновление
-
-```js
-dispatch('sortParams/switchSortKey', { sortingType: 'rooms', direction: 'next' | 'prev' })
-dispatch('sortParams/updateSortKey', { type: 'rooms', newKey: 'room01' })   // newKey: null → сброс
-```
-
-`updateSortKey` пишет в `settingsData.payload` (через `updatePayloadData`) и в `localStorage`.
-Невалидный сохранённый ключ при старте сбрасывается в `config/ensureSortingKeys`.
-
-### 9.3 forceUpdate
-
-`SET_FORCE_UPDATE` по-прежнему коммитится, но **`MainBody` на него не подписан** (обновляется через computed).
-Не полагаться на `forceUpdate` для перерисовки.
-
-### 9.4 Лимиты уставок (`sortParams/setLimits`)
-
-- Источник: `config.init.limits[param]` → `config.init.limits.Default` → `{ low: 4, high: 40, step: 0.5 }`
-- Особые: `frequency` `{0, 1440, 1}`, `sensityRate` `{0.1, 12, 0.1}`
-- Значения приводятся к числам (в конфиге встречаются булевы)
-- `valueType === 'deviation'` → `±round(high/4)`, шаг `step/10`
-- `UPDATE_LIMITS`: проверка `!== undefined` (0 — валидный лимит)
-
----
-
-## 10. НАСТРОЙКИ — settingsConfig.js / config.js
-
-### 10.1 Типы конфигурации (typeSettingsKey)
-
-`'schedules'` | `'notifications'` | `'statistics'` — хранится в `config.state.typeSettingsKey` и `localStorage`.
-`'setpoints'` — это **request** уставок, а не тип экрана настроек.
-Любое другое значение нормализуется в `'schedules'` (`config/SET_TYPE_SETTINGS_ITEM`).
-
-### 10.2 Мутации и данные
-
-- Константы `MUTATION_TYPES` **не используются**: мутации называются прямо (`SET_LOADING`, `SET_ERROR`, `SET_PERMIT_*`)
-- Данные списков живут в `config`: `state.schedules[dID][room][param] = [ … ]` (аналогично `notifications`, `statistics`)
-- Мутации списков: `UPDATE_CONFIGDATA_LOCALLY`, `REMOVE_CONFIG_ITEMS`, `UPDATE_{SCHEDULE|NOTIFICATION|STATISTIC}_VALUE`
-- `config/RESET` — полный сброс данных пользователя
-
-### 10.3 Формы элементов
-
-```js
-// schedule
-{ id, room, param, startTime, endTime, value, value_type:'absolute', unit, days:[1..5], createdAt, updatedAt }
-// notification
-{ id, room, param, condition, value, notificationСhannel, frequency, permission, status, startTime, endTime, createdAt, updatedAt }
-// statistic
-{ id, room, param, value, setpoint, devSetpoint, changeSeason, savePeriod, sensityRate, createdAt, updatedAt }
-```
-
-Время — строка `"HH:MM"`; даты `createdAt`/`updatedAt` — МСК-строка.
-
-### 10.4 Пересечения времени
-
-`checkOverlap` (mode `new`): при пересечении предлагает слот после последнего интервала; нет места до `23:59` → `newStartTime = null` и `message`
-(вызывающий код **обязан** это обработать, а не создавать элемент с исходным временем). `edit`: подгоняет редактируемое поле к границе соседа.
-
----
-
-## 11. ОБРАБОТКА ЗНАЧЕНИЙ И ВРЕМЯ
-
-### 11.1 Типы значений (value_type)
-
-- `'absolute'` — абсолютное значение
-- `'deviation'` — отклонение от уставки
-- Отображение карточки: `toFixed(1)`; `null/undefined` → «—»
-- Точность редактирования — по шагу (п. 8.6), а не фиксированный `toFixed`
-
-### 11.2 Типы запросов (request) в MainView
-
-`setpoints` | `schedules` / `notifications` | `statistics`
-
-### 11.3 Время
-
-- Обмен с сервером — **московская строка** `"DD.MM.YYYY, HH:MM:SS"` (`nowMoscow()`)
-- `parseMoscowDate` интерпретирует строку как МСК (UTC+3, без DST) **независимо от часового пояса устройства**
-- `formatDate` показывает время/дату **по МСК**
-- Время суток — `"HH:MM"`, функции `timeToMinutes` / `minutesToTime` (диапазон 0–1439; невалидное → `0` / `'00:00'`)
-- `formatTimeWithHighlight` возвращает HTML для `v-html` и **экранирует** вход (строки времени приходят с сервера)
-
----
-
-## 12. НОВЫЙ ФУНКЦИОНАЛ — ЧЕКЛИСТ
-
-- [ ] Options API; события объявлены в `emits`
-- [ ] `logger.*` вместо `console.log`; формат префиксов; секреты не логируются
-- [ ] Новые WebSocket-сообщения следуют п. 5.1; запросы к серверу `await`-ятся, ошибки показываются пользователю
-- [ ] Новые ключи конфигурации — по п. 7.1
-- [ ] Новые store-поля — с getter'ом; user-bound данные сбрасываются при выходе (п. 4.3)
-- [ ] Компонент читает store только через getters
-- [ ] Новые маршруты с ограничением — `meta.requiresAuth` + `meta.requiredLevel`; права дублируются на сервере
-- [ ] Уставки — только через ManageSetpoints / store actions
-- [ ] Отправка на сервер — только через `websocket/send`
-- [ ] Таймеры/слушатели (`setTimeout`, `setInterval`, `addEventListener`) освобождаются в `beforeUnmount`
-- [ ] Запуск таймера идемпотентен (сначала `clearTimeout`)
-- [ ] Стили — только в `mainStyle.css` в нужной секции, без `<style>` в компоненте (п. 15)
-- [ ] Новые тексты ошибок для пользователя — через `popup/show`
-- [ ] Для изменённых модулей обновлены/добавлены тесты (п. 14)
-
----
-
-## 13. ЗАПРЕЩЕНО
-
-- ❌ Переписывать компоненты на Composition API / `<script setup>`
-- ❌ Мутировать `state` вне mutations
-- ❌ Обращаться к `store.state` из компонентов (только getters/mapGetters)
-- ❌ Создавать WebSocket-соединения в обход `websocket.js`
-- ❌ Менять структуру сообщений протокола (п. 5.1) без согласования с сервером
-- ❌ Менять порядок инициализации (п. 8.3)
-- ❌ Активные `console.log` (только `logger.*`)
-- ❌ Менять сигнатуры существующих actions/mutations/getters
-- ❌ Хранить ключи выбора иначе, чем через `updatePayloadData` + `localStorage` (п. 4.4)
-- ❌ Менять логику навигационного гарда (только расширять `meta`)
-- ❌ `window.location.href` для внутренней навигации
-- ❌ Хранить пароль или писать токен/пароль/`configData` в лог
-- ❌ `<style>` (scoped или нет) в компонентах; повторный импорт `mainStyle.css` из компонентов
-- ❌ Переименовывать ключи с кириллической «С» без синхронной правки сервера
-- ❌ Сохранять результат автоопределения режима устройства в `localStorage` (только явный выбор пользователя)
-- ❌ Опираться на отсутствие данных как на `0` / `OFF` (использовать `null` → «—»)
-- ❌ Жёстко задавать `request: 'setpoints'` при передаче значения с `SetpointScreen` (использовать `request`/`valueTitle` из `getComponentData`)
-- ❌ Дублировать список вкладок главного экрана (только `utils/mainTabs.js`)
-- ❌ Считать геометрию (центр кольца и т.п.) в watcher на `visible` у компонентов, создаваемых через `v-if`
-
----
-
-## 14. ТЕСТИРОВАНИЕ
-
-### 14.1 Стек
-
-| Слой | Инструмент |
-|------|-----------|
-| Test runner | Jest |
-| Vue-компоненты | `@vue/test-utils` + `jest-environment-jsdom` |
-| Покрытие | `jest --coverage` |
-| Расположение | `src/tests/unit/` |
-
-### 14.2 Именование
-
-```
-src/tests/unit/
-  router.spec.js
-  store/        auth.spec.js  config.spec.js  settingsConfig.spec.js  websocket.spec.js  sortParams.spec.js
-  utils/        timeUtils.spec.js  checkOverlap.spec.js  jwt.spec.js
-  components/   AppLogin.spec.js  MainBody.spec.js
-```
-
-Имя файла = имя модуля + `.spec.js`.
-
-### 14.3 Структура тест-файла
-
-```js
-// 1. Глобальные моки ДО импортов
-const localStorageMock = { getItem: jest.fn(), setItem: jest.fn(), removeItem: jest.fn(), clear: jest.fn() }
-global.localStorage = localStorageMock
-
-// 2. Импорты
-// 3. describe по функциональным группам; beforeEach сбрасывает моки
-```
-
-### 14.4 Правила
-
-- Название: «что происходит» при «условии» (`'перенаправляет на /login если не аутентифицирован'`)
-- Граничные случаи обязательны: числа (0, max, min, −1), уровни доступа (каждый level × каждый requiredLevel), время (`'00:00'`, `'23:59'`, невалидные), `null/undefined`
-- Побочные эффекты проверять в обе стороны (`toHaveBeenCalledWith` и `not.toHaveBeenCalled`)
-- Один тест — одна проверяемая вещь
-
-### 14.5 Мокирование
-
-`jest.doMock` + `jest.resetModules()` + `require` после мока. Реальный `store` в юнит-тестах гарда/утилит не импортировать.
-
-Особенности текущего кода:
-- **`websocket.js` держит состояние на уровне модуля** (`pending`, `connectPromise`, таймеры) → `jest.resetModules()` перед каждым тестом, `jest.useFakeTimers()`
-- В jsdom нет рабочего `WebSocket` → мокать глобальный `WebSocket` (поля `readyState`, `send`, `close`, `onopen/onclose/onmessage`)
-- `logger.js` читает `process.env` при импорте → задавать `VUE_APP_LOG_LEVEL` до `require`
-- `auth.js` использует динамический `import('@/router/routes.js')` → мокать через `jest.doMock('@/router/routes.js', …)`
-
-### 14.6 Роутер — обязательный минимум
-
-- [ ] Маршрут есть в `router.getRoutes()` по `name` (`Home`, `DashboardSettings`, `Configuration`, `Login`, `ChangePassword`, `AppProfile`, `AccessDenied`)
-- [ ] `meta` соответствует таблице п. 6.1
-- [ ] Публичный: `meta.public === true`, `requiresAuth` отсутствует
-
-Ветки `navigationGuard`:
-- [ ] `public` → `next()`, `localStorage` не вызывается
-- [ ] `Login` + авторизован + без `mustChangePassword` → `next('/')`
-- [ ] `!isAuthenticated` → `next('/login')` + `setItem('redirectPath', …)`
-- [ ] `mustChangePassword` → `next('/change-password')`
-- [ ] `level < requiredLevel` → `next('/access-denied')`
-- [ ] `level >= requiredLevel` → `next()`
-- [ ] Без `requiresAuth` и без `public` → `next()`
-
-### 14.7 Утилиты
-
-```js
-import { timeToMinutes, parseMoscowDate } from '@/utils/timeUtils'
-
-test.each([['14:30', 870], ['00:00', 0], ['23:59', 1439], ['', 0], [null, 0], ['99:99', 0]])
-('timeToMinutes(%p) === %i', (input, expected) => expect(timeToMinutes(input)).toBe(expected))
-
-// МСК = UTC+3: результат не должен зависеть от TZ окружения
-test('parseMoscowDate: 21:22:38 МСК = 18:22:38 UTC', () => {
-  expect(parseMoscowDate('03.06.2026, 21:22:38')).toBe(Date.UTC(2026, 5, 3, 18, 22, 38))
-})
-```
-
-Запускать тесты времени минимум в двух зонах (`TZ=UTC` и `TZ=America/New_York`).
-Функции `getCurrentDateTime`, `getCurrentTimeString`, `validateScheduleTime` и `checkStartTimeOverlap/checkEndTimeOverlap` **удалены** — удалить и их тесты.
-
-### 14.8 Чеклист нового теста
-
-- [ ] Файл `*.spec.js` по п. 14.2
-- [ ] Покрыты все ветки `if/else`; граничные значения
-- [ ] Побочные эффекты (`localStorage`, `dispatch`, `commit`) проверены явно
-- [ ] `test.each` для параметрических случаев
-- [ ] Моки и таймеры сбрасываются в `beforeEach`
-- [ ] Реальный Vuex store не импортируется напрямую
-
----
-
-## 15. СТИЛИ — assets/mainStyle.css
-
-- **Единственный** файл стилей; подключается **один раз** в `main.js` (`import '@/assets/mainStyle.css'`)
-- В компонентах **нет** `<style>` (ни `scoped`, ни `src`). Новый стиль → в нужную секцию `mainStyle.css`
-- Секции: 1 Переменные · 2 База · 3 Каркас · 4 Главный экран · 5 Иконки · 6 Панель уставки · 7 Popup/Dropdown ·
-  8 Формы/авторизация · 9 Настройки · 10 Мастер конфигурации (`cfg-*`) · 11 Медиа-запросы · 12 LEGACY
-- Цвета, тени — только через переменные `:root` (`--orange`, `--header_color`, `--shadow-card`, …)
-- Сетка карточек управляется переменными на `.mainBody`: `--card-min` (мин. ширина плашки: 160px — на телефоне две в ряд; 220px на планшетах), `--card-max` (`none` на телефоне, 340px на планшетах), `--card-gap`; значения меняются в `@media`. Сетка группы комнат — `.room-group-items` (`auto-fill`, `minmax(var(--card-min), 1fr)`, карточки прижаты влево)
-- Фон: задаётся на `.app` (градиент-затемнение + `assets/bg-main.webp`, подключается через `url('~@/assets/…')`); слои `.body`, `.footer`, `.mainBody` — `transparent`, поверх них фон не рисовать. `background-attachment: fixed` плохо работает на iOS Safari — при проблемах заменить на `position: fixed` псевдоэлемент
-- «Стекло» (плашки, вкладки группировки): переменные `--glass`, `--glass-strong`, `--glass-blur` (`backdrop-filter`); тона уставки `--tone-cool` (синий) / `--tone-warm` (жёлтый)
-- Тон плашки — необязательные классы на `.sensor-card`: `is-cool` (уставка ниже факта) и `is-warm` (уставка выше факта) красят иконку и значение уставки; без класса (датчик без уставки) — нейтральный серый
-- Плашка датчика: `.sensor-card` → `.sensor-icon-wrapper` → `.sensor-icon` (круглая подложка) + `.sensor-content` (`.sensor-title`, `.sensor-values`, `.sensor-set-value`, `.sensor-actual-value`, `.unit`). Сама иконка — компонент `<SensorIcon>` с классом **`.sensor-svg`** (не `.sensor-icon`!), размер задавать `size="60%"` или в px
-- Типографика экрана уставки совпадает с плашкой: уставка — 700 и цвет тона, факт — 500 и `rgba(255,255,255,.5)`, единица — `.unit` (400, 0.85em); экран рендерится в `<body>`, поэтому `font-family` и сглаживание заданы на `.setpoint-screen` явно (иначе шрифт не совпадёт с `.app`)
-- Экран изменения значения: `.setpoint-screen` (+ `.setpoint-header`, `.setpoint-outer-ring`, `.setpoint-inner-circle`, `.setpoint-btn`, …). Стили старой панели (`.setpointBlock`, `.setpoint-overlay`, `.setpointValue*`) удалены вместе с `MainSetpoint.vue`
-- Брейкпоинты: `376px` → `630px` → `980px` → `1200px`, затем `landscape ≤979px`, затем `≤400px`.
-  **Порядок блоков важен** — более поздние переопределяют ранние. Не выносить `@media` внутрь секций
-- Не вкладывать обычные правила внутрь `@media` «для удобства» (так `cfg-*` когда-то перестали работать на узких экранах)
-- Шапка: `.header-center` (обязателен `min-width: 0`), активная вкладка — `.top-nav.top-nav--center` с `.settings-block-title.clickable.selected` и `.tab-chevron`; разделитель — `.header-divider`. Inline-стили в шаблонах не использовать
-- Общие статусные классы: `.error`, `.success`, `.warning`, `.hint`
-- `touch-action: manipulation` задаётся одним списком селекторов в секции «База» — новые кликабельные элементы добавлять туда
-- Секция LEGACY — классы, не найденные в загруженных компонентах; после проверки `grep -rn` удалить
-- Динамически собираемые классы (`popup-${type}`) и классы vue-router (`router-link-exact-active`) **не удалять** как «неиспользуемые»
-- Именование: `kebab-case`; исторические исключения (`setpointValue_number`, `sensor-SetValue`) не переименовывать без правки шаблонов
-
----
-
-## 16. РАСХОЖДЕНИЯ И ОТКРЫТЫЕ ВОПРОСЫ
-
-| # | Что | Решение нужно |
-|---|-----|---------------|
-| 1 | Задержка отправки уставки: в прежних правилах **2500 мс**, в коде `MainView.sendChangedData` — **300 мс** | Какое значение верно? Если 2500 — поправить код; п. 8.1 описывает текущие 300 |
-| 2 | `AppProfile.vue` на Composition API (`ref`, `computed`, `useStore`, `useRouter`) — нарушает п. 3.1 | Переписать на Options API или оформить исключение |
-| 3 | `MainBodySchedule.vue` не объявляет `emits` | Добавить `emits: ['getDataScheduleItem', 'field-selected', 'delete-schedule']` |
-| 4 | Файл `MainFooter.vue` импортируется из `ConFiguration.vue`, но не был доступен | Проверить существование и стили (`header_arrow`, `icon.big` и др. из LEGACY могут быть оттуда) |
-| 5 | Мастер `ConFiguration` кладёт `password` в JSON конфигурации; при пустом `userConfigID` пароль по умолчанию `'newConfig'` | Убедиться, что сервер хеширует и принуждает `mustChangePassword` |
-| 6 | Подпись «1 месяц» у значения 302400 мин в `MainBodyStatistic` (это 210 дней; месяц = 43200) | Уточнить ожидание сервера |
-| 7 | Классы шаблонов без CSS-правил: `hover-bg`, `settings-info-value`, `frequency-wrapper`, `frequency-unit`, `mainBodySettings-title-container`, `loading`, `statistic-checkbox-field` (его `<style scoped>` был закомментирован) | Добавить стили или убрать классы |
-| 9 | Вкладка «Общие настройки» (`general`) читает объект `common.system`; структура `common` восстановлена по клиентскому коду | Подтвердить формат `common` на сервере |
-| 8 | `.sensor-card` не реагирует на hover: прежнее правило `.mainBodyValue:hover` указывало на несуществующий класс | Нужен ли hover-эффект? |
-| 9 | Старые тесты могут ссылаться на удалённые экспорты `timeUtils`/`checkOverlap` и на прежнее поведение `parseMoscowDate` | Прогнать `jest`, обновить (п. 14.7) |
-| 10 | Серверная часть (Express/WS-обработчики) в ревизию не входила; протокол п. 5.1 восстановлен по клиентскому коду | Описать серверные обработчики отдельным разделом |
-
----
-
-## 17. ЖУРНАЛ РЕВИЗИИ (22.10.2026): что исправлено в этом документе
-
-| Раздел | Было | Стало |
-|--------|------|-------|
-| 2 | `DashBoard.vue`, `AppPlace`, `MainHeader`, `UserConfig`, `InputDialog`; `tests/` в двух местах | Реальный список компонентов; `MainView`, `TopNav`, `MenuDropdown`, `ChangePassword`, `MainBodyNotifications`; `popup`/`dropdown` модули; `utils/*` |
-| 3.2 | Три уровня логов; ошибки зависели от уровня | Пять уровней; `error` печатается всегда; запрет логировать секреты |
-| 4 | Мутации `SET_ROOM_KEY` и др.; геттер `idSettingsKey` | Фактические мутации/actions/getters; запрет `store.state` в компонентах |
-| 5.1–5.2 | Минимум типов запросов; нет `accessError`, `settlePending` | Полная таблица протокола, порядок маршрутизации |
-| 5.4 | «до 8 попыток» | Бесконечный реконнект с потолком 30 с, авто-`resume`, `refreshConfig` |
-| 6 | `/dashboard`, `/smart-home`, `/users`; `IntroduceHome` | `/`, `/settings/:settingsType`, `/configuration`, `/change-password`; base `/app/`; шаги гарда с `mustChangePassword` |
-| 7.1 | Комнаты `rRoom1` | `room01`, структура `group/_meta/sensors/system/setpoints`, парный номер датчик↔уставка |
-| 7.2 | `config/clearKey` action; `dTemp1 → dTemp` | Только getter `clearKeySync`: `dTemp02 → Temp` |
-| 7.4 | `authData`; `typeSettingsKey = 'schedule'` | `authSession`; допустимы `schedules/notifications/statistics`; список очищаемых при выходе |
-| 8.1 | События `@eventsMainBody`, `@swipe-*`, `handleMainBodyEvent`; отправка 2500 мс | Фактические события; 300 мс (расхождение — п. 16) |
-| 8.3–8.4 | `App.mounted` с авто-логином по паролю; `DashBoard.created` создаёт менеджер | `main.js` + watch в `App.vue`; пароль не хранится; менеджер создаётся в `App.vue` |
-| 9.3 | `MainBody` следит за `forceUpdate` | `computed`, `forceUpdate` не используется |
-| 10.1–10.2 | `'schedule'`, `'setpoints'`; `MUTATION_TYPES` | `'schedules'`; мутации без констант |
-| 11 | Округление `.toFixed(1/3/0)` | Точность по шагу; `null → «—»`; МСК-время независимо от TZ |
-| 12–13 | Запрет менять `App.mounted` | Запреты на `window.location`, секреты в логах, `<style>` в компонентах, кириллические ключи |
-| 14 | Пример теста `redirectPath = '/dashboard'`; `tests/` | Актуальные маршруты и ветки гарда; особенности мокирования `websocket.js`; тест `parseMoscowDate` |
-| 15, 16, 17 | — | Новые разделы: стили, расхождения, журнал |
-| 2.2, 8.1, 8.4, 8.6 (вторая ревизия) | `GroupTabs` + группировка в `sortParams`; панель `MainSetpoint` с таймером бездействия | Вкладки-разделы главного экрана (`utils/mainTabs.js`, `mainViewTab`); `SetpointScreen`; `GroupTabs.vue`, `MainSetpoint.vue` и их стили удалены |
-| 8.1 | `onScreenUpdateValue` всегда `setpoints/value` | Передаёт `request`/`valueTitle` исходного события (иначе правка расписания уходила как уставка) |
-| 8.4 | Карточки без уставки выбирались и писали `room: 'common'` в payload | Только чтение; `common` исключён из списка комнат |
-| 8.6.2 | Переключатель Десктоп/Мобильный; автоопределение писалось в `mobile_navigation` как ручной выбор («залипало») | Меню `Авто / Десктоп / Мобильный`, `deviceMode` только для явного выбора, слежение за устройством на лету; на ПК у экрана уставки нет −/+ |
-| 15 | Шрифты экрана уставки отличались от плашки (нет `font-family` из-за Teleport) | Те же семейство, жирность, цвета и тон (`utils/tone.js`) |
+| `/:pathMatch(.*)*` | — | redirect `/` | — |
+
+- `navigationGuard`: `public` → пропуск (авторизованного с `/login` — на `/`); нет `requiresAuth` → пропуск; не авторизован → `localStorage.redirectPath` + `/login`; `level` ниже максимального `requiredLevel` по matched → `/access-denied`.
+- `redirectPath` перед использованием проверяется (`AppLogin.safeRedirect`: начинается с `/`, не с `//`).
+- Меню шапки (`MainView.openMenu` → `App.onDropdownSelect`): `profile`, `settings` (`/preferences`), `logout`. Пункт меню без обработчика не добавлять.
+
+## Конфигурация устройства
+- Комнаты — ключи `room01`, `room02`, … Служебные ключи корня: `init` (лимиты), `newConfigID`, `password`, `common` (вкладка «Общие», не комната).
+- Комната: `id`, `title`, `group`, необязательный `_meta` (`'раздел|ключ': { title }`), разделы `sensors`, `system`, `setpoints` и др.: `{ <ключ>: { value, type: 'num' | 'bool', lastUpdate } }`.
+- Префиксы: `d` — датчик/статус, `a` — актуатор, `s` — уставка. Числовой суффикс связывает датчик и уставку строго: `dTemp02 ↔ sTemp02`; нет пары — карточка только для чтения.
+- Ключи с кириллической «С» (`dСurrent`, `notificationСhannel`) совпадают с серверными: не «исправлять» на латиницу.
+- Очистка ключа — геттер `config/clearKeySync('dTemp02') === 'Temp'`.
+- Нет данных → «—», а не `0` / `OFF`. Логические значения принимаются как `true`/`false`, `'ON'`/`'OFF'` и `0`/`1`.
+- Время обмена с сервером — московская строка `DD.MM.YYYY, HH:MM:SS` (`nowMoscow`), разбор — `parseMoscowDate` независимо от часового пояса устройства; время суток — `HH:MM`.
+
+## Компоненты: правила, которые легко нарушить
+- `MainView`: экран изменения значения открывается событием `getComponentData`; `request` и поле (`valueTitle`) берутся из открывшего события — не подставлять жёстко `setpoints`/`value` (экраны настроек тоже его открывают). Отправка на сервер — debounce 300 мс; таймер обнуляется в момент срабатывания, `flushPendingUpdate` при закрытии отправляет только неотправленное.
+- `MainBody`: `groupedView` — computed; вкладки — только из `utils/mainTabs.js`; карточка без уставки не выбирается и ничего не пишет в `payload`.
+- `MainBodySettings`: удаление отложенное (`pendingDeletes`, отправка при закрытии); добавление — проверка лимита → подбор времени без пересечений (`checkOverlap`; `newStartTime === null` обязательно обработать) → оптимистично в store → отправка → откат при ошибке.
+- `SetpointScreen`: свой `Teleport` в `<body>`; шаг и округление — по точности шага; выход за границу — зажим; центр кольца считается при каждом касании, а не в watcher на `visible`.
+- Режим устройства — единственный источник `config/isMobile`; в `localStorage.deviceMode` пишется только явный выбор пользователя.
+- Иконки — `<SensorIcon :name="ключ">`; новая иконка — `<g id="si-<имя>">` в `SensorIconSprite.vue` + запись в `utils/sensorIcons.js`; спрайт монтируется один раз.
+
+## localStorage
+`authSession`, `roomKey`, `paramKey`, `deviceKey`, `setpointKey`, `clearKey` (чистятся при выходе); `redirectPath`; `mainViewTab`, `typeSettingsKey` (`schedules` | `notifications` | `statistics`), `deviceMode`, `appearance` (`{ theme, color }`) — настройки интерфейса, при выходе не чистятся; `authData`, `mobile_navigation` — устаревшие, только удаляются.
+
+## Стили (`assets/mainStyle.css`)
+- Секции: переменные · база · каркас · главный экран · иконки · экран уставки · popup/dropdown · формы · настройки · медиа-запросы · LEGACY. Новый стиль — в свою секцию; `@media` — только в секции медиа-запросов, порядок брейкпоинтов важен.
+- Цвета и тени — только переменные `:root`. Тема фона — класс `bg-theme--<тема>` на `.app` (`appearance/bgThemeClass`), свой цвет — `--custom-bg-color`.
+- Динамические классы (`popup-${type}`) и классы vue-router не удалять как «неиспользуемые».
+
+## Тесты
+- Jest + `@vue/test-utils` + jsdom (`pnpm test`). На каждый новый или изменённый модуль создавать или обновлять тесты.
+- Сеть не использовать: `WebSocket` мокается в `tests/unit/setup.js`; `logger` в тестах мокается целиком (`dev`, `info`, `warn`, `error`).
+- `websocket.js` хранит состояние на уровне модуля (`pending`, `connectPromise`, таймеры): `jest.useFakeTimers()`, сброс состояния перед каждым тестом. Действия удобно проверять напрямую с подставным `context` (`{ state, rootState, rootGetters, dispatch, commit }`).
+- Перед завершением работы прогонять весь набор и сравнивать с исходным состоянием: новых падений быть не должно.
+
+## Известные расхождения
+- Набор тестов устарел: `Dashboard`, `IntroduceHome`, `SmartHome`, `ManufactAutomatation`, `UserConfig` ссылаются на удалённые компоненты; `router`, `timeUtils`, `checkOverlap`, `websocket` и др. — на прежнее поведение.
+- Нет экрана смены пароля: маршрута `/change-password` и `ChangePassword.vue` нет, гард `mustChangePassword` не проверяет, сервер тоже не принуждает.
+- Не реализованы возможности сервера: оповещения (`type: 'message'`, `get/messages`), профиль (`auth/profile`, `updateProfile`), Telegram (`telegramLinkCode`, `telegramUnlink`), `get/videoSnapshot`. Камера: клик (`openCamera`) никто не обрабатывает, `CameraScreen.vue` не подключён.
+- `refreshError` с `TOKEN_REVOKED` не разлогинивает: `refresh` повторяется раз в минуту.
+- Не используются: `MainSetpoint.vue`, `CameraScreen.vue`, `utils/transformConfigs.js`, `myhome_config.js`; зависимости `socket.io-client`, `vuejs3-logger`, `vue-touch`, `@vueuse/core`.
+- `AppProfile.vue` — Composition API и `store.state` напрямую.
+- `public/index.html`: манифест и иконки подключены абсолютными путями (`/manifest.json`, `/webicons/…`) мимо `/app/` (404), манифестов два, `start_url: '/'`.
+- `example.env` без обязательной `VUE_APP_EXP`, с неиспользуемыми `VUE_APP_DOMEN`, `VUE_APP_HOST`, `VUE_APP_SERVER_PORT`, `VUE_APP_LOG_DIRECTORY`.

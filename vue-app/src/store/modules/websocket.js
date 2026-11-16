@@ -26,6 +26,8 @@ let connectPromise = null;      // защита от параллельных co
 let reconnectTimer = null;
 let hasConnectedBefore = false; // отличаем первое подключение от переподключения
 let listenersInstalled = false;
+// Восстановление сессии после последнего открытия сокета (ждёт main.js перед монтированием)
+let sessionReady = Promise.resolve(null);
 
 function makeError(message, code) {
   const err = new Error(message);
@@ -129,11 +131,20 @@ export default {
           commit('SET_CONNECTED', true);
           commit('SET_RECONNECT_ATTEMPTS', 0);
 
+          // Сервер привязывает сессию к соединению: после ЛЮБОГО открытия сокета
+          // (первого, повторного, первого удачного после недоступности сервера при загрузке)
+          // её нужно восстановить по JWT. Раньше resume шёл только при переподключении и из
+          // main.js — если сервер был недоступен при загрузке, сессия не восстанавливалась,
+          // и через AUTH_TIMEOUT_MS сервер закрывал соединение с TIMEOUT.
+          sessionReady = dispatch('onConnected', { isReconnect }).catch((e) => {
+            logger.error('[WebSocket] - onopen - восстановление сессии:', e.message);
+            return null;
+          });
+
           if (!settled) {
             settled = true;
             resolve(socket);
           }
-          if (isReconnect) dispatch('onReconnected');
         };
 
         socket.onerror = (error) => {
@@ -196,16 +207,44 @@ export default {
       });
     },
 
-    // После обрыва сервер «забыл» сессию — восстанавливаем по JWT
-    // и перезапрашиваем данные, которые могли измениться за время обрыва.
-    async onReconnected({ rootState, dispatch }) {
-      if (!rootState.auth.token) return;
+    // Новое соединение не знает сессию — восстанавливаем её по JWT и подтягиваем данные:
+    // конфигурация ещё не загружена (например, сервер был недоступен при старте) → config/initialize,
+    // уже есть → перезапрос того, что могло измениться за время обрыва.
+    async onConnected({ rootState, rootGetters, dispatch }, { isReconnect = false } = {}) {
+      if (!rootState.auth?.token) return null;
       try {
         const user = await dispatch('auth/resume', null, { root: true });
-        if (user) await dispatch('config/refreshConfig', null, { root: true });
+        if (!user) {
+          if (!rootState.auth?.token) await dispatch('auth/redirectToLogin', null, { root: true });
+          return null;
+        }
+        const dID = rootGetters['dID'];
+        const hasConfig = !!dID && Object.keys(rootGetters['config/getConfig'](dID)).length > 0;
+        // Данные грузим в фоне: main.js ждёт только восстановления сессии, не конфигурацию
+        const loadData = hasConfig
+          ? dispatch('config/refreshConfig', null, { root: true })
+          // Идемпотентно: App.vue (watch isAuthenticated) делает то же при старте —
+          // запросы конфигурации объединяются, менеджер для того же dID не пересоздаётся
+          : dispatch('initializeSetpointsManager', null, { root: true })
+            .then(() => dispatch('config/initialize', null, { root: true }));
+        loadData.catch((e) => logger.error('[WebSocket] - onConnected - загрузка данных:', e.message));
+
+        logger.dev(`[WebSocket] - onConnected - сессия восстановлена (${isReconnect ? 'переподключение' : 'подключение'})`);
+        return user;
       } catch (e) {
-        logger.error('[WebSocket] onReconnected:', e.message);
+        logger.error('[WebSocket] - onConnected -', e.message);
+        return null;
       }
+    },
+
+    // Совместимость: прежнее имя действия
+    onReconnected({ dispatch }) {
+      return dispatch('onConnected', { isReconnect: true });
+    },
+
+    // Промис восстановления сессии после последнего открытия сокета
+    whenSessionReady() {
+      return sessionReady;
     },
 
     disconnect({ state, commit }) {
@@ -285,6 +324,11 @@ export default {
 
       // 3) Обычные ответы
       try {
+        // Ошибки сервера (setpointError, modbusWriteError, configError, …): раньше терялись молча
+        if (type === 'error') {
+          await dispatch('config/handleServerError', response, { root: true });
+          return;
+        }
         if (type === 'response') {
           await dispatch('config/handleConfigResponse', response, { root: true });
         }

@@ -18,7 +18,7 @@ afterAll(() => jest.restoreAllMocks());
 
 // ─── Моки модулей ────────────────────────────────────────────────────────────
 jest.mock('@/store/modules/logger', () => ({
-  info: jest.fn(), dev: jest.fn(), error: jest.fn(),
+  info: jest.fn(), dev: jest.fn(), warn: jest.fn(), error: jest.fn(),
   isInfoEnabled: () => false, isDevEnabled: () => false, isErrorEnabled: () => false,
 }));
 
@@ -536,15 +536,59 @@ describe('Vuex config module', () => {
         expect(context.commit).not.toHaveBeenCalled();
       });
  
-      it('type=sensors: name и value равны undefined если поля отсутствуют в payload', async () => {
+      it('type=sensors без item_name: значение не обновляется', async () => {
         await configModule.actions.handleValueUpdate(context, {
           dID:     'device123',
           payload: { room: 'room1' }, // нет item_name и item_value
           type:    'sensors',
         });
+        expect(context.commit).not.toHaveBeenCalled();
+      });
+
+      it.each(['system', 'setpoints', 'actuators'])(
+        'push раздела %s с item_name/item_value обновляет этот раздел', async (type) => {
+          await configModule.actions.handleValueUpdate(context, {
+            dID: 'device123', type, payload: { room: 'room01', item_name: 'dMode07', item_value: 2 },
+          });
+          expect(context.commit).toHaveBeenCalledWith('UPDATE_CONFIG_VALUE', {
+            dID: 'device123', room: 'room01', type, name: 'dMode07', value: 2,
+          });
+        },
+      );
+
+      it('логическое значение false из push не теряется', async () => {
+        await configModule.actions.handleValueUpdate(context, {
+          dID: 'device123', type: 'system', payload: { room: 'common', item_name: 'dStatus02', item_value: false },
+        });
+        expect(context.commit).toHaveBeenCalledWith('UPDATE_CONFIG_VALUE', expect.objectContaining({ value: false }));
+      });
+
+      it('уставка, пересланная с другой вкладки, обновляется по setKey из сообщения, а не по своему выбору', async () => {
+        await configModule.actions.handleValueUpdate(context, {
+          dID: 'device123', type: 'setpoints',
+          payload: { room: 'room02', setKey: 'sTemp02', key: 'Temp', value: 21 },
+        });
+        expect(context.commit).toHaveBeenCalledWith('UPDATE_CONFIG_VALUE', {
+          dID: 'device123', room: 'room02', type: 'setpoints', name: 'sTemp02', value: 21,
+        });
+      });
+
+      it('push работает без менеджера уставок (до входа в экран уставки)', async () => {
+        context.rootGetters.getSetpointsManager = null;
+        await configModule.actions.handleValueUpdate(context, {
+          dID: 'device123', type: 'system', payload: { room: 'room01', item_name: 'dFanSp08', item_value: 3 },
+        });
+        expect(context.commit).toHaveBeenCalledWith('UPDATE_CONFIG_VALUE', expect.objectContaining({ name: 'dFanSp08' }));
+      });
+
+      it('локальная правка уставки пишет в полный ключ setKey выбранного элемента', async () => {
+        settingsData.payload.setKey = 'sTemp01';
+        settingsData.payload.key = 'Temp';
+        await configModule.actions.handleValueUpdate(context, {
+          dID: 'device123', type: 'setpoints', payload: { room: 'room01', param: 'dTemp01', value: 23.5 },
+        });
         expect(context.commit).toHaveBeenCalledWith('UPDATE_CONFIG_VALUE', expect.objectContaining({
-          name:  undefined,
-          value: undefined,
+          name: 'sTemp01', value: 23.5,
         }));
       });
 
@@ -583,5 +627,53 @@ describe('Vuex config module', () => {
       const result = configModule.actions.clearKey(context, { key: 'dHumidity' });
       expect(result).toBe('Humidity');
     });
+  });
+});
+
+describe('Vuex config module: handleServerError', () => {
+  const run = (response) => {
+    const context = { dispatch: jest.fn().mockResolvedValue(undefined) };
+    return configModule.actions.handleServerError(context, response).then(() => context.dispatch);
+  };
+
+  it('показывает текст ошибки и перезапрашивает конфигурацию после ошибки записи', async () => {
+    const dispatch = await run({
+      type: 'error', request: 'modbusWriteError', name: 'igumen',
+      payload: { message: 'Тег dTemp01 доступен только для чтения', code: 'READ_ONLY' },
+    });
+    expect(dispatch).toHaveBeenCalledWith('popup/show',
+      expect.objectContaining({ message: 'Тег dTemp01 доступен только для чтения', type: 'error' }), { root: true });
+    expect(dispatch).toHaveBeenCalledWith('websocket/send',
+      { type: 'get', request: 'config', name: 'igumen', payload: {} }, { root: true });
+  });
+
+  it.each([
+    ['addScheduleError', 'schedules'],
+    ['delNotificationsError', 'notifications'],
+    ['updateStatisticsError', 'statistics'],
+  ])('%s перезапрашивает список %s', async (request, configType) => {
+    const dispatch = await run({ type: 'error', request, name: 'igumen', payload: { message: 'x' } });
+    expect(dispatch).toHaveBeenCalledWith('settingsConfig/requestToServer', { configType }, { root: true });
+    expect(dispatch).not.toHaveBeenCalledWith('websocket/send', expect.anything(), { root: true });
+  });
+
+  it.each(['configError', 'schedulesError'])('ошибка get-запроса (%s) не вызывает перезапрос (нет цикла)', async (request) => {
+    const dispatch = await run({ type: 'error', request, name: 'igumen', payload: { message: 'x' } });
+    expect(dispatch).toHaveBeenCalledTimes(1); // только popup
+  });
+
+  it('configError сразу отклоняет ожидание конфигурации, без таймаута', async () => {
+    jest.useFakeTimers();
+    const context = {
+      state: configModule.state(),
+      dispatch: jest.fn().mockResolvedValue(undefined),
+    };
+    const waiting = configModule.actions.requestConfig(context, 'igumen');
+    await Promise.resolve();
+    await configModule.actions.handleServerError({ dispatch: jest.fn().mockResolvedValue() }, {
+      type: 'error', request: 'configError', name: 'igumen', payload: { message: 'Недопустимый dID', code: 'BAD_DID' },
+    });
+    await expect(waiting).rejects.toMatchObject({ message: 'Недопустимый dID', code: 'BAD_DID' });
+    jest.useRealTimers();
   });
 });

@@ -284,7 +284,27 @@ export default {
       dispatch('dropdown/hide', null, { root: true });
     },
 
+    // Сессия окончательно потеряна: очистка, сообщение и переход на /login
+    async redirectToLogin({ dispatch }) {
+      await dispatch('clearSession');
+      dispatch('popup/show', {
+        message: 'Сессия истекла. Войдите снова.',
+        type: 'warning',
+        duration: 2500,
+      }, { root: true });
+
+      // SPA-навигация вместо window.location: учитывает base '/app/'
+      // и не перезагружает страницу.
+      const { default: router } = await import('@/router/routes.js');
+      if (router.currentRoute.value.name !== 'Login') {
+        router.push('/login');
+      }
+    },
+
     // ── Обработка accessError, прилетевшего в WS ────────────────────
+    // Сервер держит сессию, пока открыто соединение. NO_SESSION / TIMEOUT значат
+    // «это соединение не вошло», а не «токен недействителен» — сначала пробуем resume,
+    // выходим только если сервер отверг токен. TOKEN_REVOKED — выход сразу.
     async handleAccessError({ state, dispatch }, payload) {
       const code = payload?.code;
       logger.warn('[auth] - accessError:', payload);
@@ -292,22 +312,24 @@ export default {
       if (SESSION_ERROR_CODES.includes(code)) {
         if (!state.token) return; // уже вышли — повторный попап не нужен
 
-        await dispatch('clearSession');
-        dispatch('popup/show', {
-          message: 'Сессия истекла. Войдите снова.',
-          type: 'warning',
-          duration: 2500,
-        }, { root: true });
-
-        // SPA-навигация вместо window.location: учитывает base '/app/'
-        // и не перезагружает страницу.
-        const { default: router } = await import('@/router/routes.js');
-        if (router.currentRoute.value.name !== 'Login') {
-          router.push('/login');
+        if (code !== 'TOKEN_REVOKED') {
+          // resume сам разлогинит при отказе сервера; при обрыве связи токен сохранится,
+          // а сессию восстановит websocket/onConnected после переподключения
+          const user = await dispatch('resume');
+          // запрос, отклонённый с NO_SESSION, потерян — перезапрашиваем данные
+          if (user) await dispatch('config/refreshConfig', null, { root: true });
+          if (state.token) return;
         }
+        await dispatch('redirectToLogin');
       } else if (code === 'FORBIDDEN') {
         dispatch('popup/show', {
           message: payload?.message || 'Недостаточно прав для этой операции',
+          type: 'error',
+          duration: 3000,
+        }, { root: true });
+      } else if (code === 'DID_MISMATCH') {
+        dispatch('popup/show', {
+          message: payload?.message || 'Нет доступа к чужому источнику данных',
           type: 'error',
           duration: 3000,
         }, { root: true });

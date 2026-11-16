@@ -433,6 +433,9 @@ export default {
 
       if (this.setpointUpdateTimer) clearTimeout(this.setpointUpdateTimer);
       this.setpointUpdateTimer = setTimeout(async () => {
+        // Отправка уже выполняется: flushPendingUpdate при закрытии экрана не должен
+        // отправлять то же значение второй раз (раньше каждое значение уходило дважды)
+        this.setpointUpdateTimer = null;
         try {
           await this.$store.dispatch('config/updateSetpointServer');
           logger.info('[MainView] - sendChangedData - отправлено на сервер');

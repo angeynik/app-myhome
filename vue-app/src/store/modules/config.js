@@ -15,6 +15,8 @@ const SETTINGS_TYPES = ['schedules', 'notifications', 'statistics'];
 const normalizeSettingsType = (t) => (SETTINGS_TYPES.includes(t) ? t : 'schedules');
 
 const CONFIG_TIMEOUT = 10000;
+// Ошибки get-запросов данных: после них данные не перезапрашиваются
+const GET_ERRORS = new Set(['configError', ...SETTINGS_TYPES.map((t) => `${t}Error`)]);
 // 'common' — общие настройки (вкладка «Общие настройки»), не комната
 const SERVICE_ROOM_KEYS = new Set(['init', 'newConfigID', 'password', 'common']);
 const ROOM_EXCLUDED_SECTIONS = ['init', 'id', 'group', 'title', 'setpoints', '_meta'];
@@ -362,6 +364,44 @@ export default {
       }
     },
 
+    // Ответ сервера type: 'error' (кроме auth и accessError — их разбирают websocket/auth).
+    // Формат: { request: '<действие>Error', name: dID, payload: { message, code? } }.
+    // Показываем текст пользователю и перезапрашиваем затронутые данные: значение на экране
+    // уже изменено оптимистично, а сервер или устройство его не приняли.
+    async handleServerError({ dispatch }, response) {
+      const request = String(response?.request || 'error');
+      const message = response?.payload?.message || 'Ошибка на сервере';
+      const dID = response?.name;
+      logger.warn(`[config] - handleServerError - ${request}:`, response?.payload?.code || '', message);
+
+      // Ошибка get-запроса конфигурации: не ждём таймаут CONFIG_TIMEOUT
+      if (request === 'configError' && configWaiters.has(dID)) {
+        const waiter = configWaiters.get(dID);
+        clearTimeout(waiter.timer);
+        configWaiters.delete(dID);
+        const error = new Error(message);
+        error.code = response?.payload?.code;
+        waiter.reject(error);
+      }
+
+      dispatch('popup/show', { message, type: 'error', duration: 3000 }, { root: true });
+
+      // Ошибка самого get-запроса: перезапрос снова вернул бы ошибку (бесконечный цикл)
+      if (GET_ERRORS.has(request)) return;
+
+      const lower = request.toLowerCase();
+      const listType = SETTINGS_TYPES.find((t) => lower.includes(t.slice(0, -1)));
+      try {
+        if (listType) {
+          await dispatch('settingsConfig/requestToServer', { configType: listType }, { root: true });
+        } else if (dID) {
+          await dispatch('websocket/send', { type: 'get', request: 'config', name: dID, payload: {} }, { root: true });
+        }
+      } catch (e) {
+        logger.error('[config] - handleServerError - перезапрос данных:', e.message);
+      }
+    },
+
     updateScheduleLocally({ commit }, { dID, configName, configData }) {
       commit('UPDATE_CONFIGDATA_LOCALLY', { dID, configName, configData });
     },
@@ -430,18 +470,30 @@ export default {
         return;
       }
 
-      if (type === 'sensors') {
+      // Push значения элемента конфигурации: sensors, system, setpoints и любой другой раздел.
+      // Формат NodeRED / Modbus: { room, item_name, item_value }. Раньше обрабатывались только
+      // sensors и setpoints — значения system (статусы, режимы) обновлялись лишь с полным конфигом.
+      if (!SETTINGS_TYPES.includes(type) && payload.item_name) {
         commit('UPDATE_CONFIG_VALUE', {
           dID,
           room: payload.room ?? settingsData?.payload?.room,
           type,
           name: payload.item_name,
-          value: payload.item_value,
+          value: payload.item_value ?? payload.value,
         });
         return;
       }
 
-      // Всё ниже работает от выбранного пользователем элемента (settingsData)
+      // Уставка, пересланная сервером от другого клиента того же dID: { room, setKey, value }.
+      // Ключ берём из сообщения — не из собственного выбора (иначе обновилась бы не та уставка).
+      if (type === 'setpoints' && payload.setKey) {
+        commit('UPDATE_CONFIG_VALUE', {
+          dID, room: payload.room, type, name: payload.setKey, value: payload.value,
+        });
+        return;
+      }
+
+      // Всё ниже — локальная правка выбранного пользователем элемента (settingsData)
       if (!settingsData) {
         logger.warn('[config] - handleValueUpdate - settingsData не инициализирован, тип:', type);
         return;
@@ -453,9 +505,10 @@ export default {
           dID,
           room: payload.room ?? sp.room,
           type,
-          name: payload.item_name ?? `s${sp.key}`,
+          // setKey — полный ключ ('sTemp01'); 's' + key ('sTemp') — запасной вариант
+          name: sp.setKey || `s${sp.key}`,
           // ?? вместо ||: значения 0 и false — валидные уставки
-          value: payload.item_value ?? payload.value ?? sp.value,
+          value: payload.value ?? sp.value,
         });
         return;
       }
