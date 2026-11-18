@@ -1,19 +1,32 @@
 <!-- components/MainBodyValue.vue -->
+<!-- Плашка параметра. Две зоны нажатия:
+       иконка          → icon-click    (экран уведомления, NotificationScreen.vue)
+       название/значения → content-click (выбор уставки / двойной клик — настройки)
+     Активное уведомление (статус ON) — красная обводка .has-notification. -->
 <template>
   <div
     class="sensor-card"
-    :class="[tone, { selected: isSelected }]"
+    :class="[tone, { selected: isSelected, 'has-notification': notificationActive }]"
     :title="timeUpdated"
   >
     <!-- Слева: иконка параметра (цвет — по тону плашки или тревоге) -->
-    <div class="sensor-icon-wrapper">
+    <div
+      class="sensor-icon-wrapper"
+      role="button"
+      tabindex="0"
+      :aria-label="`Уведомление: ${paramTitle}`"
+      @click.stop="$emit('icon-click')"
+      @keydown.enter.prevent="$emit('icon-click')"
+    >
       <div class="sensor-icon">
         <SensorIcon :name="paramKey" :state="iconState" size="100%" />
       </div>
+      <!-- Для параметра настроено уведомление -->
+      <span v-if="notificationConfigured" class="sensor-notify-mark" aria-hidden="true"></span>
     </div>
 
     <!-- Справа: название и значения -->
-    <div class="sensor-content">
+    <div class="sensor-content" @click="$emit('content-click')">
       <div class="sensor-title">
         {{ paramTitle }}
       </div>
@@ -58,7 +71,11 @@ export default {
     unit: { type: String, default: '' },
     timeUpdated: { type: String, default: '' },
     isSelected: { type: Boolean, default: false },
+    notificationActive: { type: Boolean, default: false },      // статус уведомления ON
+    notificationConfigured: { type: Boolean, default: false },  // уведомление настроено
   },
+
+  emits: ['icon-click', 'content-click'],
 
   computed: {
     // Тон плашки: is-warm — уставка выше факта (нагрев), is-cool — ниже (охлаждение).

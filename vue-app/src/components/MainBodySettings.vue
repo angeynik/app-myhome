@@ -52,25 +52,6 @@
         <p>Расписания для этого параметра не настроены.</p>
       </div>
 
-      <div v-if="selectedTitle === 'Уведомления'">
-        <div v-if="notifications.length > 0" class="notifications-list">
-          <MainBodyNotifications
-            v-for="(notification, index) in notifications"
-            :key="notification.id || `notification-${index}`"
-            :notificationData="notification"
-            :notificationUnit="unit"
-            :activeSelection="activeSelection"
-            class="schedule-item"
-            @getDataNotificationItem="checkDataNotificationItem"
-            @delete-notification="handleDeleteConfigItem(notification.id, 'notifications')"
-            @field-selected="handleFieldSelected"
-          />
-        </div>
-        <div v-if="notifications.length === 0" class="schedule-item">
-          <p>Уведомления для выбранного параметра не настроены.</p>
-        </div>
-      </div>
-
       <div v-if="selectedTitle === 'Аналитика'">
         <div v-if="statistics.length > 0" class="statistics-list">
           <MainBodyStatistic
@@ -101,24 +82,21 @@
 import logger from '../store/modules/logger.js';
 import { mapMutations, mapGetters, mapActions } from 'vuex';
 import MainBodySchedule from './MainBodySchedule.vue';
-import MainBodyNotifications from './MainBodyNotifications.vue';
 import MainBodyStatistic from './MainBodyStatistic.vue';
 import { nowMoscow, createTimePoint } from '@/utils/timeUtils';
 
-const TYPES = ['schedules', 'notifications', 'statistics'];
+// Уведомления настраиваются с плашки параметра (NotificationScreen.vue), не здесь
+const TYPES = ['schedules', 'statistics'];
 const TYPE_TITLES = {
   schedules: 'Расписание',
-  notifications: 'Уведомления',
   statistics: 'Аналитика',
 };
 const LIMIT_TEXT = {
   schedules: 'расписания',
-  notifications: 'уведомлений',
   statistics: 'аналитики',
 };
 const CREATED_TEXT = {
   schedules: 'Расписание успешно создано',
-  notifications: 'Уведомление успешно создано',
   statistics: 'Аналитика успешно создана',
 };
 
@@ -131,7 +109,7 @@ export default {
     },
   },
 
-  components: { MainBodySchedule, MainBodyStatistic, MainBodyNotifications },
+  components: { MainBodySchedule, MainBodyStatistic },
 
   props: {
     setting_Type: { type: String, required: true },
@@ -148,7 +126,6 @@ export default {
       // (и из this.typeSettingsKey, недоступного в data()).
       title: TYPES.includes(this.setting_Type) ? this.setting_Type : 'schedules',
       schedules: [],
-      notifications: [],
       statistics: [],
       // Элементы, удаление которых отложено до закрытия экрана:
       // { configName, room, param, id }
@@ -242,12 +219,6 @@ export default {
       let action = 'show';
       if (event.value_type === 'deviation' && event.title === 'value_type') action = 'hide';
       this.emitToParent(action, event);
-    },
-
-    checkDataNotificationItem(event) {
-      // ВНИМАНИЕ: в 'notificationСhannel' кириллическая «С» — ключ совпадает с серверным
-      const hideTitles = ['condition', 'notificationСhannel', 'permission'];
-      this.emitToParent(hideTitles.includes(event.title) ? 'hide' : 'show', event);
     },
 
     checkDataStatisticItem(event) {
@@ -353,19 +324,6 @@ export default {
           value_type: 'absolute',
           unit: this.unit || '',
           days: [1, 2, 3, 4, 5],
-        };
-      }
-      if (configName === 'notifications') {
-        return {
-          ...base,
-          condition: 'greater_than',
-          value,
-          notificationСhannel: 0, // кириллическая «С» — ключ сервера
-          frequency: 0,
-          permission: true,
-          status: false,
-          startTime: time.startTime,
-          endTime: time.endTime,
         };
       }
       return {

@@ -13,6 +13,7 @@ import dropdown from './modules/dropdown';
 import { nowMoscow } from '@/utils/timeUtils';
 import appearance from './modules/appearance';
 import video from './modules/video';
+import notifications from './modules/notifications';
 
 // Поля payload → ключи localStorage (выбор пользователя переживает перезагрузку)
 const PERSISTED_PAYLOAD_KEYS = {
@@ -45,6 +46,7 @@ const store = createStore({
     dropdown,
     appearance,
     video,
+    notifications,
   },
 
   mutations: {
@@ -216,7 +218,7 @@ const store = createStore({
     level: (state) => state.auth.level || 0,
     dID: (state) => state.auth.dID || null,
 
-    // Тип настроек: 'schedules' | 'notifications' | 'statistics'
+    // Тип настроек: 'schedules' | 'statistics'
     typeSettingsKey: (state) => state.config.typeSettingsKey,
     getSetpointsManager: (state) => state.setpointsManager,
     settingsDataLimits: (state) => state.settingsData?.limits,

@@ -30,7 +30,10 @@
             :timeUpdated="item.timeDiff"
             :roomTitle="''"
             :isSelected="isSelected(item)"
-            @click="selectItem(item)"
+            :notificationActive="isNotificationActive(notificationIdOf(item))"
+            :notificationConfigured="!!notificationItemOf(notificationIdOf(item))"
+            @content-click="selectItem(item)"
+            @icon-click="openNotification(item)"
           />
         </div>
       </section>
@@ -46,6 +49,10 @@ import CameraGrid from './CameraGrid.vue';
 import logger from '../store/modules/logger.js';
 import { parseMoscowDate } from '@/utils/timeUtils';
 import { COMMON_KEY, DEFAULT_TAB, TAB_KEYS, getTab } from '@/utils/mainTabs';
+import { notificationId } from '@/store/modules/notifications';
+
+// Настраивать уведомления может пользователь уровня 2 и выше (как и сервер: post/notification)
+const NOTIFICATION_EDIT_LEVEL = 2;
 
 const STRIP_DIGITS = /\d+$/;
 const ROOM_KEY_RE = /^room\d+$/;
@@ -79,7 +86,8 @@ export default {
   computed: {
     ...mapGetters('config', ['isLoading', 'error', 'getConfig', 'clearKeySync']),
     ...mapGetters('sortParams', ['getSensorTitle', 'getUnit']),
-    ...mapGetters(['dID', 'typeSettingsKey', 'showSetpoint']),
+    ...mapGetters(['dID', 'level', 'typeSettingsKey', 'showSetpoint']),
+    ...mapGetters('notifications', { isNotificationActive: 'isActive', notificationItemOf: 'itemOf' }),
     currentTab() {
       return getTab(this.activeTab);
     },
@@ -134,6 +142,40 @@ export default {
       }
     },
 
+    // id уведомления параметра: '<room>:<section>:<item>' (как на сервере)
+    notificationIdOf(item) {
+      return notificationId(item.roomKey, item.section, item.paramKey);
+    },
+
+    // Нажатие на иконку плашки — экран уведомления параметра
+    openNotification(item) {
+      if (this.level < NOTIFICATION_EDIT_LEVEL) {
+        this.$store.dispatch('popup/show', {
+          message: 'Настройка уведомлений доступна пользователям с уровнем доступа 2 и выше.',
+          type: 'info',
+          duration: 2500,
+        });
+        return;
+      }
+      // Датчик ещё не присылал данных — условие не от чего строить (значение по умолчанию — текущее)
+      if (item.value === null || item.value === undefined || item.value === '') {
+        this.$store.dispatch('popup/show', { message: 'Отсутствует значение параметра', type: 'warning', duration: 2500 });
+        return;
+      }
+      this.clearSelection();
+      this.$store.dispatch('notifications/openEditor', {
+        id: this.notificationIdOf(item),
+        room: item.roomKey,
+        section: item.section,
+        item: item.paramKey,
+        group: item.roomGroup || '',
+        roomTitle: item.roomGroup || item.roomTitle || '',
+        title: item.paramTitle || item.paramKey,
+        unit: item.unit || '',
+        value: item.value,
+      });
+    },
+
     // Уникальный идентификатор карточки (для key и сравнения выбора)
     itemId(item) {
       return `${item.roomKey}|${item.paramKey}|${item.setpointKey}`;
@@ -154,6 +196,7 @@ export default {
         roomGroup: null,
         roomId: null,
         roomKey: null,
+        section: null,
         deviceKey: null,
         ...overrides,
       };
@@ -295,6 +338,7 @@ export default {
           paramTitle: title,
           paramType: itemData?.type,
           paramKey: itemKey,
+          section: sectionKey,
           value: this.getSensorValue(itemData?.type, itemData),
           setValue,
           setpointKey,

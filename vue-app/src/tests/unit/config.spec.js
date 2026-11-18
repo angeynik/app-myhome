@@ -24,7 +24,7 @@ jest.mock('@/store/modules/logger', () => ({
 // Jest вызывает mockReset() перед каждым тестом и стирает имплементацию —
 // функция начинает возвращать undefined. Обычная функция resetMocks не трогает.
 //
-// Мутации UPDATE_CONFIG_VALUE, UPDATE_SCHEDULE_VALUE, UPDATE_NOTIFICATION_VALUE
+// Мутации UPDATE_CONFIG_VALUE, UPDATE_SCHEDULE_VALUE
 // используют nowMoscow() для lastUpdate/updatedAt — тесты проверяют
 // что записывается именно возвращаемое значение этой функции.
 jest.mock('@/utils/timeUtils', () => ({
@@ -89,12 +89,6 @@ describe('Vuex config module', () => {
       const config = { room1: { temp: [{ id: 1, startTime: '08:00' }] } };
       configModule.mutations.SET_SCHEDULE(state, { name: 'device123', config });
       expect(state.schedules['device123']).toEqual(config);
-    });
-
-    it('SET_NOTIFICATION сохраняет уведомления по dID', () => {
-      const config = { room1: { temp: [{ id: 1, value: 25 }] } };
-      configModule.mutations.SET_NOTIFICATION(state, { name: 'device123', config });
-      expect(state.notifications['device123']).toEqual(config);
     });
 
     it('SET_STATISTIC сохраняет статистику по dID', () => {
@@ -205,25 +199,6 @@ describe('Vuex config module', () => {
       expect(state.schedules['device123'].room1.temp[0].startTime).toBe('07:00');
     });
 
-    // ── UPDATE_NOTIFICATION_VALUE ─────────────────────────────────────────────
-
-    it('UPDATE_NOTIFICATION_VALUE обновляет поле уведомления по id', () => {
-      state.notifications['device123'] = {
-        room1: { temp: [{ id: 1, value: 20 }] },
-      };
-      configModule.mutations.UPDATE_NOTIFICATION_VALUE(state, {
-        dID: 'device123', room: 'room1', param: 'temp', id: 1, title: 'value', value: 25,
-      });
-      expect(state.notifications['device123'].room1.temp[0].value).toBe(25);
-      expect(state.notifications['device123'].room1.temp[0].updatedAt).toBe('MOCKED_TIMESTAMP');
-    });
-
-    it('UPDATE_NOTIFICATION_VALUE ничего не делает если dID не найден', () => {
-      configModule.mutations.UPDATE_NOTIFICATION_VALUE(state, {
-        dID: 'unknown', room: 'room1', param: 'temp', id: 1, title: 'value', value: 25,
-      });
-      expect(state.notifications['unknown']).toBeUndefined();
-    });
   });
 
 
@@ -349,19 +324,6 @@ describe('Vuex config module', () => {
       };
       await configModule.actions.handleConfigResponse(context, response);
       expect(context.commit).toHaveBeenCalledWith('SET_SCHEDULE', {
-        name: 'device123',
-        config: response.payload,
-      });
-    });
-
-    it('handleConfigResponse type=notifications: коммитит SET_NOTIFICATION', async () => {
-      const response = {
-        name: 'device123',
-        request: 'notifications',
-        payload: { room1: { temp: [] } },
-      };
-      await configModule.actions.handleConfigResponse(context, response);
-      expect(context.commit).toHaveBeenCalledWith('SET_NOTIFICATION', {
         name: 'device123',
         config: response.payload,
       });
@@ -493,20 +455,6 @@ describe('Vuex config module', () => {
           id:     1,
           title:  'value',
           value:  22,
-        });
-      });
-
-      it('type=notifications: коммитит UPDATE_NOTIFICATION_VALUE', async () => {
-        await configModule.actions.handleValueUpdate(context, {
-          dID: 'device123', payload: {}, type: 'notifications',
-        });
-        expect(context.commit).toHaveBeenCalledWith('UPDATE_NOTIFICATION_VALUE', {
-          dID:   'device123',
-          room:  'room1',
-          param: 'temp',
-          id:    1,
-          title: 'value',
-          value: 22,
         });
       });
 
@@ -677,12 +625,24 @@ describe('Vuex config module: handleServerError', () => {
 
   it.each([
     ['addScheduleError', 'schedules'],
-    ['delNotificationsError', 'notifications'],
     ['updateStatisticsError', 'statistics'],
   ])('%s перезапрашивает список %s', async (request, configType) => {
     const dispatch = await run({ type: 'error', request, name: 'igumen', payload: { message: 'x' } });
     expect(dispatch).toHaveBeenCalledWith('settingsConfig/requestToServer', { configType }, { root: true });
     expect(dispatch).not.toHaveBeenCalledWith('websocket/send', expect.anything(), { root: true });
+  });
+
+  it('notificationError: текст пользователю и перезапрос config (вместе с ним придут уведомления)', async () => {
+    const dispatch = await run({ type: 'error', request: 'notificationError', name: 'igumen', payload: { message: 'Неверные данные уведомления' } });
+    expect(dispatch).toHaveBeenCalledWith('popup/show',
+      expect.objectContaining({ message: 'Неверные данные уведомления', type: 'error' }), { root: true });
+    expect(dispatch).toHaveBeenCalledWith('websocket/send',
+      { type: 'get', request: 'config', name: 'igumen', payload: {} }, { root: true });
+  });
+
+  it('notificationSnapshotError: без сообщения и перезапроса (кадр уже удалён)', async () => {
+    const dispatch = await run({ type: 'error', request: 'notificationSnapshotError', name: 'igumen', payload: { message: 'x' } });
+    expect(dispatch).not.toHaveBeenCalled();
   });
 
   it.each(['configError', 'schedulesError'])('ошибка get-запроса (%s) не вызывает перезапрос (нет цикла)', async (request) => {

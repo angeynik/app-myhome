@@ -333,8 +333,11 @@ export default {
           return;
         }
         if (type === 'response') {
-          // videoCameras / videoSnapshot / videoSubscribeSuccess — модуль video, остальное — config
-          const handled = await dispatch('video/handleResponse', response, { root: true });
+          // videoCameras / videoSnapshot / videoSubscribeSuccess — модуль video,
+          // notification / notificationStatus / notificationSnapshot / notificationSuccess — notifications,
+          // остальное — config
+          const handled = await dispatch('video/handleResponse', response, { root: true })
+            || await dispatch('notifications/handleResponse', response, { root: true });
           if (!handled) await dispatch('config/handleConfigResponse', response, { root: true });
         }
         if (type === 'post') {
@@ -343,6 +346,13 @@ export default {
             // Кадр с камеры → сохраняем в store/video.js, чтобы компоненты могли его взять через геттер
             await dispatch('video/handleSnapshot', response.payload, { root: true });
             return; 
+          }
+          if (request === 'notificationEvent') {
+            // Событие уведомления (ON) или сброс (OFF) → store/notifications.js
+            if (response.name === rootGetters['dID']) {
+              await dispatch('notifications/handleEvent', response.payload, { root: true });
+            }
+            return;
           }
           if (response.name === rootGetters['dID']) {
             await dispatch(

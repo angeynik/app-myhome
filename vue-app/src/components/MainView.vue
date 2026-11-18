@@ -78,12 +78,16 @@
     @update-value="onScreenUpdateValue"
     @close="onScreenClose"
   />
+
+  <!-- ── Экран настройки уведомления (иконка плашки; тоже рендерится в <body>) ── -->
+  <NotificationScreen />
 </template>
 
 <script>
 import logger from '@/store/modules/logger.js';
 import { mapGetters, mapActions } from 'vuex';
 import SetpointScreen from '@/components/SetpointScreen.vue';
+import NotificationScreen from '@/components/NotificationScreen.vue';
 import { nowMoscow } from '@/utils/timeUtils';
 // Вкладки — единый источник с MainBody.vue
 import { TAB_KEYS, TAB_STORAGE_KEY, getTab, readSavedTab } from '@/utils/mainTabs';
@@ -99,7 +103,7 @@ const FIELD_LABELS = {
 
 export default {
   name: 'MainView',
-  components: { SetpointScreen },
+  components: { SetpointScreen, NotificationScreen },
 
   provide() {
     return {
@@ -110,7 +114,7 @@ export default {
 
   data() {
     return {
-      request: null,          // 'setpoints' | 'schedules' | 'notifications' | 'statistics'
+      request: null,          // 'setpoints' | 'schedules' | 'statistics'
       valueTitle: 'value',    // какое поле правится: 'value' | 'startTime' | 'endTime' | 'frequency' | …
       setpoint: null,
       screenData: {},
@@ -339,8 +343,7 @@ export default {
             break;
           }
 
-          case 'schedules':
-          case 'notifications': {
+          case 'schedules': {
             if (value_details === 'minutes' || value_details === 'hours') {
               const result = await this.$store.dispatch(
                 'settingsConfig/settingsConfigUpdate',

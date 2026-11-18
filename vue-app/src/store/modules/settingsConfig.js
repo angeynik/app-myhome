@@ -1,6 +1,7 @@
 // store/modules/settingsConfig.js
-// Работа с конфигурацией расписаний / уведомлений / аналитики.
-// Сами данные хранятся в модуле config (state.config.schedules|notifications|statistics).
+// Работа с конфигурацией расписаний / аналитики.
+// Сами данные хранятся в модуле config (state.config.schedules|statistics).
+// Уведомления — отдельный модуль store/modules/notifications.js (docs/notifications.md).
 import logger from './logger';
 import { applyTimePart, parseTimeString, buildTimeString } from '@/utils/timeFieldEditor';
 import {
@@ -8,7 +9,7 @@ import {
   checkTimeOverlap as checkTimeOverlapUtil,
 } from '@/utils/checkOverlap';
 
-const CONFIG_TYPES = ['schedules', 'notifications', 'statistics'];
+const CONFIG_TYPES = ['schedules', 'statistics'];
 
 function currentSelection(rootGetters) {
   const settingsData = rootGetters['getSetpointsManager']?.settingsData;
@@ -27,7 +28,6 @@ export default {
     loading: false,
     error: null,
     permitSchedule: false,
-    permitNotifications: false,
     permitStatistics: false,
   }),
 
@@ -38,7 +38,6 @@ export default {
       if (error) logger.error('[settingsConfig] - SET_ERROR:', error);
     },
     SET_PERMIT_SCHEDULE(state, value) { state.permitSchedule = value; },
-    SET_PERMIT_NOTIFICATIONS(state, value) { state.permitNotifications = value; },
     SET_PERMIT_STATISTICS(state, value) { state.permitStatistics = value; },
   },
 
@@ -278,7 +277,6 @@ export default {
 
   getters: {
     getPermitSchedule: (state) => state.permitSchedule,
-    getPermitNotifications: (state) => state.permitNotifications,
     getPermitStatistics: (state) => state.permitStatistics,
     isLoading: (state) => state.loading,
     error: (state) => state.error,

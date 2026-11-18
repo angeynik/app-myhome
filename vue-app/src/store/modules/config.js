@@ -4,14 +4,13 @@ import { nowMoscow } from '@/utils/timeUtils';
 
 const LIMITS = {
   schedules: parseInt(process.env.VUE_APP_LIM_SCHEDULE_ITEM, 10) || 8,
-  notifications: parseInt(process.env.VUE_APP_LIM_NOTIFICATION_ITEM, 10) || 6,
   statistics: parseInt(process.env.VUE_APP_LIM_STATISTIC_ITEM, 10) || 1,
 };
 
 // Допустимые значения typeSettingsKey. Раньше по умолчанию использовалось
 // 'schedule' (без «s») — оно не совпадало ни с одним ключом экрана настроек,
 // и экран открывался пустым.
-const SETTINGS_TYPES = ['schedules', 'notifications', 'statistics'];
+const SETTINGS_TYPES = ['schedules', 'statistics'];
 const normalizeSettingsType = (t) => (SETTINGS_TYPES.includes(t) ? t : 'schedules');
 
 const CONFIG_TIMEOUT = 10000;
@@ -100,7 +99,6 @@ export default {
   state: () => ({
     configs: {},        // конфигурация по dID
     schedules: {},      // расписания по dID
-    notifications: {},  // уведомления по dID
     statistics: {},     // аналитика по dID
     allRooms: [],
     allParams: [],
@@ -117,7 +115,6 @@ export default {
   mutations: {
     SET_CONFIG(state, { name, config }) { state.configs[name] = config; },
     SET_SCHEDULE(state, { name, config }) { state.schedules[name] = config; },
-    SET_NOTIFICATION(state, { name, config }) { state.notifications[name] = config; },
     SET_STATISTIC(state, { name, config }) { state.statistics[name] = config; },
 
     SET_ALL_ROOMS(state, rooms) { state.allRooms = rooms; },
@@ -129,7 +126,6 @@ export default {
     RESET(state) {
       state.configs = {};
       state.schedules = {};
-      state.notifications = {};
       state.statistics = {};
       state.allRooms = [];
       state.allParams = [];
@@ -171,11 +167,6 @@ export default {
     UPDATE_SCHEDULE_VALUE(state, args) {
       if (!patchListItem(state.schedules, args)) {
         logger.dev('[config] - UPDATE_SCHEDULE_VALUE - элемент не найден', args);
-      }
-    },
-    UPDATE_NOTIFICATION_VALUE(state, args) {
-      if (!patchListItem(state.notifications, args)) {
-        logger.dev('[config] - UPDATE_NOTIFICATION_VALUE - элемент не найден', args);
       }
     },
     UPDATE_STATISTIC_VALUE(state, args) {
@@ -357,7 +348,6 @@ export default {
         }
         if (type === 'schedules') commit('SET_SCHEDULE', { name: dID, config });
         else if (type === 'statistics') commit('SET_STATISTIC', { name: dID, config });
-        else if (type === 'notifications') commit('SET_NOTIFICATION', { name: dID, config });
       } catch (error) {
         logger.error('[config] - handleConfigResponse:', error);
         throw error;
@@ -383,6 +373,9 @@ export default {
         error.code = response?.payload?.code;
         waiter.reject(error);
       }
+
+      // Кадр уведомления уже удалён (уведомление сброшено) — пользователю сообщать нечего
+      if (request === 'notificationSnapshotError') return;
 
       dispatch('popup/show', { message, type: 'error', duration: 3000 }, { root: true });
 
@@ -522,7 +515,6 @@ export default {
         value: sp.value,
       };
       if (type === 'schedules') commit('UPDATE_SCHEDULE_VALUE', { ...listArgs, config: sp.config });
-      else if (type === 'notifications') commit('UPDATE_NOTIFICATION_VALUE', listArgs);
       else if (type === 'statistics') commit('UPDATE_STATISTIC_VALUE', listArgs);
     },
 
@@ -634,7 +626,7 @@ export default {
       return key.slice(1).replace(/\d+$/, '');
     },
     getConfig: (state) => (name) => state.configs[name] || {},
-    // Список элементов настроек: configName = 'schedules' | 'notifications' | 'statistics'
+    // Список элементов настроек: configName = 'schedules' | 'statistics'
     getConfigList: (state) => (configName, dID) => state[configName]?.[dID],
     isLoading: (state) => state.loading,
     error: (state) => state.error,

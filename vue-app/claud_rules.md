@@ -14,7 +14,7 @@
 | `VUE_APP_PORT` | Порт WS-сервера (`WSD_PORT_IN` сервера) | обязательна |
 | `VUE_APP_WS_PROTOCOL` | `ws` / `wss` | `wss` на https-странице, иначе `ws` |
 | `VUE_APP_LOG_LEVEL` | `dev` \| `info` \| `warn` \| `error` \| `silent` (`prod` = `warn`) | `info` |
-| `VUE_APP_LIM_SCHEDULE_ITEM` / `_NOTIFICATION_ITEM` / `_STATISTIC_ITEM` | Лимит элементов на пару комната+параметр | 8 / 6 / 1 |
+| `VUE_APP_LIM_SCHEDULE_ITEM` / `_STATISTIC_ITEM` | Лимит элементов на пару комната+параметр | 8 / 1 |
 
 - Новая переменная: читать в модуле, который её использует, задавать значение по умолчанию, описывать в таблице и в `example.env`.
 
@@ -38,10 +38,10 @@
 - `App.vue` — корень: спрайт иконок, `router-view`, popup, dropdown, действия меню; при `isAuthenticated` — `initializeSetpointsManager` → `config/initialize`.
 - `router/routes.js` — маршруты и `navigationGuard`.
 - `store/index.js` — корневой стор: менеджер уставок (`settingsData`), выбор пользователя, `showSetpoint`.
-- `store/modules/` — `auth`, `websocket`, `config`, `sortParams`, `settingsConfig`, `popup`, `dropdown`, `log`, `appearance` (тема фона), `video` (камеры, кадры по камерам, подписка); `logger.js` — утилита, не модуль Vuex.
+- `store/modules/` — `auth`, `websocket`, `config`, `sortParams`, `settingsConfig`, `popup`, `dropdown`, `log`, `appearance` (тема фона), `video` (камеры, кадры по камерам, подписка), `notifications` (уведомления: конфигурация, статусы, экран, окно); `logger.js` — утилита, не модуль Vuex.
 - `store/classes/manageSetpoints.js` — класс `ManageSetpoints` (объект `settingsData`).
 - `utils/` — `timeUtils`, `timeFieldEditor`, `checkOverlap`, `jwt` (только `exp`), `sensorIcons`, `mainTabs` (вкладки главного экрана — единственный источник), `tone`.
-- `components/` — `MainView` (оболочка), `MainBody`, `MainBodyValue`, `MainBodySettings` (+ `MainBodySchedule`, `MainBodyNotifications`, `MainBodyStatistic`), `SetpointScreen`, `SensorIcon`, `SensorIconSprite`, `CameraGrid` (+ `CameraCard`, `CameraScreen`), `TopNav`, `MenuDropdown`, `PopupMenu`, `AppLogin`, `AppProfile`, `AppSettings`, `AccessDenied`.
+- `components/` — `MainView` (оболочка), `MainBody`, `MainBodyValue`, `MainBodySettings` (+ `MainBodySchedule`, `MainBodyStatistic`), `SetpointScreen`, `NotificationScreen` (настройка уведомления), `NotificationPopup` (окно уведомлений), `SensorIcon`, `SensorIconSprite`, `CameraGrid` (+ `CameraCard`, `CameraScreen`), `TopNav`, `MenuDropdown`, `PopupMenu`, `AppLogin`, `AppProfile`, `AppSettings`, `AccessDenied`.
 - `tests/unit/` — Jest `<модуль>.spec.js`, общий `setup.js`.
 
 ## Обмен данными по WebSocket
@@ -68,7 +68,9 @@
 | `auth` | `resume` | `{ token }` |
 | `auth` | `refresh`, `logout` | `{}` |
 | `auth` | `changePassword` | `{ oldPassword, newPassword }` |
-| `get` | `config`, `schedules`, `notifications`, `statistics` | `{}` |
+| `get` | `config`, `schedules`, `statistics` | `{}` — на `config` сервер отвечает ещё `notification` и `notificationStatus`, если они есть |
+| `get` | `notificationSnapshot` | `{ id, cameraId }` — кадр камеры активного уведомления, через `notifications/requestSnapshot` |
+| `post` | `notification` | `{ action: 'create' \| 'edit' \| 'delete', configData }` — через `notifications/save` (уровень 2); сервер рассылает всем вкладкам dID `response/notification` |
 | `get` | `videoCameras` | `{}` — список камер; сервер присылает `response/videoCameras` и без запроса, когда меняется `cameras.json` — сетка перестраивается |
 | `post` | `videoSubscribe` | `{ cameras: [id…], full: id \| null }` — через `video/subscribe` |
 | `post` | `setpoints` | `settingsData.payload` (`room`, `setKey`, `key`, `value`, …) — через `config/updateSetpointServer` |
@@ -76,14 +78,14 @@
 | `post` | `del<тип>` | `{ room, param, Ids: [...] }` |
 | `post` | `update<тип>` | `settingsData.payload` (`room`, `param`, `id`, `value_name`, `value`, `updated`, `value_type`) — через `config/updateSetpointServer`, `request` ставит компонент элемента (`updateSettingsData({ field: 'request', … })`) |
 
-`<тип>` — `schedules` | `notifications` | `statistics`. Новый запрос добавлять одновременно на сервере (обработчик, `REQUIRED_LEVEL`) и здесь.
+`<тип>` — `schedules` | `statistics`. Уведомления — отдельный протокол (`docs/notifications.md` в корне репозитория). Новый запрос добавлять одновременно на сервере (обработчик, `REQUIRED_LEVEL`) и здесь.
 
 ### Входящие (`websocket/handleMessage`, порядок проверок)
 1. Ответ на ожидающий auth-запрос (`loginSuccess`, `loginError`, `resumeError`, `refreshSuccess`/`refreshError`, `changePasswordSuccess`/`changePasswordError`, `authError`) — резолвит/реджектит промис `send`.
 2. `request === 'accessError'` → `auth/handleAccessError` (см. «Сессия»).
-3. `type === 'error'` → `config/handleServerError`: сообщение `payload.message` во всплывающем окне и перезапрос затронутых данных (после ошибки записи значение на экране уже изменено, а сервер или устройство его не приняли). Ошибка get-запроса (`configError`, `<тип>Error`) данные не перезапрашивает; `configError` сразу отклоняет ожидание конфигурации.
-4. `type === 'response'` → `video/handleResponse` (`videoCameras`, `videoSnapshot`, `videoSubscribeSuccess`), иначе `config/handleConfigResponse` (`config`, `schedules`, `notifications`, `statistics`; остальные ответы игнорируются).
-5. `type === 'post'`, `request === 'videoSnapshot'` → `video/handleSnapshot` (кадр `{ cameraId, title, image, mimeType, size, timestamp }`, хранится по `cameraId`).
+3. `type === 'error'` → `config/handleServerError`: сообщение `payload.message` во всплывающем окне и перезапрос затронутых данных (после ошибки записи значение на экране уже изменено, а сервер или устройство его не приняли). Ошибка get-запроса (`configError`, `<тип>Error`) данные не перезапрашивает; `configError` сразу отклоняет ожидание конфигурации. `notificationError` — сообщение и перезапрос `config` (с ним придут уведомления); `notificationSnapshotError` — молча (кадр уже удалён).
+4. `type === 'response'` → `video/handleResponse` (`videoCameras`, `videoSnapshot`, `videoSubscribeSuccess`), затем `notifications/handleResponse` (`notification`, `notificationStatus`, `notificationSnapshot`, `notificationSuccess`), иначе `config/handleConfigResponse` (`config`, `schedules`, `statistics`; остальные ответы игнорируются).
+5. `type === 'post'`, `request === 'videoSnapshot'` → `video/handleSnapshot` (кадр `{ cameraId, title, image, mimeType, size, timestamp }`, хранится по `cameraId`); `request === 'notificationEvent'` (своего `dID`) → `notifications/handleEvent` (событие ON / сброс OFF).
 6. `type === 'post'` с `name === dID` → `config/handleValueUpdate`:
    - `{ room, item_name, item_value }` (NodeRED, мосты Modbus, данные датчиков) — обновляет элемент раздела `request` (`sensors`, `system`, `setpoints`, любой другой);
    - `{ room, setKey, value }` — уставка, пересланная сервером от другой вкладки того же `dID`: ключ берётся из сообщения, не из своего выбора.
@@ -97,7 +99,7 @@
   - `NO_SESSION`, `TIMEOUT` — соединение не вошло; при наличии токена сначала `auth/resume` (успех → `config/refreshConfig`), выход только при отказе сервера; обрыв связи токен не трогает;
   - `TOKEN_REVOKED` — выход сразу;
   - `FORBIDDEN`, `DID_MISMATCH` — всплывающее сообщение.
-- Выход (`auth/redirectToLogin` → `auth/clearSession`): чистит `authSession`, `authData`, `roomKey`, `paramKey`, `deviceKey`, `setpointKey`, `clearKey`, `RESET_SESSION_DATA`, `config/RESET`, `video/RESET`, закрывает dropdown, переводит на `/login`. Новые данные пользователя сбрасывать там же.
+- Выход (`auth/redirectToLogin` → `auth/clearSession`): чистит `authSession`, `authData`, `roomKey`, `paramKey`, `deviceKey`, `setpointKey`, `clearKey`, `RESET_SESSION_DATA`, `config/RESET`, `video/RESET`, `notifications/RESET`, закрывает dropdown, переводит на `/login`. Новые данные пользователя сбрасывать там же.
 - Права на клиенте — только UX: проверяет сервер.
 
 ## Store
@@ -126,7 +128,7 @@
 - Комнаты — ключи `room01`, `room02`, … Служебные ключи корня: `init` (лимиты), `newConfigID`, `password`, `common` (вкладка «Общие», не комната).
 - Комната: `id`, `title`, `group`, необязательный `_meta` (`'раздел|ключ': { title }`), разделы `sensors`, `system`, `setpoints` и др.: `{ <ключ>: { value, type: 'num' | 'bool', lastUpdate } }`.
 - Префиксы: `d` — датчик/статус, `a` — актуатор, `s` — уставка. Числовой суффикс связывает датчик и уставку строго: `dTemp02 ↔ sTemp02`; нет пары — карточка только для чтения.
-- Ключи с кириллической «С» (`dСurrent`, `notificationСhannel`) совпадают с серверными: не «исправлять» на латиницу.
+- Ключ с кириллической «С» (`dСurrent`) совпадает с серверным: не «исправлять» на латиницу.
 - Очистка ключа — геттер `config/clearKeySync('dTemp02') === 'Temp'`.
 - Нет данных → «—», а не `0` / `OFF`. Логические значения принимаются как `true`/`false`, `'ON'`/`'OFF'` и `0`/`1`.
 - Время обмена с сервером — московская строка `DD.MM.YYYY, HH:MM:SS` (`nowMoscow`), разбор — `parseMoscowDate` независимо от часового пояса устройства; время суток — `HH:MM`.
@@ -140,8 +142,15 @@
 - Видеонаблюдение — вкладка `cameras` в `utils/mainTabs.js` (`cameras: true`), её показывает `CameraGrid`. Подписка (`video/subscribe`) следует за экраном: миниатюры — только карточки, видимые в окне (`IntersectionObserver`; без него — все), `full` — камера в `CameraScreen`; уход с вкладки — пустая подписка. Одинаковая подписка повторно не отправляется; после переподключения `websocket/onConnected` вызывает `video/resubscribe` (сервер помнит подписку в пределах соединения). Кадр старше `max(3 × previewIntervalMs, 15 с)` — карточка «нет сигнала»; время кадра — по МСК.
 - Иконки — `<SensorIcon :name="ключ">`; новая иконка — `<g id="si-<имя>">` в `SensorIconSprite.vue` + запись в `utils/sensorIcons.js`; спрайт монтируется один раз.
 
+
+## Уведомления (подробно — `docs/notifications.md` в корне репозитория)
+- Модуль `store/modules/notifications.js`: `items` (конфигурация `{ "<room>:<section>:<item>": item }`), `statuses` (`{ id: { status, read, eventId, since, value, text, channel, attachments } }`), `editor`, `snapshots`. id уведомления строится только через `notificationId(room, section, item)` — так же, как на сервере.
+- Плашка (`MainBodyValue`) — две зоны: иконка → `icon-click` (экран уведомления), название и значения → `content-click` (уставка: одиночный — экран уставки, двойной — настройки). Не вешать обработчик клика на всю плашку.
+- Экран уведомления открывает `MainBody.openNotification` только для уровня ≥ 2 (уровень 1 — сообщение) и только при наличии значения параметра (нет данных — сообщение «Отсутствует значение параметра»); сам экран (`NotificationScreen`) смонтирован в `MainView` и читает цель из `notifications/editor`. По умолчанию при включении: условие `ne` (≠), значение — текущее значение параметра, канал `web`, интервалы/периоды/камеры пусты; условие и значение обязательны. Закрытие сохраняет: `create` / `edit` (только если форма изменилась) / `delete` (переключатель OFF у существующего). Статус клиент меняет **только** по событиям сервера (`notificationEvent`): после `delete` обводка и «прочитано» остаются до сброса `reason: 'removed'`, который переводит их в OFF.
+- Статус ON — красная обводка плашки (`.has-notification`) независимо от прочтения и канала. Окно (`NotificationPopup` в `App.vue`) — только канал `web`/`both`, непрочитанные, свежие первыми, закрывает только пользователь → `notifications/markRead`.
+- «Прочитано» — только на клиенте: сервер всегда шлёт `read: 'OFF'`, клиент сверяет `eventId` с `localStorage.notificationsRead:<dID>`. Сброс (OFF) обнуляет и статус, и прочтение.
 ## localStorage
-`authSession`, `roomKey`, `paramKey`, `deviceKey`, `setpointKey`, `clearKey` (чистятся при выходе); `redirectPath`; `mainViewTab`, `typeSettingsKey` (`schedules` | `notifications` | `statistics`), `deviceMode`, `appearance` (`{ theme, color }`) — настройки интерфейса, при выходе не чистятся; `authData`, `mobile_navigation` — устаревшие, только удаляются.
+`authSession`, `roomKey`, `paramKey`, `deviceKey`, `setpointKey`, `clearKey` (чистятся при выходе); `redirectPath`; `mainViewTab`, `typeSettingsKey` (`schedules` | `statistics`), `notificationsRead:<dID>` (`{ id: eventId }` — прочитанные уведомления, при выходе не чистится: принадлежит dID), `deviceMode`, `appearance` (`{ theme, color }`) — настройки интерфейса, при выходе не чистятся; `authData`, `mobile_navigation` — устаревшие, только удаляются.
 
 ## Стили (`assets/mainStyle.css`)
 - Секции: переменные · база · каркас · главный экран · иконки · экран уставки · popup/dropdown · формы · настройки · медиа-запросы · LEGACY. Новый стиль — в свою секцию; `@media` — только в секции медиа-запросов, порядок брейкпоинтов важен.

@@ -3,6 +3,7 @@
 Веб-приложение для управления домом: показания датчиков, уставки, состояние устройств, видеонаблюдение.
 Работает с сервером `server-myhome` по WebSocket. Код приложения — в [vue-app/](vue-app/),
 правила разработки — [vue-app/claud_rules.md](vue-app/claud_rules.md).
+Уведомления по условиям (алгоритм, протокол, схемы кода) — [docs/notifications.md](docs/notifications.md).
 
 ```bash
 cd vue-app

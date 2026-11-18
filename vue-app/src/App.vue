@@ -14,6 +14,9 @@
       @close="hidePopup"
     />
 
+    <!-- Уведомления по условиям: непрочитанные — по одному, свежие первыми -->
+    <NotificationPopup v-if="isAuthenticated" />
+
     <!-- Dropdown: рендерится поверх через Teleport -->
     <MenuDropdown
       :visibleDropdown="dropdownIsVisible"
@@ -31,10 +34,11 @@ import { mapGetters, mapActions } from 'vuex';
 import PopupMenu from '@/components/PopupMenu.vue';
 import MenuDropdown from '@/components/MenuDropdown.vue';
 import SensorIconSprite from '@/components/SensorIconSprite.vue';
+import NotificationPopup from '@/components/NotificationPopup.vue';
 
 export default {
   name: 'App',
-  components: { PopupMenu, MenuDropdown, SensorIconSprite },
+  components: { PopupMenu, MenuDropdown, SensorIconSprite, NotificationPopup },
 
   computed: {
     ...mapGetters({
