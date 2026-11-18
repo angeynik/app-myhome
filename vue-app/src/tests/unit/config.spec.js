@@ -1,18 +1,14 @@
 // src/tests/unit/config.spec.js
 
-// ─── Storage.prototype spy (как в index.spec.js) ─────────────────────────────
+// ─── localStorage в памяти ───────────────────────────────────────────────────
+// Реализации ставятся в beforeEach: resetMocks: true (jest.config.js) стирает их перед каждым тестом.
 const ls = { store: {} };
-beforeAll(() => {
+beforeEach(() => {
+  ls.store = {};
   jest.spyOn(Storage.prototype, 'getItem').mockImplementation((k) => ls.store[k] ?? null);
   jest.spyOn(Storage.prototype, 'setItem').mockImplementation((k, v) => { ls.store[k] = String(v); });
   jest.spyOn(Storage.prototype, 'removeItem').mockImplementation((k) => { delete ls.store[k]; });
   jest.spyOn(Storage.prototype, 'clear').mockImplementation(() => { ls.store = {}; });
-});
-beforeEach(() => {
-  ls.store = {};
-  Storage.prototype.getItem.mockClear();
-  Storage.prototype.setItem.mockClear();
-  Storage.prototype.removeItem.mockClear();
 });
 afterAll(() => jest.restoreAllMocks());
 
@@ -118,9 +114,18 @@ describe('Vuex config module', () => {
       expect(state.error).toBe(error);
     });
 
-    it('SET_MOBILE обновляет mobile', () => {
-      configModule.mutations.SET_MOBILE(state, true);
-      expect(state.mobile).toBe(true);
+    it('SET_DEVICE_MODE запоминает выбор; auto — удаляет сохранённый', () => {
+      configModule.mutations.SET_DEVICE_MODE(state, 'mobile');
+      expect(state.deviceMode).toBe('mobile');
+      expect(localStorage.getItem('deviceMode')).toBe('mobile');
+      configModule.mutations.SET_DEVICE_MODE(state, 'auto');
+      expect(state.deviceMode).toBe('auto');
+      expect(localStorage.getItem('deviceMode')).toBeNull();
+    });
+
+    it('SET_AUTO_MOBILE приводит значение к boolean', () => {
+      configModule.mutations.SET_AUTO_MOBILE(state, 1);
+      expect(state.autoMobile).toBe(true);
     });
 
     it('SET_DEVICE_TYPE обновляет deviceType', () => {
@@ -249,9 +254,10 @@ describe('Vuex config module', () => {
       expect(configModule.getters.error(state)).toBe(error);
     });
 
-    it('getCommonConfig возвращает конфиг по dID', () => {
+    it('getConfig возвращает конфиг по dID, для неизвестного — {}', () => {
       state.configs['device123'] = { room1: {} };
-      expect(configModule.getters.getCommonConfig(state)('device123')).toEqual({ room1: {} });
+      expect(configModule.getters.getConfig(state)('device123')).toEqual({ room1: {} });
+      expect(configModule.getters.getConfig(state)('unknown')).toEqual({});
     });
 
     it('allRooms возвращает список комнат', () => {
@@ -264,9 +270,16 @@ describe('Vuex config module', () => {
       expect(configModule.getters.allParams(state)).toEqual(['temp', 'humidity']);
     });
 
-    it('getMobile возвращает флаг мобильного', () => {
-      state.mobile = true;
-      expect(configModule.getters.getMobile(state)).toBe(true);
+    it.each([
+      ['auto', true, true],
+      ['auto', false, false],
+      ['mobile', false, true],
+      ['desktop', true, false],
+    ])('isMobile: режим %s, автоопределение %s → %s (явный выбор важнее)', (deviceMode, autoMobile, expected) => {
+      Object.assign(state, { deviceMode, autoMobile });
+      const isMobile = configModule.getters.isMobile(state);
+      expect(isMobile).toBe(expected);
+      expect(configModule.getters.getMobile(state, { isMobile })).toBe(expected);
     });
 
     it('getDeviceType возвращает тип устройства', () => {
@@ -410,16 +423,34 @@ describe('Vuex config module', () => {
 
     // ── requestConfig ─────────────────────────────────────────────────────────
 
-    it('requestConfig: отправляет websocket/send и возвращает конфиг из state', async () => {
-      // Предварительно кладём конфиг в state — имитируем ответ сервера
+    it('requestConfig: конфиг уже загружен — возвращается без запроса к серверу', async () => {
       context.state.configs['device123'] = { room1: { sensors: { temp1: { value: 22 } } } };
       const result = await configModule.actions.requestConfig(context, 'device123');
+      expect(context.dispatch).not.toHaveBeenCalled();
+      expect(result).toBe(context.state.configs['device123']);
+    });
+
+    it('requestConfig: отправляет get/config и ждёт ответа; повторный вызов не шлёт второй запрос', async () => {
+      const config = { room1: { sensors: { temp1: { value: 22 } } } };
+      const first = configModule.actions.requestConfig(context, 'dev-wait');
+      const second = configModule.actions.requestConfig(context, 'dev-wait');
+      await Promise.resolve();
+      expect(context.dispatch).toHaveBeenCalledTimes(1);
       expect(context.dispatch).toHaveBeenCalledWith(
         'websocket/send',
-        { type: 'get', request: 'config', name: 'device123' },
+        { type: 'get', request: 'config', name: 'dev-wait' },
         { root: true }
       );
-      expect(result).toEqual(context.state.configs['device123']);
+      // ответ сервера
+      await configModule.actions.handleConfigResponse(context, { request: 'config', name: 'dev-wait', payload: config });
+      await expect(first).resolves.toBe(config);
+      await expect(second).resolves.toBe(config);
+      expect(context.commit).toHaveBeenCalledWith('SET_CONFIG', { name: 'dev-wait', config });
+    });
+
+    it('requestConfig: ошибка отправки — промис отклоняется', async () => {
+      context.dispatch.mockRejectedValueOnce(new Error('Нет соединения'));
+      await expect(configModule.actions.requestConfig(context, 'dev-fail')).rejects.toThrow('Нет соединения');
     });
 
     // ── handleValueUpdate ─────────────────────────────────────────────────────
@@ -618,14 +649,11 @@ describe('Vuex config module', () => {
 
     // ── clearKey ─────────────────────────────────────────────────────────────
 
-    it('clearKey: убирает первый символ и цифры в конце', () => {
-      const result = configModule.actions.clearKey(context, { key: 'dTemp1' });
-      expect(result).toBe('Temp');
-    });
-
-    it('clearKey: ключ без цифр в конце', () => {
-      const result = configModule.actions.clearKey(context, { key: 'dHumidity' });
-      expect(result).toBe('Humidity');
+    it('clearKeySync: убирает первый символ и цифры в конце', () => {
+      const clearKey = configModule.getters.clearKeySync();
+      expect(clearKey('dTemp01')).toBe('Temp');
+      expect(clearKey('dHumidity')).toBe('Humidity');
+      expect(clearKey('')).toBe('');
     });
   });
 });

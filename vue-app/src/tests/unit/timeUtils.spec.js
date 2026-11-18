@@ -2,14 +2,11 @@
 import {
   nowMoscow,
   parseMoscowDate,
-  getCurrentDateTime,
-  getCurrentTimeString,
   timeToMinutes,
   minutesToTime,
   createTimePoint,
   formatDate,
   formatTimeWithHighlight,
-  validateScheduleTime,
 } from '@/utils/timeUtils';
 
 describe('timeUtils', () => {
@@ -28,28 +25,19 @@ describe('timeUtils', () => {
       expect(timestamp).toBeGreaterThan(0);
     });
 
+    test('время московское (UTC+3)', () => {
+      expect(parseMoscowDate('01.01.2026, 03:00:00')).toBe(Date.UTC(2026, 0, 1, 0, 0, 0));
+    });
+
+    test('секунды необязательны: "21:22" = "21:22:00"', () => {
+      expect(parseMoscowDate('03.06.2026, 21:22')).toBe(parseMoscowDate('03.06.2026, 21:22:00'));
+    });
+
     test('возвращает NaN для невалидных строк', () => {
       expect(parseMoscowDate('')).toBeNaN();
       expect(parseMoscowDate(null)).toBeNaN();
       expect(parseMoscowDate('invalid')).toBeNaN();
       expect(parseMoscowDate('03.06.2026')).toBeNaN();
-      expect(parseMoscowDate('03.06.2026, 21:22')).toBeNaN();
-    });
-  });
-
-  describe('getCurrentDateTime', () => {
-    test('возвращает строку ISO', () => {
-      const result = getCurrentDateTime();
-      expect(typeof result).toBe('string');
-      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
-    });
-  });
-
-  describe('getCurrentTimeString', () => {
-    test('возвращает строку "HH:MM"', () => {
-      const result = getCurrentTimeString();
-      expect(typeof result).toBe('string');
-      expect(result).toMatch(/^\d{2}:\d{2}$/);
     });
   });
 
@@ -189,60 +177,6 @@ describe('timeUtils', () => {
 
     test('возвращает исходную строку, если нет ":"', () => {
       expect(formatTimeWithHighlight('1430', 'hours', true)).toBe('1430');
-    });
-  });
-
-  describe('validateScheduleTime', () => {
-    test('возвращает valid: false, если отсутствует startTime или endTime', () => {
-      expect(validateScheduleTime({})).toEqual({
-        valid: false,
-        message: 'Отсутствует время начала или окончания',
-      });
-      expect(validateScheduleTime({ startTime: '10:00' })).toEqual({
-        valid: false,
-        message: 'Отсутствует время начала или окончания',
-      });
-      expect(validateScheduleTime({ endTime: '11:00' })).toEqual({
-        valid: false,
-        message: 'Отсутствует время начала или окончания',
-      });
-    });
-
-    test('возвращает valid: false, если endTime <= startTime', () => {
-      expect(validateScheduleTime({ startTime: '10:00', endTime: '09:00' })).toEqual({
-        valid: false,
-        message: 'Время окончания должно быть позже времени начала',
-      });
-      expect(validateScheduleTime({ startTime: '10:00', endTime: '10:00' })).toEqual({
-        valid: false,
-        message: 'Время окончания должно быть позже времени начала',
-      });
-    });
-
-    test('возвращает valid: true для корректного интервала', () => {
-      expect(validateScheduleTime({ startTime: '10:00', endTime: '11:00' })).toEqual({
-        valid: true,
-      });
-      expect(validateScheduleTime({ startTime: '00:00', endTime: '23:59' })).toEqual({
-        valid: true,
-      });
-    });
-
-    test('обрабатывает невалидную строку startTime → valid: true, так как timeToMinutes возвращает 0', () => {
-      // Так как timeToMinutes('invalid') === 0, а timeToMinutes('10:00') === 600, интервал 0-600 считается валидным
-      expect(validateScheduleTime({ startTime: 'invalid', endTime: '10:00' })).toEqual({
-        valid: true,
-      });
-    });
-
-    test('обрабатывает невалидную строку endTime → valid: true, так как timeToMinutes возвращает 0', () => {
-      // timeToMinutes('10:00') === 600, timeToMinutes('invalid') === 0, 0 <= 600? true → невалидный интервал
-      // Но в коде проверка end <= start, т.е. 0 <= 600 → true → возвращает ошибку.
-      // Значит, для невалидного endTime возвращается valid: false, так как endMinutes (0) <= startMinutes (600)
-      expect(validateScheduleTime({ startTime: '10:00', endTime: 'invalid' })).toEqual({
-        valid: false,
-        message: 'Время окончания должно быть позже времени начала',
-      });
     });
   });
 });

@@ -152,17 +152,20 @@
 - Jest + `@vue/test-utils` + jsdom (`pnpm test`). На каждый новый или изменённый модуль создавать или обновлять тесты.
 - Сеть не использовать: `WebSocket` мокается в `tests/unit/setup.js`; `logger` в тестах мокается целиком (`dev`, `info`, `warn`, `error`).
 - `websocket.js` хранит состояние на уровне модуля (`pending`, `connectPromise`, таймеры): `jest.useFakeTimers()`, сброс состояния перед каждым тестом. Действия удобно проверять напрямую с подставным `context` (`{ state, rootState, rootGetters, dispatch, commit }`).
-- CI (`.github/workflows/main.yml`, push в `main`/`review-fixes`, PR в `main`): Node 20, pnpm из `packageManager`, `pnpm install --frozen-lockfile` → `pnpm lint --no-fix` → `pnpm test` → `pnpm build`. Lint и сборка блокируют; тесты пока нет (`continue-on-error` — убрать, когда набор будет починен). Новые зависимости — только с обновлённым `pnpm-lock.yaml`, иначе CI упадёт на установке.
+- CI (`.github/workflows/main.yml`, push в `main`/`review-fixes`, PR в `main`): Node 20, pnpm из `packageManager`, `pnpm install --frozen-lockfile` → `pnpm lint --no-fix` → `pnpm test` → `pnpm build`. Lint, тесты и сборка блокируют: падающий тест — повод чинить код или тест, а не отключать шаг. Новые зависимости — только с обновлённым `pnpm-lock.yaml`, иначе CI упадёт на установке.
 - ESLint (`pnpm lint`) должен проходить без ошибок. Для `src/tests/**` в `eslintConfig.overrides` включена среда Jest (`test`, `expect`, `jest` — глобальные); в коде приложения её нет.
-- Перед завершением работы прогонять весь набор и `pnpm lint` и сравнивать с исходным состоянием: новых падений быть не должно.
+- Перед завершением работы прогонять весь набор и `pnpm lint`: падений быть не должно.
+- Тест проверяет текущее поведение кода, а не прежнее. Удалили компонент или функцию — удалить и тест; поведение изменено намеренно — обновить тест в том же изменении. Снимки HTML (`toMatchSnapshot`) не использовать: они ломаются от любой правки разметки и ничего не проверяют — проверять видимый текст, ссылки, вызовы.
+- Ловушки окружения:
+  - `setup.js` задаёт глобальную заглушку `$store` (геттеры — функции, то есть всегда «истина»): она перекрывает store из `plugins`, поэтому настоящий store передавать и в `mocks: { $store: store }`;
+  - `resetMocks: true` (`jest.config.js`) стирает реализации `jest.fn()`/`spyOn` перед каждым тестом — ставить их в `beforeEach`, не в `beforeAll`;
+  - `window.localStorage` в jsdom не подменяется присваиванием — только `Object.defineProperty(window, 'localStorage', …)` или `jest.spyOn(Storage.prototype, …)`.
 
 ## Известные расхождения
-- Набор тестов устарел: `Dashboard`, `IntroduceHome`, `SmartHome`, `ManufactAutomatation`, `UserConfig` ссылаются на удалённые компоненты; `router`, `timeUtils`, `checkOverlap`, `websocket` и др. — на прежнее поведение.
 - Нет экрана смены пароля: маршрута `/change-password` и `ChangePassword.vue` нет, гард `mustChangePassword` не проверяет, сервер тоже не принуждает.
 - Не реализованы возможности сервера: оповещения (`type: 'message'`, `get/messages`), профиль (`auth/profile`, `updateProfile`), Telegram (`telegramLinkCode`, `telegramUnlink`).
 - `refreshError` с `TOKEN_REVOKED` не разлогинивает: `refresh` повторяется раз в минуту.
 - Не используются: `MainSetpoint.vue`, `utils/transformConfigs.js`, `myhome_config.js`.
 - Отложенные мажорные обновления: Jest 30 и Babel 8 (последний `@vue/vue3-jest` 29.x требует Jest 29 и Babel 7), ESLint 9+ (нужен flat-конфиг вместо `eslintConfig`; Vue CLI 5 рассчитан на ESLint 7–8), `vue-router` 5 (новая мажорная версия: переносить отдельно с проверкой гарда `next()`).
 - `AppProfile.vue` — Composition API и `store.state` напрямую.
-- `public/index.html`: манифест и иконки подключены абсолютными путями (`/manifest.json`, `/webicons/…`) мимо `/app/` (404), манифестов два, `start_url: '/'`.
 - `example.env` без обязательной `VUE_APP_EXP`, с неиспользуемыми `VUE_APP_DOMEN`, `VUE_APP_HOST`, `VUE_APP_SERVER_PORT`, `VUE_APP_LOG_DIRECTORY`.

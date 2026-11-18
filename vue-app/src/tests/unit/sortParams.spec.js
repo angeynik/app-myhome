@@ -16,6 +16,7 @@ const flushPromises = () =>
 jest.mock('@/store/modules/logger', () => ({
   info: jest.fn(),
   dev: jest.fn(),
+  warn: jest.fn(),
   error: jest.fn(),
   isInfoEnabled: () => false,
   isDevEnabled: () => false,

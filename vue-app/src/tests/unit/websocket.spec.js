@@ -6,7 +6,6 @@ function resetWebsocketState() {
   websocket.state.socket = null
   websocket.state.reconnectAttempts = 0
   websocket.state.explicitDisconnect = false
-  websocket.state.pendingResponse = null
 }
 
 async function establishConnection(store) {
@@ -65,20 +64,47 @@ describe('🧩 Vuex WebSocket Module — Интеграционные тесты
     expect(result.url).toMatch(/^ws:\/\/localhost:1234/)
   })
 
-  test('send: ставит pendingResponse и резолвит loginSuccess', async () => {
+  test('send: auth/login отправляется и ждёт loginSuccess', async () => {
     await establishConnection(store)
+    const sock = store.state.websocket.socket
 
-    const msg = { type: 'auth', request: 'login' }
+    const msg = { type: 'auth', request: 'login', payload: { username: 'u' } }
     const promise = store.dispatch('websocket/send', msg)
-
-    expect(store.state.websocket.pendingResponse.type).toBe('login')
+    await flushPromises()
+    expect(sock.send).toHaveBeenCalledWith(JSON.stringify(msg))
 
     await store.dispatch('websocket/handleMessage', {
-      data: JSON.stringify({ request: 'loginSuccess', name: '', payload: {} })
+      data: JSON.stringify({ type: 'response', request: 'loginSuccess', name: '', payload: { dID: 'USER123' } })
     })
 
     await expect(promise).resolves.toMatchObject({ request: 'loginSuccess' })
-    expect(store.state.websocket.pendingResponse).toBeNull()
+  })
+
+  test('send: loginError отклоняет ожидание с кодом и текстом сервера', async () => {
+    await establishConnection(store)
+    const promise = store.dispatch('websocket/send', { type: 'auth', request: 'login' })
+    await flushPromises()
+
+    await store.dispatch('websocket/handleMessage', {
+      data: JSON.stringify({ type: 'error', request: 'loginError', payload: { code: 'BAD_CREDENTIALS', message: 'Неверный логин' } })
+    })
+
+    await expect(promise).rejects.toMatchObject({ code: 'BAD_CREDENTIALS', message: 'Неверный логин' })
+  })
+
+  test('send: нет ответа на auth-запрос — TIMEOUT через 15 с', async () => {
+    await establishConnection(store)
+    const promise = store.dispatch('websocket/send', { type: 'auth', request: 'login' })
+    await flushPromises()
+    jest.advanceTimersByTime(15000)
+    await expect(promise).rejects.toMatchObject({ code: 'TIMEOUT' })
+  })
+
+  test('send: обычное сообщение — без ожидания ответа (null)', async () => {
+    await establishConnection(store)
+    const msg = { type: 'get', request: 'config', name: 'USER123' }
+    await expect(store.dispatch('websocket/send', msg)).resolves.toBeNull()
+    expect(store.state.websocket.socket.send).toHaveBeenCalledWith(JSON.stringify(msg))
   })
 
   test('handleMessage: config вызывает config/handleConfigResponse', async () => {
@@ -140,12 +166,10 @@ describe('🧩 Vuex WebSocket Module — Интеграционные тесты
     expect(store.getters['websocket/isConnected']).toBe(true)
   })
 
-  test('handleMessage: невалидный JSON вызывает log/addError', async () => {
-    await store.dispatch('websocket/handleMessage', { data: 'not-json' })
-
-    expect(logActions.addError).toHaveBeenCalledTimes(1)
-    const callArgs = logActions.addError.mock.calls[0]
-    expect(callArgs[1]).toBeInstanceOf(SyntaxError)
+  test('handleMessage: невалидный JSON игнорируется без ошибки', async () => {
+    await expect(store.dispatch('websocket/handleMessage', { data: 'not-json' })).resolves.toBeUndefined()
+    expect(configActions.handleConfigResponse).not.toHaveBeenCalled()
+    expect(configActions.handleValueUpdate).not.toHaveBeenCalled()
   })
 
   test('handleMessage: sensor с невалидным payload не вызывает update', async () => {
@@ -228,13 +252,33 @@ describe('🧩 Vuex WebSocket Module — Интеграционные тесты
     expect(result).toStrictEqual(mockSocket)
   })
 
-  test('connect: с reconnectAttempts > 0 вызывает задержку', async () => {
-    store.commit('websocket/SET_RECONNECT_ATTEMPTS', 2)
+  test('scheduleReconnect: задержка растёт вдвое с каждой попыткой (+ до 0,5 с случайно)', async () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0)
     const spy = jest.spyOn(global, 'setTimeout')
+    store.commit('websocket/SET_RECONNECT_ATTEMPTS', 2)
 
-    store.dispatch('websocket/connect')
-    jest.runAllTimers()
+    store.dispatch('websocket/scheduleReconnect')
 
     expect(spy).toHaveBeenCalledWith(expect.any(Function), 4000)
+    expect(store.state.websocket.reconnectAttempts).toBe(3)
+    jest.runOnlyPendingTimers()
+  })
+
+  test('scheduleReconnect: задержка не больше 30 с', async () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0)
+    const spy = jest.spyOn(global, 'setTimeout')
+    store.commit('websocket/SET_RECONNECT_ATTEMPTS', 10)
+
+    store.dispatch('websocket/scheduleReconnect')
+
+    expect(spy).toHaveBeenCalledWith(expect.any(Function), 30000)
+    jest.runOnlyPendingTimers()
+  })
+
+  test('scheduleReconnect: после явного disconnect переподключения нет', async () => {
+    const spy = jest.spyOn(global, 'setTimeout')
+    store.state.websocket.explicitDisconnect = true
+    store.dispatch('websocket/scheduleReconnect')
+    expect(spy).not.toHaveBeenCalled()
   })
 })

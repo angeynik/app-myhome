@@ -38,10 +38,7 @@ jobs:
       - name: Lint
         run: pnpm lint --no-fix
 
-      # Набор тестов пока содержит устаревшие тесты (см. claud_rules.md, «Известные расхождения»),
-      # поэтому шаг не блокирует сборку. Когда тесты починим — удалить continue-on-error.
       - name: Run tests with Jest
-        continue-on-error: true
         run: pnpm test # покрытие включено в jest.config.js (collectCoverage)
 
       - name: Build

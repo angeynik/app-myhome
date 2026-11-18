@@ -1,111 +1,110 @@
+// src/tests/unit/App.spec.js
+// Корневой компонент: инициализация сессии при входе (менеджер уставок, затем конфигурация),
+// предупреждение при ошибке загрузки, действия меню пользователя.
+// Подключение к серверу и восстановление сессии — в main.js / websocket, не здесь.
+
+jest.mock('@/store/modules/logger', () => ({
+  info: jest.fn(), dev: jest.fn(), warn: jest.fn(), error: jest.fn(),
+  isInfoEnabled: () => false, isDevEnabled: () => false, isErrorEnabled: () => false,
+}));
+
 import { shallowMount, flushPromises } from '@vue/test-utils';
+import { createStore } from 'vuex';
 import App from '@/App.vue';
 
-// Мокаем store с геттерами для popup и dropdown
-const mockStore = {
-  dispatch: jest.fn(),
-  getters: {
-    // popup геттеры
-    'popup/popupIsVisible': false,
-    'popup/popupMessage': '',
-    'popup/popupType': 'info',
-    'popup/popupDuration': 3000,
-    // dropdown геттеры
-    'dropdown/isVisible': false,
-    'dropdown/menuItems': [],
-    'dropdown/anchorEl': null,
-    // auth геттеры
-    isAuthenticated: false,
-    level: 0,
-    dID: null,
-    roomKey: null,
-    paramKey: null
-  },
-  state: {
-    auth: {
-      user: null
-    }
-  }
-};
+function setup({ authenticated = false, failInit = false } = {}) {
+  const calls = [];
+  const track = (name, fail) => jest.fn(() => {
+    calls.push(name);
+    return fail ? Promise.reject(new Error('нет связи')) : Promise.resolve();
+  });
+  const actions = {
+    initializeSetpointsManager: track('initializeSetpointsManager'),
+    configInitialize: track('config/initialize', failInit),
+    popupShow: jest.fn(),
+    popupHide: jest.fn(),
+    dropdownHide: jest.fn(),
+    logout: track('auth/logout'),
+  };
+  const store = createStore({
+    state: { token: authenticated ? 't' : '' },
+    mutations: { SET_TOKEN(state, t) { state.token = t; } },
+    getters: { isAuthenticated: (state) => !!state.token },
+    actions: { initializeSetpointsManager: actions.initializeSetpointsManager },
+    modules: {
+      config: { namespaced: true, actions: { initialize: actions.configInitialize } },
+      auth: { namespaced: true, actions: { logout: actions.logout } },
+      popup: {
+        namespaced: true,
+        getters: { popupIsVisible: () => false, popupMessage: () => '', popupType: () => 'info' },
+        actions: { show: actions.popupShow, hide: actions.popupHide },
+      },
+      dropdown: {
+        namespaced: true,
+        getters: { isVisible: () => false, menuItems: () => [], anchorEl: () => null },
+        actions: { hide: actions.dropdownHide },
+      },
+    },
+  });
+  const $router = { push: jest.fn() };
+  const wrapper = shallowMount(App, {
+    global: { plugins: [store], mocks: { $store: store, $router } },
+  });
+  return { wrapper, store, actions, calls, $router };
+}
 
-// Мокаем маршрутизатор
-const mockRouter = {
-  push: jest.fn()
-};
-
-// Мокаем $route с meta
-const mockRoute = {
-  path: '/',
-  meta: {
-    requiresAuth: false
-  }
-};
-
-describe('App.vue', () => {
-  let wrapper;
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    // Сбрасываем значения геттеров
-    mockStore.getters.isAuthenticated = false;
-    mockStore.getters['popup/popupIsVisible'] = false;
-    mockStore.getters['popup/popupMessage'] = '';
-    mockStore.getters['popup/popupType'] = 'info';
-    mockStore.getters['popup/popupDuration'] = 3000;
-    mockStore.getters['dropdown/isVisible'] = false;
-    mockStore.getters['dropdown/menuItems'] = [];
-    mockStore.getters['dropdown/anchorEl'] = null;
-    mockStore.state.auth.user = null;
-    mockRoute.meta.requiresAuth = false;
+describe('App: инициализация сессии', () => {
+  test('гость — менеджер уставок и конфигурация не загружаются', async () => {
+    const { calls } = setup({ authenticated: false });
+    await flushPromises();
+    expect(calls).toEqual([]);
   });
 
-  it('не вызывает инициализацию config если пользователь не аутентифицирован', async () => {
-    mockStore.dispatch.mockImplementation((action) => {
-      if (action === 'initializeStore') return Promise.resolve();
-      if (action === 'websocket/connect') return Promise.resolve();
-      return Promise.reject(new Error(`Unexpected action: ${action}`));
-    });
-
-    wrapper = shallowMount(App, {
-      global: {
-        mocks: {
-          $store: mockStore,
-          $route: mockRoute,
-          $router: mockRouter
-        }
-      }
-    });
-
+  test('сессия уже восстановлена при запуске — менеджер уставок, затем конфигурация', async () => {
+    const { calls } = setup({ authenticated: true });
     await flushPromises();
-    await wrapper.vm.$nextTick();
-
-    expect(mockStore.dispatch).toHaveBeenCalledWith('initializeStore');
-    expect(mockStore.dispatch).toHaveBeenCalledWith('websocket/connect');
-    expect(mockStore.dispatch).not.toHaveBeenCalledWith('config/initialize');
+    expect(calls).toEqual(['initializeSetpointsManager', 'config/initialize']);
   });
 
-  it('поведение при isAuthenticated = false', async () => {
-    mockStore.dispatch.mockImplementation((action) => {
-      if (action === 'initializeStore') return Promise.resolve();
-      if (action === 'websocket/connect') return Promise.resolve();
-      return Promise.reject(new Error(`Unexpected action: ${action}`));
-    });
-
-    wrapper = shallowMount(App, {
-      global: {
-        mocks: {
-          $store: mockStore,
-          $route: mockRoute,
-          $router: mockRouter
-        }
-      }
-    });
-
+  test('вход без перезагрузки страницы — инициализация после входа', async () => {
+    const { store, calls } = setup({ authenticated: false });
+    store.commit('SET_TOKEN', 'new-token');
     await flushPromises();
-    await wrapper.vm.$nextTick();
+    expect(calls).toEqual(['initializeSetpointsManager', 'config/initialize']);
+  });
 
-    expect(mockStore.dispatch).toHaveBeenCalledWith('initializeStore');
-    expect(mockStore.dispatch).toHaveBeenCalledWith('websocket/connect');
-    expect(mockStore.dispatch).not.toHaveBeenCalledWith('config/initialize');
+  test('ошибка загрузки конфигурации — предупреждение пользователю', async () => {
+    const { actions } = setup({ authenticated: true, failInit: true });
+    await flushPromises();
+    expect(actions.popupShow).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ type: 'warning', message: expect.stringContaining('Не удалось загрузить конфигурацию') }),
+    );
+  });
+});
+
+describe('App: меню пользователя', () => {
+  test.each([
+    ['profile', '/profile'],
+    ['settings', '/preferences'],
+  ])('пункт %s — закрыть меню и перейти на %s', async (action, path) => {
+    const { wrapper, actions, $router } = setup({ authenticated: true });
+    await wrapper.vm.onDropdownSelect({ action });
+    expect(actions.dropdownHide).toHaveBeenCalled();
+    expect($router.push).toHaveBeenCalledWith(path);
+  });
+
+  test('выход — auth/logout, затем переход на /login', async () => {
+    const { wrapper, calls, $router } = setup({ authenticated: true });
+    await flushPromises();
+    await wrapper.vm.onDropdownSelect({ action: 'logout' });
+    expect(calls).toContain('auth/logout');
+    expect($router.push).toHaveBeenCalledWith('/login');
+  });
+
+  test('неизвестный пункт — без перехода', async () => {
+    const { wrapper, $router } = setup({ authenticated: true });
+    await wrapper.vm.onDropdownSelect({ action: 'nope' });
+    expect($router.push).not.toHaveBeenCalled();
   });
 });

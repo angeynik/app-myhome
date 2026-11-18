@@ -2,8 +2,6 @@
 import {
   checkOverlap,
   checkTimeOverlap,
-  checkStartTimeOverlap,
-  checkEndTimeOverlap,
 } from '@/utils/checkOverlap';
 
 describe('checkOverlap (реальная реализация)', () => {
@@ -224,29 +222,6 @@ describe('checkOverlap (реальная реализация)', () => {
       expect(result.hasOverlap).toBe(true);
       expect(result.checkedTime).toBe('09:01');
       expect(result.message).toBe('Время окончания не может быть меньше или равно времени начала');
-    });
-  });
-
-  // Тесты для простых функций
-  describe('checkStartTimeOverlap', () => {
-    test.each([
-      [10, 20, 10],
-      [20, 10, 9],
-      [20, 20, 19],
-      [0, 0, -1],
-    ])('start=%i, end=%i → %i', (start, end, expected) => {
-      expect(checkStartTimeOverlap(start, end)).toBe(expected);
-    });
-  });
-
-  describe('checkEndTimeOverlap', () => {
-    test.each([
-      [10, 20, 20],
-      [20, 10, 21],
-      [20, 20, 21],
-      [0, 0, 1],
-    ])('start=%i, end=%i → %i', (start, end, expected) => {
-      expect(checkEndTimeOverlap(start, end)).toBe(expected);
     });
   });
 });
