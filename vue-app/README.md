@@ -1,24 +1,25 @@
 # vue-app
-Release v.0.0.2 - 20.11.25
+
+История версий — в [README.md](../README.md) в корне репозитория.
 
 ## Project setup
 ```
-npm install
+pnpm install
 ```
 
 ### Compiles and hot-reloads for development
 ```
-npm run serve
+pnpm serve
 ```
 
 ### Compiles and minifies for production
 ```
-npm run build
+pnpm build
 ```
 
 ### Lints and fixes files
 ```
-npm run lint
+pnpm lint
 ```
 
 ### Customize configuration
