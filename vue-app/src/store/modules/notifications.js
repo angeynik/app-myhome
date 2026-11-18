@@ -155,9 +155,15 @@ export default {
       }, { root: true });
     },
 
+    // error/notificationSnapshotError { id, cameraId } — кадр не получен
+    snapshotFailed({ commit }, { id, cameraId } = {}) {
+      if (id && cameraId) commit('SET_SNAPSHOT', { id, cameraId, failed: true });
+    },
+
     async requestSnapshot({ state, dispatch, rootGetters }, { id, cameraId }) {
       const dID = rootGetters.dID;
-      if (!dID || state.snapshots[`${id}|${cameraId}`]) return;
+      const known = state.snapshots[`${id}|${cameraId}`];
+      if (!dID || (known && !known.failed)) return;
       await dispatch('websocket/send', {
         type: 'get', request: 'notificationSnapshot', name: dID, payload: { id, cameraId },
       }, { root: true });

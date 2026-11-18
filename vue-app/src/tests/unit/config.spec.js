@@ -640,9 +640,10 @@ describe('Vuex config module: handleServerError', () => {
       { type: 'get', request: 'config', name: 'igumen', payload: {} }, { root: true });
   });
 
-  it('notificationSnapshotError: без сообщения и перезапроса (кадр уже удалён)', async () => {
-    const dispatch = await run({ type: 'error', request: 'notificationSnapshotError', name: 'igumen', payload: { message: 'x' } });
-    expect(dispatch).not.toHaveBeenCalled();
+  it('notificationSnapshotError: без всплывающего сообщения и перезапроса — отметка в notifications', async () => {
+    const payload = { message: 'x', code: 'NO_SNAPSHOT', id: 'r:s:i', cameraId: 'cam01' };
+    const dispatch = await run({ type: 'error', request: 'notificationSnapshotError', name: 'igumen', payload });
+    expect(dispatch.mock.calls).toEqual([['notifications/snapshotFailed', payload, { root: true }]]);
   });
 
   it.each(['configError', 'schedulesError'])('ошибка get-запроса (%s) не вызывает перезапрос (нет цикла)', async (request) => {

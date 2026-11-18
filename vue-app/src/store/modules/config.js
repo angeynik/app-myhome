@@ -374,8 +374,11 @@ export default {
         waiter.reject(error);
       }
 
-      // Кадр уведомления уже удалён (уведомление сброшено) — пользователю сообщать нечего
-      if (request === 'notificationSnapshotError') return;
+      // Кадр уведомления недоступен — без всплывающего сообщения: окно уведомления покажет «Кадр недоступен»
+      if (request === 'notificationSnapshotError') {
+        await dispatch('notifications/snapshotFailed', response.payload || {}, { root: true });
+        return;
+      }
 
       dispatch('popup/show', { message, type: 'error', duration: 3000 }, { root: true });
 

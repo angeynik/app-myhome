@@ -17,6 +17,7 @@
         <div v-if="current.attachments && current.attachments.length" class="notification-popup-shots">
           <figure v-for="a in current.attachments" :key="a.cameraId">
             <img v-if="shot(a.cameraId)" :src="shot(a.cameraId)" :alt="`Камера: ${a.title}`" />
+            <div v-else-if="shotFailed(a.cameraId)" class="notification-popup-shot-wait">Кадр недоступен</div>
             <div v-else class="notification-popup-shot-wait">Загрузка кадра…</div>
             <figcaption>{{ a.title }}</figcaption>
           </figure>
@@ -74,7 +75,10 @@ export default {
   methods: {
     shot(cameraId) {
       const s = this.snapshotOf(this.current.id, cameraId);
-      return s ? `data:${s.mimeType};base64,${s.image}` : null;
+      return s && !s.failed ? `data:${s.mimeType};base64,${s.image}` : null;
+    },
+    shotFailed(cameraId) {
+      return !!this.snapshotOf(this.current.id, cameraId)?.failed;
     },
     close() {
       if (this.current) this.$store.dispatch('notifications/markRead', this.current.id);

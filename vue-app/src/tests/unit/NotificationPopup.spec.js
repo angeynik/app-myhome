@@ -27,6 +27,16 @@ function setup() {
 beforeEach(() => localStorage.clear());
 
 describe('NotificationPopup', () => {
+  test('кадр не получен (notificationSnapshotError) — «Кадр недоступен», а не вечная загрузка', async () => {
+    const { wrapper, store, fire } = setup();
+    await fire('a', '2026-06-15T07:00:00.000Z', { attachments: [{ cameraId: 'cam01', title: 'Ворота' }] });
+    await flushPromises();
+    await store.dispatch('notifications/snapshotFailed', { id: 'a', cameraId: 'cam01', code: 'NO_SNAPSHOT' });
+    await flushPromises();
+    expect(wrapper.text()).toContain('Кадр недоступен');
+    expect(wrapper.text()).not.toContain('Загрузка кадра');
+  });
+
   test('нет непрочитанных — окна нет', () => {
     expect(setup().wrapper.find('.notification-popup').exists()).toBe(false);
   });
