@@ -80,7 +80,13 @@
      камер. Несколько — по одному, начиная с самого свежего. Закрыть может только пользователь;
      после закрытия флаг «прочитано» = ON, показывается следующее;
    - приложение было закрыто — все непрочитанные активные уведомления показываются при открытии;
-   - Telegram — текст и кадры привязанным пользователям dID (у кого Telegram не выключен).
+   - Telegram — текст и кадры привязанным пользователям dID (у кого Telegram не выключен):
+     ```
+     🚨 Гостиная · Температура
+     26.4 °C (условие > 25 °C)
+     🕒 18.11.2026, 12:12:00 · igumen
+     ```
+     затем фото камер. Подключение пользователей к боту — `docs/telegram.md` (репозиторий сервера).
 6. **Сброс** (условие больше не выполняется, параметр вышел из окна контроля или уведомление
    удалено): статус и флаг «прочитано» → OFF, обводка снимается, кадры удаляются; в Telegram — сообщение «Снято».
    До получения сброса клиент хранит статус как есть.
@@ -216,7 +222,7 @@
 | `services/messageHandlers.js` | `get/config` (+ уведомления), `get/notification*`, `post/notification` |
 | `services/authConfig.js` | уровни (`REQUIRED_LEVEL`), `NO_BROADCAST_POST` |
 | `services/videoHub.js` | `getFrameFor(dID, cameraId)` — последний кадр камеры, видимой dID |
-| `services/telegramService.js`, `classes/telegramBot.js` | `sendToUsers` (текст), `sendPhotosToUsers` / `sendPhoto` (кадры, multipart) |
+| `services/telegramService.js`, `classes/telegramBot.js` | `sendNotificationEvent` (текст события + кадры), `sendPhoto` (кадры, multipart) |
 | `services/notifyConfig.js` | `NOTIFICATION_*` из `conf.env` |
 | `serverapp.js` | запуск службы при `NOTIFICATION_ENABLED`, остановка при завершении |
 
@@ -240,7 +246,7 @@ flowchart LR
   CS --- F4[("&lt;dID&gt;.json")]
   NS -- "isMonitored / checkCondition / describe" --> NR["notificationRules.js"]
   NS -- "getFrameFor" --> VH["videoHub.js"]
-  NS -- "sendToUsers / sendPhotosToUsers" --> TG["telegramService.js → telegramBot.js"]
+  NS -- "sendNotificationEvent" --> TG["telegramService.js → telegramBot.js"]
   NS -- "post/notificationEvent,<br/>response/notification" --> V1
   TIMER(["setInterval<br/>NOTIFICATION_CHECK_INTERVAL_MS"]) --> NS
 ```
@@ -426,7 +432,7 @@ sequenceDiagram
 | `NOTIFICATION_MAX_ITEMS` | `200` | уведомлений на один dID |
 | `NOTIFICATION_MEDIA_DIR` | `$DATA_DIR/notification_media` | каталог кадров активных уведомлений |
 
-Telegram — общие настройки `TELEGRAM_*` (бот, привязка пользователей) — см. `conf_example`.
+Telegram — общие настройки `TELEGRAM_*` (бот, подключение пользователей) — `docs/telegram.md` (репозиторий сервера).
 
 Ограничения:
 - **Задержка.** Значения датчиков попадают в `<dID>.json` через очередь `messageStore` раз в 15 с,
@@ -436,7 +442,9 @@ Telegram — общие настройки `TELEGRAM_*` (бот, привязк�
 - **Одно уведомление на параметр.** Повторный `create` того же параметра — правка.
 - **Кадр камеры** — последний кадр, который сервер получил от камеры (раз в `previewIntervalMs`/
   `fullIntervalMs`); камера без кадров к событию не прикладывается.
-- **Telegram** получают пользователи dID с привязанным чатом, у которых в профиле Telegram не выключен
+- **Telegram** получают пользователи dID с привязанным чатом (один чат может получать уведомления
+  нескольких dID — в сообщении указан dID; чат, привязанный к нескольким записям одного dID,
+  получает сообщение один раз), у которых в профиле Telegram не выключен
   (`notify.telegram !== false`). Порог важности (`minSeverity`) для этих уведомлений не применяется.
 
 ---
@@ -448,7 +456,7 @@ Telegram — общие настройки `TELEGRAM_*` (бот, привязк�
 - `tests/unit/notificationStore.test.js` — проверка данных, файлы, кадры, обход dID (на временных файлах);
 - `tests/unit/notificationService.test.js` — ON/OFF, окно, каналы, кадры, правки, таймер;
 - `tests/unit/messageHandlers.test.js` («уведомления»), `telegramBot.test.js` (`sendPhoto`),
-  `telegramService.test.js` (`sendPhotosToUsers`).
+  `telegramService.test.js` (`sendNotificationEvent`, регистрация в боте).
 
 Клиент (`pnpm test`):
 - `notifications.spec.js` — ответы сервера, события, флаг «прочитано», очередь, запросы;
