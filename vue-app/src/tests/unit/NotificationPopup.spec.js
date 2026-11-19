@@ -58,6 +58,14 @@ describe('NotificationPopup', () => {
     expect(wrapper.find('.notification-popup').exists()).toBe(false);
   });
 
+  test('Esc закрывает окно (прочитано)', async () => {
+    const { wrapper, store, fire } = setup();
+    await fire('a', '2026-06-15T07:00:00.000Z');
+    await flushPromises();
+    await wrapper.find('.notification-popup').trigger('keydown.esc');
+    expect(store.getters['notifications/statusOf']('a').read).toBe('ON');
+  });
+
   test('кадры камер запрашиваются при показе и выводятся', async () => {
     const { wrapper, store, send, fire } = setup();
     await fire('a', '2026-06-15T07:00:00.000Z', { attachments: [{ cameraId: 'cam01', title: 'Ворота' }] });

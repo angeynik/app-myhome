@@ -1041,13 +1041,45 @@ nav a.router-link-exact-active {
 
 /* ===== 6.2 ОКНО УВЕДОМЛЕНИЯ (NotificationPopup.vue) ===== */
 /* Над экранами уставки и уведомления (z-index 10000) */
-.notification-popup { z-index: 10001; }
+.notification-popup { z-index: 10001; padding: 1rem; box-sizing: border-box; }
+/* Окно не выше экрана: шапка и «Закрыть» всегда видны, прокручивается только содержимое
+   (несколько камер раньше выталкивали кнопки за край экрана) */
+.notification-popup .popup-content {
+  display: flex;
+  flex-direction: column;
+  width: min(40rem, 100%);
+  max-width: 100%;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overflow: hidden;
+}
+.notification-popup .popup-header,
+.notification-popup .popup-footer { flex: 0 0 auto; }
+.notification-popup .popup-message {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .notification-popup-count { margin-left: auto; margin-right: 0.8rem; opacity: 0.7; font-size: 0.9rem; }
 .notification-popup-text { margin: 0 0 0.4rem; font-size: 1.05rem; }
 .notification-popup-time { margin: 0; opacity: 0.7; font-size: 0.85rem; }
-.notification-popup-shots { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.8rem; }
-.notification-popup-shots figure { margin: 0; }
-.notification-popup-shots img { width: 100%; max-width: 32rem; border-radius: 0.6rem; display: block; }
+/* Кадры: одна колонка на телефоне, две и больше — если позволяет ширина; высота кадра ограничена */
+.notification-popup-shots {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+.notification-popup-shots figure { margin: 0; min-width: 0; }
+.notification-popup-shots img {
+  width: 100%;
+  max-height: 40vh;
+  object-fit: contain;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 0.6rem;
+  display: block;
+}
 .notification-popup-shots figcaption { font-size: 0.8rem; opacity: 0.7; margin-top: 0.2rem; }
 .notification-popup-shot-wait { padding: 1.5rem; text-align: center; opacity: 0.6; background: rgba(0, 0, 0, 0.2); border-radius: 0.6rem; }
 

@@ -4,7 +4,7 @@
      (notifications/markRead), затем показывается следующее. Кадры камер запрашиваются
      у сервера при показе (get/notificationSnapshot). Подключается в App.vue. -->
 <template>
-  <div v-if="current" class="popup-overlay notification-popup" @click.self="close">
+  <div v-if="current" class="popup-overlay notification-popup" @click.self="close" @keydown.esc="close">
     <div class="popup-content popup-error" role="alertdialog" aria-live="assertive" :aria-label="title">
       <div class="popup-header">
         <span class="popup-title">{{ title }}</span>
@@ -24,7 +24,7 @@
         </div>
       </div>
       <div class="popup-footer">
-        <button class="popup-ok-button" data-test="close" @click="close">Закрыть</button>
+        <button ref="closeBtn" class="popup-ok-button" data-test="close" @click="close">Закрыть</button>
       </div>
     </div>
   </div>
@@ -58,12 +58,13 @@ export default {
   },
 
   watch: {
-    // Показано новое уведомление — запросить его кадры
+    // Показано новое уведомление — запросить его кадры; фокус на «Закрыть» (Esc и Enter работают сразу)
     'current.eventId': {
       immediate: true,
       handler() {
         const c = this.current;
         if (!c) return;
+        this.$nextTick(() => this.$refs.closeBtn?.focus());
         for (const a of c.attachments || []) {
           this.$store.dispatch('notifications/requestSnapshot', { id: c.id, cameraId: a.cameraId })
             .catch((e) => logger.warn('[NotificationPopup] кадр:', e.message));
