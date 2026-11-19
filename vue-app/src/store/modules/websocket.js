@@ -231,6 +231,9 @@ export default {
         // Подписка на кадры камер живёт на сервере в пределах соединения
         Promise.resolve(dispatch('video/resubscribe', null, { root: true }))
           .catch((e) => logger.error('[WebSocket] - onConnected - подписка на камеры:', e.message));
+        // Список камер — сразу: от него зависит, показывать ли вкладку «Видеонаблюдение»
+        Promise.resolve(dispatch('video/requestCameras', null, { root: true }))
+          .catch((e) => logger.error('[WebSocket] - onConnected - список камер:', e.message));
 
         logger.dev(`[WebSocket] - onConnected - сессия восстановлена (${isReconnect ? 'переподключение' : 'подключение'})`);
         return user;

@@ -44,6 +44,13 @@ describe('websocket/onConnected', () => {
     expect(ctx.dispatch).toHaveBeenCalledWith('config/initialize', null, { root: true });
   });
 
+  test('после восстановления сессии — подписка на камеры и список камер (для вкладки «Видеонаблюдение»)', async () => {
+    const ctx = makeContext();
+    await websocket.actions.onConnected(ctx, {});
+    expect(ctx.dispatch).toHaveBeenCalledWith('video/resubscribe', null, { root: true });
+    expect(ctx.dispatch).toHaveBeenCalledWith('video/requestCameras', null, { root: true });
+  });
+
   test('конфигурация уже загружена: перезапрос вместо полной инициализации', async () => {
     const ctx = makeContext({ config: { room01: {} } });
     await websocket.actions.onConnected(ctx, { isReconnect: true });

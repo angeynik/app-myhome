@@ -49,6 +49,15 @@ export const MAIN_TABS = [
 export const TAB_KEYS = MAIN_TABS.map((t) => t.key);
 export const DEFAULT_TAB = TAB_KEYS[0];
 
+// Вкладки, доступные пользователю сейчас.
+// «Видеонаблюдение» — только если доступна хотя бы одна камера; пока список камер не получен,
+// уже выбранная вкладка камер не скрывается (иначе при каждом запуске её сбрасывало бы).
+export function availableTabKeys({ hasCameras = false, camerasLoaded = false, activeTab = null } = {}) {
+  return MAIN_TABS
+    .filter((t) => !t.cameras || hasCameras || (!camerasLoaded && activeTab === t.key))
+    .map((t) => t.key);
+}
+
 export function getTab(key) {
   return MAIN_TABS.find((t) => t.key === key) || MAIN_TABS[0];
 }

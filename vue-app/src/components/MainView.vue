@@ -56,7 +56,7 @@
     <div class="body">
       <router-view
         :key="routeKey"
-        :active-tab="showTabs ? activeTab : undefined"
+        :active-tab="showTabs ? shownTab : undefined"
         @getComponentData="getComponentData"
         @updateTypeValue="editValueMainSetpoint"
       />
@@ -90,7 +90,7 @@ import SetpointScreen from '@/components/SetpointScreen.vue';
 import NotificationScreen from '@/components/NotificationScreen.vue';
 import { nowMoscow } from '@/utils/timeUtils';
 // Вкладки — единый источник с MainBody.vue
-import { TAB_KEYS, TAB_STORAGE_KEY, getTab, readSavedTab } from '@/utils/mainTabs';
+import { TAB_KEYS, TAB_STORAGE_KEY, DEFAULT_TAB, getTab, readSavedTab, availableTabKeys } from '@/utils/mainTabs';
 
 // Подписи редактируемого поля на экране изменения значения (когда правится не уставка)
 const FIELD_LABELS = {
@@ -153,8 +153,23 @@ export default {
       return this.$route.name === 'Home';
     },
 
+    // Доступные вкладки: «Видеонаблюдение» — только при наличии камер (список приходит при подключении
+    // и заново при каждом изменении cameras.json на сервере)
+    tabKeys() {
+      return availableTabKeys({
+        hasCameras: this.$store.getters['video/hasCameras'],
+        camerasLoaded: this.$store.getters['video/camerasLoaded'],
+        activeTab: this.activeTab,
+      });
+    },
+
+    // Показываемая вкладка: выбранная, если доступна, иначе первая
+    shownTab() {
+      return this.tabKeys.includes(this.activeTab) ? this.activeTab : DEFAULT_TAB;
+    },
+
     currentTabLabel() {
-      return getTab(this.activeTab).label;
+      return getTab(this.shownTab).label;
     },
 
     showFooterSetpoint() {
@@ -165,6 +180,13 @@ export default {
 
     routeKey() {
       return this.$route.fullPath;
+    },
+  },
+
+  watch: {
+    // Камер не осталось, а выбрана вкладка камер — переключаемся (и запоминаем) на первую
+    shownTab(tab) {
+      if (tab !== this.activeTab && !this.tabKeys.includes(this.activeTab)) this.setActiveTab(tab);
     },
   },
 
@@ -233,8 +255,9 @@ export default {
 
     // ── Вкладки ─────────────────────────────────────────────────────
     cycleTab() {
-      const idx = TAB_KEYS.indexOf(this.activeTab);
-      this.setActiveTab(TAB_KEYS[(idx + 1) % TAB_KEYS.length]);
+      const keys = this.tabKeys;
+      const idx = keys.indexOf(this.shownTab);
+      this.setActiveTab(keys[(idx + 1) % keys.length]);
     },
 
     setActiveTab(tabKey) {
