@@ -697,6 +697,10 @@ nav a.router-link-exact-active {
   background: var(--orange);
 }
 
+/* Версия сборки — первая плашка экрана «Настройки» */
+.settings-version-value { display: flex; align-items: baseline; gap: 0.8rem; flex-wrap: wrap; font-size: 1.05rem; }
+.settings-version-commit { font-size: 0.85rem; opacity: 0.65; font-family: monospace; }
+
 /* ===== 5. ИКОНКИ ===== */
 .icon {
   display: flex;

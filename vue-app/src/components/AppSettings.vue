@@ -19,7 +19,16 @@
 
     <div class="body">
       <div class="settings-container">
-        
+
+        <!-- Блок: Версия сборки (vue.config.js: appVersion из package.json + коммит) -->
+        <div class="settings-group settings-version" data-test="version">
+          <h3 class="settings-group-title">Версия</h3>
+          <div class="settings-version-value">
+            <span>{{ appVersion }}</span>
+            <span v-if="appCommit" class="settings-version-commit">сборка {{ appCommit }}</span>
+          </div>
+        </div>
+
         <!-- Блок: Тема оформления -->
         <div class="settings-group">
           <h3 class="settings-group-title">Тема оформления</h3>
@@ -83,6 +92,14 @@ import { BG_THEMES } from '@/store/modules/appearance';
 
 export default {
   name: 'AppSettings',
+
+  data() {
+    // Встраиваются при сборке (vue.config.js: appVersion из package.json и коммит)
+    return {
+      appVersion: process.env.VUE_APP_VERSION || '—',
+      appCommit: process.env.VUE_APP_COMMIT || '',
+    };
+  },
 
   computed: {
     ...mapGetters('appearance', ['bgTheme', 'customColor']), // <--- Добавили customColor

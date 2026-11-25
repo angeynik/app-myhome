@@ -1,6 +1,7 @@
 {
   "name": "vue-app",
   "version": "0.1.1",
+  "appVersion": "0.0.3.3",
   "private": true,
   "packageManager": "pnpm@12.16.1",
   "scripts": {
