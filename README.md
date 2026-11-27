@@ -4,6 +4,7 @@
 Работает с сервером `server-myhome` по WebSocket. Код приложения — в [vue-app/](vue-app/),
 правила разработки — [vue-app/claud_rules.md](vue-app/claud_rules.md).
 Уведомления по условиям (алгоритм, протокол, схемы кода) — [docs/notifications.md](docs/notifications.md).
+Сценарии автоматизации (формат, протокол, экраны) — [docs/scenarios.md](docs/scenarios.md).
 
 ```bash
 cd vue-app

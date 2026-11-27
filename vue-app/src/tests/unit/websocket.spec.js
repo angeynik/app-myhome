@@ -127,6 +127,29 @@ describe('🧩 Vuex WebSocket Module — Интеграционные тесты
     expect(callArgs[1]).toEqual(message)
   })
 
+  test('handleMessage: response/scenarios и scenariosSuccess — модулю сценариев, не config', async () => {
+    const scenariosActions = { handleResponse: jest.fn((_, r) => ['scenarios', 'scenariosSuccess'].includes(r.request)) }
+    const videoActions = { handleResponse: jest.fn(() => false) }
+    const notificationsActions = { handleResponse: jest.fn(() => false) }
+    store = createStore({
+      modules: {
+        websocket,
+        config: { namespaced: true, actions: configActions },
+        log: { namespaced: true, actions: logActions },
+        video: { namespaced: true, actions: videoActions },
+        notifications: { namespaced: true, actions: notificationsActions },
+        scenarios: { namespaced: true, actions: scenariosActions },
+      },
+      getters: { dID: () => 'USER123' },
+    })
+    await establishConnection(store)
+    for (const request of ['scenarios', 'scenariosSuccess']) {
+      await store.dispatch('websocket/handleMessage', { data: JSON.stringify({ type: 'response', request, name: 'USER123', payload: {} }) })
+    }
+    expect(scenariosActions.handleResponse).toHaveBeenCalledTimes(2)
+    expect(configActions.handleConfigResponse).not.toHaveBeenCalled()
+  })
+
   test('handleMessage: sensor обновляет только при совпадающем dID', async () => {
     await establishConnection(store)
 

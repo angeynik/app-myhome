@@ -123,7 +123,7 @@ export default {
   },
 
   computed: {
-    ...mapGetters(['dID', 'showSetpoint']),
+    ...mapGetters(['dID', 'showSetpoint', 'level']),
     ...mapGetters('config', ['isMobile']),
     ...mapGetters('appearance', ['bgThemeClass', 'customColor']), 
     
@@ -146,6 +146,7 @@ export default {
     },
 
     headerTitle() {
+      if (this.$route.meta?.title) return this.$route.meta.title;
       return this.$route.params.settingsType ? 'Настройки' : 'Панель управления';
     },
 
@@ -303,6 +304,8 @@ export default {
       this.show({
         items: [
           { label: 'Профиль',   action: 'profile'  },
+          // Сценарии — настройка (уровень 2), как и маршрут /scenarios
+          ...(this.level >= 2 ? [{ label: 'Сценарии', action: 'scenarios' }] : []),
           { label: 'Настройки', action: 'settings' }, // Новый пункт
           { label: 'Выйти',     action: 'logout'   },
         ],

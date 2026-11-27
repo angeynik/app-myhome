@@ -18,7 +18,7 @@ const LOGIN_OK = {
 };
 
 function makeStore(send = jest.fn().mockResolvedValue(LOGIN_OK)) {
-  const resets = { session: jest.fn(), config: jest.fn(), video: jest.fn(), dropdown: jest.fn() };
+  const resets = { session: jest.fn(), config: jest.fn(), video: jest.fn(), scenarios: jest.fn(), dropdown: jest.fn() };
   const store = createStore({
     mutations: { RESET_SESSION_DATA: resets.session },
     modules: {
@@ -26,6 +26,7 @@ function makeStore(send = jest.fn().mockResolvedValue(LOGIN_OK)) {
       websocket: { namespaced: true, actions: { send: (_, msg) => send(msg) } },
       config: { namespaced: true, mutations: { RESET: resets.config } },
       video: { namespaced: true, mutations: { RESET: resets.video } },
+      scenarios: { namespaced: true, mutations: { RESET: resets.scenarios } },
       dropdown: { namespaced: true, actions: { hide: resets.dropdown } },
       popup: { namespaced: true, actions: { show: jest.fn() } },
     },
@@ -117,6 +118,7 @@ describe('auth: выход', () => {
     expect(resets.session).toHaveBeenCalled();
     expect(resets.config).toHaveBeenCalled();
     expect(resets.video).toHaveBeenCalled();
+    expect(resets.scenarios).toHaveBeenCalled();
     expect(resets.dropdown).toHaveBeenCalled();
   });
 

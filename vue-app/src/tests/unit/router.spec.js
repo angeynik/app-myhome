@@ -27,7 +27,7 @@ describe('Router — конфигурация маршрутов', () => {
   test('содержит все ожидаемые именованные маршруты', () => {
     const names = router.getRoutes().map(r => r.name).filter(Boolean);
     expect(names.sort()).toEqual(
-      ['AccessDenied', 'AppProfile', 'AppSettings', 'DashboardSettings', 'Home', 'Login'].sort(),
+      ['AccessDenied', 'AppProfile', 'AppSettings', 'DashboardSettings', 'Home', 'Login', 'ScenarioEditor', 'ScenarioNew', 'Scenarios'].sort(),
     );
   });
 
@@ -62,6 +62,9 @@ describe('Router — конфигурация маршрутов', () => {
     { name: 'AppProfile',        path: '/profile',               requiredLevel: 2 },
     { name: 'DashboardSettings', path: '/settings/schedules',    requiredLevel: 2 },
     { name: 'AppSettings',       path: '/preferences',           requiredLevel: 2 },
+    { name: 'Scenarios',         path: '/scenarios',             requiredLevel: 2 },
+    { name: 'ScenarioNew',       path: '/scenarios/new',         requiredLevel: 2 },
+    { name: 'ScenarioEditor',    path: '/scenarios/sc_1',        requiredLevel: 2 },
   ])('маршрут $name ($path) требует вход и уровень $requiredLevel', ({ name, path, requiredLevel }) => {
     const resolved = router.resolve(path);
     expect(resolved.name).toBe(name);
@@ -82,8 +85,8 @@ describe('Router — конфигурация маршрутов', () => {
 describe('Главный экран — дочерние маршруты', () => {
   const shell = () => routesArray.find(r => r.path === '/');
 
-  test('дочерние маршруты: Home, DashboardSettings, AppSettings', () => {
-    expect(shell().children.map(c => c.name)).toEqual(['Home', 'DashboardSettings', 'AppSettings']);
+  test('дочерние маршруты: Home, DashboardSettings, сценарии, AppSettings', () => {
+    expect(shell().children.map(c => c.name)).toEqual(['Home', 'DashboardSettings', 'Scenarios', 'ScenarioNew', 'ScenarioEditor', 'AppSettings']);
   });
 
   test('DashboardSettings передаёт тип настроек из адреса в prop setting_Type', () => {
@@ -227,5 +230,15 @@ describe('navigationGuard', () => {
     const next  = jest.fn();
     guard({ name: 'Login', path: '/login', fullPath: '/login', matched: [{ meta: { public: true } }] }, {}, next);
     expect(next).toHaveBeenCalledWith('/');
+  });
+});
+
+describe('маршруты сценариев', () => {
+  const child = (name) => routesArray.find((r) => r.path === '/').children.find((c) => c.name === name);
+  test('props: шаблон из query, id из пути; заголовок шапки — «Сценарии»', () => {
+    expect(child('ScenarioNew').props({ query: { template: 'thermostat' } })).toEqual({ template: 'thermostat' });
+    expect(child('ScenarioNew').props({ query: {} })).toEqual({ template: 'empty' });
+    expect(child('ScenarioEditor').props({ params: { id: 'sc_1' } })).toEqual({ scenarioId: 'sc_1' });
+    expect(child('Scenarios').meta.title).toBe('Сценарии');
   });
 });

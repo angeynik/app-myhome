@@ -282,6 +282,7 @@ export default {
       commit('config/RESET', null, { root: true });
       commit('video/RESET', null, { root: true });
       commit('notifications/RESET', null, { root: true });
+      commit('scenarios/RESET', null, { root: true });
       dispatch('dropdown/hide', null, { root: true });
     },
 

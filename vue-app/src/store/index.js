@@ -14,6 +14,7 @@ import { nowMoscow } from '@/utils/timeUtils';
 import appearance from './modules/appearance';
 import video from './modules/video';
 import notifications from './modules/notifications';
+import scenarios from './modules/scenarios';
 
 // Поля payload → ключи localStorage (выбор пользователя переживает перезагрузку)
 const PERSISTED_PAYLOAD_KEYS = {
@@ -47,6 +48,7 @@ const store = createStore({
     appearance,
     video,
     notifications,
+    scenarios,
   },
 
   mutations: {

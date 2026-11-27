@@ -338,9 +338,10 @@ export default {
         if (type === 'response') {
           // videoCameras / videoSnapshot / videoSubscribeSuccess — модуль video,
           // notification / notificationStatus / notificationSnapshot / notificationSuccess — notifications,
-          // остальное — config
+          // scenarios / scenariosSuccess — scenarios, остальное — config
           const handled = await dispatch('video/handleResponse', response, { root: true })
-            || await dispatch('notifications/handleResponse', response, { root: true });
+            || await dispatch('notifications/handleResponse', response, { root: true })
+            || await dispatch('scenarios/handleResponse', response, { root: true });
           if (!handled) await dispatch('config/handleConfigResponse', response, { root: true });
         }
         if (type === 'post') {

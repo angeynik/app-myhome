@@ -96,6 +96,9 @@ export default {
         case 'profile':
           this.$router.push('/profile');
           break;
+        case 'scenarios':
+          this.$router.push('/scenarios');
+          break;
         case 'settings':
           // Переход на новую страницу настроек (изменение темы и режима устройства)
           this.$router.push('/preferences'); 

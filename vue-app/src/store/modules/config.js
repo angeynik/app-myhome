@@ -380,6 +380,12 @@ export default {
         return;
       }
 
+      // Ошибку правки сценария показывает редактор (ждёт ответа); модуль сам перезапросит сценарии
+      if (request === 'scenariosError') {
+        await dispatch('scenarios/handleError', response.payload || {}, { root: true });
+        return;
+      }
+
       dispatch('popup/show', { message, type: 'error', duration: 3000 }, { root: true });
 
       // Ошибка самого get-запроса: перезапрос снова вернул бы ошибку (бесконечный цикл)

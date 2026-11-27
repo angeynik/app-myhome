@@ -38,11 +38,11 @@
 - `App.vue` — корень: спрайт иконок, `router-view`, popup, dropdown, действия меню; при `isAuthenticated` — `initializeSetpointsManager` → `config/initialize`.
 - `router/routes.js` — маршруты и `navigationGuard`.
 - `store/index.js` — корневой стор: менеджер уставок (`settingsData`), выбор пользователя, `showSetpoint`.
-- `store/modules/` — `auth`, `websocket`, `config`, `sortParams`, `settingsConfig`, `popup`, `dropdown`, `log`, `appearance` (тема фона), `video` (камеры, кадры по камерам, подписка), `notifications` (уведомления: конфигурация, статусы, экран, окно); `logger.js` — утилита, не модуль Vuex.
+- `store/modules/` — `auth`, `websocket`, `config`, `sortParams`, `settingsConfig`, `popup`, `dropdown`, `log`, `appearance` (тема фона), `video` (камеры, кадры по камерам, подписка), `notifications` (уведомления: конфигурация, статусы, экран, окно), `scenarios` (сценарии автоматизации: набор dID, правка с ожиданием ответа); `logger.js` — утилита, не модуль Vuex.
 - `store/classes/manageSetpoints.js` — класс `ManageSetpoints` (объект `settingsData`).
-- `utils/` — `timeUtils`, `timeFieldEditor`, `checkOverlap`, `jwt` (только `exp`), `sensorIcons`, `mainTabs` (вкладки главного экрана — единственный источник), `tone`.
-- `components/` — `MainView` (оболочка), `MainBody`, `MainBodyValue`, `MainBodySettings` (+ `MainBodySchedule`, `MainBodyStatistic`), `SetpointScreen`, `NotificationScreen` (настройка уведомления), `NotificationPopup` (окно уведомлений), `SensorIcon`, `SensorIconSprite`, `CameraGrid` (+ `CameraCard`, `CameraScreen`), `TopNav`, `MenuDropdown`, `PopupMenu`, `AppLogin`, `AppProfile`, `AppSettings`, `AccessDenied`.
-- `tests/unit/` — Jest `<модуль>.spec.js`, общий `setup.js`.
+- `utils/` — `timeUtils`, `timeFieldEditor`, `checkOverlap`, `jwt` (только `exp`), `sensorIcons`, `mainTabs` (вкладки главного экрана — единственный источник), `tone`, `scenarioModel` (сценарии: точки, черновик, проверка, текст), `scenarioTemplates` (шаблоны сценариев).
+- `components/` — `MainView` (оболочка), `MainBody`, `MainBodyValue`, `MainBodySettings` (+ `MainBodySchedule`, `MainBodyStatistic`), `SetpointScreen`, `NotificationScreen` (настройка уведомления), `NotificationPopup` (окно уведомлений), `ScenarioList` (экран «Сценарии»), `ScenarioEditor` (+ `ScenarioCondition`, `ScenarioAction`, `ScenarioPointSelect`, `DurationInput`), `SensorIcon`, `SensorIconSprite`, `CameraGrid` (+ `CameraCard`, `CameraScreen`), `TopNav`, `MenuDropdown`, `PopupMenu`, `AppLogin`, `AppProfile`, `AppSettings`, `AccessDenied`.
+- `tests/unit/` — Jest `<модуль>.spec.js`, общий `setup.js`; общие данные сценариев — `scenarioFixtures.js`.
 
 ## Обмен данными по WebSocket
 
@@ -71,6 +71,8 @@
 | `get` | `config`, `schedules`, `statistics` | `{}` — на `config` сервер отвечает ещё `notification` и `notificationStatus`, если они есть |
 | `get` | `notificationSnapshot` | `{ id, cameraId }` — кадр камеры активного уведомления, через `notifications/requestSnapshot` |
 | `post` | `notification` | `{ action: 'create' \| 'edit' \| 'delete', configData }` — через `notifications/save` (уровень 2); сервер рассылает всем вкладкам dID `response/notification` |
+| `get` | `scenarios` | `{}` — через `scenarios/request` (уровень 2) |
+| `post` | `scenarios` | `{ action: 'create' \| 'edit' \| 'delete' \| 'enable' \| 'settings', configData }` — через `scenarios/save` (уровень 2, промис ответа); сервер рассылает всем вкладкам dID `response/scenarios` |
 | `get` | `videoCameras` | `{}` — список камер; сервер присылает `response/videoCameras` и без запроса, когда меняется `cameras.json` — сетка перестраивается |
 | `post` | `videoSubscribe` | `{ cameras: [id…], full: id \| null }` — через `video/subscribe` |
 | `post` | `setpoints` | `settingsData.payload` (`room`, `setKey`, `key`, `value`, …) — через `config/updateSetpointServer` |
@@ -83,8 +85,8 @@
 ### Входящие (`websocket/handleMessage`, порядок проверок)
 1. Ответ на ожидающий auth-запрос (`loginSuccess`, `loginError`, `resumeError`, `refreshSuccess`/`refreshError`, `changePasswordSuccess`/`changePasswordError`, `authError`) — резолвит/реджектит промис `send`.
 2. `request === 'accessError'` → `auth/handleAccessError` (см. «Сессия»).
-3. `type === 'error'` → `config/handleServerError`: сообщение `payload.message` во всплывающем окне и перезапрос затронутых данных (после ошибки записи значение на экране уже изменено, а сервер или устройство его не приняли). Ошибка get-запроса (`configError`, `<тип>Error`) данные не перезапрашивает; `configError` сразу отклоняет ожидание конфигурации. `notificationError` — сообщение и перезапрос `config` (с ним придут уведомления); `notificationSnapshotError` — молча (кадр уже удалён).
-4. `type === 'response'` → `video/handleResponse` (`videoCameras`, `videoSnapshot`, `videoSubscribeSuccess`), затем `notifications/handleResponse` (`notification`, `notificationStatus`, `notificationSnapshot`, `notificationSuccess`), иначе `config/handleConfigResponse` (`config`, `schedules`, `statistics`; остальные ответы игнорируются).
+3. `type === 'error'` → `config/handleServerError`: сообщение `payload.message` во всплывающем окне и перезапрос затронутых данных (после ошибки записи значение на экране уже изменено, а сервер или устройство его не приняли). Ошибка get-запроса (`configError`, `<тип>Error`) данные не перезапрашивает; `configError` сразу отклоняет ожидание конфигурации. `notificationError` — сообщение и перезапрос `config` (с ним придут уведомления); `notificationSnapshotError` — молча (кадр уже удалён); `scenariosError` → `scenarios/handleError` (отклоняет ожидающую правку — текст покажет редактор; без ожидания — всплывающее окно; перезапрос `scenarios`).
+4. `type === 'response'` → `video/handleResponse` (`videoCameras`, `videoSnapshot`, `videoSubscribeSuccess`), затем `notifications/handleResponse` (`notification`, `notificationStatus`, `notificationSnapshot`, `notificationSuccess`), затем `scenarios/handleResponse` (`scenarios`, `scenariosSuccess`), иначе `config/handleConfigResponse` (`config`, `schedules`, `statistics`; остальные ответы игнорируются).
 5. `type === 'post'`, `request === 'videoSnapshot'` → `video/handleSnapshot` (кадр `{ cameraId, title, image, mimeType, size, timestamp }`, хранится по `cameraId`); `request === 'notificationEvent'` (своего `dID`) → `notifications/handleEvent` (событие ON / сброс OFF).
 6. `type === 'post'` с `name === dID` → `config/handleValueUpdate`:
    - `{ room, item_name, item_value }` (NodeRED, мосты Modbus, данные датчиков) — обновляет элемент раздела `request` (`sensors`, `system`, `setpoints`, любой другой);
@@ -99,7 +101,7 @@
   - `NO_SESSION`, `TIMEOUT` — соединение не вошло; при наличии токена сначала `auth/resume` (успех → `config/refreshConfig`), выход только при отказе сервера; обрыв связи токен не трогает;
   - `TOKEN_REVOKED` — выход сразу;
   - `FORBIDDEN`, `DID_MISMATCH` — всплывающее сообщение.
-- Выход (`auth/redirectToLogin` → `auth/clearSession`): чистит `authSession`, `authData`, `roomKey`, `paramKey`, `deviceKey`, `setpointKey`, `clearKey`, `RESET_SESSION_DATA`, `config/RESET`, `video/RESET`, `notifications/RESET`, закрывает dropdown, переводит на `/login`. Новые данные пользователя сбрасывать там же.
+- Выход (`auth/redirectToLogin` → `auth/clearSession`): чистит `authSession`, `authData`, `roomKey`, `paramKey`, `deviceKey`, `setpointKey`, `clearKey`, `RESET_SESSION_DATA`, `config/RESET`, `video/RESET`, `notifications/RESET`, `scenarios/RESET`, закрывает dropdown, переводит на `/login`. Новые данные пользователя сбрасывать там же.
 - Права на клиенте — только UX: проверяет сервер.
 
 ## Store
@@ -114,6 +116,9 @@
 | `/` | — | `MainView` (оболочка) | `requiresAuth`, `requiredLevel: 1` |
 | `/` (`''`) | `Home` | `MainBody` | наследует |
 | `/settings/:settingsType` | `DashboardSettings` | `MainBodySettings` (`setting_Type`) | `requiredLevel: 2` |
+| `/scenarios` | `Scenarios` | `ScenarioList` | `requiredLevel: 2`, `title: 'Сценарии'` |
+| `/scenarios/new?template=<ключ>` | `ScenarioNew` | `ScenarioEditor` (`template`) | `requiredLevel: 2` |
+| `/scenarios/:id` | `ScenarioEditor` | `ScenarioEditor` (`scenarioId`) | `requiredLevel: 2` |
 | `/preferences` | `AppSettings` | `AppSettings` (тема фона, режим устройства) | `requiredLevel: 2` |
 | `/login` | `Login` | `AppLogin` | `public` |
 | `/profile` | `AppProfile` | `AppProfile` | `requiresAuth`, `requiredLevel: 2` |
@@ -122,7 +127,8 @@
 
 - `navigationGuard`: `public` → пропуск (авторизованного с `/login` — на `/`); нет `requiresAuth` → пропуск; не авторизован → `localStorage.redirectPath` + `/login`; `level` ниже максимального `requiredLevel` по matched → `/access-denied`.
 - `redirectPath` перед использованием проверяется (`AppLogin.safeRedirect`: начинается с `/`, не с `//`).
-- Меню шапки (`MainView.openMenu` → `App.onDropdownSelect`): `profile`, `settings` (`/preferences`), `logout`. Пункт меню без обработчика не добавлять.
+- Меню шапки (`MainView.openMenu` → `App.onDropdownSelect`): `profile`, `scenarios` (`/scenarios`, только уровень ≥ 2), `settings` (`/preferences`), `logout`. Пункт меню без обработчика не добавлять.
+- Заголовок шапки `MainView` на дочерних экранах — `meta.title` маршрута (иначе «Настройки» / «Панель управления»).
 
 ## Конфигурация устройства
 - Комнаты — ключи `room01`, `room02`, … Служебные ключи корня: `init` (лимиты), `newConfigID`, `password`, `common` (вкладка «Общие», не комната).
@@ -149,6 +155,14 @@
 - Экран уведомления открывает `MainBody.openNotification` только для уровня ≥ 2 (уровень 1 — сообщение) и только при наличии значения параметра (нет данных — сообщение «Отсутствует значение параметра»); сам экран (`NotificationScreen`) смонтирован в `MainView` и читает цель из `notifications/editor`. По умолчанию при включении: условие `ne` (≠), значение — текущее значение параметра, канал `web`, интервалы/периоды/камеры пусты; условие и значение обязательны. Закрытие сохраняет: `create` / `edit` (только если форма изменилась) / `delete` (переключатель OFF у существующего). Статус клиент меняет **только** по событиям сервера (`notificationEvent`): после `delete` обводка и «прочитано» остаются до сброса `reason: 'removed'`, который переводит их в OFF.
 - Статус ON — красная обводка плашки (`.has-notification`) независимо от прочтения и канала. Окно (`NotificationPopup` в `App.vue`) — только канал `web`/`both`, непрочитанные, свежие первыми, закрывает только пользователь → `notifications/markRead`.
 - «Прочитано» — только на клиенте: сервер всегда шлёт `read: 'OFF'`, клиент сверяет `eventId` с `localStorage.notificationsRead:<dID>`. Сброс (OFF) обнуляет и статус, и прочтение.
+## Сценарии (подробно — `docs/scenarios.md` в корне репозитория)
+- Сценарии хранит и проверяет сервер, выполняет Node-RED (вкладка «4. Сценарии» репозитория `nRed`). Клиент только редактирует набор `<dID>_scenarios.json`.
+- Модуль `store/modules/scenarios.js`: `data` (`{ settings, scenarios }`), `loaded`. `save` возвращает промис ответа (`scenariosSuccess` → `{ action, id, delivered }`, `scenariosError` → Error с `code`, 15 с → `TIMEOUT`); корреляционного id нет, поэтому правки идут строго по одной (цепочка промисов). `delivered: 0` — Node-RED не подключён: показывать предупреждение, сценарий применится при подключении.
+- Формат совпадает с сервером (`services/scenarioStore.js`) и движком (`functions/_scenario.js` в `nRed`); ссылка на точку — `{ room, item }`, сравнение с другой точкой — `valueFrom` (не `valueOf`: это свойство любого объекта JS). Меняется формат — менять все три места и `docs/scenarios.md`.
+- Редактор правит черновик (`toEditor` / `fromEditor`): корень условия — всегда группа (`all`/`any`), «НЕ» — обёртка `{ not }`, показывается переключателем у узла. `ScenarioCondition` рекурсивный и props не мутирует: каждое изменение — событие `update` с новым узлом.
+- Точки для выбора — `pointOptions(config)`: комнаты `roomNN`, разделы `sensors`/`system`/`setpoints`; записывать — только `setpoints`/`system` (есть ли у точки `set` в `devices.json`, знает только Node-RED: иначе он отключит сценарий с предупреждением).
+- Новый сценарий — из шаблона (`utils/scenarioTemplates.js`), всегда в режиме «Тест». Новый шаблон: `build(points)` подбирает точки и возвращает сценарий, тест «готов к сохранению» в `scenarioModel.spec.js` проверит его автоматически.
+
 ## localStorage
 `authSession`, `roomKey`, `paramKey`, `deviceKey`, `setpointKey`, `clearKey` (чистятся при выходе); `redirectPath`; `mainViewTab`, `typeSettingsKey` (`schedules` | `statistics`), `notificationsRead:<dID>` (`{ id: eventId }` — прочитанные уведомления, при выходе не чистится: принадлежит dID), `deviceMode`, `appearance` (`{ theme, color }`) — настройки интерфейса, при выходе не чистятся; `authData`, `mobile_navigation` — устаревшие, только удаляются.
 
@@ -178,6 +192,7 @@
 - Ловушки окружения:
   - `setup.js` задаёт глобальную заглушку `$store` (геттеры — функции, то есть всегда «истина»): она перекрывает store из `plugins`, поэтому настоящий store передавать и в `mocks: { $store: store }`;
   - `resetMocks: true` (`jest.config.js`) стирает реализации `jest.fn()`/`spyOn` перед каждым тестом — ставить их в `beforeEach`, не в `beforeAll`;
+  - `resetModules: true`: компоненты импортировать на верхнем уровне файла теста, не `require` внутри теста — иначе загрузится вторая копия Vue (`withDirectives can only be used inside render functions`, `v-model` не работает);
   - `window.localStorage` в jsdom не подменяется присваиванием — только `Object.defineProperty(window, 'localStorage', …)` или `jest.spyOn(Storage.prototype, …)`.
 
 ## Известные расхождения

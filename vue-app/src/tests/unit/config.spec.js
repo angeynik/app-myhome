@@ -632,6 +632,12 @@ describe('Vuex config module: handleServerError', () => {
     expect(dispatch).not.toHaveBeenCalledWith('websocket/send', expect.anything(), { root: true });
   });
 
+  it('scenariosError: передаётся модулю сценариев, без всплывающего окна и перезапроса config', async () => {
+    const dispatch = await run({ type: 'error', request: 'scenariosError', name: 'igumen', payload: { message: 'Неверный сценарий', code: 'BAD_SCENARIO' } });
+    expect(dispatch).toHaveBeenCalledWith('scenarios/handleError', { message: 'Неверный сценарий', code: 'BAD_SCENARIO' }, { root: true });
+    expect(dispatch).toHaveBeenCalledTimes(1);
+  });
+
   it('notificationError: текст пользователю и перезапрос config (вместе с ним придут уведомления)', async () => {
     const dispatch = await run({ type: 'error', request: 'notificationError', name: 'igumen', payload: { message: 'Неверные данные уведомления' } });
     expect(dispatch).toHaveBeenCalledWith('popup/show',

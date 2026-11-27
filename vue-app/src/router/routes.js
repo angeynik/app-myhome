@@ -41,6 +41,26 @@ const routes = [
         props: (route) => ({ setting_Type: route.params.settingsType }),
       },
       {
+        path: 'scenarios',
+        name: 'Scenarios',
+        component: () => import('@/components/ScenarioList.vue'),
+        meta: { requiresAuth: true, requiredLevel: 2, title: 'Сценарии' },
+      },
+      {
+        path: 'scenarios/new',
+        name: 'ScenarioNew',
+        component: () => import('@/components/ScenarioEditor.vue'),
+        meta: { requiresAuth: true, requiredLevel: 2, title: 'Сценарии' },
+        props: (route) => ({ template: String(route.query.template || 'empty') }),
+      },
+      {
+        path: 'scenarios/:id',
+        name: 'ScenarioEditor',
+        component: () => import('@/components/ScenarioEditor.vue'),
+        meta: { requiresAuth: true, requiredLevel: 2, title: 'Сценарии' },
+        props: (route) => ({ scenarioId: String(route.params.id) }),
+      },
+      {
         path: 'preferences',
         name: 'AppSettings',
         component: () => import('@/components/AppSettings.vue'),
